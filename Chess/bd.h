@@ -1,0 +1,408 @@
+#pragma once
+
+/*
+ *
+ *	bd.h
+ *
+ *	Board definitions
+ *
+ */
+#include "framework.h"
+
+
+enum {
+	tpcQueenRook = 0,
+	tpcQueenKnight = 1,
+	tpcQueenBishop = 2,
+	tpcQueen = 3,
+	tpcKing = 4,
+	tpcKingBishop = 5,
+	tpcKingKnight = 6,
+	tpcKingRook = 7,
+	tpcPawnFirst = 8,
+	tpcPawnQR = 8,
+	tpcPawnQN = 9,
+	tpcPawnQB = 10,
+	tpcPawnQ = 11,
+	tpcPawnK = 12,
+	tpcPawnKB = 13,
+	tpcPawnKN = 14,
+	tpcPawnKR = 15,
+	tpcPawnLim = 16,
+	tpcPieceMax = 16,
+
+	tpcWhite = 0x00,
+	tpcBlack = 0x80,
+	tpcColor = 0x80,
+
+	tpcPiece = 0x0f,
+
+	tpcApc = 0x70,
+
+	tpcEmpty = 0x80
+};
+
+typedef BYTE TPC;
+
+inline int CpcFromTpc(TPC tpc) {
+	return (tpc & tpcColor) == tpcBlack;
+}
+
+enum {
+	cpcWhite = 0,
+	cpcBlack = 1,
+	cpcMax = 2
+};
+typedef int CPC;
+
+enum {
+	apcNull = 0,
+	apcPawn = 1,
+	apcKnight = 2,
+	apcBishop = 3,
+	apcRook = 4,
+	apcQueen = 5,
+	apcKing = 6
+};
+
+typedef BYTE APC;
+
+inline APC ApcFromTpc(BYTE tpc) { return (tpc & tpcApc) >> 4; }
+inline TPC Tpc(TPC tpc, CPC cpc, APC apc) { return tpc | (cpc << 7) | (apc << 4); }
+
+enum {
+	fileQueenRook = 0,
+	fileQueenKnight = 1,
+	fileQueenBishop = 2,
+	fileQueen = 3,
+	fileKing = 4,
+	fileKingBishop = 5,
+	fileKingKnight = 6,
+	fileKingRook = 7,
+	fileMax = 8
+};
+
+const int rankMax = 8;
+
+
+/*	
+ *
+ *	SQ type
+ *
+ *	A square is file and rank encoded into a single byte
+ *
+ */
+
+
+class SQ {
+private:
+	friend class MV;
+	BYTE grf;
+public:
+	SQ(void) : grf(0xff) { }
+	SQ(BYTE grf) : grf(grf) { }
+	SQ(int rank, int file) { grf = (rank << 3) | file; }
+	SQ(const SQ& sq) { grf = sq.grf; }
+	inline int file(void) const { return grf & 0x07; }
+	inline int rank(void) const { return (grf >> 3) & 0x07; }
+	inline bool FIsNil(void) const { return grf == 0xff; }
+	inline bool FIsMax(void) const { return grf == rankMax * fileMax; }
+	inline SQ operator++(int) { BYTE grfT = grf++; return SQ(grfT); }
+	inline SQ& operator+=(int dsq) { grf += dsq; return *this; }
+	inline SQ operator+(int dsq) const { return SQ(grf + dsq); }
+	inline operator int() const { return grf; }
+	inline bool FIsValid(void) const { return (grf & 0xc0) == 0; }
+};
+
+const int sqMax = rankMax*8;
+const SQ sqNil = SQ();
+
+
+/*	
+ * 
+ *	MV type
+ *
+ *	A move is a from and to square, with a little extra info for
+ *	weird moves, along with enough information to undo the move.
+ * 
+ *	Low 6 bits is the source square, the next 6 bits are the 
+ *	destination square. The rest of the bottom word is currently
+ *	unused, reserved for a change in board representation.
+ *	
+ *	The high word is mostly used for undo information. On captures
+ *	the tpc of the captured piece is in the bottom 4 bits, and
+ *	the next 3 bits are the apc of the captured piece. The next bit
+ *	tells if the capture was an en passant capture. The next four
+ *	bits are the previous capture bits. The next 3 bits are the apc
+ *	of the new piece on pawn promotions. And the highest bit is 
+ *	used for a nil test.
+ * 
+ *	There are opportunities to compress the upper word of the move.
+ * 
+ *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
+ *  +-----------+--------+--------+--------+--------+
+ *  |           |        to       |       from      |
+ *  +-----------+--------+--------+--------+--------+
+ *  +--+--------+-----------+--+--------+-----------+
+ *  | 0| promote|  saved cs |ep| cap apc|  cap tpc  |
+ *  +--+--------+-----------+--+--------+-----------+
+ *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
+ */
+
+class MV {
+private:
+	unsigned long grf;
+public:
+	MV(void) { grf = 0x80000000L; }
+	MV(SQ sqFrom, SQ sqTo, APC apcPromote = apcNull) {
+		grf = (unsigned long)sqFrom.grf | ((unsigned long)sqTo.grf << 6) | 
+			((unsigned long)apcPromote << 28);
+	}
+	
+	SQ SqFrom(void) const { return grf & 0x3f; }
+	SQ SqTo(void) const { return (grf >> 6) & 0x3f; }
+	APC ApcPromote(void) const { return (grf >> 28) & 0x07; }
+	bool FIsNil(void) const { return grf == 0x80000000L; }
+	void SetApcPromote(APC apc) { grf = (grf & 0x8fffffffL) | ((unsigned long)apc << 28); }
+};
+
+
+/*
+ *
+ *	GS emumeration
+ * 
+ *	Game state. Either we're playing, or the game is over by several possible
+ *	situations.
+ *
+ */
+
+
+enum class GS {
+	Playing = 0,
+	CheckMate,
+	StaleMate,
+	DrawDead,
+	DrawAgree,
+	Draw3Repeat,
+	Draw50Move
+};
+
+enum {
+	csKing = 0x01, csQueen = 0x04,
+	csWhiteKing = 0x01,
+	csBlackKing = 0x02,
+	csWhiteQueen = 0x04,
+	csBlackQueen = 0x08
+};
+
+
+/*
+ *
+ *	BD class
+ * 
+ *	The board.
+ * 
+ */
+
+class BD
+{
+public:
+	BD(void);
+	BD(const BD& bd);
+	
+	TPC mpsqtpc[sqMax];	// the board itself (maps square to piece)
+	UINT64 rggrfAttacked[cpcMax];	// bit field of attacked squares (black=1, white=0)
+	SQ mptpcsq[cpcMax][tpcPieceMax]; // reverse mapping of mpsqtpc (black=1, white=0)
+	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
+					   of en passant capture */
+	BYTE cs;	/* castle sides */
+
+	void InitFENPieces(const WCHAR*& szFEN);
+	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
+	int TpcUnusedPawn(CPC cpc) const;
+
+	void MakeMv(MV mv);
+	void UndoLastMv(MV mv);
+	void MakeMvSq(MV mv);
+	void ComputeAttacked(CPC cpcMove);
+
+	void GenRgmv(vector<MV>& rgmv, CPC cpcMove) const;
+	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove) const;
+	void GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvCastle(vector<MV>& rgmv, SQ sqFrom) const; 
+	void GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) const;
+	void GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
+	void GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
+	bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const;
+	void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
+
+	void RemoveInCheckMoves(vector<MV>& rgmv, CPC co) const;
+	bool FInCheck(SQ sqKing) const;
+	bool FSqAttacked(SQ sq, CPC cpcBy) const;
+
+	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
+	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }
+
+	inline SQ& SqFromTpc(TPC tpc) { return mptpcsq[CpcFromTpc(tpc)][tpc & tpcPiece]; }
+	inline SQ SqFromTpc(TPC tpc) const { return mptpcsq[CpcFromTpc(tpc)][tpc & tpcPiece]; }
+	inline APC ApcFromSq(SQ sq) const { return ApcFromTpc(mpsqtpc[sq]); }
+	inline CPC CpcFromSq(SQ sq) const { return CpcFromTpc(mpsqtpc[sq]); }
+
+	inline bool FCanCastle(CPC cpc, int csSide) const { return (this->cs & (csSide << cpc)) != 0;  }
+	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
+	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
+
+#ifndef NDEBUG
+	void Validate(void) const;
+#else
+	inline void Validate(void) const { }
+#endif
+};
+
+
+/*
+ *
+ *	BDG class
+ * 
+ *	The game board, which is the regular board along with the move history and other
+ *	game state.
+ * 
+ */
+
+
+class BDG : public BD
+{
+public:
+	GS gs;	// game state
+	CPC cpcToMove;
+	vector<MV> rgmvGame;	// the game moves that resulted in bd board state
+
+public:
+	BDG(void);
+	BDG(const BDG& BDG);
+	BDG(const WCHAR* szFEN);
+	void NewGame(void);
+	void InitFEN(const WCHAR* szFen);
+	void InitFENSideToMove(const WCHAR*& sz);
+	void InitFENCastle(const WCHAR*& sz);
+	void InitFENEnPassant(const WCHAR*& sz);
+	void InitFENHalfmoveClock(const WCHAR*& sz);
+	void InitFENFullmoveCounter(const WCHAR*& sz);
+
+	void GenRgmv(vector<MV>& rgmv) const;
+	void MakeMv(MV mv);
+	void UndoLastMv(void);
+	void TestGameOver(const vector<MV>& rgmv);
+};
+
+
+/*
+ *
+ *	ANO class
+ * 
+ *	Class that represents an annotation on the board. Our annotations
+ *	are either single square markers, which display as a circle on the
+ *	board, or arrows between squares.
+ *
+ */
+
+
+class ANO
+{
+	friend class SPABD;
+	SQ sqFrom, sqTo;
+public:
+	ANO(void) { }
+	~ANO(void) { }
+	ANO(SQ sq) : sqFrom(sq), sqTo(sqNil) { }
+	ANO(SQ sqFrom, SQ sqTo) : sqFrom(sqFrom), sqTo(sqTo) { }
+};
+
+
+/*
+ *
+ *	SPABD class
+ * 
+ *	Class that keeps and displays the game board on the screen inside
+ *	the board panel
+ * 
+ */
+
+class HTBD;
+
+class SPABD : public SPA
+{
+public:
+	static ID2D1SolidColorBrush* pbrLight;
+	static ID2D1SolidColorBrush* pbrDark;	
+	static ID2D1SolidColorBrush* pbrBlack;
+	static ID2D1SolidColorBrush* pbrAnnotation;
+	static ID2D1SolidColorBrush* pbrHilite;
+	static IDWriteTextFormat* ptfLabel;
+	static IDWriteTextFormat* ptfGameState;
+	static ID2D1Bitmap* pbmpPieces;
+	static ID2D1PathGeometry* pgeomCross;
+	static ID2D1PathGeometry* pgeomArrowHead;
+
+	TPC tpcPointOfView;
+	RCF rcfSquares;
+	float dxyfSquare, dxyfBorder, dxyfMargin;
+	float dyfLabel;
+	HTBD* phtDragInit;
+	HTBD* phtCur;
+	SQ sqHover;
+	RCF rcfDragPc;	// rectangle the dragged piece was last drawn in
+	vector<MV> rgmvDrag;	// legal moves in the UI
+	vector<ANO> rgano;	// annotations
+
+public:
+	SPABD(GA& ga);
+	~SPABD(void);
+	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+	static void CreateGeom(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf, ID2D1PathGeometry** ppgeom);
+
+	void NewGame(void);
+	void MakeMv(MV mv);
+	
+	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
+
+	virtual HT* PhtHitTest(const PTF& ptf);
+	virtual void StartLeftDrag(HT* pht);
+	virtual void EndLeftDrag(HT* pht);
+	virtual void LeftDrag(HT* pht);
+	virtual void MouseHover(HT* pht);
+
+	virtual void Draw(ID2D1RenderTarget* prt);
+	void DrawMargins(ID2D1RenderTarget* prt);
+	void DrawSquares(ID2D1RenderTarget* prt);
+	void DrawLabels(ID2D1RenderTarget* prt);
+	void DrawFileLabels(ID2D1RenderTarget* prt);
+	void DrawRankLabels(ID2D1RenderTarget* prt);
+	void DrawHover(ID2D1RenderTarget* prt);
+	void DrawPieces(ID2D1RenderTarget* prt);
+	void DrawAnnotations(ID2D1RenderTarget* prt);
+	void DrawSquareAnnotation(ID2D1RenderTarget* prt, SQ sq);
+	void DrawArrowAnnotation(ID2D1RenderTarget* prt, SQ sqFrom, SQ sqTo);
+
+	void DrawHilites(ID2D1RenderTarget* prt);
+	void DrawGameState(ID2D1RenderTarget* prt);
+	void DrawPc(ID2D1RenderTarget* prt, const RCF& rcf, float opacity, TPC tpc);
+	void DrawDragPc(ID2D1RenderTarget* prt, const RCF& rcf);
+	RCF RcfGetDrag(void);
+	void InvalOutsideRcf(const RCF& rcf);
+	void InvalRectF(float left, float top, float right, float bottom);
+	void HiliteLegalMoves(SQ sq);
+	RCF RcfFromSq(SQ sq) const;
+
+	virtual float DxWidth(void) const;
+	virtual float DyHeight(void) const;
+
+	bool FMoveablePc(SQ sq);
+};
