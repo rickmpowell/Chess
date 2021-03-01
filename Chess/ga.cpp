@@ -259,36 +259,32 @@ void SPARGMV::Draw(ID2D1RenderTarget* prt)
 
 void SPARGMV::DrawContent(ID2D1RenderTarget* prt, const RCF& rcfCont)
 {
+	BDG bdgT(bdgInit);
 	float yf = rcfCont.top + dyfList;
 	for (unsigned imv = 0; imv < ga.bdg.rgmvGame.size(); imv++) {
 		MV mv = ga.bdg.rgmvGame[imv];
 		if (imv % 2 == 0) {
 			DrawMoveNumber(prt, RCF(0, yf, mpcoldxf[0], yf+dyfList), imv / 2 + 1);
-			DrawMv(prt, RCF(mpcoldxf[0], yf, mpcoldxf[0]+mpcoldxf[1], yf+dyfList), mv);
+			DrawMv(prt, RCF(mpcoldxf[0], yf, mpcoldxf[0]+mpcoldxf[1], yf+dyfList), 
+					bdgT, mv);
 		}
 		else {
-			DrawMv(prt, RCF(mpcoldxf[0]+mpcoldxf[1], yf, mpcoldxf[0]+mpcoldxf[1]+mpcoldxf[2], yf+dyfList), mv);
+			DrawMv(prt, RCF(mpcoldxf[0]+mpcoldxf[1], yf, mpcoldxf[0]+mpcoldxf[1]+mpcoldxf[2], yf+dyfList), 
+					bdgT, mv);
 			yf += dyfList;
 		}
+		bdgT.MakeMv(mv);
 	}
 }
 
 
-void SPARGMV::DrawMv(ID2D1RenderTarget* prt, RCF rcf, MV mv)
+void SPARGMV::DrawMv(ID2D1RenderTarget* prt, RCF rcf, const BDG& bdg, MV mv)
 {
 	rcf.Offset(rcfBounds.left, rcfBounds.top);
 	rcf.left += 4.0f;
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
-	WCHAR sz[8];
-	sz[0] = L'a' + sqFrom.file();
-	sz[1] = L'1' + sqFrom.rank();
-	sz[2] = L'-';
-	sz[3] = L'a' + sqTo.file();
-	sz[4] = L'1' + sqTo.rank();
-	sz[5] = 0;
+	wstring sz = bdg.SzDecodeMv(mv);
 	ptfList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	prt->DrawText(sz, 5, ptfList, rcf, pbrText);
+	prt->DrawText(sz.c_str(), sz.size(), ptfList, rcf, pbrText);
 }
 
 

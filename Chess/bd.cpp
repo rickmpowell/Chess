@@ -136,6 +136,20 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 }
 
 
+void BD::SkipToSpace(const WCHAR*& sz)
+{
+	while (*sz && *sz != L' ')
+		sz++;
+}
+
+
+void BD::SkipToNonSpace(const WCHAR*& sz)
+{
+	while (*sz && *sz == L' ')
+		sz++;
+}
+
+
 /*	BD::TpcUnusedPawn
  *
  *	Finds an unused pawn slot in the mptpcsq array for the cpc bcolor.
@@ -680,7 +694,7 @@ BDG::BDG(void) : gs(GS::Playing), cpcToMove(cpcWhite)
 }
 
 
-BDG::BDG(const BDG& bdg) : gs(bdg.gs), cpcToMove(bdg.cpcToMove), 
+BDG::BDG(const BDG& bdg) : BD(bdg), gs(bdg.gs), cpcToMove(bdg.cpcToMove), 
 		rgmvGame(bdg.rgmvGame)
 {
 }
@@ -714,23 +728,24 @@ void BDG::InitFEN(const WCHAR* szFEN)
 
 void BDG::InitFENSideToMove(const WCHAR*& sz)
 {
+	SkipToNonSpace(sz);
 	cpcToMove = cpcWhite;
-	for (; *sz && *sz == L' '; sz++)
-		;
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
 		case 'w': cpcToMove = cpcWhite ; break;
 		case 'b': cpcToMove = cpcBlack; break;
-		default: break;
+		default: goto Done;
 		}
 	}
+Done:
+	SkipToSpace(sz);
 }
 
 
+/* TODO: move to BD */
 void BDG::InitFENCastle(const WCHAR*& sz)
 {
-	for (; *sz && *sz == L' '; sz++)
-		;
+	SkipToNonSpace(sz);
 	ClearCastle(cpcWhite, csKing | csQueen);
 	ClearCastle(cpcBlack, csKing | csQueen);
 	for (; *sz && *sz != L' '; sz++) {
@@ -740,19 +755,19 @@ void BDG::InitFENCastle(const WCHAR*& sz)
 		case 'k': SetCastle(cpcBlack, csKing); break;
 		case 'q': SetCastle(cpcBlack, csQueen); break;
 		case '-': break;
-		default:
-			/* TODO: error handling */
-			break;
+		default: goto Done;
 		}
 	}
+Done:
+	SkipToSpace(sz);
 }
 
 
+/* TODO: move to BD */
 void BDG::InitFENEnPassant(const WCHAR*& sz)
 {
+	SkipToNonSpace(sz);
 	sqEnPassant = sqNil;
-	for (; *sz && *sz == L' '; sz++)
-		;
 	int rank=-1, file=-1;
 	for (; *sz && *sz != L' '; sz++) {
 		if (*sz >= L'a' && *sz <= L'h')
@@ -762,27 +777,23 @@ void BDG::InitFENEnPassant(const WCHAR*& sz)
 		else if (*sz == '-')
 			rank = file = -1;
 	}
-	if (rank == -1 || file == -1)
-		return;
-	sqEnPassant = SQ(rank, file);
+	if (rank != -1 && file != -1)
+		sqEnPassant = SQ(rank, file);
+	SkipToSpace(sz);
 }
 
 
 void BDG::InitFENHalfmoveClock(const WCHAR*& sz)
 {
-	for (; *sz && *sz == L' '; sz++)
-		sz++;
-	for (; *sz && *sz != L' '; sz++) {
-	}
+	SkipToNonSpace(sz);
+	SkipToSpace(sz);
 }
 
 
 void BDG::InitFENFullmoveCounter(const WCHAR*& sz)
 {
-	for (; *sz && *sz == L' '; sz++)
-		;
-	for (; *sz && *sz != L' '; sz++) {
-	}
+	SkipToNonSpace(sz);
+	SkipToSpace(sz);
 }
 
 
@@ -823,6 +834,94 @@ void BDG::TestGameOver(const vector<MV>& rgmv)
 		/* identical board position 3 times (including legal moves the same, cf. en passant) */
 		/* both players make 50 moves with no captures or pawn moves */
 	}
+}
+
+
+
+WCHAR mpapcch[] = { L' ', L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
+
+wstring BDG::SzDecodeMv(MV mv) const
+{
+	vector<MV> rgmv;
+	GenRgmv(rgmv);
+
+	/* if destination square is unique, just include the destination square */
+	SQ sqFrom = mv.SqFrom();
+	APC apc = ApcFromSq(sqFrom);
+	SQ sqTo = mv.SqTo();
+	SQ sqCapture = sqTo;
+
+	WCHAR sz[16];
+	WCHAR* pch = sz;
+
+	switch (apc) {
+	case apcPawn: 
+		if (sqTo == sqEnPassant)
+			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
+		break;
+
+	case apcKing:
+		if (sqFrom.file() == fileKing) {
+			if (sqTo.file() == fileKingKnight)
+				goto FinishCastle;
+			if (sqTo.file() == fileQueenBishop) {
+				*pch++ = L'O';
+				*pch++ = L'\x2013';
+FinishCastle:
+				*pch++ = L'O';
+				*pch++ = L'\x2013';
+				*pch = L'O';
+				goto FinishMove;
+			}
+		}
+		break;
+	case apcKnight: 
+		break;
+	case apcBishop: 
+		break;
+	case apcRook: 
+		break;
+	case apcQueen: 
+		break;
+	}
+
+	*pch++ = mpapcch[apc];
+	for (MV mvOther : rgmv) {
+		if (sqTo != mvOther.SqTo() || sqFrom == mvOther.SqFrom())
+			continue;
+		if (ApcFromSq(mvOther.SqFrom()) == apc) {
+			/* there are two matching pieces that can move to the
+			   destination square */
+			*pch++ = L'a' + sqFrom.file();
+			*pch++ = L'1' + sqFrom.rank();
+			break;
+		}
+	}
+	/* if we fall out, there is no ambiguity with the apc moving to the
+	   destination square */
+	*pch++ = mpsqtpc[sqCapture] != tpcEmpty ? L'\x00d7' : L'\x2013';
+	*pch++ = L'a' + sqTo.file();
+	*pch++ = L'1' + sqTo.rank();
+
+	if (sqTo == sqEnPassant) {
+		*pch++ = L' ';
+		*pch++ = L'e';
+		*pch++ = L'.';
+		*pch++ = L'p';
+		*pch++ = L'.';
+	}
+	{
+		APC apcPromote = mv.ApcPromote();
+		if (apcPromote != apcNull) {
+			*pch++ = L'=';
+			*pch++ = mpapcch[apcPromote];
+		}
+	}
+
+FinishMove:
+	/* TODO checks and end of game situations */
+	*pch++ = 0;
+	return wstring(sz);
 }
 
 

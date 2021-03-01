@@ -219,6 +219,8 @@ public:
 
 	void InitFENPieces(const WCHAR*& szFEN);
 	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
+	void SkipToNonSpace(const WCHAR*& sz);
+	void SkipToSpace(const WCHAR*& sz);
 	int TpcUnusedPawn(CPC cpc) const;
 
 	void MakeMv(MV mv);
@@ -258,6 +260,7 @@ public:
 	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
 	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
 
+
 #ifndef NDEBUG
 	void Validate(void) const;
 #else
@@ -287,7 +290,9 @@ public:
 	BDG(void);
 	BDG(const BDG& BDG);
 	BDG(const WCHAR* szFEN);
+
 	void NewGame(void);
+
 	void InitFEN(const WCHAR* szFen);
 	void InitFENSideToMove(const WCHAR*& sz);
 	void InitFENCastle(const WCHAR*& sz);
@@ -299,6 +304,8 @@ public:
 	void MakeMv(MV mv);
 	void UndoLastMv(void);
 	void TestGameOver(const vector<MV>& rgmv);
+
+	wstring SzDecodeMv(MV mv) const;
 };
 
 

@@ -144,7 +144,7 @@ class SPAS : public SPA
 protected:
 	RCF rcfView;
 	RCF rcfCont;
-	const float dxyfScrollBarWidth = 20.0f;
+	const float dxyfScrollBarWidth = 15.0f;
 public:
 	SPAS(GA& ga) : SPA(ga) { }
 	
@@ -215,7 +215,7 @@ public:
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 	virtual void Draw(ID2D1RenderTarget* prt);
 	virtual void DrawContent(ID2D1RenderTarget* prt, const RCF& rcfCont);
-	void DrawMv(ID2D1RenderTarget* prt, RCF rcf, MV mv);
+	void DrawMv(ID2D1RenderTarget* prt, RCF rcf, const BDG& bdg, MV mv);
 	void DrawMoveNumber(ID2D1RenderTarget* prt, RCF rcf, int imv);
 	WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
 	virtual float DxWidth(void) const;
