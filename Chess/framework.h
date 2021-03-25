@@ -15,6 +15,7 @@
 #include <memory.h>
 #include <tchar.h>
 #include <commctrl.h>
+#include <string.h>
 
 
 #include <d2d1.h>
@@ -37,6 +38,7 @@ using namespace D2D1;
 #include <sstream>
 #include <vector>
 #include <iomanip>
+#include <fstream>
 #include <shlwapi.h>
 #include <d2d1_3.h>
 #include <libloaderapi.h>
@@ -52,6 +54,12 @@ class PTF : public D2D1_POINT_2F {
 public:
 	PTF() { x = 0.0f; y = 0.0f; }
 	PTF(float xf, float yf) { x = xf; y = yf; }
+
+	PTF& Offset(float dxf, float dyf) {
+		x += dxf;
+		y += dyf;
+		return *this;
+	}
 };
 
 class RCF : public D2D1_RECT_F {
@@ -65,27 +73,57 @@ public:
 		bottom = yfBot;
 	}
 
-	void Offset(float dxf, float dyf)
+	RCF& Offset(float dxf, float dyf)
 	{
 		left += dxf;
 		right += dxf;
 		top += dyf;
 		bottom += dyf;
+		return *this;
 	}
 
-	void Inflate(const PTF& ptf) 
+	RCF& Inflate(const PTF& ptf) 
 	{
 		left -= ptf.x;
 		right += ptf.x;
 		top -= ptf.y;
 		bottom += ptf.y;
+		return *this;
 	}
 
-	inline void Inflate(float dxf, float dyf) { Inflate(PTF(dxf, dyf)); }
+	inline RCF& Inflate(float dxf, float dyf) { return Inflate(PTF(dxf, dyf)); }
 
 	bool FContainsPtf(const PTF& ptf) const
 	{
 		return ptf.x >= left && ptf.x < right && ptf.y >= top && ptf.y < bottom;
+	}
+
+	float DxfWidth(void) const {
+		return right - left;
+	}
+
+	float DyfHeight(void) const {
+		return bottom - top;
+	}
+};
+
+class ELLF : public D2D1_ELLIPSE
+{
+public:
+	ELLF(void) { }
+	ELLF(const PTF& ptfCenter, const PTF& ptfRadius)
+	{
+		point.x = ptfCenter.x;
+		point.y = ptfCenter.y;
+		radiusX = ptfRadius.x;
+		radiusY = ptfRadius.y;
+	}
+
+	ELLF& Offset(float dxf, float dyf)
+	{
+		point.x += dxf;
+		point.y += dyf;
+		return *this;
 	}
 };
 

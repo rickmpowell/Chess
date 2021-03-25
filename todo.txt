@@ -1,0 +1,24 @@
+Change title panel to display players with color icons, and type of game (e.g., 5+3 Blitz, Correspondence)
+Implement clock timers
+Clocks should animate when ticking
+Clocks should turn red when close to timing out
+Implement loss by clock expiiration
+Implement queued move-ahead 
+Add information to MV so moves can be undone
+Implement move undo
+Implement click-from/click-to mouse move interface
+Implement circle annotations on mouse right click
+Implement arrow annotations on mouse right click/drag
+Optimize redraw on SPARGMV to only draw changes
+Implement selection in SPARGMV
+Implement mouse interface to change selection on SPARGMV
+Implement keyboard interface to change selection on SPARGMV
+Add UI for resigning
+Add UI for offering draw
+Implement dumb AI for computer play
+Scale text on board labels to size of board
+Better quality scaling on small boards
+Add shadows on screen panels
+Implement a debug screen panel and UI to show/hide it
+Add check/mate indicators on move list
+Modify move list to do real algebraic notation with full optimzations

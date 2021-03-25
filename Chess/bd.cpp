@@ -205,31 +205,46 @@ void BD::MakeMvSq(MV mv)
 	SQ sqFrom = mv.SqFrom();
 	SQ sqTo = mv.SqTo();
 	BYTE tpcFrom = mpsqtpc[sqFrom];
-	if (mpsqtpc[sqTo] != tpcEmpty)
-		SqFromTpc(mpsqtpc[sqTo]) = sqNil;
+	BYTE tpcTo = mpsqtpc[sqTo];
+
+	/* if we're taking a rook, we can't castle to that rook */
+
+	if (tpcTo != tpcEmpty) {
+		SqFromTpc(tpcTo) = sqNil;
+		switch (tpcTo & tpcPiece) {
+		case tpcKingRook: ClearCastle(CpcFromTpc(tpcTo), csKing); break;
+		case tpcQueenRook: ClearCastle(CpcFromTpc(tpcTo), csQueen); break;
+		default: break;
+		}
+	}
+
+	/* move the pieces */
+
 	mpsqtpc[sqFrom] = tpcEmpty;
 	mpsqtpc[sqTo] = tpcFrom;
 	SqFromTpc(tpcFrom) = sqTo;
+
 	switch (ApcFromTpc(tpcFrom)) {
 	case apcPawn:
-		/* save double-pawn moves for potential en passant */
-		if (((sqFrom.rank() ^ sqTo.rank()) & 0x03) == 0x02)
+		/* save double-pawn moves for potential en passant and return */
+		if (((sqFrom.rank() ^ sqTo.rank()) & 0x03) == 0x02) {
 			sqEnPassant = SQ((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file());
-		else {
-			if (sqTo == sqEnPassant) {
-				/* take en passant */
-				SQ sqTake = SQ(sqTo.rank() ^ 1, sqTo.file());
-				TPC tpcTake = mpsqtpc[sqTake];
-				mpsqtpc[sqTake] = tpcEmpty;
-				SqFromTpc(tpcTake) = sqNil;
-			}
-			else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
-				/* pawn promotion on last rank */
-				mpsqtpc[sqTo] = Tpc(tpcFrom & tpcPiece, CpcFromTpc(tpcFrom), mv.ApcPromote());
-			}
-			sqEnPassant = sqNil;
+			return;
 		}
+		
+		if (sqTo == sqEnPassant) {
+			/* take en passant */
+			SQ sqTake = SQ(sqTo.rank() ^ 1, sqTo.file());
+			TPC tpcTake = mpsqtpc[sqTake];
+			mpsqtpc[sqTake] = tpcEmpty;
+			SqFromTpc(tpcTake) = sqNil;
+		}
+		else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
+			/* pawn promotion on last rank */
+			mpsqtpc[sqTo] = Tpc(tpcFrom & tpcPiece, CpcFromTpc(tpcFrom), mv.ApcPromote());
+		} 
 		break;
+
 	case apcKing:
 		ClearCastle(CpcFromTpc(tpcFrom), csKing|csQueen);
 		if (sqFrom.file() - sqTo.file() > 1 || sqFrom.file() - sqTo.file() < -1) {
@@ -251,12 +266,16 @@ void BD::MakeMvSq(MV mv)
 			SqFromTpc(tpcRook) = sqRookTo;
 		}
 		break;
+
 	case apcRook:
 		ClearCastle(CpcFromTpc(tpcFrom), (tpcFrom & tpcPiece) == tpcQueenRook ? csQueen : csKing);
 		break;
+
 	default:
 		break;
 	}
+
+	sqEnPassant = sqNil;
 }
 
 
@@ -276,11 +295,12 @@ void BD::UndoLastMv(MV mv)
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove) const
+void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 {
 	Validate();
 	GenRgmvColor(rgmv, cpcMove);
-	RemoveInCheckMoves(rgmv, cpcMove);
+	if (rmchk == RMCHK::Remove)
+		RemoveInCheckMoves(rgmv, cpcMove);
 }
 
 
@@ -797,9 +817,15 @@ void BDG::InitFENFullmoveCounter(const WCHAR*& sz)
 }
 
 
-void BDG::GenRgmv(vector<MV>& rgmv) const
+/*	BDG::GenRgmv
+ *
+ *	Generates the legal moves for the current player who has the move.
+ *	Optionally doesn't bother to remove moves that would leave the 
+ *	king in check.
+ */
+void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
 {
-	BD::GenRgmv(rgmv, cpcToMove);
+	BD::GenRgmv(rgmv, cpcToMove, rmchk);
 }
 
 
@@ -838,92 +864,6 @@ void BDG::TestGameOver(const vector<MV>& rgmv)
 
 
 
-WCHAR mpapcch[] = { L' ', L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
-
-wstring BDG::SzDecodeMv(MV mv) const
-{
-	vector<MV> rgmv;
-	GenRgmv(rgmv);
-
-	/* if destination square is unique, just include the destination square */
-	SQ sqFrom = mv.SqFrom();
-	APC apc = ApcFromSq(sqFrom);
-	SQ sqTo = mv.SqTo();
-	SQ sqCapture = sqTo;
-
-	WCHAR sz[16];
-	WCHAR* pch = sz;
-
-	switch (apc) {
-	case apcPawn: 
-		if (sqTo == sqEnPassant)
-			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
-		break;
-
-	case apcKing:
-		if (sqFrom.file() == fileKing) {
-			if (sqTo.file() == fileKingKnight)
-				goto FinishCastle;
-			if (sqTo.file() == fileQueenBishop) {
-				*pch++ = L'O';
-				*pch++ = L'\x2013';
-FinishCastle:
-				*pch++ = L'O';
-				*pch++ = L'\x2013';
-				*pch = L'O';
-				goto FinishMove;
-			}
-		}
-		break;
-	case apcKnight: 
-		break;
-	case apcBishop: 
-		break;
-	case apcRook: 
-		break;
-	case apcQueen: 
-		break;
-	}
-
-	*pch++ = mpapcch[apc];
-	for (MV mvOther : rgmv) {
-		if (sqTo != mvOther.SqTo() || sqFrom == mvOther.SqFrom())
-			continue;
-		if (ApcFromSq(mvOther.SqFrom()) == apc) {
-			/* there are two matching pieces that can move to the
-			   destination square */
-			*pch++ = L'a' + sqFrom.file();
-			*pch++ = L'1' + sqFrom.rank();
-			break;
-		}
-	}
-	/* if we fall out, there is no ambiguity with the apc moving to the
-	   destination square */
-	*pch++ = mpsqtpc[sqCapture] != tpcEmpty ? L'\x00d7' : L'\x2013';
-	*pch++ = L'a' + sqTo.file();
-	*pch++ = L'1' + sqTo.rank();
-
-	if (sqTo == sqEnPassant) {
-		*pch++ = L' ';
-		*pch++ = L'e';
-		*pch++ = L'.';
-		*pch++ = L'p';
-		*pch++ = L'.';
-	}
-	{
-		APC apcPromote = mv.ApcPromote();
-		if (apcPromote != apcNull) {
-			*pch++ = L'=';
-			*pch++ = mpapcch[apcPromote];
-		}
-	}
-
-FinishMove:
-	/* TODO checks and end of game situations */
-	*pch++ = 0;
-	return wstring(sz);
-}
-
 
 /*
  *
@@ -940,6 +880,7 @@ ID2D1SolidColorBrush* SPABD::pbrBlack;
 ID2D1SolidColorBrush* SPABD::pbrAnnotation;
 ID2D1SolidColorBrush* SPABD::pbrHilite;
 IDWriteTextFormat* SPABD::ptfLabel;
+IDWriteTextFormat* SPABD::ptfControls;
 IDWriteTextFormat* SPABD::ptfGameState;
 ID2D1Bitmap* SPABD::pbmpPieces;
 ID2D1PathGeometry* SPABD::pgeomCross;
@@ -998,6 +939,10 @@ void SPABD::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFa
 		DWRITE_FONT_WEIGHT_EXTRA_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		32.0f, L"",
 		&ptfGameState);
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		24.0f, L"",
+		&ptfControls);
 
 	/* bitmap */
 
@@ -1065,6 +1010,7 @@ void SPABD::DiscardRsrc(void)
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
 	SafeRelease(&ptfLabel);
+	SafeRelease(&ptfControls);
 	SafeRelease(&ptfGameState);
 	SafeRelease(&pbmpPieces);
 	SafeRelease(&pgeomCross);
@@ -1076,9 +1022,10 @@ void SPABD::DiscardRsrc(void)
  *
  *	Constructor for the board screen panel.
  */
-SPABD::SPABD(GA& ga) : SPA(ga), phtDragInit(NULL), phtCur(NULL), sqHover(sqNil),
-	tpcPointOfView(tpcWhite),
-	dxyfSquare(72.0f), dxyfBorder(2.0f), dxyfMargin(45.0f),
+SPABD::SPABD(GA& ga) : SPA(ga), phtDragInit(NULL), phtCur(NULL), sqHover(sqNil), ictlHover(-1),
+	cpcPointOfView(cpcWhite), 
+	dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
+	angle(0.0f),
 	dyfLabel(18.0f)	// TODO: this is a font attribute
 {
 }
@@ -1100,9 +1047,11 @@ SPABD::~SPABD(void)
 void SPABD::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
 	SPA::Layout(ptf, pspa, ll);
-	rcfSquares = rcfBounds;
+	dxyfMargin = (rcfBounds.bottom-rcfBounds.top) / 12.0f;
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
+	rcfSquares = RcfBounds();
 	rcfSquares.Inflate(-dxyf, -dxyf);
+	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
 }
 
 
@@ -1112,7 +1061,7 @@ void SPABD::Layout(const PTF& ptf, SPA* pspa, LL ll)
  */
 float SPABD::DxWidth(void) const
 {
-	return 2.0f * dxyfMargin + 6.0f * dxyfBorder + 8.0f * dxyfSquare;
+	return (ga.rcfBounds.bottom - ga.rcfBounds.top - 10.0f - 50.0f);
 }
 
 
@@ -1132,7 +1081,7 @@ float SPABD::DyHeight(void) const
  */
 void SPABD::NewGame(void)
 {
-	ga.bdg.GenRgmv(rgmvDrag);
+	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 }
 
 
@@ -1140,11 +1089,13 @@ void SPABD::NewGame(void)
  *
  *	Makes a move on the board in the screen panel
  */
-void SPABD::MakeMv(MV mv)
+void SPABD::MakeMv(MV mv, bool fRedraw)
 {
 	ga.bdg.MakeMv(mv);
-	ga.bdg.GenRgmv(rgmvDrag);
+	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	ga.bdg.TestGameOver(rgmvDrag);
+	if (fRedraw)
+		Redraw();
 }
 
 
@@ -1159,17 +1110,21 @@ void SPABD::MakeMv(MV mv)
  *	in response to user input, which simplifies drawing quite a bit. We
  *	just handle all dragging drawing in here.
  */
-void SPABD::Draw(ID2D1RenderTarget* prt)
+void SPABD::Draw(void)
 {
-	assert(prt != NULL);
-	DrawMargins(prt);
-	DrawLabels(prt);
-	DrawSquares(prt);
-	DrawPieces(prt);
-	DrawHover(prt);
-	DrawHilites(prt);
-	DrawAnnotations(prt);
-	DrawGameState(prt);
+	ID2D1RenderTarget* prt = PrtGet();
+	prt->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
+	DrawMargins();
+	DrawLabels();
+	DrawSquares();
+	DrawPieces();
+	DrawHover();
+	DrawHilites();
+	DrawAnnotations();
+	DrawGameState();
+	DrawControls();
+	prt->SetTransform(Matrix3x2F::Identity());
+
 }
 
 
@@ -1178,15 +1133,14 @@ void SPABD::Draw(ID2D1RenderTarget* prt)
  *	For the green and cream board, the margins are the cream color
  *	with a thin green line just outside the square grid.
  */
-void SPABD::DrawMargins(ID2D1RenderTarget* prt)
+void SPABD::DrawMargins(void)
 {
-	assert(prt != NULL);
-	RCF rcf = rcfBounds;
-	prt->FillRectangle(&rcf, pbrLight);
+	RCF rcf = RcfBounds();
+	FillRcf(rcf, pbrLight);
 	rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
-	prt->FillRectangle(&rcf, pbrDark);
+	FillRcf(rcf, pbrDark);
 	rcf.Inflate(PTF(-2.0f * dxyfBorder, -2.0f * dxyfBorder));
-	prt->FillRectangle(&rcf, pbrLight);
+	FillRcf(rcf, pbrLight);
 }
 
 
@@ -1196,14 +1150,11 @@ void SPABD::DrawMargins(ID2D1RenderTarget* prt)
  *	has already been used to fill the board area, so all we need to
  *	do is draw the dark colors on top 
  */
-void SPABD::DrawSquares(ID2D1RenderTarget* prt)
+void SPABD::DrawSquares(void)
 {
-	for (SQ sq = 0; sq < sqMax; sq++) {
-		if ((sq.rank()+sq.file()) % 2 == 0) {
-			RCF rcf = RcfFromSq(sq);
-			prt->FillRectangle(&rcf, pbrDark);
-		}
-	}
+	for (SQ sq = 0; sq < sqMax; sq++)
+		if ((sq.rank()+sq.file()) % 2 == 0)
+			FillRcf(RcfFromSq(sq), pbrDark);
 }
 
 
@@ -1212,10 +1163,10 @@ void SPABD::DrawSquares(ID2D1RenderTarget* prt)
  *	Draws the square labels in the margin area of the green and cream
  *	board. 
  */
-void SPABD::DrawLabels(ID2D1RenderTarget* prt)
+void SPABD::DrawLabels(void)
 {
-	DrawFileLabels(prt);
-	DrawRankLabels(prt);
+	DrawFileLabels();
+	DrawRankLabels();
 }
 
 
@@ -1223,19 +1174,21 @@ void SPABD::DrawLabels(ID2D1RenderTarget* prt)
  *
  *	Draws the file letter labels along the bottom of the board.
  */
-void SPABD::DrawFileLabels(ID2D1RenderTarget* prt)
+void SPABD::DrawFileLabels(void)
 {
-	TCHAR chLabel;
-	chLabel = 'a';
-	RCF rcf(rcfSquares.left, rcfSquares.bottom + 3.0f * dxyfBorder, 0, rcfBounds.bottom);
+	TCHAR szLabel[2];
+	szLabel[0] = L'a';
+	szLabel[1] = 0;
+	RCF rcf;
+	rcf.top = rcfSquares.bottom + 3.0f * dxyfBorder + dxyfBorder;
+	rcf.bottom = rcf.top + dyfLabel;
 	ptfLabel->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	for (int file = 0; file < fileMax; file++) {
-		rcf.right = rcf.left + dxyfSquare;
-		prt->DrawText(&chLabel, 1, ptfLabel,
-			RectF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
-			pbrDark, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
-		rcf.left = rcf.right;
-		chLabel++;
+		RCF rcfT(RcfFromSq(SQ(0, file)));
+		rcf.left = rcfT.left;
+		rcf.right = rcfT.right;
+		DrawSz(wstring(szLabel), ptfLabel, rcf, pbrDark);
+		szLabel[0]++;
 	}
 }
 
@@ -1244,20 +1197,22 @@ void SPABD::DrawFileLabels(ID2D1RenderTarget* prt)
  *
  *	Draws the numerical rank labels along the side of the board
  */
-void SPABD::DrawRankLabels(ID2D1RenderTarget* prt) 
+void SPABD::DrawRankLabels(void) 
 {
-	RCF rcf(rcfBounds.left, rcfSquares.top, rcfBounds.left+dxyfMargin, 0);
-	TCHAR chLabel = tpcPointOfView == tpcBlack ? '1' : '8';
+	RCF rcf(dxyfMargin/2, rcfSquares.top, dxyfMargin, 0);
+	TCHAR szLabel[2];
+	szLabel[0] = cpcPointOfView == cpcBlack ? '1' : '8';
+	szLabel[1] = 0;
 	for (int rank = 0; rank < rankMax; rank++) {
 		rcf.bottom = rcf.top + dxyfSquare;
-		prt->DrawText(&chLabel, 1, ptfLabel,
-			RectF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
-			pbrDark, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+		DrawSz(wstring(szLabel), ptfLabel, 
+			RCF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
+			pbrDark);
 		rcf.top = rcf.bottom;
-		if (tpcPointOfView == tpcBlack)
-			chLabel++;
+		if (cpcPointOfView == cpcBlack)
+			szLabel[0]++;
 		else
-			chLabel--;
+			szLabel[0]--;
 	}
 }
 
@@ -1266,7 +1221,7 @@ void SPABD::DrawRankLabels(ID2D1RenderTarget* prt)
  *
  *	When the game is over, this displays the game state on the board
  */
-void SPABD::DrawGameState(ID2D1RenderTarget* prt)
+void SPABD::DrawGameState(void)
 {
 	if (ga.bdg.gs == GS::Playing)
 		return;
@@ -1278,9 +1233,9 @@ void SPABD::DrawGameState(ID2D1RenderTarget* prt)
 	else {
 		assert(false);
 	}
-	prt->DrawText(szState, lstrlenW(szState), ptfGameState,
-		RectF(rcfBounds.left, rcfBounds.bottom - 32.0f, rcfBounds.right, rcfBounds.bottom),
-		pbrDark, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+	RCF rcf = RcfBounds();
+	rcf.top = rcf.bottom - 40.0f;
+	DrawSz(szState, ptfGameState, rcf, pbrDark);
 }
 
 
@@ -1291,13 +1246,13 @@ void SPABD::DrawGameState(ID2D1RenderTarget* prt)
 RCF SPABD::RcfFromSq(SQ sq) const
 {
 	assert(sq >= 0 && sq < sqMax);
-	int rank = sq.rank();
-	int file = sq.file();
-	RCF rcf;
-	rcf.left = rcfSquares.left + dxyfSquare * file;
-	rcf.right = rcf.left + dxyfSquare;
-	rcf.top = rcfSquares.top + dxyfSquare * (rankMax - rank - 1);
-	rcf.bottom = rcf.top + dxyfSquare;
+	int rank = sq.rank(), file = sq.file();
+	if (cpcPointOfView == cpcWhite)
+		rank = rankMax - 1 - rank;
+	else
+		file = fileMax - 1 - file;
+	RCF rcf(0, 0, dxyfSquare, dxyfSquare);
+	rcf.Offset(rcfSquares.left + dxyfSquare * file, rcfSquares.top + dxyfSquare * rank);
 	return rcf;
 }
 
@@ -1309,29 +1264,29 @@ RCF SPABD::RcfFromSq(SQ sq) const
  * 
  *	We draw a circle over every square you can move to.
  */
-void SPABD::DrawHover(ID2D1RenderTarget* prt)
+void SPABD::DrawHover(void)
 {
-	assert(prt != NULL);
 	if (sqHover == sqNil)
 		return;
-	pbrBlack->SetOpacity(0.4f);
+	pbrBlack->SetOpacity(0.33f);
 	for (MV mv : rgmvDrag) {
 		if (mv.SqFrom() != sqHover)
 			continue;
 		RCF rcf = RcfFromSq(mv.SqTo());
 		if (ga.bdg.mpsqtpc[mv.SqTo()] == tpcEmpty) {
-			D2D1_ELLIPSE ellipse;
-			ellipse.point.x = (rcf.right + rcf.left) / 2;
-			ellipse.point.y = (rcf.top + rcf.bottom) / 2;
-			ellipse.radiusX = dxyfSquare / 5;
-			ellipse.radiusY = dxyfSquare / 5;
-			prt->FillEllipse(&ellipse, pbrBlack);
+			ELLF ellf(PTF((rcf.right + rcf.left) / 2, (rcf.top + rcf.bottom) / 2),
+					PTF(dxyfSquare / 5, dxyfSquare / 5));
+			FillEllf(ellf, pbrBlack);
 		}
 		else {
+			ID2D1RenderTarget* prt = PrtGet();
 			prt->SetTransform(
 				Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) * 
-				Matrix3x2F::Scale(SizeF(dxyfSquare/(2.0f*dxyfCrossFull), dxyfSquare/(2.0f*dxyfCrossFull)), PTF(0.0, 0.0)) *
-				Matrix3x2F::Translation(SizeF((rcf.right+rcf.left)/2, (rcf.top+rcf.bottom)/2)));
+				Matrix3x2F::Scale(SizeF(dxyfSquare/(2.0f*dxyfCrossFull), 
+					                    dxyfSquare/(2.0f*dxyfCrossFull)), 
+					              PTF(0.0, 0.0)) *
+				Matrix3x2F::Translation(SizeF(rcfBounds.left+(rcf.right+rcf.left)/2, 
+					                          rcfBounds.top+(rcf.top+rcf.bottom)/2)));
 			prt->FillGeometry(pgeomCross, pbrBlack);
 			prt->SetTransform(Matrix3x2F::Identity());
 		}
@@ -1348,15 +1303,14 @@ void SPABD::DrawHover(ID2D1RenderTarget* prt)
  *	Direct2D is fast enough for us to do full screen redraws on just about
  *	any user-initiated change, so there isn't much point in optimizing.
  */
-void SPABD::DrawPieces(ID2D1RenderTarget* prt)
+void SPABD::DrawPieces(void)
 {
-	assert(prt != NULL);
 	for (SQ sq = 0; sq < sqMax; sq++) {
 		float opacity = (phtDragInit && phtDragInit->sq == sq) ? 0.2f : 1.0f;
-		DrawPc(prt, RcfFromSq(sq), opacity, ga.bdg.mpsqtpc[sq]);
+		DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqtpc[sq]);
 	}
 	if (phtDragInit && phtCur)
-		DrawDragPc(prt, rcfDragPc);
+		DrawDragPc(rcfDragPc);
 }
 
 
@@ -1366,10 +1320,10 @@ void SPABD::DrawPieces(ID2D1RenderTarget* prt)
  *	phtDragInit, on the screen, in the location at rcf. rcf should
  *	track the mouse location.
  */
-void SPABD::DrawDragPc(ID2D1RenderTarget* prt, const RCF& rcf)
+void SPABD::DrawDragPc(const RCF& rcf)
 {
 	assert(phtDragInit);
-	DrawPc(prt, rcf, 1.0f, ga.bdg.mpsqtpc[phtDragInit->sq]);
+	DrawPc(rcf, 1.0f, ga.bdg.mpsqtpc[phtDragInit->sq]);
 }
 
 
@@ -1379,15 +1333,11 @@ void SPABD::DrawDragPc(ID2D1RenderTarget* prt, const RCF& rcf)
  */
 RCF SPABD::RcfGetDrag(void)
 {
+	RCF rcfInit = RcfFromSq(phtDragInit->sq);
 	RCF rcf(0, 0, dxyfSquare, dxyfSquare);
-	float xfSquareInit = rcfSquares.left + 
-		dxyfSquare * phtDragInit->sq.file();
-	float yfSquareInit = rcfSquares.top + 
-		dxyfSquare * (rankMax - phtDragInit->sq.rank() - 1);
-	float dxfInit = phtDragInit->ptf.x - xfSquareInit;
-	float dyfInit = phtDragInit->ptf.y - yfSquareInit;
-	rcf.Offset(phtCur->ptf.x - dxfInit, phtCur->ptf.y - dyfInit);
-	return rcf;
+	float dxfInit = phtDragInit->ptf.x - rcfInit.left;
+	float dyfInit = phtDragInit->ptf.y - rcfInit.top;
+	return rcf.Offset(phtCur->ptf.x - dxfInit, phtCur->ptf.y - dyfInit);
 }
 
 
@@ -1395,9 +1345,9 @@ RCF SPABD::RcfGetDrag(void)
  *
  *	Draws the chess piece on the square at rcf.
  */
-void SPABD::DrawPc(ID2D1RenderTarget* prt, const RCF& rcf, float opacity, BYTE tpc)
+void SPABD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 {
-	/* the piece png is oriented like:
+	/* the piece png has the 12 different chess pieces oriented like:
 	 *   WK WQ WN WR WB WP
 	 *   BK BQ BN BR BB BP
 	 */
@@ -1407,36 +1357,75 @@ void SPABD::DrawPc(ID2D1RenderTarget* prt, const RCF& rcf, float opacity, BYTE t
 	float dyfPiece = ptf.height / 2.0f;
 	float xfPiece = mpapcxBitmap[ApcFromTpc(tpc)] * dxfPiece;
 	float yfPiece = CpcFromTpc(tpc) * dyfPiece;
-	prt->DrawBitmap(pbmpPieces, rcf, opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
-			RectF(xfPiece, yfPiece, xfPiece + dxfPiece, yfPiece + dyfPiece));
+	DrawBmp(rcf, pbmpPieces, RCF(xfPiece, yfPiece, xfPiece + dxfPiece, yfPiece + dyfPiece), opacity);
 }
 
 
-void SPABD::DrawHilites(ID2D1RenderTarget* prt)
+void SPABD::DrawHilites(void)
 {
 }
 
 
-void SPABD::DrawAnnotations(ID2D1RenderTarget* prt)
+void SPABD::DrawAnnotations(void)
 {
 	pbrAnnotation->SetOpacity(0.5f);
 	for (ANO ano : rgano) {
 		if (ano.sqTo.FIsNil())
-			DrawSquareAnnotation(prt, ano.sqFrom);
+			DrawSquareAnnotation(ano.sqFrom);
 		else
-			DrawArrowAnnotation(prt, ano.sqFrom, ano.sqTo);
+			DrawArrowAnnotation(ano.sqFrom, ano.sqTo);
 	}
 	pbrAnnotation->SetOpacity(1.0f);
 }
 
 
-void SPABD::DrawSquareAnnotation(ID2D1RenderTarget* prt, SQ sq)
+void SPABD::DrawSquareAnnotation(SQ sq)
 {
 }
 
 
-void SPABD::DrawArrowAnnotation(ID2D1RenderTarget* prt, SQ sqFrom, SQ sqTo)
+void SPABD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 {
+}
+
+
+/*	SPABD::DrawControls
+ *	
+ *	Draws controls for manipulating the board
+ */
+void SPABD::DrawControls(void)
+{
+	ptfControls->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	ID2D1Brush* pbr = pbrText;
+	if (phtCur && phtCur->htt == HTT::FlipBoard)
+		pbr = pbrTextSel;
+	else if (ictlHover != -1)
+		pbr = pbrBlack;
+	DrawSz(wstring(L"\x2b6f"), ptfControls, RcfControl(0), pbr);
+}
+
+
+/*	SPABD::RcfControl
+ *
+ *	Returns the local coordinates of the ictl control on the playing
+ *	board.
+ */
+RCF SPABD::RcfControl(int ictl) const
+{
+	RCF rcf(0, 0, 35.0f, 35.0f);
+	rcf.Offset(12.0f + ictl * 35.0f, rcfBounds.DyfHeight() - 35.0f);
+	return rcf;
+}
+
+
+void SPABD::FlipBoard(CPC cpcNew)
+{
+	ID2D1RenderTarget* prt = PrtGet();
+	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
+		ga.Redraw(true);
+	angle = 0.0f;
+	cpcPointOfView = cpcNew;
+	ga.Redraw(true);
 }
 
 
@@ -1448,20 +1437,29 @@ void SPABD::DrawArrowAnnotation(ID2D1RenderTarget* prt, SQ sqFrom, SQ sqTo)
  *	If we return non-null, we are guaranteed to return a HTBD hit test 
  *	structure from here, which means other mouse tracking notifications
  *	can safely cast to a HTBD to get access to board hit testing info.
+ * 
+ *	The point is in global coordinates.
  */
-HT* SPABD::PhtHitTest(const PTF& ptf)
+HT* SPABD::PhtHitTest(PTF ptf)
 {
 	if (!rcfBounds.FContainsPtf(ptf)) {
 		if (phtDragInit)
-			return new HTBD(ptf, HTT::Miss, this, sqMax);
+			return new HTBD(ptf, HTT::Miss, this, sqNil);
 		return NULL;
 	}
-	if (!rcfSquares.FContainsPtf(ptf))
+	ptf.x -= rcfBounds.left;
+	ptf.y -= rcfBounds.top;
+	if (!rcfSquares.FContainsPtf(ptf)) {
+		if (RcfControl(0).FContainsPtf(ptf))
+			return new HTBD(ptf, HTT::FlipBoard, this, sqNil);
 		return new HTBD(ptf, HTT::Static, this, sqMax);
+	}
 	int rank = (int)((ptf.y - rcfSquares.top) / dxyfSquare);
 	int file = (int)((ptf.x - rcfSquares.left) / dxyfSquare);
-	if (tpcPointOfView == tpcWhite)
-		rank = rankMax - rank - 1;
+	if (cpcPointOfView == cpcWhite)
+		rank = rankMax - 1 - rank;
+	else
+		file = fileMax - 1 - file;
 	SQ sq = SQ(rank, file);
 	if (ga.bdg.mpsqtpc[sq] == tpcEmpty)
 		return new HTBD(ptf, HTT::EmptyPc, this, sq);
@@ -1490,20 +1488,29 @@ bool SPABD::FMoveablePc(SQ sq)
 }
 
 
+/*	SPABD::StartLeftDrag
+ *
+ *	Starts the mouse left button down drag operation on the board panel.
+ */
 void SPABD::StartLeftDrag(HT* pht)
 {
 	sqHover = sqNil;
-	if (pht->htt != HTT::MoveablePc) {
+
+	switch (pht->htt) {
+	case HTT::MoveablePc:
+	case HTT::FlipBoard:
+		assert(phtDragInit == NULL);
+		assert(phtCur == NULL);
+		phtDragInit = (HTBD*)pht->PhtClone();
+		phtCur = (HTBD*)pht->PhtClone();
+		if (pht->htt == HTT::MoveablePc)
+			rcfDragPc = RcfGetDrag();
+		break;
+	default:
 		MessageBeep(0);
 		return;
 	}
-	assert(phtDragInit == NULL);
-	assert(phtCur == NULL);
 	
-	phtDragInit = (HTBD*)pht->PhtClone();
-	phtCur = (HTBD*)pht->PhtClone();
-	
-	rcfDragPc = RcfGetDrag();
 	Redraw();
 }
 
@@ -1513,17 +1520,29 @@ void SPABD::EndLeftDrag(HT* pht)
 	if (phtDragInit == NULL)
 		return;
 	HTBD* phtbd = (HTBD*)pht;
-	if (phtbd && phtbd->sq < sqMax) {
-		/* find the to/from square in the move list that matches
-		 * this move. We do this to pick up the correct special
-		 * bit for moves like en passant and castle */
-		for (MV mv : rgmvDrag) {
-			if (mv.SqFrom() == phtDragInit->sq && mv.SqTo() == phtbd->sq) {
-				ga.MakeMv(mv);
+	if (phtbd) {
+		switch (phtDragInit->htt) {
+		case HTT::MoveablePc:
+			if (phtbd->sq == sqNil)
 				break;
+			/* find the to/from square in the move list  */
+			for (MV mv : rgmvDrag) {
+				if (mv.SqFrom() == phtDragInit->sq && mv.SqTo() == phtbd->sq) {
+					ga.MakeMv(mv, true);
+					break;
+				}
 			}
+			break;
+		case HTT::FlipBoard:
+			FlipBoard(cpcPointOfView ^ 1);
+			break;
+		default:
+			break;
 		}
 	}
+
+	/* clean up drag */
+
 	delete phtDragInit;
 	phtDragInit = NULL;
 	if (phtCur)
@@ -1553,8 +1572,14 @@ void SPABD::LeftDrag(HT* pht)
 		delete phtCur;
 	phtCur = (HTBD*)pht->PhtClone();
 	
-	InvalOutsideRcf(rcfDragPc);
-	rcfDragPc = RcfGetDrag();
+	if (pht->htt == HTT::FlipBoard) {
+		PTF ptf = pht->ptf;
+		ptf.Offset(-rcfBounds.left, -rcfBounds.top);
+	}
+	else {
+		InvalOutsideRcf(rcfDragPc);
+		rcfDragPc = RcfGetDrag();
+	}
 	Redraw();
 }
 
@@ -1571,10 +1596,18 @@ void SPABD::MouseHover(HT* pht)
 	if (pht == NULL)
 		return;
 	HTBD* phtbd = (HTBD*)pht;
-	if (phtbd->htt != HTT::MoveablePc)
-		HiliteLegalMoves(sqNil);
-	else
+	switch (phtbd->htt) {
+	case HTT::MoveablePc:
 		HiliteLegalMoves(phtbd->sq);
+		break;
+	case HTT::FlipBoard:
+		HiliteControl(0);
+		break;
+	default:
+		HiliteControl(-1);
+		HiliteLegalMoves(sqNil);
+		break;
+	}
 }
 
 
@@ -1588,12 +1621,20 @@ void SPABD::HiliteLegalMoves(SQ sq)
 {
 	if (sq == sqHover)
 		return;
+	ictlHover = -1;
 	sqHover = sq;
 	Redraw();
 }
 
 
-
+void SPABD::HiliteControl(int ictl)
+{
+	if (ictl == ictlHover)
+		return;
+	sqHover = sqNil;
+	ictlHover = ictl;
+	Redraw();
+}
 
 
 /*	SPABD::InvalOutsideRcf
@@ -1604,7 +1645,7 @@ void SPABD::HiliteLegalMoves(SQ sq)
  *	we handle these outside parts by just invalidating the area so
  *	they'll get picked off eventually by normal update paints.
  */
-void SPABD::InvalOutsideRcf(const RCF& rcf)
+void SPABD::InvalOutsideRcf(RCF rcf) const
 {
 	InvalRectF(rcf.left, rcf.top, rcf.right, rcfBounds.top);
 	InvalRectF(rcf.left, rcfBounds.bottom, rcf.right, rcf.bottom);
@@ -1619,11 +1660,14 @@ void SPABD::InvalOutsideRcf(const RCF& rcf)
  *	window. Used to force redraws of areas outside the board
  *	on the screen. Does nothing if the rectangle is empty.
  */
-void SPABD::InvalRectF(float left, float top, float right, float bottom)
+void SPABD::InvalRectF(float left, float top, float right, float bottom) const
 {
 	if (left >= right || top >= bottom)
 		return;
 	RECT rc;
-	::SetRect(&rc, (int)left, (int)top, (int)right, (int)bottom);
+	::SetRect(&rc, (int)(left-rcfBounds.left), 
+				(int)(top-rcfBounds.top), 
+				(int)(right-rcfBounds.left), 
+				(int)(bottom-rcfBounds.bottom));
 	::InvalidateRect(ga.app.hwnd, &rc, false);
 }

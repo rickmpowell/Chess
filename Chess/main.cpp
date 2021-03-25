@@ -102,18 +102,19 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), prth
         throw 1;
 
     pga = new GA(*this);
-    pga->SetPl(tpcWhite, new PL(L"Squub"));
-    pga->SetPl(tpcBlack, new PL(L"Frapija"));
+    pga->SetPl(cpcWhite, new PL(L"Squub"));
+    pga->SetPl(cpcBlack, new PL(L"Frapija"));
     pga->NewGame();
 
     /* create the main window */
 
     sw = SW_MAXIMIZE;
     TCHAR szTitle[100];
-    if (!LoadString(hinst, idsApp, szTitle, CArray(szTitle)))
+    if (!::LoadString(hinst, idsApp, szTitle, CArray(szTitle)))
         throw 1;
-    hwnd = CreateWindowW(szWndClassMain, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hinst, this);
+    hwnd = ::CreateWindowW(szWndClassMain, szTitle, WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0,
+        NULL, NULL, hinst, this);
     if (hwnd == NULL)
         throw 1;    // BUG: cleanup haccel
     ShowWindow(hwnd, sw);
@@ -169,6 +170,7 @@ bool APP::FSizeEnv(int dx, int dy)
     bool fChange = true;
     CreateRsrc();
     assert(prth != NULL);
+    pga->Resize(dx, dy);
     return fChange;
 }
 
@@ -207,10 +209,10 @@ void APP::OnPaint(void)
     CreateRsrc();
     prth->BeginDraw();
     prth->SetTransform(Matrix3x2F::Identity());
-    prth->Clear(ColorF(ColorF::LightGray));
+    prth->Clear(ColorF(0.5f, 0.5f, 0.5f));
 
     if (pga)
-        pga->Draw(prth);
+        pga->Draw();
 
     if (prth->EndDraw() == D2DERR_RECREATE_TARGET)
         DiscardRsrc();
@@ -274,6 +276,7 @@ bool APP::OnCommand(int cmd)
 int APP::CmdNewGame(void)
 {
     pga->NewGame();
+    pga->Redraw(false);
     return 1;
 }
 

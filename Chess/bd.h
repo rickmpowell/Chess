@@ -99,10 +99,10 @@ private:
 	friend class MV;
 	BYTE grf;
 public:
-	SQ(void) : grf(0xff) { }
-	SQ(BYTE grf) : grf(grf) { }
-	SQ(int rank, int file) { grf = (rank << 3) | file; }
-	SQ(const SQ& sq) { grf = sq.grf; }
+	inline SQ(void) : grf(0xff) { }
+	inline SQ(BYTE grf) : grf(grf) { }
+	inline SQ(int rank, int file) { grf = (rank << 3) | file; }
+	inline SQ(const SQ& sq) { grf = sq.grf; }
 	inline int file(void) const { return grf & 0x07; }
 	inline int rank(void) const { return (grf >> 3) & 0x07; }
 	inline bool FIsNil(void) const { return grf == 0xff; }
@@ -204,6 +204,11 @@ enum {
  * 
  */
 
+enum class RMCHK {	// GenRgmv Option to optionally remove checks
+	Remove,
+	NoRemove
+};
+
 class BD
 {
 public:
@@ -228,7 +233,7 @@ public:
 	void MakeMvSq(MV mv);
 	void ComputeAttacked(CPC cpcMove);
 
-	void GenRgmv(vector<MV>& rgmv, CPC cpcMove) const;
+	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove) const;
 	void GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const;
@@ -269,6 +274,42 @@ public:
 };
 
 
+
+enum class TKMV {
+	Error,
+	End,
+	
+	King,
+	Queen,
+	Rook,
+	Bishop,
+	Knight,
+	Pawn,
+
+	Square,
+	File,
+	Rank,
+
+	Take,
+	To,
+	
+	Promote,
+	
+	Check,
+	Mate,
+	EnPassant,
+	
+	CastleKing,
+	CastleQueen,
+
+	WhiteWins,
+	BlackWins,
+	Draw,
+	InProgress
+};
+
+
+
 /*
  *
  *	BDG class
@@ -300,12 +341,21 @@ public:
 	void InitFENHalfmoveClock(const WCHAR*& sz);
 	void InitFENFullmoveCounter(const WCHAR*& sz);
 
-	void GenRgmv(vector<MV>& rgmv) const;
+	void GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const;
 	void MakeMv(MV mv);
 	void UndoLastMv(void);
 	void TestGameOver(const vector<MV>& rgmv);
 
 	wstring SzDecodeMv(MV mv) const;
+	int ParseMv(const char*& pch, MV& mv) const;
+	int ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const;
+	int ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
+	int ParseMvSuffixes(MV& mv, const char*& pch) const;
+	int ParseFileMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
+	int ParseRankMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
+	bool FMvMatchPieceTo(const vector<MV>& rgmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
+	bool FMvMatchFromTo(const vector<MV>& rgmv, SQ sqFrom, SQ sqTo, MV& mv) const;
+	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 };
 
 
@@ -341,6 +391,7 @@ public:
  * 
  */
 
+
 class HTBD;
 
 class SPABD : public SPA
@@ -352,18 +403,21 @@ public:
 	static ID2D1SolidColorBrush* pbrAnnotation;
 	static ID2D1SolidColorBrush* pbrHilite;
 	static IDWriteTextFormat* ptfLabel;
+	static IDWriteTextFormat* ptfControls;
 	static IDWriteTextFormat* ptfGameState;
 	static ID2D1Bitmap* pbmpPieces;
 	static ID2D1PathGeometry* pgeomCross;
 	static ID2D1PathGeometry* pgeomArrowHead;
 
-	TPC tpcPointOfView;
+	CPC cpcPointOfView;
 	RCF rcfSquares;
 	float dxyfSquare, dxyfBorder, dxyfMargin;
 	float dyfLabel;
+	float angle;	// angle for rotation animation
 	HTBD* phtDragInit;
 	HTBD* phtCur;
 	SQ sqHover;
+	int ictlHover;
 	RCF rcfDragPc;	// rectangle the dragged piece was last drawn in
 	vector<MV> rgmvDrag;	// legal moves in the UI
 	vector<ANO> rgano;	// annotations
@@ -376,40 +430,271 @@ public:
 	static void CreateGeom(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf, ID2D1PathGeometry** ppgeom);
 
 	void NewGame(void);
-	void MakeMv(MV mv);
+	void MakeMv(MV mv, bool fRedraw);
 	
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 
-	virtual HT* PhtHitTest(const PTF& ptf);
+	virtual void Draw(void);
+	void DrawMargins(void);
+	void DrawSquares(void);
+	void DrawLabels(void);
+	void DrawFileLabels(void);
+	void DrawRankLabels(void);
+	void DrawHover(void);
+	void DrawPieces(void);
+	void DrawAnnotations(void);
+	void DrawSquareAnnotation(SQ sq);
+	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);
+	void DrawControls(void);
+
+	void DrawHilites(void);
+	void DrawGameState(void);
+	void DrawPc(RCF rcf, float opacity, TPC tpc);
+	void DrawDragPc(const RCF& rcf);
+	RCF RcfGetDrag(void);
+	void InvalOutsideRcf(RCF rcf) const;
+	void InvalRectF(float left, float top, float right, float bottom) const;
+	void HiliteLegalMoves(SQ sq);
+	void HiliteControl(int ictl);
+	RCF RcfFromSq(SQ sq) const;
+	RCF RcfControl(int ictl) const;
+
+	void FlipBoard(CPC cpcNew);
+
+	virtual float DxWidth(void) const;
+	virtual float DyHeight(void) const;
+
+	virtual HT* PhtHitTest(PTF ptf);
 	virtual void StartLeftDrag(HT* pht);
 	virtual void EndLeftDrag(HT* pht);
 	virtual void LeftDrag(HT* pht);
 	virtual void MouseHover(HT* pht);
 
-	virtual void Draw(ID2D1RenderTarget* prt);
-	void DrawMargins(ID2D1RenderTarget* prt);
-	void DrawSquares(ID2D1RenderTarget* prt);
-	void DrawLabels(ID2D1RenderTarget* prt);
-	void DrawFileLabels(ID2D1RenderTarget* prt);
-	void DrawRankLabels(ID2D1RenderTarget* prt);
-	void DrawHover(ID2D1RenderTarget* prt);
-	void DrawPieces(ID2D1RenderTarget* prt);
-	void DrawAnnotations(ID2D1RenderTarget* prt);
-	void DrawSquareAnnotation(ID2D1RenderTarget* prt, SQ sq);
-	void DrawArrowAnnotation(ID2D1RenderTarget* prt, SQ sqFrom, SQ sqTo);
-
-	void DrawHilites(ID2D1RenderTarget* prt);
-	void DrawGameState(ID2D1RenderTarget* prt);
-	void DrawPc(ID2D1RenderTarget* prt, const RCF& rcf, float opacity, TPC tpc);
-	void DrawDragPc(ID2D1RenderTarget* prt, const RCF& rcf);
-	RCF RcfGetDrag(void);
-	void InvalOutsideRcf(const RCF& rcf);
-	void InvalRectF(float left, float top, float right, float bottom);
-	void HiliteLegalMoves(SQ sq);
-	RCF RcfFromSq(SQ sq) const;
-
-	virtual float DxWidth(void) const;
-	virtual float DyHeight(void) const;
-
 	bool FMoveablePc(SQ sq);
+};
+
+
+/*
+ *
+ *	TK class
+ * 
+ *	A simple file scanner token class. These are virtual classes, so
+ *	they need to be allocated.
+ * 
+ */
+
+static const string szNull("");
+class TK
+{
+	int tk;
+public:
+	operator int() const { return tk; }
+	TK(int tk) : tk(tk) { }
+	virtual ~TK(void) { }
+
+	virtual bool FIsString(void) const {
+		return false;
+	}
+
+	virtual bool FIsInteger(void) const {
+		return false;
+	}
+
+	virtual const string& sz(void) const {
+		return szNull;
+	}
+};
+
+class TKSZ : public TK
+{
+	string szToken;
+public:
+	TKSZ(int tk, const string& sz) : TK(tk), szToken(sz) { }
+	TKSZ(int tk, const char* sz) : TK(tk) {
+		szToken = string(sz);
+	}
+
+	virtual ~TKSZ(void) { }
+
+	virtual bool FIsString(void) const {
+		return true;
+	}
+
+	virtual const string& sz(void) const {
+		return szToken;
+	}
+};
+
+class TKW : public TK
+{
+	int wToken;
+public:
+	TKW(int tk, int w) : TK(tk), wToken(w) { }
+
+	virtual bool FIsInteger(void) const {
+		return true;
+	}
+
+	virtual int w(void) const {
+		return wToken;
+	}
+};
+
+
+/*
+ *
+ *	ISTK class
+ * 
+ *	A generic token input stream class. We'll build this up to be a
+ *	general purpose scanner eventually.
+ * 
+ */
+
+
+class ISTK
+{
+protected:
+	int li;
+	istream& is;
+	TK* ptkPrev;
+
+	/*	ISTK::ChNext
+	 *
+	 *	Reads the next character from the input stream. Returns null character at
+	 *	EOF, and coallesces end of line characters into \n for all platforms.
+	 */
+	char ChNext(void)
+	{
+		if (is.eof())
+			return '\0';
+		char ch;
+		if (!is.get(ch))
+			return '\0';
+		if (ch == '\r') {
+			if (is.peek() == '\n')
+				is.get(ch);
+			li++;
+			return '\n';
+		}
+		else if (ch == '\n')
+			li++;
+		return ch;
+	}
+
+	void UngetCh(char ch)
+	{
+		assert(ch != '\0');
+		if (ch == '\n')
+			li--;
+		is.unget();
+	}
+
+
+	inline bool FIsWhite(char ch) const
+	{
+		return ch == ' ' || ch == '\t';
+	}
+
+	inline bool FIsEnd(char ch) const
+	{
+		return ch == '\0';
+	}
+
+	bool FIsDigit(char ch) const
+	{
+		return ch >= '0' && ch <= '9';
+	}
+
+	virtual bool FIsSymbol(char ch, bool fFirst) const
+	{
+		if (ch >= 'a' && ch <= 'z')
+			return true;
+		if (ch >= 'A' && ch <= 'Z')
+			return true;
+		if (ch == '_')
+			return true;
+		if (fFirst)
+			return false;
+		if (ch >= '0' && ch <= '9')
+			return true;
+		return false;
+	}
+
+
+public:
+	ISTK(istream& is) : is(is), li(1), ptkPrev(NULL) { }
+	~ISTK(void) { }
+	operator bool() { return (bool)is; }
+	virtual TK* PtkNext(void) = 0;
+	void UngetTk(TK* ptk) { ptkPrev = ptk;  }
+	int line(void) const { return li; }
+};
+
+
+/*
+ *
+ *	ISTKPGN class
+ * 
+ *	Class for scanning/tokenizing chess PGN files
+ * 
+ */
+
+
+enum TKPGN {
+	tkpgnWhiteSpace,
+	tkpgnBlankLine,
+	tkpgnEndLine,
+	tkpgnString,
+	tkpgnComment,
+	tkpgnLineComment,
+	tkpgnLParen,
+	tkpgnRParen,
+	tkpgnLBracket,
+	tkpgnRBracket,
+	tkpgnLAngleBracket,
+	tkpgnRAngleBracket,
+	tkpgnPeriod,
+	tkpgnStar,
+	tkpgnPound,
+	tkpgnInteger,
+	tkpgnNumAnno,
+	tkpgnSymbol,
+	tkpgnEnd,
+
+	/* tag keywords */
+
+	tkpgnEvent,
+	tkpgnSite,
+	tkpgnDate,
+	tkpgnRound,
+	tkpgnWhite,
+	tkpgnBlack,
+	tkpgnResult
+};
+
+
+class ISTKPGN : public ISTK
+{
+protected:
+	bool fWhiteSpace;
+
+	virtual bool FIsSymbol(char ch, bool fFirst) const
+	{
+		if (ch >= 'a' && ch <= 'z')
+			return true;
+		if (ch >= 'A' && ch <= 'Z')
+			return true;
+		if (ch >= '0' && ch <= '9')
+			return true;
+		if (fFirst)
+			return false;
+		return ch == '_' || ch == '+' || ch == '#' || ch == '=' || ch == ':' || ch == '-' || ch == '/';
+	}
+
+	char ChSkipWhite(void);
+
+public:
+	ISTKPGN(istream& is) : ISTK(is), fWhiteSpace(false) { }
+	void WhiteSpace(bool fReturn) { fWhiteSpace = fReturn; }
+	virtual TK* PtkNext(void);
 };

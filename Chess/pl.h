@@ -29,4 +29,8 @@ public:
 	wstring& SzName(void) {
 		return szName;
 	}
+
+	void SetName(const wstring& szNew) {
+		szName = szNew;
+	}
 };
