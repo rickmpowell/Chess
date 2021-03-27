@@ -36,7 +36,7 @@ IDWriteTextFormat* SPA::ptfTextSm;
  *	Static routine for creating the drawing objects necessary to draw the various
  *	screen panels.
  */
-void SPA::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr)
+void SPA::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
 {
 	if (!pbrBack) {
 		prt->CreateSolidColorBrush(ColorF(ColorF::White), &pbrBack);
@@ -140,6 +140,59 @@ SPA::~SPA(void)
 }
 
 
+ID2D1PathGeometry* SPA::PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf)
+{
+	/* capture X, which is created as a cross that is rotated later */
+	ID2D1PathGeometry* pgeom;
+	pfactd2d->CreatePathGeometry(&pgeom);
+	ID2D1GeometrySink* psink;
+	pgeom->Open(&psink);
+	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
+	psink->AddLines(&rgptf[1], cptf - 1);
+	psink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	psink->Close();
+	SafeRelease(&psink);
+	return pgeom;
+}
+
+
+ID2D1Bitmap* SPA::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic)
+{
+	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
+	if (hres == NULL)
+		return NULL;
+	ULONG cbRes = ::SizeofResource(NULL, hres);
+	HGLOBAL hresLoad = ::LoadResource(NULL, hres);
+	if (hresLoad == NULL)
+		return NULL;
+	BYTE* pbRes = (BYTE*)::LockResource(hresLoad);
+	if (pbRes == NULL)
+		return NULL;
+
+	HRESULT hr;
+	IWICStream* pstm = NULL;
+	hr = pfactwic->CreateStream(&pstm);
+	hr = pstm->InitializeFromMemory(pbRes, cbRes);
+	IWICBitmapDecoder* pdec = NULL;
+	hr = pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
+	IWICBitmapFrameDecode* pframe = NULL;
+	hr = pdec->GetFrame(0, &pframe);
+	IWICFormatConverter* pconv = NULL;
+	hr = pfactwic->CreateFormatConverter(&pconv);
+	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
+		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
+	ID2D1Bitmap* pbmp;
+	hr = prt->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
+
+	SafeRelease(&pframe);
+	SafeRelease(&pconv);
+	SafeRelease(&pdec);
+	SafeRelease(&pstm);
+
+	return pbmp;
+}
+
+
 /*	SPA::RcfBounds
  *
  *	Returns the bounds rectangle in screen panel local coordinates. This
@@ -236,9 +289,14 @@ void SPA::DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity) cons
 }
 
 
+/*	SPA::DxWidth
+ *
+ *	Virtual function for returning the panel width, which is used for our simple
+ *	panel layout system. May be ignored for certain layout options.
+ */
 float SPA::DxWidth(void) const
 {
-	return 150.0f;
+	return 250.0f;
 }
 
 
@@ -304,7 +362,7 @@ IDWriteTextFormat* SPARGMV::ptfClock;
  *	panel. Note that this is a static routine working on global static
  *	resources that are shared by all instances of this class.
  */
-void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr)
+void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
 {
 	if (ptfList)
 		return;
@@ -312,12 +370,10 @@ void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr)
 	/* fonts */
 
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		14.0f, L"",
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
 		&ptfList);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		50.0f, L"",
+		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 50.0f, L"",
 		&ptfClock);
 }
 
@@ -429,13 +485,12 @@ void SPARGMV::DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const
 
 	wstring szName = ga.PplFromCpc(cpc)->SzName();
 	ptfList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	wstring szColor = cpc == cpcWhite ? L"\x25ef" : L"\x2b24";
-	rcfPl.left += 8.0f;
+	wstring szColor = cpc == cpcWhite ? L"\x26aa  " : L"\x26ab  ";
+	szColor += szName;
+	rcfPl.left += 12.0f;
 	rcfPl.top += 5.0f;
 	DrawSz(szColor, ptfList, rcfPl);
-	rcfPl.left += 20.0f; rcfPl.top += 3.0f;
-	DrawSz(szName, ptfList, rcfPl);
-	rcfPl.top -= 8.0f;
+	rcfPl.top -= 5.0f;
 
 	RCF rcfClock = rcfArea;
 	if (fTop)
@@ -623,6 +678,44 @@ bool SPARGMV::FMakeVis(int imv)
  */
 
 
+IDWriteTextFormat* SPATI::ptfPlayers;
+ID2D1Bitmap* SPATI::pbmpLogo;
+
+
+ /*	SPATI::CreateRsrc
+  *
+  *	Creates the drawing resources for displaying the title screen
+  *	panel. Note that this is a static routine working on global static
+  *	resources that are shared by all instances of this class.
+  */
+void SPATI::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+{
+	if (ptfPlayers)
+		return;
+
+	/* fonts */
+
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptfPlayers);
+
+	pbmpLogo = PbmpFromPngRes(idbLogo, prt, pfactwic);
+}
+
+
+/*	SPATI::DiscardRsrc
+ *
+ *	Deletes all resources associated with this screen panel. This is a
+ *	static routine, and works on static class globals.
+ */
+void SPATI::DiscardRsrc(void)
+{
+	SafeRelease(&ptfPlayers);
+	SafeRelease(&pbmpLogo);
+}
+
+
 SPATI::SPATI(GA& ga) : SPA(ga), szText(L"")
 {
 }
@@ -630,14 +723,40 @@ SPATI::SPATI(GA& ga) : SPA(ga), szText(L"")
 void SPATI::Draw(void)
 {
 	SPA::Draw();
+	
+	/* draw the logo */
+
+	RCF rcf = RcfBounds();
+	D2D1_SIZE_F ptf = pbmpLogo->GetSize();
+	RCF rcfLogo(0, 0, ptf.width, ptf.height);
+	rcf.top = 10.0f;
+	rcf.left = 20.0f;
+	rcf.bottom = 80.0f;
+	rcf.right = rcf.left + ptf.width * 70.0f / ptf.height;
+	DrawBmp(rcf, pbmpLogo, rcfLogo, 1.0f);
+	
+	/* draw the type of game we're playing */
+
+	rcf = RcfBounds();
+	rcf.left += 80.f;
+	rcf.top += 25.0f;
+	DrawSz(wstring(L"Rapid \x2022 10+0 \x2022 Casual \x2022 Local Computer"), ptfPlayers, rcf);
+
+	/* draw the players */
+
 	PL* pplWhite = ga.PplFromCpc(cpcWhite);
 	PL* pplBlack = ga.PplFromCpc(cpcBlack);
-	wstring sz = pplWhite->SzName() + L"\n v. \n" + pplBlack->SzName();
-	size_t cch = sz.length();
-	ptfText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-	RCF rcf = RcfBounds();
-	rcf.top += 40.0f;
-	DrawSz(sz, ptfText, rcf);
+	rcf.top = 90.0f;
+	rcf.left = 12.0f;
+	ptfText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	DrawSz(wstring(L"\x26aa   ")+pplWhite->SzName(), ptfPlayers, rcf);
+	rcf.top += 25.0f;
+	DrawSz(wstring(L"\x26ab   ")+pplBlack->SzName(), ptfPlayers, rcf);
+
+	rcf.left = 0;
+	rcf.top += 25.0f;
+	rcf.bottom = rcf.top + 1.0f;
+	FillRcf(rcf, pbrGridLine);
 
 	if (szText.size() <= 0)
 		return;
@@ -666,15 +785,17 @@ void SPATI::SetText(const wstring& sz)
 
 void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
 {
-	SPA::CreateRsrc(prt, pfactdwr);
+	SPA::CreateRsrc(prt, pfactdwr, pfactwic);
+	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPABD::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
-	SPARGMV::CreateRsrc(prt, pfactdwr);
+	SPARGMV::CreateRsrc(prt, pfactdwr, pfactwic);
 }
 
 
 void GA::DiscardRsrc(void)
 {
 	SPA::DiscardRsrc();
+	SPATI::DiscardRsrc();
 	SPABD::DiscardRsrc();
 	SPARGMV::DiscardRsrc();
 }

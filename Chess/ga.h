@@ -86,7 +86,7 @@ protected:
 	GA& ga;
 	RCF rcfBounds;
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr);
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
 	static ID2D1SolidColorBrush* pbrBack;
 	static ID2D1SolidColorBrush* pbrText;
@@ -95,6 +95,8 @@ public:
 	static ID2D1SolidColorBrush* pbrAltBack;
 	static IDWriteTextFormat* ptfText;
 	static IDWriteTextFormat* ptfTextSm;
+	static ID2D1PathGeometry* PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf);
+	static ID2D1Bitmap* PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic);
 	
 	SPA(GA& ga);
 	~SPA(void);
@@ -123,6 +125,13 @@ public:
 class SPATI : public SPA
 {
 	wstring szText;
+
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+	static IDWriteTextFormat* ptfPlayers;
+	static ID2D1Bitmap* pbmpLogo;
+
 public:
 	SPATI(GA& ga);
 	virtual void Draw(void);
@@ -264,7 +273,7 @@ public:
 	SPARGMV(GA& ga);
 	~SPARGMV(void);
 
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr);
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
 
 	void NewGame(void);

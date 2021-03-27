@@ -427,7 +427,6 @@ public:
 	~SPABD(void);
 	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
-	static void CreateGeom(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf, ID2D1PathGeometry** ppgeom);
 
 	void NewGame(void);
 	void MakeMv(MV mv, bool fRedraw);

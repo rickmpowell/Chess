@@ -16,4 +16,5 @@
 #define idiSmall		2
 
 #define idbPieces		1
-#define idbTest		    2
+#define idbTest		  2
+#define idbLogo		  3

@@ -944,58 +944,18 @@ void SPABD::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFa
 		24.0f, L"",
 		&ptfControls);
 
-	/* bitmap */
+	/* bitmaps */
 
-	HRESULT hr;
-	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idbPieces), L"IMAGE");
-	if (hres == NULL)
-		throw 1;
-	ULONG cbRes = ::SizeofResource(NULL, hres);
-	HGLOBAL hresLoad = ::LoadResource(NULL, hres);
-	if (hresLoad == NULL)
-		throw 1;
-	BYTE* pbRes = (BYTE*)::LockResource(hresLoad);
-	if (pbRes == NULL)
-		throw 1;
-	IWICStream* pstm = NULL;
-	hr = pfactwic->CreateStream(&pstm);
-	hr = pstm->InitializeFromMemory(pbRes, cbRes);
-	IWICBitmapDecoder* pdec = NULL;
-	hr = pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
-	IWICBitmapFrameDecode* pframe = NULL;
-	hr = pdec->GetFrame(0, &pframe);
-	IWICFormatConverter* pconv = NULL;
-	hr = pfactwic->CreateFormatConverter(&pconv);
-	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
-		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
-	hr = prt->CreateBitmapFromWicBitmap(pconv, NULL, &pbmpPieces);
-	
-	SafeRelease(&pframe);
-	SafeRelease(&pconv);
-	SafeRelease(&pdec);
-	SafeRelease(&pstm);
+	pbmpPieces = PbmpFromPngRes(idbPieces, prt, pfactwic);
 	
 	/* geometries */
 	
 	/* capture X, which is created as a cross that is rotated later */
-	CreateGeom(pfactd2d, rgptfCross, CArray(rgptfCross), &pgeomCross);
+	pgeomCross = PgeomCreate(pfactd2d, rgptfCross, CArray(rgptfCross));
 	/* arrow head */
-	CreateGeom(pfactd2d, rgptfArrowHead, CArray(rgptfArrowHead), &pgeomArrowHead);
+	pgeomArrowHead = PgeomCreate(pfactd2d, rgptfArrowHead, CArray(rgptfArrowHead));
 }
 
-
-void SPABD::CreateGeom(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf, ID2D1PathGeometry** ppgeom)
-{
-	/* capture X, which is created as a cross that is rotated later */
-	pfactd2d->CreatePathGeometry(ppgeom);
-	ID2D1GeometrySink* psink;
-	(*ppgeom)->Open(&psink);
-	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
-	psink->AddLines(&rgptf[1], cptf - 1);
-	psink->EndFigure(D2D1_FIGURE_END_CLOSED);
-	psink->Close();
-	SafeRelease(&psink);
-}
 
 
 /*	SPABD::DiscardRsrc
