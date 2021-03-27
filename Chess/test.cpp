@@ -37,7 +37,8 @@ void GA::PlayPGNFiles(const WCHAR szPath[])
 		wstring szSpec(szPath);
 		szSpec += L"\\";
 		szSpec += ffd.cFileName;
-		PlayPGNFile(szSpec.c_str());
+		if (PlayPGNFile(szSpec.c_str()) < 0)
+			break;
 	} while (FindNextFile(hfind, &ffd) != 0);
 	FindClose(hfind);
 }
@@ -198,9 +199,11 @@ int GA::PlayPGNFile(const WCHAR szFile[])
 	}
 	catch (int err)
 	{
-		WCHAR sz[58];
-		::wsprintf(sz, L"Error Line %d", err);
-		::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
+		if (err == 1) {
+			WCHAR sz[58];
+			::wsprintf(sz, L"Error Line %d", err);
+			::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
+		}
 		return err;
 	}
 	return 0;
@@ -296,11 +299,14 @@ int GA::ReadPGNMoveList(ISTKPGN& istkpgn)
 			case WM_KEYDOWN:
 				::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
 				if (msg.wParam == VK_ESCAPE)
-					throw 0;
+					throw -1;
 				break;
 			default:
-				if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE))
+				if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE)) {
 					::DispatchMessage(&msg);
+					if (msg.message == WM_QUIT)
+						throw -1;
+				}
 				break;
 			}
 		}
@@ -408,5 +414,5 @@ void GA::ProcessMove(const string& szMove)
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
-	MakeMv(mv, false);
+	MakeMv(mv, true);
 }
