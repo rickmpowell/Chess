@@ -301,12 +301,11 @@ int GA::ReadPGNMoveList(ISTKPGN& istkpgn)
 				if (msg.wParam == VK_ESCAPE)
 					throw -1;
 				break;
+			case WM_QUIT:
+				throw -1;
 			default:
-				if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE)) {
+				if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE))
 					::DispatchMessage(&msg);
-					if (msg.message == WM_QUIT)
-						throw -1;
-				}
 				break;
 			}
 		}
