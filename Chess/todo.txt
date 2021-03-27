@@ -25,6 +25,8 @@
   Implement a debug screen panel and UI to show/hide it
   Add check/mate indicators on move list
   Modify move list to do real algebraic notation with full optimzations
+  Add tooltip for items in control list
+  Assert when dragging and upclick off control
 * Change title panel to display players with color icons, and type of game (e.g., 5+3 Blitz, Correspondence)
 * Aborting Tests run does not really abort 
 

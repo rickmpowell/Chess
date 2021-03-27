@@ -163,7 +163,7 @@ public:
 	SQ SqTo(void) const { return (grf >> 6) & 0x3f; }
 	APC ApcPromote(void) const { return (grf >> 28) & 0x07; }
 	bool FIsNil(void) const { return grf == 0x80000000L; }
-	void SetApcPromote(APC apc) { grf = (grf & 0x8fffffffL) | ((unsigned long)apc << 28); }
+	MV& SetApcPromote(APC apc) { grf = (grf & 0x8fffffffL) | ((unsigned long)apc << 28); return *this;  }
 };
 
 
@@ -194,6 +194,28 @@ enum {
 	csWhiteQueen = 0x04,
 	csBlackQueen = 0x08
 };
+
+
+inline int RankPromoteFromCpc(CPC cpc)
+{
+	return ~-cpc & 7;
+}
+
+inline int RankInitPawnFromCpc(CPC cpc)
+{
+	return (-cpc ^ 1) & 7;
+}
+
+inline int DsqPawnFromCpc(CPC cpc)
+{
+	return 8 - (cpc << 4);
+}
+
+inline CPC CpcOpposite(CPC cpc)
+{
+	return cpc ^ 1;
+}
+
 
 
 /*
@@ -244,6 +266,7 @@ public:
 	void GenRgmvCastle(vector<MV>& rgmv, SQ sqFrom) const; 
 	void GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) const;
 	void GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
+	void AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const;
 	void GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
 	bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const;
@@ -457,7 +480,9 @@ public:
 	void HiliteControl(int ictl);
 	RCF RcfFromSq(SQ sq) const;
 	RCF RcfControl(int ictl) const;
+	void DrawControl(WCHAR ch, int ictl, HTT htt) const;
 
+	void Resign(void);
 	void FlipBoard(CPC cpcNew);
 
 	virtual float DxWidth(void) const;

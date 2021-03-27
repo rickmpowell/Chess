@@ -40,7 +40,8 @@ enum class HTT
 	UnmoveablePc,
 	OpponentPc,
 	EmptyPc,
-	FlipBoard
+	FlipBoard, 
+	Resign
 };
 
 class SPA;
@@ -155,7 +156,7 @@ public:
  *
  *	SPAS class
  * 
- *	A scrolling screen panel
+ *	A scrolling screen panel base class. 
  * 
  */
 
@@ -166,7 +167,7 @@ private:
 	RCF rcfView;
 	RCF rcfCont;
 protected:
-	const float dxyfScrollBarWidth = 12.0f;
+	const float dxyfScrollBarWidth = 10.0f;
 public:
 	SPAS(GA& ga) : SPA(ga) { }
 
@@ -273,7 +274,7 @@ public:
 	SPARGMV(GA& ga);
 	~SPARGMV(void);
 
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwicfHTT);
 	static void DiscardRsrc(void);
 
 	void NewGame(void);

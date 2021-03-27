@@ -307,7 +307,7 @@ void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 void BD::RemoveInCheckMoves(vector<MV>& rgmv, CPC cpcMove) const
 {
  	unsigned imvDest = 0;
-	int cpcOpp = cpcMove ^ 1;
+	int cpcOpp = CpcOpposite(cpcMove);
 	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
 		BD bd = *this;
 		bd.MakeMvSq(rgmv[imv]);
@@ -411,22 +411,15 @@ void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
 	/* pushing pawns */
 
 	CPC cpcFrom = CpcFromTpc(mpsqtpc[sqFrom]);
-	int dsq = cpcFrom  == cpcWhite ? 8 : -8;
+	int dsq = DsqPawnFromCpc(cpcFrom);
 	SQ sqTo = sqFrom + dsq;
 	if (mpsqtpc[sqTo] == tpcEmpty) {
 		MV mv = MV(sqFrom, sqTo);
-		if (sqTo.rank() == 0 || sqTo.rank() == 7) {
-			/* pawn promotion */
-
-			for (BYTE apc = apcQueen; apc >= apcKnight; apc--) {
-				mv.SetApcPromote(apc);
-				AddRgmvMv(rgmv, mv);
-			}
-		}
+		if (sqTo.rank() == RankPromoteFromCpc(cpcFrom))
+			AddRgmvMvPromotions(rgmv, mv);
 		else {
 			AddRgmvMv(rgmv, mv);	// move forward one square
-			if ((cpcFrom==cpcWhite && sqFrom.rank()==1) || 
-					(cpcFrom==cpcBlack && sqFrom.rank()==6)) {
+			if (sqFrom.rank() == RankInitPawnFromCpc(cpcFrom)) {
 				sqTo += dsq;	// move foreward two squares as first move
 				if (mpsqtpc[sqTo] == tpcEmpty)
 					AddRgmvMv(rgmv, MV(sqFrom, sqTo));
@@ -443,6 +436,19 @@ void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
 }
 
 
+/*	BD::AddRgmvMvPromotions
+ *
+ *	When a pawn is pushed to the last rank, adds all the promotion possibilities
+ *	to the move list, which includes promotions to queen, rook, knight, and
+ *	bishop.
+ */
+void BD::AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const
+{
+	for (BYTE apc = apcQueen; apc >= apcKnight; apc--)
+		AddRgmvMv(rgmv, mv.SetApcPromote(apc));
+}
+
+
 /*	BD::GenRgmvPawnCapture
  *
  *	Generates pawn capture moves of pawns on sqFrom in the dsq direction
@@ -450,9 +456,16 @@ void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
 void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 {
 	assert(ApcFromSq(sqFrom) == apcPawn);
-	int sqTo = sqFrom + dsq;
-	if (mpsqtpc[sqTo] != tpcEmpty && ((mpsqtpc[sqTo] ^ mpsqtpc[sqFrom]) & tpcColor))
-		AddRgmvMv(rgmv, MV(sqFrom, sqTo));
+	SQ sqTo = sqFrom + dsq;
+	TPC tpcFrom = mpsqtpc[sqFrom];
+	CPC cpcFrom = CpcFromTpc(tpcFrom);
+	if (mpsqtpc[sqTo] != tpcEmpty && ((mpsqtpc[sqTo] ^ tpcFrom) & tpcColor)) {
+		MV mv(sqFrom, sqTo);
+		if (sqTo.rank() == RankPromoteFromCpc(cpcFrom))
+			AddRgmvMvPromotions(rgmv, mv);
+		else
+			AddRgmvMv(rgmv, mv);
+	}
 }
 
 
@@ -1177,6 +1190,12 @@ void SPABD::DrawRankLabels(void)
 }
 
 
+void SPABD::Resign(void)
+{
+	MessageBeep(0);
+}
+
+
 /*	SPABD::DrawGameState
  *
  *	When the game is over, this displays the game state on the board
@@ -1356,12 +1375,22 @@ void SPABD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 void SPABD::DrawControls(void)
 {
 	ptfControls->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	DrawControl(L'\x2b6f', 0, HTT::FlipBoard);
+	DrawControl(L'\x2690', 1, HTT::Resign);
+}
+
+
+void SPABD::DrawControl(WCHAR ch, int ictl, HTT htt) const
+{
 	ID2D1Brush* pbr = pbrText;
-	if (phtCur && phtCur->htt == HTT::FlipBoard)
+	if (phtCur && phtCur->htt == htt)
 		pbr = pbrTextSel;
-	else if (ictlHover != -1)
+	else if (ictlHover == ictl)
 		pbr = pbrBlack;
-	DrawSz(wstring(L"\x2b6f"), ptfControls, RcfControl(0), pbr);
+	WCHAR sz[2];
+	sz[0] = ch;
+	sz[1] = 0;
+	DrawSz(wstring(sz), ptfControls, RcfControl(ictl), pbr);
 }
 
 
@@ -1412,6 +1441,8 @@ HT* SPABD::PhtHitTest(PTF ptf)
 	if (!rcfSquares.FContainsPtf(ptf)) {
 		if (RcfControl(0).FContainsPtf(ptf))
 			return new HTBD(ptf, HTT::FlipBoard, this, sqNil);
+		if (RcfControl(1).FContainsPtf(ptf))
+			return new HTBD(ptf, HTT::Resign, this, sqNil);
 		return new HTBD(ptf, HTT::Static, this, sqMax);
 	}
 	int rank = (int)((ptf.y - rcfSquares.top) / dxyfSquare);
@@ -1459,6 +1490,7 @@ void SPABD::StartLeftDrag(HT* pht)
 	switch (pht->htt) {
 	case HTT::MoveablePc:
 	case HTT::FlipBoard:
+	case HTT::Resign:
 		assert(phtDragInit == NULL);
 		assert(phtCur == NULL);
 		phtDragInit = (HTBD*)pht->PhtClone();
@@ -1496,6 +1528,9 @@ void SPABD::EndLeftDrag(HT* pht)
 		case HTT::FlipBoard:
 			FlipBoard(cpcPointOfView ^ 1);
 			break;
+		case HTT::Resign:
+			Resign();
+			break;
 		default:
 			break;
 		}
@@ -1528,11 +1563,12 @@ void SPABD::LeftDrag(HT* pht)
 		EndLeftDrag(pht);
 		return;
 	}
+
 	if (phtCur)
 		delete phtCur;
 	phtCur = (HTBD*)pht->PhtClone();
 	
-	if (pht->htt == HTT::FlipBoard) {
+	if (pht->htt == HTT::FlipBoard || pht->htt == HTT::Resign) {
 		PTF ptf = pht->ptf;
 		ptf.Offset(-rcfBounds.left, -rcfBounds.top);
 	}
@@ -1562,6 +1598,9 @@ void SPABD::MouseHover(HT* pht)
 		break;
 	case HTT::FlipBoard:
 		HiliteControl(0);
+		break;
+	case HTT::Resign:
+		HiliteControl(1);
 		break;
 	default:
 		HiliteControl(-1);
