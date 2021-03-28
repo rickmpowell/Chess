@@ -995,7 +995,7 @@ void SPABD::DiscardRsrc(void)
  *
  *	Constructor for the board screen panel.
  */
-SPABD::SPABD(GA& ga) : SPA(ga), phtDragInit(NULL), phtCur(NULL), sqHover(sqNil), ictlHover(-1),
+SPABD::SPABD(GA* pga) : SPA(pga), phtDragInit(NULL), phtCur(NULL), sqHover(sqNil), ictlHover(-1),
 	cpcPointOfView(cpcWhite), 
 	dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
 	angle(0.0f),
@@ -1022,7 +1022,7 @@ void SPABD::Layout(const PTF& ptf, SPA* pspa, LL ll)
 	SPA::Layout(ptf, pspa, ll);
 	dxyfMargin = (rcfBounds.bottom-rcfBounds.top) / 12.0f;
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
-	rcfSquares = RcfBounds();
+	rcfSquares = RcfInterior();
 	rcfSquares.Inflate(-dxyf, -dxyf);
 	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
 }
@@ -1108,7 +1108,7 @@ void SPABD::Draw(void)
  */
 void SPABD::DrawMargins(void)
 {
-	RCF rcf = RcfBounds();
+	RCF rcf = RcfInterior();
 	FillRcf(rcf, pbrLight);
 	rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
 	FillRcf(rcf, pbrDark);
@@ -1212,7 +1212,7 @@ void SPABD::DrawGameState(void)
 	else {
 		assert(false);
 	}
-	RCF rcf = RcfBounds();
+	RCF rcf = RcfInterior();
 	rcf.top = rcf.bottom - 40.0f;
 	DrawSz(szState, ptfGameState, rcf, pbrDark);
 }
@@ -1568,13 +1568,16 @@ void SPABD::LeftDrag(HT* pht)
 		delete phtCur;
 	phtCur = (HTBD*)pht->PhtClone();
 	
-	if (pht->htt == HTT::FlipBoard || pht->htt == HTT::Resign) {
-		PTF ptf = pht->ptf;
-		ptf.Offset(-rcfBounds.left, -rcfBounds.top);
-	}
-	else {
+	switch (phtDragInit->htt) {
+	case HTT::FlipBoard:
+	case HTT::Resign:
+		if (pht->htt != phtDragInit->htt)
+			HiliteControl(-1);
+		break;
+	default:
 		InvalOutsideRcf(rcfDragPc);
 		rcfDragPc = RcfGetDrag();
+		break;
 	}
 	Redraw();
 }
@@ -1603,7 +1606,6 @@ void SPABD::MouseHover(HT* pht)
 		HiliteControl(1);
 		break;
 	default:
-		HiliteControl(-1);
 		HiliteLegalMoves(sqNil);
 		break;
 	}

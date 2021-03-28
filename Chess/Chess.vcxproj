@@ -150,6 +150,7 @@
     <ClInclude Include="pl.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ui.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bd.cpp" />
@@ -158,6 +159,7 @@
     <ClCompile Include="parsedecode.cpp" />
     <ClCompile Include="pl.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Chess.rc" />

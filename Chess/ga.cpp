@@ -22,12 +22,9 @@
  */
 
 
-ID2D1SolidColorBrush* SPA::pbrBack;
-ID2D1SolidColorBrush* SPA::pbrText;
 ID2D1SolidColorBrush* SPA::pbrTextSel;
 ID2D1SolidColorBrush* SPA::pbrGridLine;
 ID2D1SolidColorBrush* SPA::pbrAltBack;
-IDWriteTextFormat* SPA::ptfText;
 IDWriteTextFormat* SPA::ptfTextSm;
 
 
@@ -38,52 +35,39 @@ IDWriteTextFormat* SPA::ptfTextSm;
  */
 void SPA::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
 {
-	if (!pbrBack) {
-		prt->CreateSolidColorBrush(ColorF(ColorF::White), &pbrBack);
-		prt->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
-		prt->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
-		prt->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
-		prt->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
-		pfactdwr->CreateTextFormat(L"Arial", NULL,
-			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-			16.0f, L"",
-			&ptfText);
-		pfactdwr->CreateTextFormat(L"Arial", NULL,
-			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-			12.0f, L"",
-			&ptfTextSm);
-
-
-	}
+	if (pbrTextSel)
+		return;
+	prt->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
+	prt->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
+	prt->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptfTextSm);
 }
 
 
 void SPA::DiscardRsrc(void)
 {
-	SafeRelease(&pbrBack);
-	SafeRelease(&pbrText);
 	SafeRelease(&pbrTextSel); 
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrAltBack);
-	SafeRelease(&ptfText);
 	SafeRelease(&ptfTextSm);
 }
 
 
 void SPA::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
+	SIZF sizf = SIZF(DxWidth(), DyHeight());
+	PTF ptfCur(0, 0);
 	switch (ll) {
 	case LL::Absolute:
-		rcfBounds.left = ptf.x;
-		rcfBounds.top = ptf.y;
-		rcfBounds.right = rcfBounds.left + DxWidth();
-		rcfBounds.bottom = rcfBounds.top + DyHeight();
+		SetBounds(RCF(ptf, sizf));
 		break;
 	case LL::Right:
-		rcfBounds.left = pspa->rcfBounds.right + ptf.x;
-		rcfBounds.top = pspa->rcfBounds.top;
-		rcfBounds.right = rcfBounds.left + DxWidth();
-		rcfBounds.bottom = rcfBounds.top + DyHeight();
+		ptfCur.x = pspa->rcfBounds.right + ptf.x;
+		ptfCur.y = pspa->rcfBounds.top;
+		SetBounds(RCF(ptfCur, sizf));
 		break;
 	default:
 		assert(false);
@@ -126,7 +110,7 @@ void SPA::SetShadow(void)
  *
  *	The screen panel constructor. 
  */
-SPA::SPA(GA& ga) : ga(ga)
+SPA::SPA(GA* pga) : UI(pga), ga(*pga)
 {
 }
 
@@ -193,19 +177,6 @@ ID2D1Bitmap* SPA::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFac
 }
 
 
-/*	SPA::RcfBounds
- *
- *	Returns the bounds rectangle in screen panel local coordinates. This
- *	means upper left corner is always (0, 0)
- */
-RCF SPA::RcfBounds(void) const
-{
-	RCF rcf = rcfBounds;
-	rcf.Offset(-rcf.left, -rcf.top);
-	return rcf;
-}
-
-
 /*	SPA::Draw
  *
  *	Base class for drawing a screen panel. The default implementation
@@ -213,7 +184,7 @@ RCF SPA::RcfBounds(void) const
  */
 void SPA::Draw(void)
 {
-	FillRcf(RcfBounds(), pbrBack);
+	FillRcf(RcfInterior(), pbrBack);
 }
 
 
@@ -229,64 +200,6 @@ void SPA::Redraw(void)
 	prt->EndDraw();
 }
 
-
-/*	SPA::FillRcf
- *
- *	Graphics helper for filling a rectangle with a brush. The rectangle is in
- *	local SPA coordinates
- */
-void SPA::FillRcf(RCF rcf, ID2D1Brush* pbr) const
-{
-	rcf.Offset(rcfBounds.left, rcfBounds.top);
-	PrtGet()->FillRectangle(&rcf, pbr);
-}
-
-
-/*	SPA::FillEllf
- *
- *	Helper function for filling an ellipse with a brush. Rectangle is in
- *	local SPA coordinates
- */
-void SPA::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
-{
-	ellf.Offset(rcfBounds.left, rcfBounds.top);
-	PrtGet()->FillEllipse(&ellf, pbr);
-}
-
-
-/*	SPA::PrtGet
- *
- *	Returns the Direct2D render target that will be used to draw on the 
- *	screen panel.
- */
-ID2D1RenderTarget* SPA::PrtGet(void) const
-{
-	return ga.app.prth;
-}
-
-
-/*	SPA::DrawSz
- *
- *	Helper function for writing text on the screen panel. Rectangle is in
- *	local SPA coordinates.
- */
-void SPA::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
-{
-	rcf.Offset(rcfBounds.left, rcfBounds.top);
-	PrtGet()->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
-}
-
-
-/*	SPA::DrawBmp
- *
- *	Helper function for drawing part of a bitmap on the screen panel. Destination
- *	coordinates are in local SPA coordinates.
- */
-void SPA::DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity) const
-{
-	rcfTo.Offset(rcfBounds.left, rcfBounds.top);
-	PrtGet()->DrawBitmap(pbmp, rcfTo, opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcfFrom);
-}
 
 
 /*	SPA::DxWidth
@@ -308,7 +221,8 @@ float SPA::DyHeight(void) const
 
 HT* SPA::PhtHitTest(PTF ptf)
 {
-	if (!rcfBounds.FContainsPtf(ptf))
+	RCF rcfInterior = RcfToGlobal(RcfInterior());
+	if (!rcfInterior.FContainsPtf(ptf))
 		return NULL;
 	return new HT(ptf, HTT::Static, this);
 }
@@ -342,7 +256,7 @@ void SPA::MouseHover(HT* pht)
  */
 
 
-SPARGMV::SPARGMV(GA& ga) : SPAS(ga), imvSel(0)
+SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
 {
 }
 
@@ -434,8 +348,7 @@ RCF SPARGMV::RcfFromCol(float yf, int col) const
 void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
 	SPAS::Layout(ptf, pspa, ll);
-	RCF rcf = rcfBounds;
-	rcf.Offset(-rcf.left, -rcf.top);
+	RCF rcf = RcfInterior();
 	rcf.top += 5.0f * dyfList;
 	rcf.bottom -= 5.0f * dyfList;
 	SetView(rcf);
@@ -456,7 +369,7 @@ void SPARGMV::Draw(void)
 
 	/* top player */
 
-	RCF rcf = RcfBounds();
+	RCF rcf = RcfInterior();
 	rcf.bottom = RcfView().top - 1;
 	DrawPl(ga.spabd.cpcPointOfView, rcf, true);
 	rcf.top = rcf.bottom;
@@ -465,7 +378,7 @@ void SPARGMV::Draw(void)
 
 	/* bottom player */
 
-	rcf = RcfBounds();
+	rcf = RcfInterior();
 	rcf.top = RcfView().bottom + 1;
 	DrawPl(ga.spabd.cpcPointOfView, rcf, false);
 	rcf.bottom = rcf.top;
@@ -716,7 +629,7 @@ void SPATI::DiscardRsrc(void)
 }
 
 
-SPATI::SPATI(GA& ga) : SPA(ga), szText(L"")
+SPATI::SPATI(GA* pga) : SPA(pga), szText(L"")
 {
 }
 
@@ -726,7 +639,7 @@ void SPATI::Draw(void)
 	
 	/* draw the logo */
 
-	RCF rcf = RcfBounds();
+	RCF rcf = RcfInterior();
 	D2D1_SIZE_F ptf = pbmpLogo->GetSize();
 	RCF rcfLogo(0, 0, ptf.width, ptf.height);
 	rcf.top = 10.0f;
@@ -737,7 +650,7 @@ void SPATI::Draw(void)
 	
 	/* draw the type of game we're playing */
 
-	rcf = RcfBounds();
+	rcf = RcfInterior();
 	rcf.left += 80.f;
 	rcf.top += 25.0f;
 	DrawSz(wstring(L"Rapid \x2022 10+0 \x2022 Casual \x2022 Local Computer"), ptfPlayers, rcf);
@@ -761,8 +674,8 @@ void SPATI::Draw(void)
 	if (szText.size() <= 0)
 		return;
 
-	rcf = RcfBounds();
-	rcf.top = rcfBounds.bottom - 36.0f;
+	rcf = RcfInterior();
+	rcf.top = rcf.bottom - 36.0f;
 	DrawSz(szText, ptfTextSm, rcf);
 }
 
@@ -785,6 +698,7 @@ void SPATI::SetText(const wstring& sz)
 
 void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
 {
+	UI::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
 	SPA::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPABD::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
@@ -801,8 +715,8 @@ void GA::DiscardRsrc(void)
 }
 
 
-GA::GA(APP& app) : app(app), 
-	spati(*this), spabd(*this), spargmv(*this),
+GA::GA(APP& app) : UI(NULL), app(app), 
+	spati(this), spabd(this), spargmv(this),
 	phtCapt(NULL)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
@@ -821,7 +735,7 @@ GA::~GA(void)
 
 void GA::Resize(int dx, int dy)
 {
-	rcfBounds = RCF(0, 0, (float)dx, (float)dy);
+	SetBounds(RCF(0, 0, (float)dx, (float)dy));
 	Layout();
 }
 
@@ -858,6 +772,11 @@ void GA::Draw(void)
 	spati.Draw();
 	spabd.Draw();
 	spargmv.Draw();
+}
+
+ID2D1RenderTarget* GA::PrtGet(void) const
+{
+	return app.prth;
 }
 
 

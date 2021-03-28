@@ -10,17 +10,17 @@
 
 #include "framework.h"
 #include "pl.h"
+#include "ui.h"
 
 
-/*
- *
- *	SPA class
- * 
- *	Screen panel class. Base class for reserving space on the
- *	graphics screen where we can display random stuff.
- * 
- */
-
+ /*
+  *
+  *	SPA class
+  *
+  *	Screen panel class. Base class for reserving space on the
+  *	graphics screen where we can display random stuff.
+  *
+  */
 class GA;
 
 enum class LL
@@ -72,6 +72,7 @@ public:
 };
 
 
+
 /*
  *
  *	SPA class
@@ -81,39 +82,29 @@ public:
  */
 
 
-class SPA
+class SPA : public UI
 {
-protected:
-	GA& ga;
-	RCF rcfBounds;
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
-	static void DiscardRsrc(void);
-	static ID2D1SolidColorBrush* pbrBack;
-	static ID2D1SolidColorBrush* pbrText;
 	static ID2D1SolidColorBrush* pbrTextSel;
 	static ID2D1SolidColorBrush* pbrGridLine;
 	static ID2D1SolidColorBrush* pbrAltBack;
-	static IDWriteTextFormat* ptfText;
 	static IDWriteTextFormat* ptfTextSm;
 	static ID2D1PathGeometry* PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf);
 	static ID2D1Bitmap* PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic);
-	
-	SPA(GA& ga);
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+
+protected:
+	GA& ga;
+public:
+	SPA(GA* pga);
 	~SPA(void);
 	virtual void Draw(void);
 	void Redraw(void);
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
-	RCF RcfBounds(void) const;
 	virtual float DxWidth(void) const;
 	virtual float DyHeight(void) const;
 	void SetShadow(void);
-
-	ID2D1RenderTarget* PrtGet(void) const;
-	void FillRcf(RCF rcf, ID2D1Brush* pbr) const;
-	void FillEllf(ELLF ellf, ID2D1Brush* pbr) const;
-	void DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr=NULL) const;
-	void DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 
 	virtual HT* PhtHitTest(PTF ptf);
 	virtual void StartLeftDrag(HT* pht);
@@ -134,7 +125,7 @@ public:
 	static ID2D1Bitmap* pbmpLogo;
 
 public:
-	SPATI(GA& ga);
+	SPATI(GA* pga);
 	virtual void Draw(void);
 	void SetText(const wstring& sz);
 };
@@ -169,7 +160,7 @@ private:
 protected:
 	const float dxyfScrollBarWidth = 10.0f;
 public:
-	SPAS(GA& ga) : SPA(ga) { }
+	SPAS(GA* pga) : SPA(pga) { }
 
 
 	void SetView(const RCF& rcfView)
@@ -271,7 +262,7 @@ class SPARGMV : public SPAS
 	int imvSel;
 
 public:	
-	SPARGMV(GA& ga);
+	SPARGMV(GA* pga);
 	~SPARGMV(void);
 
 	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwicfHTT);
@@ -333,7 +324,7 @@ public:
 
 class APP;
 
-class GA
+class GA : public UI
 {
 	friend class SPA;
 	friend class SPATI;
@@ -342,11 +333,9 @@ class GA
 
 	APP& app;
 
-	RCF rcfBounds;
 	SPATI spati;
 	SPABD spabd;
 	SPARGMV spargmv;
-	vector<SPA> rgspa;
 	HT* phtCapt;
 
 public:
@@ -369,6 +358,8 @@ public:
 
 	void Draw(void);
 	void Redraw(bool fBackground);
+	virtual ID2D1RenderTarget* PrtGet(void) const;
+
 	HT* PhtHitTest(PTF ptf);
 	void MouseMove(HT* pht);
 	void LeftDown(HT* pht);

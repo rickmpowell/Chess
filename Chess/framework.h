@@ -60,6 +60,28 @@ public:
 		y += dyf;
 		return *this;
 	}
+
+	PTF& Offset(const PTF& ptf) {
+		return Offset(ptf.x, ptf.y);
+	}
+
+	PTF operator+(const PTF& ptf) const {
+		PTF ptfT(*this);
+		return ptfT.Offset(ptf);
+	}
+
+	PTF operator-(void) const {
+		return PTF(-x, -y);
+	}
+};
+
+class SIZF : public D2D1_SIZE_F
+{
+public:
+	SIZF(float dxf, float dyf) {
+		width = dxf;
+		height = dyf;
+	}
 };
 
 class RCF : public D2D1_RECT_F {
@@ -73,6 +95,13 @@ public:
 		bottom = yfBot;
 	}
 
+	RCF(const PTF& ptfTopLeft, const SIZF& sizf) {
+		left = ptfTopLeft.x;
+		top = ptfTopLeft.y;
+		right = left + sizf.width;
+		bottom = top + sizf.height;
+	}
+
 	RCF& Offset(float dxf, float dyf)
 	{
 		left += dxf;
@@ -82,16 +111,56 @@ public:
 		return *this;
 	}
 
-	RCF& Inflate(const PTF& ptf) 
+	inline RCF& Offset(const PTF& ptf)
 	{
-		left -= ptf.x;
-		right += ptf.x;
-		top -= ptf.y;
-		bottom += ptf.y;
+		return Offset(ptf.x, ptf.y);
+	}
+
+	RCF& Inflate(float dxf, float dyf)
+	{
+		left -= dxf;
+		right += dxf;
+		top -= dyf;
+		bottom += dyf;
 		return *this;
 	}
 
-	inline RCF& Inflate(float dxf, float dyf) { return Inflate(PTF(dxf, dyf)); }
+	RCF& Inflate(const PTF& ptf)
+	{
+		return Inflate(ptf.x, ptf.y);
+	}
+
+	RCF& Union(const RCF& rcf)
+	{
+		if (rcf.left < left)
+			left = rcf.left;
+		if (rcf.right > right)
+			right = rcf.right;
+		if (rcf.top < top)
+			top = rcf.top;
+		if (rcf.bottom > bottom)
+			bottom = rcf.bottom;
+		return *this;
+	}
+
+	RCF& Intersect(const RCF& rcf)
+	{
+		if (rcf.left > left)
+			left = rcf.left;
+		if (rcf.right < right)
+			right = rcf.right;
+		if (rcf.top > top)
+			top = rcf.top;
+		if (rcf.bottom < bottom)
+			bottom = rcf.bottom;
+		return *this;
+
+	}
+
+	bool FEmpty(void) const
+	{
+		return left >= right || top >= bottom;
+	}
 
 	bool FContainsPtf(const PTF& ptf) const
 	{
@@ -104,6 +173,58 @@ public:
 
 	float DyfHeight(void) const {
 		return bottom - top;
+	}
+
+	SIZF Sizf(void) const {
+		return SIZF(DxfWidth(), DyfHeight());
+	}
+
+	PTF PtfTopLeft(void) const {
+		return PTF(left, top);
+	}
+
+	RCF& SetSize(const SIZF& sizf) {
+		right = left + sizf.width;
+		bottom = top + sizf.height;
+	}
+
+	RCF& Move(const PTF& ptfTopLeft) {
+		return Offset(ptfTopLeft.x - left, ptfTopLeft.y - top);
+	}
+
+	RCF operator+(const PTF& ptf) const {
+		RCF rcf = *this;
+		return rcf.Offset(ptf);
+	}
+
+	RCF& operator+=(const PTF& ptf) {
+		return Offset(ptf);
+	}
+	
+	RCF operator-(const PTF& ptf) const {
+		RCF rcf(*this);
+		return rcf.Offset(-ptf);
+	}
+
+	RCF& operator-=(const PTF& ptf) {
+		return Offset(-ptf);
+	}
+
+	RCF operator|(const RCF& rcf) const {		
+		RCF rcfT = *this;
+		return rcfT.Union(rcf);
+	}
+
+	RCF& operator|=(const RCF& rcf) {
+		return Union(rcf);
+	}
+
+	operator int() const {
+		return !FEmpty();
+	}
+	
+	bool operator!() const {
+		return FEmpty();
 	}
 };
 
@@ -123,6 +244,13 @@ public:
 	{
 		point.x += dxf;
 		point.y += dyf;
+		return *this;
+	}
+
+	ELLF& Offset(const PTF& ptf)
+	{
+		point.x += ptf.x;
+		point.y += ptf.y;
 		return *this;
 	}
 };

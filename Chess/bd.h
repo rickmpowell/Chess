@@ -333,6 +333,7 @@ enum class TKMV {
 
 
 
+
 /*
  *
  *	BDG class
@@ -446,7 +447,7 @@ public:
 	vector<ANO> rgano;	// annotations
 
 public:
-	SPABD(GA& ga);
+	SPABD(GA* pga);
 	~SPABD(void);
 	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
