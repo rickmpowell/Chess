@@ -276,7 +276,7 @@ public:
 	virtual float DxWidth(void) const;
 	virtual float DyHeight(void) const;
 
-	void DrawMv(RCF rcf, const BDG& bdg, MV mv);
+	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
 	void DrawMoveNumber(RCF rcf, int imv);
 	WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch) const;
 	void DrawSel(int imv);

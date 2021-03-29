@@ -370,6 +370,7 @@ public:
 	void UndoLastMv(void);
 	void TestGameOver(const vector<MV>& rgmv);
 
+	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv) const;
 	int ParseMv(const char*& pch, MV& mv) const;
 	int ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const;

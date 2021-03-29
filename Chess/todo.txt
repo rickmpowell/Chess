@@ -1,3 +1,4 @@
+  Make default Draw() draw child UIs
   Animate moves when manually going through move list
   UI for clock/timing rules 
   Implement full clock/timing rules
@@ -27,6 +28,7 @@
   Modify move list to do real algebraic notation with full optimzations
   Add tooltip for items in control list
   Assert when dragging and upclick off control
+  Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
 * Change title panel to display players with color icons, and type of game (e.g., 5+3 Blitz, Correspondence)
 * Aborting Tests run does not really abort 
 

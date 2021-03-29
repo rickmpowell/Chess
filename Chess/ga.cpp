@@ -474,8 +474,7 @@ void SPARGMV::DrawContent(const RCF& rcfCont)
 		MV mv = ga.bdg.rgmvGame[imv];
 		if (imv % 2 == 0)
 			DrawMoveNumber(RcfFromCol(yfCont + (imv/2)*dyfList, 0), imv/2 + 1);
-		DrawMv(RcfFromImv(imv), bdgT, mv);
-		bdgT.MakeMv(mv);
+		DrawAndMakeMv(RcfFromImv(imv), bdgT, mv);
 	}
 	DrawSel(imvSel);
 }
@@ -501,19 +500,19 @@ void SPARGMV::DrawSel(int imv)
 }
 
 
-/*	SPARGMV::DrawMv
+/*	SPARGMV::DrawAndMakeMv
  *
  *	Draws the text of an individual move in the rectangle given, using the
- *	given board bdg and move mv. Note that the text of the decoded move is
- *	dependent on the board to take advantage of shorter text when there are
- *	no ambiguities. 
+ *	given board bdg and move mv, and makes the move on the board. Note that 
+ *	the text of the decoded move is dependent on the board to take advantage 
+ *	of shorter text when there are no ambiguities. 
  */
-void SPARGMV::DrawMv(RCF rcf, const BDG& bdg, MV mv)
+void SPARGMV::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 {
 	rcf.left += 4.0f;
 	rcf.top += 4.0f;
 	rcf.bottom -= 2.0f;
-	wstring sz = bdg.SzDecodeMv(mv);
+	wstring sz = bdg.SzMoveAndDecode(mv);
 	ptfList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	DrawSz(sz, ptfList, rcf);
 }

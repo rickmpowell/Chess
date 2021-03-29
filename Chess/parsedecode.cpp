@@ -14,7 +14,8 @@
 
 /*	BDG::SzDecodeMv
  *
- *	Decodes a move into algebraic notation.
+ *	Decodes a move into algebraic notation. Does not include postfix marks
+ *	for check or checkmate (+ or #).
  *
  *	TODO: make this optionally produce output for PGN files.
  */
@@ -96,12 +97,25 @@ FinishCastle:
 	} }
 
 FinishMove:
-	/* TODO checks and end of game situations */
-	CPC cpc = CpcFromSq(sqFrom);
-	if (FSqAttacked(mptpcsq[cpc^1][tpcKing], cpc))
-		*pch++ = L'+';
 	*pch++ = 0;
 	return wstring(sz);
+}
+
+
+/*	BDG::SzMoveAndDecode
+ *
+ *	Makes a move and returns the decoded text of the move. This is the only
+ *	way to get postfix marks on the move text, like '+' for check, or '#' for
+ *	checkmate.
+ */
+wstring BDG::SzMoveAndDecode(MV mv)
+{
+	wstring sz = SzDecodeMv(mv);
+	CPC cpc = CpcFromSq(mv.SqFrom());
+	MakeMv(mv);
+	if (FSqAttacked(mptpcsq[CpcOpposite(cpc)][tpcKing], cpc))
+		sz += L'+';
+	return sz;
 }
 
 
