@@ -53,8 +53,10 @@ UI::UI(UI* puiParent) : puiParent(puiParent), rcfBounds(0, 0, 0, 0)
 
 UI::UI(UI* puiParent, RCF rcfBounds) : puiParent(puiParent), rcfBounds(rcfBounds) 
 {
-	if (puiParent)
+	if (puiParent) {
 		puiParent->AddChild(this);
+		this->rcfBounds.Offset(puiParent->rcfBounds.left, puiParent->rcfBounds.top);
+	}
 }
 
 
@@ -106,12 +108,23 @@ RCF UI::RcfInterior(void) const
 }
 
 
+/*	UI::SetBounds
+ *
+ *	Sets the bounding box for the UI element. Coordinates are relative
+ *	to the parent's coordinate system
+ */
 void UI::SetBounds(RCF rcfNew) 
 {
+	if (puiParent)
+		rcfNew.Offset(puiParent->rcfBounds.left, puiParent->rcfBounds.top);
 	rcfBounds = rcfNew;
 }
 
 
+/*	UI::Resizes
+ *
+ *	Resizes the UI element.
+ */
 void UI::Resize(PTF ptfNew) 
 {
 	rcfBounds.right = rcfBounds.left + ptfNew.x;
@@ -119,49 +132,121 @@ void UI::Resize(PTF ptfNew)
 }
 
 
+/*	UI::Move
+ *
+ *	Moves the UI element to the new upper left position. In parent coordinates.
+ */
 void UI::Move(PTF ptfNew) 
 {
+	if (puiParent) {
+		/* convert to global coordinates */
+		ptfNew = PTF(ptfNew.x + puiParent->rcfBounds.left, 
+			ptfNew.y + puiParent->rcfBounds.top);
+	}
 	rcfBounds.Offset(ptfNew.x - rcfBounds.left, ptfNew.y - rcfBounds.top);
 }
 
 
-RCF UI::RcfToParent(RCF rcf) const
+/*	UI::RcfParentFromLocal
+ *
+ *	Converts a rectangle from local coordinates to parent coordinates
+ */
+RCF UI::RcfParentFromLocal(RCF rcf) const
 {
 	if (puiParent == NULL)
 		return rcf;
+	return rcf.Offset(rcfBounds.left-puiParent->rcfBounds.left, 
+		rcfBounds.top-puiParent->rcfBounds.top);
+}
+
+
+RCF UI::RcfGlobalFromLocal(RCF rcf) const
+{
 	return rcf.Offset(rcfBounds.left, rcfBounds.top);
 }
 
 
-RCF UI::RcfToGlobal(RCF rcf) const
+RCF UI::RcfLocalFromParent(RCF rcf) const
 {
 	if (puiParent == NULL)
 		return rcf;
-	return puiParent->RcfToGlobal(RcfToParent(rcf));
+	return rcf.Offset(puiParent->rcfBounds.left - rcfBounds.left,
+		puiParent->rcfBounds.top - rcfBounds.top);
 }
 
 
-PTF UI::PtfToParent(PTF ptf) const
+RCF UI::RcfLocalFromGlobal(RCF rcf) const
+{
+	return rcf.Offset(-rcfBounds.left, -rcfBounds.top);
+}
+
+
+/*	UI::PtfParentFromLocal
+ *
+ *	Converts a point from loal coordinates to local coordinates of the
+ *	parent UI element.
+ */
+PTF UI::PtfParentFromLocal(PTF ptf) const
 {
 	if (puiParent == NULL)
 		return ptf;
-	return ptf.Offset(rcfBounds.left, rcfBounds.top);
+	return PTF(ptf.x + rcfBounds.left - puiParent->rcfBounds.left,
+		ptf.y + rcfBounds.top - puiParent->rcfBounds.left);
+
 }
 
 
-PTF UI::PtfToGlobal(PTF ptf) const
+/*	UI::PtfGlobalFromLocal
+ *
+ *	Converts a point from local coordinates to global (relative to the 
+ *	main window) coordinates.
+ */
+PTF UI::PtfGlobalFromLocal(PTF ptf) const
 {
-	if (puiParent == NULL)
-		return ptf;
-	return puiParent->PtfToGlobal(PtfToParent(ptf));
+	return PTF(ptf.x + rcfBounds.left, ptf.y + rcfBounds.top);
 }
 
 
-void UI::Draw(void)
+/*	UI::Update
+ *
+ *	Updates the UI element and all child elements. prcfUpdate is in
+ *	global coordinates.
+ */
+void UI::Update(const RCF* prcfUpdate)
+{
+	if (prcfUpdate == NULL)
+		prcfUpdate = &rcfBounds;
+	RCF rcf = *prcfUpdate & rcfBounds;
+	if (!rcf)
+		return;
+	RCF rcfDraw = RcfLocalFromGlobal(rcf);
+	Draw(&rcfDraw);
+	for (UI* pui : rgpuiChild)
+		pui->Update(&rcf);
+}
+
+
+void UI::Redraw(void)
+{
+	ID2D1RenderTarget* prt = PrtGet();
+	BeginDraw();
+	EndDraw();
+	BeginDraw();
+	Update(&rcfBounds);
+	EndDraw();
+}
+
+
+void UI::Draw(const RCF* prcfDraw)
 {
 }
 
 
+/*	UI::PrtGet
+ *
+ *	Gets the render target we need to draw in for all the UI elements.
+ *	The render target will be in global coordinates.
+ */
 ID2D1RenderTarget* UI::PrtGet(void) const
 {
 	if (puiParent == NULL)
@@ -170,6 +255,23 @@ ID2D1RenderTarget* UI::PrtGet(void) const
 }
 
 
+void UI::BeginDraw(void)
+{
+	if (puiParent)
+		puiParent->BeginDraw();
+	else
+		PrtGet()->BeginDraw();
+}
+
+
+void UI::EndDraw(void)
+{
+	if (puiParent)
+		puiParent->EndDraw();
+	else
+		PrtGet()->EndDraw();
+}
+
 /*	UI::FillRcf
  *
  *	Graphics helper for filling a rectangle with a brush. The rectangle is in
@@ -177,7 +279,7 @@ ID2D1RenderTarget* UI::PrtGet(void) const
  */
 void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 {
-	rcf = RcfToGlobal(rcf);
+	rcf = RcfGlobalFromLocal(rcf);
 	PrtGet()->FillRectangle(&rcf, pbr);
 }
 
@@ -189,7 +291,7 @@ void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
  */
 void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 {
-	ellf.Offset(PtfToGlobal(PTF(0, 0)));
+	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
 	PrtGet()->FillEllipse(&ellf, pbr);
 }
 
@@ -201,7 +303,7 @@ void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
  */
 void UI::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
 {
-	rcf = RcfToGlobal(rcf);
+	rcf = RcfGlobalFromLocal(rcf);
 	PrtGet()->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
 }
 

@@ -218,6 +218,15 @@ public:
 	RCF& operator|=(const RCF& rcf) {
 		return Union(rcf);
 	}
+	
+	RCF operator&(const RCF& rcf) const {
+		RCF rcfT = *this;
+		return rcfT.Intersect(rcf);
+	}
+
+	RCF& operator&=(const RCF& rcf) {
+		return Intersect(rcf);
+	}
 
 	operator int() const {
 		return !FEmpty();

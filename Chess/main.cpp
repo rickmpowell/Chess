@@ -89,7 +89,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), prth
     wcex.hInstance = hinst;
     wcex.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(idiApp));
     wcex.hCursor = NULL;
-    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.hbrBackground = NULL; // (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(idmApp);
     wcex.lpszClassName = szWndClassMain;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(idiSmall));
@@ -208,11 +208,12 @@ void APP::OnPaint(void)
     BeginPaint(hwnd, &ps);
     CreateRsrc();
     prth->BeginDraw();
-    prth->SetTransform(Matrix3x2F::Identity());
-    prth->Clear(ColorF(0.5f, 0.5f, 0.5f));
-
-    if (pga)
-        pga->Draw();
+ 
+    if (pga) {
+        RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top, 
+            (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
+        pga->Update(&rcf);
+    }
 
     if (prth->EndDraw() == D2DERR_RECREATE_TARGET)
         DiscardRsrc();
@@ -276,7 +277,7 @@ bool APP::OnCommand(int cmd)
 int APP::CmdNewGame(void)
 {
     pga->NewGame();
-    pga->Redraw(false);
+    pga->Redraw();
     return 1;
 }
 

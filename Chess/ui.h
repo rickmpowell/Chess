@@ -33,7 +33,7 @@ public:
 	static void DiscardRsrc(void);
 
 protected:
-	RCF rcfBounds;	// rectangle is in parent coordinates
+	RCF rcfBounds;	// rectangle is in global coordinates
 	UI* puiParent;
 	vector<UI*> rgpuiChild;
 
@@ -49,13 +49,19 @@ public:
 	void SetBounds(RCF rcfNew);
 	void Resize(PTF ptfNew);
 	void Move(PTF ptfNew);
-	RCF RcfToParent(RCF rcf) const; // local to parent coordinates
-	RCF RcfToGlobal(RCF rcf) const; // local to app global coordinates
-	PTF PtfToParent(PTF ptf) const;
-	PTF PtfToGlobal(PTF ptf) const;
+	RCF RcfParentFromLocal(RCF rcf) const; // local to parent coordinates
+	RCF RcfGlobalFromLocal(RCF rcf) const; // local to app global coordinates
+	RCF RcfLocalFromGlobal(RCF rcf) const;
+	RCF RcfLocalFromParent(RCF rcf) const;
+	PTF PtfParentFromLocal(PTF ptf) const;
+	PTF PtfGlobalFromLocal(PTF ptf) const;
 
-	virtual void Draw(void);
+	void Update(const RCF* prcfUpdate = NULL);
+	void Redraw(void);
+	virtual void Draw(const RCF* prcfDraw=NULL);
 	virtual ID2D1RenderTarget* PrtGet(void) const;
+	virtual void BeginDraw(void);
+	virtual void EndDraw(void);
 	void FillRcf(RCF rcf, ID2D1Brush* pbr) const;
 	void FillEllf(ELLF ellf, ID2D1Brush* pbr) const;
 	void DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;

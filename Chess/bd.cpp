@@ -1083,7 +1083,7 @@ void SPABD::MakeMv(MV mv, bool fRedraw)
  *	in response to user input, which simplifies drawing quite a bit. We
  *	just handle all dragging drawing in here.
  */
-void SPABD::Draw(void)
+void SPABD::Draw(const RCF* prcfUpdate)
 {
 	ID2D1RenderTarget* prt = PrtGet();
 	prt->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
@@ -1097,7 +1097,6 @@ void SPABD::Draw(void)
 	DrawGameState();
 	DrawControls();
 	prt->SetTransform(Matrix3x2F::Identity());
-
 }
 
 
@@ -1411,10 +1410,10 @@ void SPABD::FlipBoard(CPC cpcNew)
 {
 	ID2D1RenderTarget* prt = PrtGet();
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
-		ga.Redraw(true);
+		ga.Redraw();
 	angle = 0.0f;
 	cpcPointOfView = cpcNew;
-	ga.Redraw(true);
+	ga.Redraw();
 }
 
 

@@ -29,6 +29,13 @@
   Add tooltip for items in control list
   Assert when dragging and upclick off control
   Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
+  Display game end explanations in the move list (checkmate, resign, stalemate, etc.)
+  Change clocks to use UI elements
+  Change player names in the SPARGMV to use UI elements
+  Change SPATI items to be separate UI elements
+  Beef up layout code to handle locating clocks et.al.
+  Add controls to SPARGMV for resigning/offering draws
+  Implement draws by move repetition
 * Change title panel to display players with color icons, and type of game (e.g., 5+3 Blitz, Correspondence)
 * Aborting Tests run does not really abort 
 

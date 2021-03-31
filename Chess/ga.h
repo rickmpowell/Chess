@@ -99,8 +99,7 @@ protected:
 public:
 	SPA(GA* pga);
 	~SPA(void);
-	virtual void Draw(void);
-	void Redraw(void);
+	virtual void Draw(const RCF* prcfUpdate=NULL);
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 	virtual float DxWidth(void) const;
 	virtual float DyHeight(void) const;
@@ -126,7 +125,7 @@ public:
 
 public:
 	SPATI(GA* pga);
-	virtual void Draw(void);
+	virtual void Draw(const RCF* prcfUpdate=NULL);
 	void SetText(const wstring& sz);
 };
 
@@ -221,9 +220,9 @@ public:
 		return true;
 	}
 
-	virtual void Draw(void)
+	virtual void Draw(const RCF* prcfUpdate=NULL)
 	{
-		SPA::Draw();
+		SPA::Draw(prcfUpdate);
 		/* just redraw the entire content area clipped to the view */
 		PrtGet()->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 		DrawContent(rcfCont);
@@ -271,7 +270,7 @@ public:
 	void NewGame(void);
 
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
-	virtual void Draw(void);
+	virtual void Draw(const RCF* prcfUpdate=NULL);
 	virtual void DrawContent(const RCF& rcfCont);
 	virtual float DxWidth(void) const;
 	virtual float DyHeight(void) const;
@@ -338,6 +337,8 @@ class GA : public UI
 	SPARGMV spargmv;
 	HT* phtCapt;
 
+	static ID2D1SolidColorBrush* pbrDesktop;
+
 public:
 	BDG bdg;	// board
 	PL* mpcpcppl[2];	// players
@@ -356,9 +357,10 @@ public:
 	void Resize(int dx, int dy);
 	void Layout(void);
 
-	void Draw(void);
-	void Redraw(bool fBackground);
+	virtual void Draw(const RCF* prcfUpdate=NULL);
 	virtual ID2D1RenderTarget* PrtGet(void) const;
+	virtual void BeginDraw(void);
+	virtual void EndDraw(void);
 
 	HT* PhtHitTest(PTF ptf);
 	void MouseMove(HT* pht);

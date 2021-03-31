@@ -182,24 +182,10 @@ ID2D1Bitmap* SPA::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFac
  *	Base class for drawing a screen panel. The default implementation
  *	just fills the panel with the background brush.
  */
-void SPA::Draw(void)
+void SPA::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(RcfInterior(), pbrBack);
 }
-
-
-/*	SPA::Redraw
- *
- *	Simple helper to redraw panel.
- */
-void SPA::Redraw(void)
-{
-	ID2D1RenderTarget* prt = PrtGet();
-	prt->BeginDraw();
-	Draw();
-	prt->EndDraw();
-}
-
 
 
 /*	SPA::DxWidth
@@ -221,7 +207,7 @@ float SPA::DyHeight(void) const
 
 HT* SPA::PhtHitTest(PTF ptf)
 {
-	RCF rcfInterior = RcfToGlobal(RcfInterior());
+	RCF rcfInterior = RcfGlobalFromLocal(RcfInterior());
 	if (!rcfInterior.FContainsPtf(ptf))
 		return NULL;
 	return new HT(ptf, HTT::Static, this);
@@ -361,9 +347,9 @@ void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
  *	Draws the move list screen panel, which includes a top header box and
  *	a scrollable move list
  */
-void SPARGMV::Draw(void)
+void SPARGMV::Draw(const RCF* prcfUpdate)
 {
-	SPAS::Draw(); // draws content area of the scrollable area
+	SPAS::Draw(prcfUpdate); // draws content area of the scrollable area
 
 	/* draw fixed part of the panel */
 
@@ -632,9 +618,9 @@ SPATI::SPATI(GA* pga) : SPA(pga), szText(L"")
 {
 }
 
-void SPATI::Draw(void)
+void SPATI::Draw(const RCF* prcfUpdate)
 {
-	SPA::Draw();
+	SPA::Draw(prcfUpdate);
 	
 	/* draw the logo */
 
@@ -694,9 +680,15 @@ void SPATI::SetText(const wstring& sz)
  * 
  */
 
+ID2D1SolidColorBrush* GA::pbrDesktop;
+
 
 void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
 {
+	if (pbrDesktop)
+		return;
+	prt->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
+
 	UI::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
 	SPA::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
@@ -711,6 +703,7 @@ void GA::DiscardRsrc(void)
 	SPATI::DiscardRsrc();
 	SPABD::DiscardRsrc();
 	SPARGMV::DiscardRsrc();
+	SafeRelease(&pbrDesktop);
 }
 
 
@@ -766,11 +759,11 @@ void GA::SetPl(CPC cpc, PL* ppl)
  *	Draws the full game on the screen. For now, we have plenty of speed
  *	to do full redraws, so there's no attempt to optimize this.
  */
-void GA::Draw(void)
+void GA::Draw(const RCF* prcfUpdate)
 {
-	spati.Draw();
-	spabd.Draw();
-	spargmv.Draw();
+	if (!prcfUpdate)
+		prcfUpdate = &rcfBounds;
+	FillRcf(*prcfUpdate, pbrDesktop);
 }
 
 ID2D1RenderTarget* GA::PrtGet(void) const
@@ -778,6 +771,20 @@ ID2D1RenderTarget* GA::PrtGet(void) const
 	return app.prth;
 }
 
+
+void GA::BeginDraw(void)
+{
+	app.CreateRsrc();
+	ID2D1RenderTarget* prt = PrtGet();
+	prt->BeginDraw();
+	prt->SetTransform(Matrix3x2F::Identity());
+}
+
+void GA::EndDraw(void)
+{
+	if (PrtGet()->EndDraw() == D2DERR_RECREATE_TARGET)
+		app.DiscardRsrc();
+}
 
 /*	GA::NewGame 
  *
@@ -790,18 +797,6 @@ void GA::NewGame(void)
 	bdg.NewGame();
 	spabd.NewGame();
 	spargmv.NewGame();
-}
-
-
-void GA::Redraw(bool fBackground)
-{
-	app.prth->BeginDraw();
-	if (fBackground)
-		app.prth->Clear(ColorF(0.5f, 0.5f, 0.5f));
-	spati.Draw();
-	spabd.Draw();
-	spargmv.Draw();
-	app.prth->EndDraw();
 }
 
 
@@ -921,6 +916,6 @@ void GA::MakeMv(MV mv, bool fRedraw)
 	if (fRedraw) {
 		spargmv.UpdateContSize();
 		if (!spargmv.FMakeVis((int)bdg.rgmvGame.size()-1))
-			Redraw(false);
+			Redraw();
 	}
 }

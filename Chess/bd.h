@@ -458,7 +458,7 @@ public:
 	
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 
-	virtual void Draw(void);
+	virtual void Draw(const RCF* prcfUpdate=NULL);
 	void DrawMargins(void);
 	void DrawSquares(void);
 	void DrawLabels(void);
