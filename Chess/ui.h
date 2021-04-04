@@ -26,11 +26,15 @@ class UI
 {
 protected:
 	static ID2D1SolidColorBrush* pbrBack;
+	static ID2D1SolidColorBrush* pbrAltBack;
+	static ID2D1SolidColorBrush* pbrGridLine;
 	static ID2D1SolidColorBrush* pbrText;
 	static IDWriteTextFormat* ptfText;
 public:
 	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
+	static ID2D1PathGeometry* PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf);
+	static ID2D1Bitmap* PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic);
 
 protected:
 	RCF rcfBounds;	// rectangle is in global coordinates

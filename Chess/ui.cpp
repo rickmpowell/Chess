@@ -14,6 +14,8 @@
  */
 
 ID2D1SolidColorBrush* UI::pbrBack;
+ID2D1SolidColorBrush* UI::pbrAltBack;
+ID2D1SolidColorBrush* UI::pbrGridLine;
 ID2D1SolidColorBrush* UI::pbrText;
 IDWriteTextFormat* UI::ptfText;
 
@@ -23,6 +25,8 @@ void UI::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2, IDWriteFactor
 	if (pbrBack)
 		return;
 	prt->CreateSolidColorBrush(ColorF(ColorF::White), &pbrBack);
+	prt->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
+	prt->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
 	prt->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
@@ -34,8 +38,62 @@ void UI::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2, IDWriteFactor
 void UI::DiscardRsrc(void)
 {
 	SafeRelease(&pbrBack);
+	SafeRelease(&pbrAltBack);
+	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
 	SafeRelease(&ptfText);
+}
+
+ID2D1PathGeometry* UI::PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf)
+{
+	/* capture X, which is created as a cross that is rotated later */
+	ID2D1PathGeometry* pgeom;
+	pfactd2d->CreatePathGeometry(&pgeom);
+	ID2D1GeometrySink* psink;
+	pgeom->Open(&psink);
+	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
+	psink->AddLines(&rgptf[1], cptf - 1);
+	psink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	psink->Close();
+	SafeRelease(&psink);
+	return pgeom;
+}
+
+
+ID2D1Bitmap* UI::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic)
+{
+	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
+	if (hres == NULL)
+		return NULL;
+	ULONG cbRes = ::SizeofResource(NULL, hres);
+	HGLOBAL hresLoad = ::LoadResource(NULL, hres);
+	if (hresLoad == NULL)
+		return NULL;
+	BYTE* pbRes = (BYTE*)::LockResource(hresLoad);
+	if (pbRes == NULL)
+		return NULL;
+
+	HRESULT hr;
+	IWICStream* pstm = NULL;
+	hr = pfactwic->CreateStream(&pstm);
+	hr = pstm->InitializeFromMemory(pbRes, cbRes);
+	IWICBitmapDecoder* pdec = NULL;
+	hr = pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
+	IWICBitmapFrameDecode* pframe = NULL;
+	hr = pdec->GetFrame(0, &pframe);
+	IWICFormatConverter* pconv = NULL;
+	hr = pfactwic->CreateFormatConverter(&pconv);
+	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
+		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
+	ID2D1Bitmap* pbmp;
+	hr = prt->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
+
+	SafeRelease(&pframe);
+	SafeRelease(&pconv);
+	SafeRelease(&pdec);
+	SafeRelease(&pstm);
+
+	return pbmp;
 }
 
 

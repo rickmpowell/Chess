@@ -13,14 +13,14 @@
 #include "ui.h"
 
 
- /*
-  *
-  *	SPA class
-  *
-  *	Screen panel class. Base class for reserving space on the
-  *	graphics screen where we can display random stuff.
-  *
-  */
+/*
+ *
+ *	SPA class
+ *
+ *	Screen panel class. Base class for reserving space on the
+ *	graphics screen where we can display random stuff.
+ *
+ */
 class GA;
 
 enum class LL
@@ -86,11 +86,7 @@ class SPA : public UI
 {
 public:
 	static ID2D1SolidColorBrush* pbrTextSel;
-	static ID2D1SolidColorBrush* pbrGridLine;
-	static ID2D1SolidColorBrush* pbrAltBack;
 	static IDWriteTextFormat* ptfTextSm;
-	static ID2D1PathGeometry* PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf);
-	static ID2D1Bitmap* PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic);
 	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
 
@@ -246,12 +242,41 @@ public:
 };
 
 
+/*
+ *
+ *	UICLOCK class
+ *
+ *	A UI element to display a chess clock. Usually two of these
+ *	on the screen at any given time.
+ * 
+ */
+
+class SPARGMV;
+
+class UICLOCK : public UI
+{
+protected:
+	GA& ga;
+	CPC cpc;
+	static IDWriteTextFormat* ptfClock;
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+
+public:
+	UICLOCK(SPARGMV* pspargmv, CPC cpc);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+};
+
+
 class SPARGMV : public SPAS
 {
+	friend class UICLOCK;
+
 	static IDWriteTextFormat* ptfList;
 	static float mpcoldxf[4];
 	static float dyfList;
-	static IDWriteTextFormat* ptfClock;
+
 	float XfFromCol(int col) const;
 	float DxfFromCol(int col) const; 
 	RCF RcfFromCol(float yf, int col) const;
@@ -259,6 +284,7 @@ class SPARGMV : public SPAS
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int imvSel;
+	UICLOCK* rgpuiclock[2];
 
 public:	
 	SPARGMV(GA* pga);
@@ -277,7 +303,6 @@ public:
 
 	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
 	void DrawMoveNumber(RCF rcf, int imv);
-	WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch) const;
 	void DrawSel(int imv);
 	void SetSel(int imv);
 
@@ -285,7 +310,6 @@ public:
 	void UpdateContSize(void);
 
 	void DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const;
-	void DrawClock(CPC cpc, RCF rcfArea) const;
 };
 
 

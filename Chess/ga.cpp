@@ -11,6 +11,15 @@
 #include "Chess.h"
 #include "ga.h"
 
+WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
+{
+	if (imv / 10 != 0)
+		pch = PchDecodeInt(imv / 10, pch);
+	*pch++ = imv % 10 + L'0';
+	*pch = '\0';
+	return pch;
+}
+
 
 /*
  * 
@@ -23,8 +32,6 @@
 
 
 ID2D1SolidColorBrush* SPA::pbrTextSel;
-ID2D1SolidColorBrush* SPA::pbrGridLine;
-ID2D1SolidColorBrush* SPA::pbrAltBack;
 IDWriteTextFormat* SPA::ptfTextSm;
 
 
@@ -38,8 +45,6 @@ void SPA::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagi
 	if (pbrTextSel)
 		return;
 	prt->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
-	prt->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
-	prt->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
@@ -51,7 +56,6 @@ void SPA::DiscardRsrc(void)
 {
 	SafeRelease(&pbrTextSel); 
 	SafeRelease(&pbrGridLine);
-	SafeRelease(&pbrAltBack);
 	SafeRelease(&ptfTextSm);
 }
 
@@ -124,57 +128,6 @@ SPA::~SPA(void)
 }
 
 
-ID2D1PathGeometry* SPA::PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf)
-{
-	/* capture X, which is created as a cross that is rotated later */
-	ID2D1PathGeometry* pgeom;
-	pfactd2d->CreatePathGeometry(&pgeom);
-	ID2D1GeometrySink* psink;
-	pgeom->Open(&psink);
-	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
-	psink->AddLines(&rgptf[1], cptf - 1);
-	psink->EndFigure(D2D1_FIGURE_END_CLOSED);
-	psink->Close();
-	SafeRelease(&psink);
-	return pgeom;
-}
-
-
-ID2D1Bitmap* SPA::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic)
-{
-	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
-	if (hres == NULL)
-		return NULL;
-	ULONG cbRes = ::SizeofResource(NULL, hres);
-	HGLOBAL hresLoad = ::LoadResource(NULL, hres);
-	if (hresLoad == NULL)
-		return NULL;
-	BYTE* pbRes = (BYTE*)::LockResource(hresLoad);
-	if (pbRes == NULL)
-		return NULL;
-
-	HRESULT hr;
-	IWICStream* pstm = NULL;
-	hr = pfactwic->CreateStream(&pstm);
-	hr = pstm->InitializeFromMemory(pbRes, cbRes);
-	IWICBitmapDecoder* pdec = NULL;
-	hr = pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
-	IWICBitmapFrameDecode* pframe = NULL;
-	hr = pdec->GetFrame(0, &pframe);
-	IWICFormatConverter* pconv = NULL;
-	hr = pfactwic->CreateFormatConverter(&pconv);
-	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
-		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
-	ID2D1Bitmap* pbmp;
-	hr = prt->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
-
-	SafeRelease(&pframe);
-	SafeRelease(&pconv);
-	SafeRelease(&pdec);
-	SafeRelease(&pstm);
-
-	return pbmp;
-}
 
 
 /*	SPA::Draw
@@ -235,6 +188,75 @@ void SPA::MouseHover(HT* pht)
 
 /*
  *
+ *	UICLOCK implementation
+ * 
+ *	The chess clock implementation
+ * 
+ */
+
+
+IDWriteTextFormat* UICLOCK::ptfClock;
+
+void UICLOCK::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+{
+	if (ptfClock)
+		return;
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 50.0f, L"",
+		&ptfClock);
+}
+
+
+void UICLOCK::DiscardRsrc(void)
+{
+	SafeRelease(&ptfClock);
+}
+
+
+UICLOCK::UICLOCK(SPARGMV* pspargmv, CPC cpc) : UI(pspargmv), ga(pspargmv->ga), cpc(cpc)
+{
+}
+
+
+void UICLOCK::Draw(const RCF* prcfUpdate)
+{
+	RCF rcf = RcfInterior();
+	FillRcf(rcf, pbrAltBack);
+	FillRcf(RCF(rcf.left, rcf.top, rcf.right, rcf.top+1), pbrGridLine);
+	FillRcf(RCF(rcf.left, rcf.bottom - 1, rcf.right, rcf.bottom), pbrGridLine);
+
+	ptfClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	rcf.top += 11.0f;
+	DWORD tick = ga.mpcpctickClock[cpc];
+	WCHAR sz[20], * pch;
+	unsigned hr = tick / (100 * 60 * 60);
+	tick = tick % (100 * 60 * 60);
+	unsigned min = tick / (100 * 60);
+	tick = tick % (100 * 60);
+	unsigned sec = tick / 100;
+	tick = tick % 100;
+	unsigned frac = tick;
+	pch = sz;
+	if (hr > 0) {
+		pch = PchDecodeInt(hr, pch);
+		*pch++ = ':';
+	}
+	*pch++ = L'0' + min / 10;
+	*pch++ = L'0' + min % 10;
+	*pch++ = L':';
+	*pch++ = L'0' + sec / 10;
+	*pch++ = L'0' + sec % 10;
+	if (hr == 0 && min == 0 && sec < 30) {
+		*pch++ = L'.';
+		*pch++ = L'0' + frac / 10;
+	}
+	*pch = 0;
+	DrawSz(wstring(sz), ptfClock, rcf);
+}
+
+
+/*
+ *
  *	SPARGMV class implementation
  * 
  *	Move list implementation
@@ -244,6 +266,8 @@ void SPA::MouseHover(HT* pht)
 
 SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
 {
+	rgpuiclock[0] = new UICLOCK(this, cpcWhite);
+	rgpuiclock[1] = new UICLOCK(this, cpcBlack);
 }
 
 
@@ -253,7 +277,6 @@ SPARGMV::~SPARGMV(void)
 
 
 IDWriteTextFormat* SPARGMV::ptfList;
-IDWriteTextFormat* SPARGMV::ptfClock;
 
 
 /*	SPARGMV::CreateRsrc
@@ -272,9 +295,6 @@ void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICI
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
 		&ptfList);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 50.0f, L"",
-		&ptfClock);
 }
 
 
@@ -286,11 +306,12 @@ void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICI
 void SPARGMV::DiscardRsrc(void)
 {
 	SafeRelease(&ptfList);
-	SafeRelease(&ptfClock);
 }
+
 
 float SPARGMV::mpcoldxf[] = { 40.0f, 70.0f, 70.0f, 20.0f };
 float SPARGMV::dyfList = 20.0f;
+
 
 float SPARGMV::XfFromCol(int col) const
 {
@@ -339,6 +360,14 @@ void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 	rcf.bottom -= 5.0f * dyfList;
 	SetView(rcf);
 	SetContent(rcf);
+	rcf = RcfInterior();
+	rcf.top += 1.5f * dyfList;
+	rcf.bottom = rcf.top + 4.0f * dyfList;
+	rgpuiclock[0]->SetBounds(rcf);
+	rcf = RcfInterior();
+	rcf.bottom -= 1.5f * dyfList;
+	rcf.top = rcf.bottom - 4.0f * dyfList;
+	rgpuiclock[1]->SetBounds(rcf);
 }
 
 
@@ -390,47 +419,8 @@ void SPARGMV::DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const
 	rcfPl.top += 5.0f;
 	DrawSz(szColor, ptfList, rcfPl);
 	rcfPl.top -= 5.0f;
-
-	RCF rcfClock = rcfArea;
-	if (fTop)
-		rcfClock.top = rcfPl.bottom;
-	else
-		rcfClock.bottom = rcfPl.top;
-	DrawClock(cpc, rcfClock);
 }
 
-
-void SPARGMV::DrawClock(CPC cpc, RCF rcfArea) const
-{
-	FillRcf(rcfArea, pbrAltBack);
-	ptfClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-	rcfArea.top += 5.0f;
-	DWORD tick = ga.mpcpctickClock[cpc];
-	WCHAR sz[20], *pch;
-	unsigned hr = tick / (100 * 60 * 60);
-	tick = tick % (100 * 60 * 60);
-	unsigned min = tick / (100 * 60);
-	tick = tick % (100 * 60);
-	unsigned sec = tick / 100;
-	tick = tick % 100;
-	unsigned frac = tick;
-	pch = sz;
-	if (hr > 0) {
-		pch = PchDecodeInt(hr, pch);
-		*pch++ = ':';
-	}
-	*pch++ = L'0' + min / 10;
-	*pch++ = L'0' + min % 10;
-	*pch++ = L':';
-	*pch++ = L'0' + sec / 10;
-	*pch++ = L'0' + sec % 10;
-	if (hr == 0 && min == 0 && sec < 30) {
-		*pch++ = L'.';
-		*pch++ = L'0' + frac / 10;
-	}
-	*pch = 0;
-	DrawSz(wstring(sz), ptfClock, rcfArea);
-}
 
 
 /*	SPSARGMV::RcfFromImv
@@ -523,15 +513,6 @@ void SPARGMV::DrawMoveNumber(RCF rcf, int imv)
 }
 
 
-WCHAR* SPARGMV::PchDecodeInt(unsigned imv, WCHAR* pch) const
-{
-	if (imv / 10 != 0)
-		pch = PchDecodeInt(imv / 10, pch);
-	*pch++ = imv % 10 + L'0';
-	*pch = '\0';
-	return pch;
-}
-
 
 float SPARGMV::DxWidth(void) const
 {
@@ -618,6 +599,7 @@ SPATI::SPATI(GA* pga) : SPA(pga), szText(L"")
 {
 }
 
+
 void SPATI::Draw(const RCF* prcfUpdate)
 {
 	SPA::Draw(prcfUpdate);
@@ -693,6 +675,7 @@ void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFacto
 	SPA::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPABD::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
+	UICLOCK::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPARGMV::CreateRsrc(prt, pfactdwr, pfactwic);
 }
 
@@ -703,6 +686,7 @@ void GA::DiscardRsrc(void)
 	SPATI::DiscardRsrc();
 	SPABD::DiscardRsrc();
 	SPARGMV::DiscardRsrc();
+	UICLOCK::DiscardRsrc();
 	SafeRelease(&pbrDesktop);
 }
 
@@ -712,7 +696,6 @@ GA::GA(APP& app) : UI(NULL), app(app),
 	phtCapt(NULL)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
-
 	Layout();
 }
 
@@ -766,6 +749,7 @@ void GA::Draw(const RCF* prcfUpdate)
 	FillRcf(*prcfUpdate, pbrDesktop);
 }
 
+
 ID2D1RenderTarget* GA::PrtGet(void) const
 {
 	return app.prth;
@@ -780,11 +764,13 @@ void GA::BeginDraw(void)
 	prt->SetTransform(Matrix3x2F::Identity());
 }
 
+
 void GA::EndDraw(void)
 {
 	if (PrtGet()->EndDraw() == D2DERR_RECREATE_TARGET)
 		app.DiscardRsrc();
 }
+
 
 /*	GA::NewGame 
  *
