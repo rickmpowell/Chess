@@ -91,6 +91,7 @@ public:
 	APP(HINSTANCE hinst, int sw);
 	~APP(void);
 	int MessagePump(void);
+	DWORD TmMessage(void);
 
 private:
 	void CreateRsrc(void);
@@ -104,9 +105,13 @@ private:
 	bool OnMouseMove(UINT x, UINT y);
 	bool OnLeftDown(UINT x, UINT y);
 	bool OnLeftUp(UINT x, UINT y);
+	bool OnTimer(UINT tid);
 
 	int CmdNewGame(void);
 	int CmdTest(void);
+
+	void CreateTimer(UINT tid, DWORD dtm);
+	void DestroyTimer(UINT tid);
 
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam);
 };

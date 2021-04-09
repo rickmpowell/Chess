@@ -227,14 +227,14 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 
 	ptfClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	rcf.top += 11.0f;
-	DWORD tick = ga.mpcpctickClock[cpc];
+	DWORD tick = ga.mpcpctmClock[cpc];
 	WCHAR sz[20], * pch;
-	unsigned hr = tick / (100 * 60 * 60);
-	tick = tick % (100 * 60 * 60);
-	unsigned min = tick / (100 * 60);
-	tick = tick % (100 * 60);
-	unsigned sec = tick / 100;
-	tick = tick % 100;
+	unsigned hr = tick / (1000 * 60 * 60);
+	tick = tick % (1000 * 60 * 60);
+	unsigned min = tick / (1000 * 60);
+	tick = tick % (1000 * 60);
+	unsigned sec = tick / 1000;
+	tick = tick % 1000;
 	unsigned frac = tick;
 	pch = sz;
 	if (hr > 0) {
@@ -248,7 +248,7 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 	*pch++ = L'0' + sec % 10;
 	if (hr == 0 && min == 0 && sec < 30) {
 		*pch++ = L'.';
-		*pch++ = L'0' + frac / 10;
+		*pch++ = L'0' + frac / 100;
 	}
 	*pch = 0;
 	DrawSz(wstring(sz), ptfClock, rcf);
@@ -266,8 +266,8 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 
 SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
 {
-	rgpuiclock[0] = new UICLOCK(this, cpcWhite);
-	rgpuiclock[1] = new UICLOCK(this, cpcBlack);
+	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
+	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
 }
 
 
@@ -356,18 +356,18 @@ void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
 	SPAS::Layout(ptf, pspa, ll);
 	RCF rcf = RcfInterior();
-	rcf.top += 5.0f * dyfList;
-	rcf.bottom -= 5.0f * dyfList;
+	rcf.top += 5.5f * dyfList;
+	rcf.bottom -= 5.5f * dyfList;
 	SetView(rcf);
 	SetContent(rcf);
 	rcf = RcfInterior();
 	rcf.top += 1.5f * dyfList;
 	rcf.bottom = rcf.top + 4.0f * dyfList;
-	rgpuiclock[0]->SetBounds(rcf);
+	mpcpcpuiclock[ga.bdg.cpcToMove^1]->SetBounds(rcf);
 	rcf = RcfInterior();
 	rcf.bottom -= 1.5f * dyfList;
 	rcf.top = rcf.bottom - 4.0f * dyfList;
-	rgpuiclock[1]->SetBounds(rcf);
+	mpcpcpuiclock[ga.bdg.cpcToMove]->SetBounds(rcf);
 }
 
 
@@ -778,11 +778,24 @@ void GA::EndDraw(void)
  */
 void GA::NewGame(void)
 {
-	mpcpctickClock[cpcWhite] = gtm.TickGame();
-	mpcpctickClock[cpcBlack] = gtm.TickGame();
 	bdg.NewGame();
 	spabd.NewGame();
 	spargmv.NewGame();
+	StartGame();
+}
+
+
+void GA::StartGame(void)
+{
+	tmLast = 0;
+	mpcpctmClock[cpcWhite] = gtm.TmGame();
+	mpcpctmClock[cpcBlack] = gtm.TmGame();
+}
+
+
+void GA::EndGame(void)
+{
+	app.DestroyTimer(tidClock);
 }
 
 
@@ -883,22 +896,47 @@ void GA::LeftUp(HT* pht)
 }
 
 
-void GA::StartClock(CPC cpc, DWORD tickCur)
+void GA::Timer(UINT tm, DWORD tmCur)
+{
+	mpcpctmClock[bdg.cpcToMove] -= tmCur - tmLast;
+	tmLast = tmCur;
+	spargmv.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
+}
+
+
+void GA::StartClock(CPC cpc, DWORD tmCur)
 {
 }
 
 
-void GA::StopClock(CPC cpc, DWORD tickCur)
+void GA::PauseClock(CPC cpc, DWORD tmCur)
 {
+	mpcpctmClock[cpc] -= tmCur - tmLast;
+	spargmv.mpcpcpuiclock[cpc]->Redraw();
+}
+
+
+void GA::SwitchClock(DWORD tmCur)
+{
+	if (tmLast) {
+		PauseClock(bdg.cpcToMove, tmCur);
+		mpcpctmClock[bdg.cpcToMove] += gtm.DtmMove();
+	}
+	else {
+		app.CreateTimer(tidClock, 10);
+	}
+	tmLast = tmCur;
+	StartClock(bdg.cpcToMove^1, tmCur);
 }
 
 
 void GA::MakeMv(MV mv, bool fRedraw)
 {
-	StopClock(bdg.cpcToMove, 0);
-	mpcpctickClock[bdg.cpcToMove] += gtm.DtickMove();
+	DWORD tm = app.TmMessage();
+	SwitchClock(tm == 0 ? 1 : tm);
 	spabd.MakeMv(mv, fRedraw);
-	StartClock(bdg.cpcToMove, 0);
+	if (bdg.gs != GS::Playing)
+		EndGame();
 	if (fRedraw) {
 		spargmv.UpdateContSize();
 		if (!spargmv.FMakeVis((int)bdg.rgmvGame.size()-1))

@@ -14,6 +14,13 @@
 
 
 /*
+ *	Timer IDs. Must be unique per application.
+ */
+
+const UINT tidClock = 1;
+
+
+/*
  *
  *	SPA class
  *
@@ -272,6 +279,7 @@ public:
 class SPARGMV : public SPAS
 {
 	friend class UICLOCK;
+	friend class GA;
 
 	static IDWriteTextFormat* ptfList;
 	static float mpcoldxf[4];
@@ -284,7 +292,7 @@ class SPARGMV : public SPAS
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int imvSel;
-	UICLOCK* rgpuiclock[2];
+	UICLOCK* mpcpcpuiclock[2];
 
 public:	
 	SPARGMV(GA* pga);
@@ -322,15 +330,15 @@ public:
  */
 class GTM
 {
-	DWORD tickGame;
-	DWORD dtickMove;
+	DWORD tmGame;
+	DWORD dtmMove;
 public:
-	GTM(void) : tickGame(10 * 60 * 100), dtickMove(0) { }
-	DWORD TickGame(void) const {
-		return tickGame;
+	GTM(void) : tmGame(10 * 60 * 1000), dtmMove(0) { }
+	DWORD TmGame(void) const {
+		return tmGame;
 	}
-	DWORD DtickMove(void) const {
-		return dtickMove;
+	DWORD DtmMove(void) const {
+		return dtmMove;
 	}
 };
 
@@ -367,14 +375,23 @@ public:
 	BDG bdg;	// board
 	PL* mpcpcppl[2];	// players
 	GTM gtm;
-	DWORD mpcpctickClock[2];	// player clocks
+	DWORD mpcpctmClock[2];	// player clocks
+	DWORD tmLast;	// time of last move
 
 public:
 	GA(APP& app);
 	~GA(void);
+
 	void Init(void);
+
 	void NewGame(void);
-	
+	void StartGame(void);
+	void EndGame(void);
+	void MakeMv(MV mv, bool fRedraw);
+	void SwitchClock(DWORD tmCur);
+	void StartClock(CPC cpc, DWORD tmCur);
+	void PauseClock(CPC cpc, DWORD tmCur);
+
 	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
 
@@ -396,9 +413,7 @@ public:
 	inline PL* PplFromCpc(CPC cpc) { return PlFromCpc(cpc); }
 	void SetPl(CPC cpc, PL* ppl);
 
-	void MakeMv(MV mv, bool fRedraw);
-	void StartClock(CPC cpc, DWORD tickCur);
-	void StopClock(CPC cpc, DWORD tickCur);
+	void Timer(UINT tid, DWORD tm);
 
 	void Test(void);
 	void ValidateFEN(const WCHAR* szFEN) const;

@@ -145,6 +145,12 @@ int APP::MessagePump(void)
 }
 
 
+DWORD APP::TmMessage(void)
+{
+    return ::GetMessageTime();
+}
+
+
 void APP::CreateRsrc(void)
 {
     if (prth)
@@ -192,6 +198,26 @@ void APP::Redraw(const RCF* prcf)
 }
 
 
+/*  APP::CreateTimer
+ *
+ *  Creates a timer that goes every dtm milliseconds.
+ */
+void APP::CreateTimer(UINT tid, DWORD dtm)
+{
+    ::SetTimer(hwnd, tid, dtm, NULL);
+}
+
+
+/*  APP::DestroyTimer
+ *
+ *  Kills the timer
+ */
+void APP::DestroyTimer(UINT tid)
+{
+    ::KillTimer(hwnd, tid);
+}
+
+
 void APP::OnSize(UINT dx, UINT dy)
 {
     if (prth)
@@ -229,6 +255,7 @@ bool APP::OnMouseMove(UINT x, UINT y)
     return true;
 }
 
+
 bool APP::OnLeftDown(UINT x, UINT y)
 {
     HT* pht = pga->PhtHitTest(PTF((float)x, (float)y));
@@ -239,11 +266,24 @@ bool APP::OnLeftDown(UINT x, UINT y)
     return true;
 }
 
+
 bool APP::OnLeftUp(UINT x, UINT y)
 {
     HT* pht = pga->PhtHitTest(PTF((float)x, (float)y));
     pga->LeftUp(pht);
     delete pht;
+    return true;
+}
+
+
+/*  APP::OnTimer
+ *
+ *  Handles the WM_TIMER message from the wndproc. Returns false if
+ *  the default processing should still happen.
+ */
+bool APP::OnTimer(UINT tid)
+{
+    pga->Timer(tid, TmMessage());
     return true;
 }
 
@@ -334,6 +374,11 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
 
     case WM_LBUTTONUP:
         if (!papp->OnLeftUp(LOWORD(lparam), HIWORD(lparam)))
+            break;
+        return 0;
+
+    case WM_TIMER:
+        if (!papp->OnTimer((UINT)wparam))
             break;
         return 0;
 
