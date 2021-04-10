@@ -273,6 +273,7 @@ public:
 public:
 	UICLOCK(SPARGMV* pspargmv, CPC cpc);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
+	void DrawColon(RCF& rcf, unsigned frac) const;
 };
 
 
@@ -333,7 +334,7 @@ class GTM
 	DWORD tmGame;
 	DWORD dtmMove;
 public:
-	GTM(void) : tmGame(10 * 60 * 1000), dtmMove(0) { }
+	GTM(void) : tmGame(3 * 60 * 1000), dtmMove(5 * 1000) { }
 	DWORD TmGame(void) const {
 		return tmGame;
 	}

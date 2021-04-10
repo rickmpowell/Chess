@@ -1,7 +1,7 @@
+  Clocks don't rotate with rotating board
   Animate moves when manually going through move list
   UI for clock/timing rules 
   Implement full clock/timing rules
-  Clocks should animate when ticking
   Clocks should turn red when close to timing out
   Implement loss by clock expiration
   Implement queued move-ahead 
@@ -32,6 +32,7 @@
   Beef up layout code to handle locating clocks et.al.
   Add controls to SPARGMV for resigning/offering draws
   Implement draws by move repetition
+* Clocks should animate when ticking
 * Implement clock timers
 * Add check/mate indicators on move list
 * Change clocks to use UI elements

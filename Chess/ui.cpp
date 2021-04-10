@@ -366,6 +366,19 @@ void UI::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* 
 }
 
 
+/*	UI::DrawRgch
+ *
+ *	Helper function for drawing text on the screen panel. Rectangle is in local
+ *	UI coordinates
+ */
+void UI::DrawRgch(const WCHAR* rgch, int cch, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
+{
+	rcf = RcfGlobalFromLocal(rcf);
+	PrtGet()->DrawText(rgch, (UINT32)cch, ptf, &rcf, pbr == NULL ? pbrText : pbr);
+
+}
+
+
 /*	UI::DrawBmp
  *
  *	Helper function for drawing part of a bitmap on the screen panel. Destination

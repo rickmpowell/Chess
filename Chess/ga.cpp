@@ -220,38 +220,80 @@ UICLOCK::UICLOCK(SPARGMV* pspargmv, CPC cpc) : UI(pspargmv), ga(pspargmv->ga), c
 
 void UICLOCK::Draw(const RCF* prcfUpdate)
 {
+	/* fill edges and background */
+
 	RCF rcf = RcfInterior();
 	FillRcf(rcf, pbrAltBack);
 	FillRcf(RCF(rcf.left, rcf.top, rcf.right, rcf.top+1), pbrGridLine);
 	FillRcf(RCF(rcf.left, rcf.bottom - 1, rcf.right, rcf.bottom), pbrGridLine);
-
-	ptfClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	rcf.top += 11.0f;
-	DWORD tick = ga.mpcpctmClock[cpc];
+	
+	/* break down time into parts */
+
+	DWORD tm = ga.mpcpctmClock[cpc];
+	unsigned hr = tm / (1000 * 60 * 60);
+	tm = tm % (1000 * 60 * 60);
+	unsigned min = tm / (1000 * 60);
+	tm = tm % (1000 * 60);
+	unsigned sec = tm / 1000;
+	tm = tm % 1000;
+	unsigned frac = tm;
+
+	/* convert into text */
+
 	WCHAR sz[20], * pch;
-	unsigned hr = tick / (1000 * 60 * 60);
-	tick = tick % (1000 * 60 * 60);
-	unsigned min = tick / (1000 * 60);
-	tick = tick % (1000 * 60);
-	unsigned sec = tick / 1000;
-	tick = tick % 1000;
-	unsigned frac = tick;
 	pch = sz;
-	if (hr > 0) {
-		pch = PchDecodeInt(hr, pch);
-		*pch++ = ':';
-	}
+	pch = PchDecodeInt(hr, pch);
+	*pch++ = ':';
 	*pch++ = L'0' + min / 10;
 	*pch++ = L'0' + min % 10;
 	*pch++ = L':';
 	*pch++ = L'0' + sec / 10;
 	*pch++ = L'0' + sec % 10;
-	if (hr == 0 && min == 0 && sec < 30) {
-		*pch++ = L'.';
-		*pch++ = L'0' + frac / 100;
-	}
+	*pch++ = L'.';
+	*pch++ = L'0' + frac / 100;
 	*pch = 0;
-	DrawSz(wstring(sz), ptfClock, rcf);
+	
+	/* print out the text piece at a time */
+
+	ptfClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	const float dxfDigit = 30.0f;
+	const float dxfPunc = 18.0f;
+	if (hr > 0) {
+		DrawRgch(sz, 1, ptfClock, rcf);	// hours
+		rcf.left += dxfDigit;
+		DrawColon(rcf, frac);
+		DrawRgch(sz + 2, 2, ptfClock, rcf); // minutes
+		rcf.left += 2 * dxfDigit;
+		DrawColon(rcf, frac);
+		DrawRgch(sz + 5, 2, ptfClock, rcf); // seconds
+	}
+	else if (min > 0) {
+		rcf.left += 30.0f;
+		DrawRgch(sz + 2, 2, ptfClock, rcf);	// minutes
+		rcf.left += 2*dxfDigit;
+		DrawColon(rcf, frac);
+		DrawRgch(sz + 5, 2, ptfClock, rcf);	// seconds 
+	}
+	else {
+		rcf.left += 23.0f;
+		DrawRgch(sz + 3, 1, ptfClock, rcf);	// minutes (=0)
+		rcf.left += dxfDigit;
+		DrawColon(rcf, frac);
+		DrawRgch(sz + 5, 4, ptfClock, rcf);	// seconds and tenths
+	}
+}
+
+
+void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
+{
+	if (frac < 500 && cpc == ga.bdg.cpcToMove)
+		pbrText->SetOpacity(0.33f);
+	rcf.top -= 3.0f;
+	DrawRgch(L":", 1, ptfClock, rcf, pbrText);
+	pbrText->SetOpacity(1.0f);
+	rcf.top += 3.0f;
+	rcf.left += 18.0f;
 }
 
 

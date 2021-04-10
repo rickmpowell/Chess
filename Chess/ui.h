@@ -69,6 +69,7 @@ public:
 	void FillRcf(RCF rcf, ID2D1Brush* pbr) const;
 	void FillEllf(ELLF ellf, ID2D1Brush* pbr) const;
 	void DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
+	void DrawRgch(const WCHAR* rgch, int cch, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
 	void DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };
 
