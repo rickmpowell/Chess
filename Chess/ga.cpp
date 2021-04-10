@@ -220,17 +220,22 @@ UICLOCK::UICLOCK(SPARGMV* pspargmv, CPC cpc) : UI(pspargmv), ga(pspargmv->ga), c
 
 void UICLOCK::Draw(const RCF* prcfUpdate)
 {
+	DWORD tm = ga.mpcpctmClock[cpc];
+
 	/* fill edges and background */
 
 	RCF rcf = RcfInterior();
+	D2D1_COLOR_F coSav = pbrAltBack->GetColor();
+	if (FTimeOutWarning(tm))
+		pbrAltBack->SetColor(ColorF(1.0f, 0.9f, 0.9f));
 	FillRcf(rcf, pbrAltBack);
+	pbrAltBack->SetColor(coSav);
 	FillRcf(RCF(rcf.left, rcf.top, rcf.right, rcf.top+1), pbrGridLine);
 	FillRcf(RCF(rcf.left, rcf.bottom - 1, rcf.right, rcf.bottom), pbrGridLine);
 	rcf.top += 11.0f;
 	
 	/* break down time into parts */
 
-	DWORD tm = ga.mpcpctmClock[cpc];
 	unsigned hr = tm / (1000 * 60 * 60);
 	tm = tm % (1000 * 60 * 60);
 	unsigned min = tm / (1000 * 60);
@@ -285,12 +290,17 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 }
 
 
+bool UICLOCK::FTimeOutWarning(DWORD tm) const
+{
+	return tm < 1000 * 20;
+}
+
 void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 {
 	if (frac < 500 && cpc == ga.bdg.cpcToMove)
 		pbrText->SetOpacity(0.33f);
 	rcf.top -= 3.0f;
-	DrawRgch(L":", 1, ptfClock, rcf, pbrText);
+	DrawSz(L":", ptfClock, rcf, pbrText);
 	pbrText->SetOpacity(1.0f);
 	rcf.top += 3.0f;
 	rcf.left += 18.0f;

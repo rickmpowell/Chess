@@ -274,6 +274,7 @@ public:
 	UICLOCK(SPARGMV* pspargmv, CPC cpc);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void DrawColon(RCF& rcf, unsigned frac) const;
+	bool FTimeOutWarning(DWORD tm) const;
 };
 
 

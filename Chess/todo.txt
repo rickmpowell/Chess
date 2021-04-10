@@ -2,7 +2,6 @@
   Animate moves when manually going through move list
   UI for clock/timing rules 
   Implement full clock/timing rules
-  Clocks should turn red when close to timing out
   Implement loss by clock expiration
   Implement queued move-ahead 
   Add information to MV so moves can be undone
@@ -32,6 +31,7 @@
   Beef up layout code to handle locating clocks et.al.
   Add controls to SPARGMV for resigning/offering draws
   Implement draws by move repetition
+* Clocks should turn red when close to timing out
 * Clocks should animate when ticking
 * Implement clock timers
 * Add check/mate indicators on move list
