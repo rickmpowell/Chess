@@ -51,7 +51,8 @@ inline int CpcFromTpc(TPC tpc) {
 enum {
 	cpcWhite = 0,
 	cpcBlack = 1,
-	cpcMax = 2
+	cpcMax = 2,
+	cpcNil = 2
 };
 typedef int CPC;
 
@@ -179,7 +180,12 @@ public:
 
 enum class GS {
 	Playing = 0,
-	CheckMate,
+	WhiteCheckMated,
+	BlackCheckMated,
+	WhiteTimedOut,
+	BlackTimedOut,
+	WhiteResigned,
+	BlackResigned,
 	StaleMate,
 	DrawDead,
 	DrawAgree,
@@ -369,6 +375,7 @@ public:
 	void MakeMv(MV mv);
 	void UndoLastMv(void);
 	void TestGameOver(const vector<MV>& rgmv);
+	void SetGs(GS gs);
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv) const;

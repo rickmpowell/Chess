@@ -722,14 +722,16 @@ void BD::Validate(void) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : gs(GS::Playing), cpcToMove(cpcWhite)
+BDG::BDG(void) : cpcToMove(cpcWhite)
 {
+	SetGs(GS::Playing);
 }
 
 
-BDG::BDG(const BDG& bdg) : BD(bdg), gs(bdg.gs), cpcToMove(bdg.cpcToMove), 
+BDG::BDG(const BDG& bdg) : BD(bdg), cpcToMove(bdg.cpcToMove), 
 		rgmvGame(bdg.rgmvGame)
 {
+	SetGs(bdg.gs);
 }
 
 
@@ -741,7 +743,7 @@ BDG::BDG(const WCHAR* szFEN)
 
 void BDG::NewGame(void)
 {
-	gs = GS::Playing;
+	SetGs(GS::Playing);
 	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	rgmvGame.clear();
 }
@@ -863,9 +865,9 @@ void BDG::TestGameOver(const vector<MV>& rgmv)
 {
 	if (rgmv.size() == 0) {
 		if (FSqAttacked(mptpcsq[cpcToMove][tpcKing], cpcToMove ^ 1))
-			gs = GS::CheckMate;
+			SetGs(cpcToMove == cpcWhite ? GS::WhiteCheckMated : GS::BlackCheckMated);
 		else
-			gs = GS::StaleMate;
+			SetGs(GS::StaleMate);
 	}
 	else {
 		/* check for draw circumstances */
@@ -873,6 +875,16 @@ void BDG::TestGameOver(const vector<MV>& rgmv)
 		/* identical board position 3 times (including legal moves the same, cf. en passant) */
 		/* both players make 50 moves with no captures or pawn moves */
 	}
+}
+
+
+/*	BDG::SetGs
+ *
+ *	Sets the game state.
+ */
+void BDG::SetGs(GS gs)
+{
+	this->gs = gs;
 }
 
 
@@ -1204,16 +1216,16 @@ void SPABD::DrawGameState(void)
 	if (ga.bdg.gs == GS::Playing)
 		return;
 	const WCHAR* szState = L"";
-	if (ga.bdg.gs == GS::CheckMate)
-		szState = L"Check Mate";
-	else if (ga.bdg.gs == GS::StaleMate)
-		szState = L"Stale Mate";
-	else {
-		assert(false);
+	switch (ga.bdg.gs) {
+		/* TODO: show checkmate */
+	case GS::WhiteCheckMated: break;
+	case GS::BlackCheckMated: break;
+	case GS::WhiteTimedOut: break;
+	case GS::BlackTimedOut: break;
+		/* TODO: show king has no moves */
+	case GS::StaleMate: break;
+	default: break;
 	}
-	RCF rcf = RcfInterior();
-	rcf.top = rcf.bottom - 40.0f;
-	DrawSz(szState, ptfGameState, rcf, pbrDark);
 }
 
 

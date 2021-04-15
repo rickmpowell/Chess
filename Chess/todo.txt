@@ -1,8 +1,6 @@
-  Clocks don't rotate with rotating board
   Animate moves when manually going through move list
   UI for clock/timing rules 
   Implement full clock/timing rules
-  Implement loss by clock expiration
   Implement queued move-ahead 
   Add information to MV so moves can be undone
   Implement move undo
@@ -25,12 +23,15 @@
   Add tooltip for items in control list
   Assert when dragging and upclick off control
   Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
-  Display game end explanations in the move list (checkmate, resign, stalemate, etc.)
   Change player names in the SPARGMV to use UI elements
   Change SPATI items to be separate UI elements
   Beef up layout code to handle locating clocks et.al.
   Add controls to SPARGMV for resigning/offering draws
   Implement draws by move repetition
+  Implement draws by 50 moves without progress
+* Clocks don't rotate with rotating board
+* Display game end explanations in the move list (checkmate, resign, stalemate, etc.)
+* Implement loss by clock expiration
 * Clocks should turn red when close to timing out
 * Clocks should animate when ticking
 * Implement clock timers

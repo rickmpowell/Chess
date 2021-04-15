@@ -40,19 +40,22 @@ protected:
 	RCF rcfBounds;	// rectangle is in global coordinates
 	UI* puiParent;
 	vector<UI*> rgpuiChild;
+	bool fVisible;
 
 public:
-	UI(UI* puiParent);
-	UI(UI* puiParent, RCF rcfBounds);
+	UI(UI* puiParent, bool fVisible=true);
+	UI(UI* puiParent, RCF rcfBounds, bool fVisible=true);
 	~UI(void);
 
 	void AddChild(UI* puiChild);
 	void RemoveChild(UI* puiChild);
 	
 	RCF RcfInterior(void) const;	// in local coordinates (top left is always {0,0})
+	bool FVisible(void) const;
 	void SetBounds(RCF rcfNew);
 	void Resize(PTF ptfNew);
 	void Move(PTF ptfNew);
+	void Show(bool fShow);
 	RCF RcfParentFromLocal(RCF rcf) const; // local to parent coordinates
 	RCF RcfGlobalFromLocal(RCF rcf) const; // local to app global coordinates
 	RCF RcfLocalFromGlobal(RCF rcf) const;
@@ -69,6 +72,7 @@ public:
 	void FillRcf(RCF rcf, ID2D1Brush* pbr) const;
 	void FillEllf(ELLF ellf, ID2D1Brush* pbr) const;
 	void DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
+	void DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
 	void DrawRgch(const WCHAR* rgch, int cch, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
 	void DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };

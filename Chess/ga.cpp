@@ -63,7 +63,7 @@ void SPA::DiscardRsrc(void)
 void SPA::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
 	SIZF sizf = SIZF(DxWidth(), DyHeight());
-	PTF ptfCur(0, 0);
+	PTF ptfCur;
 	switch (ll) {
 	case LL::Absolute:
 		SetBounds(RCF(ptf, sizf));
@@ -72,6 +72,8 @@ void SPA::Layout(const PTF& ptf, SPA* pspa, LL ll)
 		ptfCur.x = pspa->rcfBounds.right + ptf.x;
 		ptfCur.y = pspa->rcfBounds.top;
 		SetBounds(RCF(ptfCur, sizf));
+		break;
+	case LL::None:
 		break;
 	default:
 		assert(false);
@@ -309,6 +311,108 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 
 /*
  *
+ *	UIGO implementation
+ * 
+ *	Game over sub-panel
+ * 
+ */
+
+IDWriteTextFormat* UIGO::ptfScore;
+
+void UIGO::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+{
+	if (ptfScore)
+		return;
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
+		&ptfScore);
+}
+
+
+void UIGO::DiscardRsrc(void)
+{
+	SafeRelease(&ptfScore);
+}
+
+
+UIGO::UIGO(SPARGMV* pspargmv, bool fVisible) : UI(pspargmv, fVisible), ga(pspargmv->ga)
+{
+}
+
+
+void UIGO::Draw(const RCF* prcfUpdate)
+{
+	RCF rcfEndType = RcfInterior();
+	rcfEndType.bottom = rcfEndType.top + 20.0f;
+	rcfEndType.Offset(0, 20.0f);
+	RCF rcfResult = rcfEndType;
+	rcfResult.Offset(0, 20.0f);
+	RCF rcfScore = rcfResult;
+	rcfScore.Offset(0, 20.0f);
+	CPC cpcWin = cpcNil;
+
+	switch (ga.bdg.gs) {
+	case GS::WhiteCheckMated:
+		DrawSzCenter(L"Checkmate", ptfText, rcfEndType);
+		cpcWin = cpcBlack;
+		break;
+	case GS::BlackCheckMated:
+		DrawSzCenter(L"Checkmate", ptfText, rcfEndType);
+		cpcWin = cpcWhite;
+		break;
+	case GS::WhiteResigned:
+		DrawSzCenter(L"White Resigned", ptfText, rcfEndType);
+		cpcWin = cpcBlack;
+		break;
+	case GS::BlackResigned:
+		DrawSzCenter(L"Black Resigned", ptfText, rcfEndType);
+		cpcWin = cpcWhite;
+		break;
+	case GS::WhiteTimedOut:
+		DrawSzCenter(L"Time Expired", ptfText, rcfEndType);
+		cpcWin = cpcBlack;
+		break;
+	case GS::BlackTimedOut:
+		DrawSzCenter(L"Time Expired", ptfText, rcfEndType);
+		cpcWin = cpcWhite;
+		break;
+	case GS::StaleMate:
+		DrawSzCenter(L"Stalemate", ptfText, rcfEndType);
+		break;
+	case GS::Draw3Repeat:
+		DrawSzCenter(L"3-Fold Repitition", ptfText, rcfEndType);
+		break;
+	case GS::Draw50Move:
+		DrawSzCenter(L"50-Move", ptfText, rcfEndType);
+		break;
+	case GS::DrawAgree:
+		DrawSzCenter(L"Draw Agreed", ptfText, rcfEndType);
+		break;
+	case GS::DrawDead:
+		DrawSzCenter(L"Dead Position", ptfText, rcfEndType);
+		break;
+	default:
+		assert(false);
+		break;
+	}
+
+	const WCHAR* szResult = L"Draw";
+	const WCHAR* szScore = L"\x00bd-\x00bd";
+	if (cpcWin == cpcWhite) {
+		szResult = L"White Wins";
+		szScore = L"1-0";
+	}
+	else if (cpcWin == cpcBlack) {
+		szResult = L"Black Wins";
+		szScore = L"0-1";
+	}
+	DrawSzCenter(szResult, ptfText, rcfResult);
+	DrawSzCenter(szScore, ptfScore, rcfScore);
+}
+
+
+/*
+ *
  *	SPARGMV class implementation
  * 
  *	Move list implementation
@@ -320,6 +424,7 @@ SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
 {
 	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
 	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
+	puigo = new UIGO(this, false);
 }
 
 
@@ -407,9 +512,15 @@ RCF SPARGMV::RcfFromCol(float yf, int col) const
 void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
 	SPAS::Layout(ptf, pspa, ll);
+	
 	RCF rcf = RcfInterior();
 	rcf.top += 5.5f * dyfList;
 	rcf.bottom -= 5.5f * dyfList;
+	if (puigo->FVisible()) {
+		float dyf = 6.0f * dyfList;
+		rcf.bottom -= dyf;
+		puigo->SetBounds(RCF(0, rcf.bottom, rcf.DxfWidth(), rcf.bottom + dyf));
+	}
 	SetView(rcf);
 	SetContent(rcf);
 	rcf = RcfInterior();
@@ -583,11 +694,31 @@ float SPARGMV::DyHeight(void) const
 
 void SPARGMV::NewGame(void)
 {
+	puigo->Show(false);
+	Layout(PTF(0, 0), NULL, LL::None);
 	bdgInit = ga.bdg;
 	UpdateContSize();
 }
 
 
+/*	SPARGMV::EndGame
+ *
+ *	Notification that a game is over and we should display the end
+ *	game result sub-panel
+ */
+void SPARGMV::EndGame(void)
+{
+	puigo->Show(true);
+	Layout(PTF(0,0), NULL, LL::None);
+	Redraw();
+}
+
+
+/*	SPARGMV::UpdateContSize
+ *
+ *	Keeps the content rectangle of the move list content in sync with the data
+ *	in the move list
+ */
 void SPARGMV::UpdateContSize(void)
 {
 	SPAS::UpdateContSize(PTF(RcfContent().DxfWidth(), ga.bdg.rgmvGame.size()/2*dyfList + dyfList));
@@ -728,6 +859,7 @@ void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFacto
 	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPABD::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
 	UICLOCK::CreateRsrc(prt, pfactdwr, pfactwic);
+	UIGO::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPARGMV::CreateRsrc(prt, pfactdwr, pfactwic);
 }
 
@@ -739,6 +871,7 @@ void GA::DiscardRsrc(void)
 	SPABD::DiscardRsrc();
 	SPARGMV::DiscardRsrc();
 	UICLOCK::DiscardRsrc();
+	UIGO::DiscardRsrc();
 	SafeRelease(&pbrDesktop);
 }
 
@@ -848,6 +981,7 @@ void GA::StartGame(void)
 void GA::EndGame(void)
 {
 	app.DestroyTimer(tidClock);
+	spargmv.EndGame();
 }
 
 
@@ -948,9 +1082,15 @@ void GA::LeftUp(HT* pht)
 }
 
 
-void GA::Timer(UINT tm, DWORD tmCur)
+void GA::Timer(UINT tid, DWORD tmCur)
 {
-	mpcpctmClock[bdg.cpcToMove] -= tmCur - tmLast;
+	DWORD dtm = tmCur - tmLast;
+	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
+		dtm = mpcpctmClock[bdg.cpcToMove];
+		bdg.SetGs(bdg.cpcToMove == cpcWhite ? GS::WhiteTimedOut : GS::BlackTimedOut);
+		EndGame();
+	}
+	mpcpctmClock[bdg.cpcToMove] -= dtm;
 	tmLast = tmCur;
 	spargmv.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
 }

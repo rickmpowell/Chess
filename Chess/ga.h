@@ -32,6 +32,7 @@ class GA;
 
 enum class LL
 {
+	None,
 	Absolute,
 	Left,
 	Right,
@@ -278,9 +279,36 @@ public:
 };
 
 
+/*
+ *
+ *	UIGO
+ * 
+ *	Game over sub-panel in the move list.
+ * 
+ */
+
+
+class UIGO : public UI
+{
+protected:
+	GA& ga;
+	static IDWriteTextFormat* ptfScore;
+
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+
+public:
+	UIGO(SPARGMV* pspargmv, bool fVisible);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+};
+
+
+
 class SPARGMV : public SPAS
 {
 	friend class UICLOCK;
+	friend class UIGO;
 	friend class GA;
 
 	static IDWriteTextFormat* ptfList;
@@ -295,6 +323,7 @@ class SPARGMV : public SPAS
 	BDG bdgInit;	// initial board at the start of the game list
 	int imvSel;
 	UICLOCK* mpcpcpuiclock[2];
+	UIGO* puigo;
 
 public:	
 	SPARGMV(GA* pga);
@@ -304,6 +333,7 @@ public:
 	static void DiscardRsrc(void);
 
 	void NewGame(void);
+	void EndGame(void);
 
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 	virtual void Draw(const RCF* prcfUpdate=NULL);

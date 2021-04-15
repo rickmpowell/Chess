@@ -102,14 +102,14 @@ ID2D1Bitmap* UI::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFact
  *	Constructor for the UI elements. Adds the item to the UI tree structure
  *	by connecting it to the parent.
  */
-UI::UI(UI* puiParent) : puiParent(puiParent), rcfBounds(0, 0, 0, 0) 
+UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcfBounds(0, 0, 0, 0), fVisible(fVisible)
 {
 	if (puiParent)
 		puiParent->AddChild(this);
 }
 
 
-UI::UI(UI* puiParent, RCF rcfBounds) : puiParent(puiParent), rcfBounds(rcfBounds) 
+UI::UI(UI* puiParent, RCF rcfBounds, bool fVisible) : puiParent(puiParent), rcfBounds(rcfBounds), fVisible(fVisible)
 {
 	if (puiParent) {
 		puiParent->AddChild(this);
@@ -166,6 +166,16 @@ RCF UI::RcfInterior(void) const
 }
 
 
+/*	UI::FVisible
+ *
+ *	Returns true if the UI element is visible
+ */
+bool UI::FVisible(void) const
+{
+	return fVisible;
+}
+
+
 /*	UI::SetBounds
  *
  *	Sets the bounding box for the UI element. Coordinates are relative
@@ -202,6 +212,20 @@ void UI::Move(PTF ptfNew)
 			ptfNew.y + puiParent->rcfBounds.top);
 	}
 	rcfBounds.Offset(ptfNew.x - rcfBounds.left, ptfNew.y - rcfBounds.top);
+}
+
+
+/*	UI::Show
+ *
+ *	Shows or hides a UI element and does the appropriate redraw
+ */
+void UI::Show(bool fVisNew)
+{
+	if (fVisible == fVisNew)
+		return;
+	fVisible = fVisNew;
+	if (puiParent)
+		puiParent->Redraw();
 }
 
 
@@ -272,6 +296,8 @@ PTF UI::PtfGlobalFromLocal(PTF ptf) const
  */
 void UI::Update(const RCF* prcfUpdate)
 {
+	if (!fVisible)
+		return;
 	if (prcfUpdate == NULL)
 		prcfUpdate = &rcfBounds;
 	RCF rcf = *prcfUpdate & rcfBounds;
@@ -284,11 +310,15 @@ void UI::Update(const RCF* prcfUpdate)
 }
 
 
+/*	UI::Redraw
+ *
+ *	Redraws the UI element and all children
+ */
 void UI::Redraw(void)
 {
+	if (!fVisible)
+		return;
 	ID2D1RenderTarget* prt = PrtGet();
-	BeginDraw();
-	EndDraw();
 	BeginDraw();
 	Update(&rcfBounds);
 	EndDraw();
@@ -363,6 +393,15 @@ void UI::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* 
 {
 	rcf = RcfGlobalFromLocal(rcf);
 	PrtGet()->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
+}
+
+
+void UI::DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
+{
+	DWRITE_TEXT_ALIGNMENT taSav = ptf->GetTextAlignment();
+	ptf->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	DrawSz(sz, ptf, rcf, pbr);
+	ptf->SetTextAlignment(taSav);
 }
 
 
