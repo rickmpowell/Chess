@@ -279,13 +279,81 @@ void BD::MakeMvSq(MV mv)
 }
 
 
-/*	BD::UndoLastMv
+/*	BD::UndoMv
  *
- *	Undo the last move made on the board
+ *	Undo the move made on the board
  */
-void BD::UndoLastMv(MV mv)
+void BD::UndoMv(MV mv)
 {
-	assert(false);
+	Validate();
+
+	/* unpack some useful information out of the move */
+
+	SQ sqFrom = mv.SqFrom();
+	SQ sqTo = mv.SqTo();
+	assert(mpsqtpc[sqFrom] == tpcEmpty);
+	TPC tpcMove = mpsqtpc[sqTo];
+	CPC cpcMove = CpcFromTpc(tpcMove);
+
+	/* restore castle and en passant state. Castle state can only be added
+	   on an undo, so it's OK to or those bits back in. Note that the en 
+	   passant state only saves the file of the en passant captureable pawn 
+	   (due to lack of available bits in the MV). */
+
+	cs |= CsUnpackColor(mv.CsPrev(), cpcMove);
+	if (mv.FEpPrev())
+		sqEnPassant = SQ(cpcMove == cpcWhite ? 5 : 2, mv.FileEpPrev());
+	else
+		sqEnPassant = sqNil;
+
+	/* put piece back in source square, undoing any pawn promotion that might
+	   have happened */
+
+	if (mv.ApcPromote() != apcNull)
+		tpcMove = TpcSetApc(tpcMove, apcPawn);
+	mpsqtpc[sqFrom] = tpcMove;
+	SqFromTpc(tpcMove) = sqFrom;
+	APC apcMove = ApcFromTpc(tpcMove);	// get the type of moved piece after we've undone promotion
+
+	/* if move was a capture, put the captured piece back on the board; otherwise
+	   the destination square becomes empty */
+
+	APC apcCapt = mv.ApcCapture();
+	if (apcCapt == apcNull)
+		mpsqtpc[sqTo] = tpcEmpty;
+	else {
+		TPC tpcTake = Tpc(mv.TpcCapture(), cpcMove ^ 1, apcCapt);
+		SQ sqTake = sqTo;
+		if (sqTake == sqEnPassant) {
+			/* capture into the en passant square must be en passant capture
+			   pawn x pawn */
+			assert(ApcFromSq(sqTo) == apcPawn && apcCapt == apcPawn);
+			sqTake = SQ(sqEnPassant.rank() + cpcMove*2 - 1, sqEnPassant.file());
+			mpsqtpc[sqTo] = tpcEmpty;
+		}
+		mpsqtpc[sqTake] = tpcTake;
+		SqFromTpc(tpcTake) = sqTake;
+	}
+
+	/* undoing a castle means we need to undo the rook, too */
+
+	if (apcMove == apcKing) {
+		int dfile = sqTo.file() - sqFrom.file();
+		if (dfile < -1) { /* queen side castle */
+			TPC tpcRook = mpsqtpc[sqTo + 1];
+			mpsqtpc[sqTo - 2] = tpcRook;
+			mpsqtpc[sqTo + 1] = tpcEmpty;
+			SqFromTpc(tpcRook) = sqTo - 2;
+		}
+		else if (dfile > 1) { /* king side castle */
+			TPC tpcRook = mpsqtpc[sqTo - 1];
+			mpsqtpc[sqTo + 1] = tpcRook;
+			mpsqtpc[sqTo - 1] = tpcEmpty;
+			SqFromTpc(tpcRook) = sqTo + 1;
+		}
+	}
+
+	Validate();
 }
 
 
@@ -672,7 +740,7 @@ void BD::Validate(void) const
 		if (tpc == tpcEmpty)
 			continue;
 
-		assert(mptpcsq[CpcFromTpc(tpc)][tpc & tpcPiece] == sq);
+		assert(SqFromTpc(tpc) == sq);
 
 		int tpcPc = tpc & tpcPiece;
 		int apc = ApcFromTpc(tpc);
@@ -722,19 +790,23 @@ void BD::Validate(void) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : cpcToMove(cpcWhite)
+BDG::BDG(void) : cpcToMove(cpcWhite), imvCur(-1)
 {
 	SetGs(GS::Playing);
 }
 
 
 BDG::BDG(const BDG& bdg) : BD(bdg), cpcToMove(bdg.cpcToMove), 
-		rgmvGame(bdg.rgmvGame)
+		rgmvGame(bdg.rgmvGame), imvCur(bdg.imvCur)
 {
 	SetGs(bdg.gs);
 }
 
 
+/*	BDG::BDG
+ *
+ *	Constructor for initializing a board with a FEN board state string.
+ */
 BDG::BDG(const WCHAR* szFEN)
 {
 	InitFEN(szFEN);
@@ -746,6 +818,7 @@ void BDG::NewGame(void)
 	SetGs(GS::Playing);
 	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	rgmvGame.clear();
+	imvCur = -1;
 }
 
 
@@ -846,18 +919,36 @@ void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
 
 void BDG::MakeMv(MV mv)
 {
+	/* store undo information in the mv */
+	
+	mv.SetCsEp(CsPackColor(cs, cpcToMove), sqEnPassant);
+	SQ sqTake = mv.SqTo();
+	if (sqTake == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn)
+		sqTake = SQ(cpcToMove == cpcWhite ? 4 : 3, sqEnPassant.file());
+	mv.SetCapture(ApcFromSq(sqTake), mpsqtpc[sqTake] & tpcPiece);
+
+	/* make the move and save the move in the move list */
+
 	BD::MakeMv(mv);
+	if (++imvCur == rgmvGame.size())
+		rgmvGame.push_back(mv);
+	else if (mv != rgmvGame[imvCur]) {
+		rgmvGame[imvCur] = mv;
+		/* all moves after this in the move list are now invalid */
+		for (int imv = imvCur + 1; imv < rgmvGame.size(); imv++)
+			rgmvGame[imv] = MV();
+	}
+
+	/* other player's move */
+
 	cpcToMove ^= 1;
-	rgmvGame.push_back(mv);
 }
 
 
 void BDG::UndoLastMv(void)
 {
-	/* TODO: implement this */
-	BD::UndoLastMv(MV());
+	BD::UndoMv(rgmvGame[imvCur--]);
 	cpcToMove ^= 1;
-	rgmvGame.pop_back();
 }
 
 

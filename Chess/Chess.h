@@ -66,12 +66,58 @@ public:
 
 /*
  *
+ *  CMD class
+ *
+ *  Little class for wrapping together and organiziong top-level
+ *  commands
+ *
+ */
+
+class APP;
+
+class CMD
+{
+protected:
+	APP& app;
+public:
+	CMD(APP& app);
+	virtual int Execute(void);
+	virtual bool FEnabled(void) const;
+	virtual bool FCustomSzMenu(void) const;
+	virtual wstring SzMenu(void) const;
+};
+
+
+/*
+ *
+ *	CMDLIST
+ * 
+ *	The command list, used for dispatching to handlers
+ * 
+ */
+
+
+class CMDLIST {
+private:
+	APP& app;
+	vector<CMD*> mpicmdpcmd;
+public:
+	CMDLIST(APP& app);
+	~CMDLIST(void);
+	void Add(int icmd, CMD* pcmd);
+	int Execute(int icmd);
+};
+
+
+/*
+ *
  *	APP class
  *
  *	Base application class, which simply initiaizes the app and creates the top-level
  *	window
  *
  */
+
 
 class APP : public D2
 {
@@ -86,6 +132,7 @@ public:
 	HCURSOR hcurMove;
 	HCURSOR hcurNo;
 	class GA* pga;
+	CMDLIST cmdlist;
 
 public:
 	APP(HINSTANCE hinst, int sw);
@@ -96,6 +143,9 @@ public:
 private:
 	void CreateRsrc(void);
 	void DiscardRsrc(void);
+
+	void InitCmdList(void);
+
 	bool FSizeEnv(int dx, int dy);
 	void Redraw(const RCF* prcf);
 
@@ -107,8 +157,8 @@ private:
 	bool OnLeftUp(UINT x, UINT y);
 	bool OnTimer(UINT tid);
 
-	int CmdNewGame(void);
-	int CmdTest(void);
+	int CmdUndoMove(void);
+	int CmdRedoMove(void);
 
 	void CreateTimer(UINT tid, DWORD dtm);
 	void DestroyTimer(UINT tid);

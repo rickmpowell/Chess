@@ -18,7 +18,7 @@ void GA::Test(void)
 {
 	NewGame();
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
+	UndoTest();
 	PlayPGNFiles(L"..\\Chess\\Test");
 }
 
@@ -414,4 +414,62 @@ void GA::ProcessMove(const string& szMove)
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
 	MakeMv(mv, true);
+}
+
+
+void GA::UndoTest(void)
+{
+	WIN32_FIND_DATA ffd;
+	wstring szSpec(L"..\\Chess\\Test\\*.pgn");
+	HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
+	if (hfind == INVALID_HANDLE_VALUE)
+		throw 1;
+	do {
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			continue;
+		wstring szSpec = wstring(L"..\\Chess\\Test\\") + ffd.cFileName;
+		if (PlayUndoPGNFile(szSpec.c_str()) < 0)
+			break;
+		break;
+	} while (FindNextFile(hfind, &ffd) != 0);
+	FindClose(hfind);
+}
+
+
+int GA::PlayUndoPGNFile(const WCHAR* szFile)
+{
+	ifstream is(szFile, ifstream::in);
+
+	try {
+		ISTKPGN istkpgn(is);
+		for (int igame = 0; ; igame++) {
+			wstring szVal(wcsrchr(szFile, L'\\') + 1);
+			szVal += L"\nGame ";
+			szVal += to_wstring(igame + 1);
+			spati.SetText(szVal);
+			if (PlayPGNGame(istkpgn) != 1)
+				break;
+			UndoFullGame();
+			ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+		}
+	}
+	catch (int err) {
+		if (err == 1) {
+			WCHAR sz[58];
+			::wsprintf(sz, L"Error Line %d", err);
+			::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
+		}
+		return err;
+	}
+	return 0;
+}
+
+
+void GA::UndoFullGame(void)
+{
+	while (bdg.imvCur >= 0) {
+		bdg.UndoLastMv();
+		spabd.Redraw();
+		spargmv.Redraw();
+	}
 }

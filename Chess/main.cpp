@@ -67,7 +67,7 @@ int APIENTRY wWinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPWSTR szCmdLine, in
  * 
  *  Throws an exception if something fails.
  */
-APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), prth(NULL)
+APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), prth(NULL), cmdlist(*this)
 {
     hcurArrow = LoadCursor(NULL, IDC_ARROW);
     hcurMove = LoadCursor(NULL, IDC_SIZEALL);
@@ -100,6 +100,8 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), prth
 
     if (!(haccel = LoadAccelerators(hinst, MAKEINTRESOURCE(idaApp))))
         throw 1;
+
+    InitCmdList();
 
     pga = new GA(*this);
     pga->SetPl(cpcWhite, new PL(L"Squub"));
@@ -171,6 +173,7 @@ void APP::DiscardRsrc(void)
 }
 
 
+
 bool APP::FSizeEnv(int dx, int dy)
 {
     bool fChange = true;
@@ -218,6 +221,11 @@ void APP::DestroyTimer(UINT tid)
 }
 
 
+/*  APP::OnSize
+ *
+ *  Handles the window size notification for the top-level window. New size
+ *  is dx and dy, in pixels.
+ */
 void APP::OnSize(UINT dx, UINT dy)
 {
     if (prth)
@@ -288,45 +296,248 @@ bool APP::OnTimer(UINT tid)
 }
 
 
-bool APP::OnCommand(int cmd)
+/*
+ *
+ *  CMDLIST
+ * 
+ */
+
+
+CMDLIST::CMDLIST(APP& app) : app(app)
 {
-    switch (cmd) {
-    case cmdAbout:
-        DialogBox(hinst, MAKEINTRESOURCE(iddAbout), hwnd, AboutDlgProc);
-        return true;
+}
 
-    case cmdExit:
-        DestroyWindow(hwnd);
-        return true;
 
-    case cmdNewGame:
-        CmdNewGame();
-        break;
-
-    case cmdTest:
-        CmdTest();
-        break;
-
-    default:
-        break;
+CMDLIST::~CMDLIST(void)
+{
+    while (mpicmdpcmd.size() > 0) {
+        CMD* pcmd = mpicmdpcmd.back();
+        mpicmdpcmd.pop_back();
+        delete pcmd;
     }
+}
+
+
+void CMDLIST::Add(int icmd, CMD* pcmd)
+{
+    size_t ccmd = mpicmdpcmd.size();
+    if (icmd >= ccmd) {
+        mpicmdpcmd.resize(icmd + 1);
+        for (size_t icmdT = ccmd; icmdT < icmd+1; icmdT++)
+            mpicmdpcmd[icmdT] = NULL;
+    }
+    assert(mpicmdpcmd[icmd] == NULL);
+    mpicmdpcmd[icmd] = pcmd;
+}
+
+
+int CMDLIST::Execute(int icmd)
+{
+    assert(icmd < mpicmdpcmd.size());
+    assert(mpicmdpcmd[icmd] != NULL);
+    return mpicmdpcmd[icmd]->Execute();
+}
+
+
+CMD::CMD(APP& app) : app(app)
+{
+}
+
+int CMD::Execute(void)
+{
+    return 0;
+}
+
+bool CMD::FEnabled(void) const
+{
+    return true;
+}
+
+bool CMD::FCustomSzMenu(void) const
+{
     return false;
 }
 
-
-int APP::CmdNewGame(void)
+wstring CMD::SzMenu(void) const
 {
-    pga->NewGame();
-    pga->Redraw();
+    return L"";
+}
+
+
+/*  
+ *
+ *  CMDABOUT command
+ *
+ *  Just an about dialog box
+ *
+ */
+
+
+class CMDABOUT : public CMD
+{
+public:
+    CMDABOUT(APP& app) : CMD(app) { }
+
+    virtual int Execute(void) 
+    {
+        DialogBox(app.hinst, MAKEINTRESOURCE(iddAbout), app.hwnd, AboutDlgProc);
+        return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDNEWGAME command
+ * 
+ *  Starts a new game
+ * 
+ */
+
+
+class CMDNEWGAME : public CMD
+{
+public:
+    CMDNEWGAME(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->NewGame();
+        app.pga->Redraw();
+        return 1;
+    }
+};
+
+/*
+ *
+ *  CMDUNDOMOVE command
+ *
+ *  Undoes the last move on the board.
+ *
+ */
+
+
+class CMDUNDOMOVE : public CMD
+{
+public:
+    CMDUNDOMOVE(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->UndoMv();
+        return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDREDOMOVE command
+ *
+ *  Redoes the last move on the board.
+ *
+ */
+
+
+class CMDREDOMOVE : public CMD
+{
+public:
+    CMDREDOMOVE(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->RedoMv();
+        return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDTEST command
+ *
+ *  Runs the test.
+ *
+ */
+
+
+class CMDTEST : public CMD
+{
+public:
+    CMDTEST(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->Test();
+        return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDEXIT command
+ * 
+ *  Exits the app.
+ *
+ */
+
+
+class CMDEXIT : public CMD
+{
+public:
+    CMDEXIT(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        ::DestroyWindow(app.hwnd);
+        return 1;
+    }
+};
+
+
+/*  APP::OnCommand
+ *
+ *  Dispatch various menu and keyboard commands.
+ */
+bool APP::OnCommand(int cmd)
+{
+    return cmdlist.Execute(cmd);
+}
+
+
+/*  APP::CmdUndoMove
+ *
+ *  Undoes the last move on the board
+ */
+int APP::CmdUndoMove(void)
+{
+    pga->UndoMv();
     return 1;
 }
 
 
-int APP::CmdTest(void)
+/*  APP::CmdRedoMove
+ *
+ *  Redoes the last undone move on the board
+ */
+int APP::CmdRedoMove(void)
 {
-    pga->Test();
+    pga->RedoMv();
     return 1;
 }
+
+
+void APP::InitCmdList(void)
+{
+    cmdlist.Add(cmdAbout, new CMDABOUT(*this));
+    cmdlist.Add(cmdNewGame, new CMDNEWGAME(*this));
+    cmdlist.Add(cmdTest, new CMDTEST(*this));
+    cmdlist.Add(cmdExit, new CMDEXIT(*this));
+    cmdlist.Add(cmdUndoMove, new CMDUNDOMOVE(*this));
+    cmdlist.Add(cmdRedoMove, new CMDREDOMOVE(*this));
+}
+
 
 
 /*  APP::WndProc

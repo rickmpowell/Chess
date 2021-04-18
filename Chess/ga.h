@@ -394,14 +394,17 @@ class GA : public UI
 	friend class SPABD;
 	friend class SPARGMV;
 
-	APP& app;
+protected:
+	static ID2D1SolidColorBrush* pbrDesktop;
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
 
+	APP& app;
 	SPATI spati;
 	SPABD spabd;
 	SPARGMV spargmv;
 	HT* phtCapt;
-
-	static ID2D1SolidColorBrush* pbrDesktop;
 
 public:
 	BDG bdg;	// board
@@ -416,24 +419,13 @@ public:
 
 	void Init(void);
 
-	void NewGame(void);
-	void StartGame(void);
-	void EndGame(void);
-	void MakeMv(MV mv, bool fRedraw);
-	void SwitchClock(DWORD tmCur);
-	void StartClock(CPC cpc, DWORD tmCur);
-	void PauseClock(CPC cpc, DWORD tmCur);
-
-	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
-	static void DiscardRsrc(void);
-
-	void Resize(int dx, int dy);
-	void Layout(void);
-
-	virtual void Draw(const RCF* prcfUpdate=NULL);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual ID2D1RenderTarget* PrtGet(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
+
+	void Resize(int dx, int dy);
+	void Layout(void);
 
 	HT* PhtHitTest(PTF ptf);
 	void MouseMove(HT* pht);
@@ -446,6 +438,16 @@ public:
 	void SetPl(CPC cpc, PL* ppl);
 
 	void Timer(UINT tid, DWORD tm);
+
+	void NewGame(void);
+	void StartGame(void);
+	void EndGame(void);
+	void MakeMv(MV mv, bool fRedraw);
+	void SwitchClock(DWORD tmCur);
+	void StartClock(CPC cpc, DWORD tmCur);
+	void PauseClock(CPC cpc, DWORD tmCur);
+	void UndoMv(void);
+	void RedoMv(void);
 
 	void Test(void);
 	void ValidateFEN(const WCHAR* szFEN) const;
@@ -467,4 +469,8 @@ public:
 	void ProcessTag(const string& szTag, const string& szVal);
 	void HandleTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
+
+	void UndoTest(void);
+	int PlayUndoPGNFile(const WCHAR* szFile);
+	void UndoFullGame(void);
 };

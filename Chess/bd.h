@@ -44,9 +44,6 @@ enum {
 
 typedef BYTE TPC;
 
-inline int CpcFromTpc(TPC tpc) {
-	return (tpc & tpcColor) == tpcBlack;
-}
 
 enum {
 	cpcWhite = 0,
@@ -70,6 +67,8 @@ typedef BYTE APC;
 
 inline APC ApcFromTpc(BYTE tpc) { return (tpc & tpcApc) >> 4; }
 inline TPC Tpc(TPC tpc, CPC cpc, APC apc) { return tpc | (cpc << 7) | (apc << 4); }
+inline int CpcFromTpc(TPC tpc) { return (tpc & tpcColor) == tpcBlack; }
+inline TPC TpcSetApc(TPC tpc, APC apc) { return (tpc & ~tpcApc) | (apc << 4); }
 
 enum {
 	fileQueenRook = 0,
@@ -132,11 +131,12 @@ const SQ sqNil = SQ();
  *	
  *	The high word is mostly used for undo information. On captures
  *	the tpc of the captured piece is in the bottom 4 bits, and
- *	the next 3 bits are the apc of the captured piece. The next bit
- *	tells if the capture was an en passant capture. The next four
- *	bits are the previous capture bits. The next 3 bits are the apc
- *	of the new piece on pawn promotions. And the highest bit is 
- *	used for a nil test.
+ *	the next 3 bits are the 1pc of the captured piece. If the capture
+ *	apc is apcNull, then the move was not a capture. The next bit
+ *	is 1 if en passant capture ws possible in previous position. 
+ *	The next three bits are the file of the en passant piece if en
+ *	passant is true. The next two bits are the previous castle bits.
+ *	The top 3 bits are the apc of the new piece on pawn promotions. 
  * 
  *	There are opportunities to compress the upper word of the move.
  * 
@@ -144,27 +144,43 @@ const SQ sqNil = SQ();
  *  +-----------+--------+--------+--------+--------+
  *  |           |        to       |       from      |
  *  +-----------+--------+--------+--------+--------+
- *  +--+--------+-----------+--+--------+-----------+
- *  | 0| promote|  saved cs |ep| cap apc|  cap tpc  |
- *  +--+--------+-----------+--+--------+-----------+
+ *  +--------+-----+--------+--+--------+-----------+
+ *  | promote|  cs | ep file|ep| cap apc|  cap tpc  |
+ *  +--------+-----+--------+--+--------+-----------+
  *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
  */
 
 class MV {
 private:
+	static const unsigned long grfNil = 0xffffffffL;
 	unsigned long grf;
 public:
-	MV(void) { grf = 0x80000000L; }
+	MV(void) { grf = grfNil; }
 	MV(SQ sqFrom, SQ sqTo, APC apcPromote = apcNull) {
 		grf = (unsigned long)sqFrom.grf | ((unsigned long)sqTo.grf << 6) | 
-			((unsigned long)apcPromote << 28);
+			((unsigned long)apcPromote << 29);
 	}
 	
 	SQ SqFrom(void) const { return grf & 0x3f; }
 	SQ SqTo(void) const { return (grf >> 6) & 0x3f; }
-	APC ApcPromote(void) const { return (grf >> 28) & 0x07; }
-	bool FIsNil(void) const { return grf == 0x80000000L; }
-	MV& SetApcPromote(APC apc) { grf = (grf & 0x8fffffffL) | ((unsigned long)apc << 28); return *this;  }
+	APC ApcPromote(void) const { return (grf >> 29) & 0x07; }
+	bool FIsNil(void) const { return grf == grfNil; }
+	MV& SetApcPromote(APC apc) { grf = (grf & 0x1fffffffL) | ((unsigned long)apc << 29); return *this;  }
+	MV& SetCapture(APC apc, TPC tpc) { grf = (grf & 0xff80ffffL) | ((unsigned long)apc << 20) | ((unsigned long)tpc << 16); return *this;  }
+	MV& SetCsEp(int cs, const SQ& sqEnPassant) {
+		grf = (grf & 0xe07fffffL) | 
+			((unsigned long)cs << 27) |
+			((unsigned long)sqEnPassant.file() << 24) | 
+			((unsigned long)!sqEnPassant.FIsNil() << 23); 
+		return *this;
+	}
+	int CsPrev(void) const { return (grf >> 27) & 0x03; }
+	int FileEpPrev(void) const { return (grf >> 24) & 0x07; }
+	bool FEpPrev(void) const { return (grf >> 23) & 0x01; }
+	APC ApcCapture(void) const { return (grf >> 20) & 0x07; }
+	TPC TpcCapture(void) const { return (grf >> 16) & 0x0f; }
+	bool operator==(const MV& mv) const { return grf == mv.grf; }
+	bool operator!=(const MV& mv) const { return grf != mv.grf; }
 };
 
 
@@ -200,6 +216,19 @@ enum {
 	csWhiteQueen = 0x04,
 	csBlackQueen = 0x08
 };
+
+/* pack the castle state of a one side into 2 bits for storing in the MV */
+inline int CsPackColor(int csUnpack, CPC cpc)
+{
+	int csPack = csUnpack >> cpc;
+	return ((csPack>>1)&2) | (csPack&1);
+}
+
+inline int CsUnpackColor(int csPack, CPC cpc)
+{
+	int csUnpack = (csPack&1) | ((csPack&2)<<1);
+	return csUnpack << cpc;
+}
 
 
 inline int RankPromoteFromCpc(CPC cpc)
@@ -257,7 +286,7 @@ public:
 	int TpcUnusedPawn(CPC cpc) const;
 
 	void MakeMv(MV mv);
-	void UndoLastMv(MV mv);
+	void UndoMv(MV mv);
 	void MakeMvSq(MV mv);
 	void ComputeAttacked(CPC cpcMove);
 
@@ -356,6 +385,7 @@ public:
 	GS gs;	// game state
 	CPC cpcToMove;
 	vector<MV> rgmvGame;	// the game moves that resulted in bd board state
+	int imvCur;
 
 public:
 	BDG(void);

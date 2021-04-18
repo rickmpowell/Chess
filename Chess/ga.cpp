@@ -1135,3 +1135,26 @@ void GA::MakeMv(MV mv, bool fRedraw)
 			Redraw();
 	}
 }
+
+
+/*	GA::UndoMv
+ *
+ *	Moves the current move pointer back one through the move list and undoes
+ *	the last move on the game board.
+ */
+void GA::UndoMv(void)
+{
+	bdg.UndoLastMv();
+	spabd.Redraw();
+	spargmv.Redraw();
+}
+
+
+/*	GA::RedoMv
+ *
+ *	Moves the current move pointer forward through the move list and remakes
+ *	the next move on the game board.
+ */
+void GA::RedoMv(void)
+{
+}

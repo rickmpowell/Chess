@@ -1,9 +1,11 @@
+  Have an official game mode that does not allow undo
+  Change Undo/Redo to be an imvCur operation
+  When dragging pieces, highlight square when hovering over a legal move
   Animate moves when manually going through move list
   UI for clock/timing rules 
   Implement full clock/timing rules
   Implement queued move-ahead 
-  Add information to MV so moves can be undone
-  Implement move undo
+  Implement move redo
   Implement click-from/click-to mouse move interface
   Implement circle annotations on mouse right click
   Implement arrow annotations on mouse right click/drag
@@ -27,8 +29,10 @@
   Change SPATI items to be separate UI elements
   Beef up layout code to handle locating clocks et.al.
   Add controls to SPARGMV for resigning/offering draws
-  Implement draws by move repetition
+  Implement draws by 3-move repetition
   Implement draws by 50 moves without progress
+* Implement move undo
+* Add information to MV so moves can be undone
 * Clocks don't rotate with rotating board
 * Display game end explanations in the move list (checkmate, resign, stalemate, etc.)
 * Implement loss by clock expiration
