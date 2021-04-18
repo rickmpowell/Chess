@@ -613,7 +613,8 @@ void SPARGMV::DrawContent(const RCF& rcfCont)
 		MV mv = ga.bdg.rgmvGame[imv];
 		if (imv % 2 == 0)
 			DrawMoveNumber(RcfFromCol(yfCont + (imv/2)*dyfList, 0), imv/2 + 1);
-		DrawAndMakeMv(RcfFromImv(imv), bdgT, mv);
+		if (!mv.FIsNil())
+			DrawAndMakeMv(RcfFromImv(imv), bdgT, mv);
 	}
 	DrawSel(imvSel);
 }
@@ -1142,11 +1143,11 @@ void GA::MakeMv(MV mv, bool fRedraw)
  *	Moves the current move pointer back one through the move list and undoes
  *	the last move on the game board.
  */
-void GA::UndoMv(void)
+void GA::UndoMv(bool fRedraw)
 {
-	bdg.UndoLastMv();
-	spabd.Redraw();
-	spargmv.Redraw();
+	spabd.UndoMv(fRedraw);
+	if (fRedraw)
+		spargmv.Redraw();
 }
 
 
@@ -1155,6 +1156,9 @@ void GA::UndoMv(void)
  *	Moves the current move pointer forward through the move list and remakes
  *	the next move on the game board.
  */
-void GA::RedoMv(void)
+void GA::RedoMv(bool fRedraw)
 {
+	spabd.RedoMv(fRedraw);
+	if (fRedraw)
+		spargmv.Redraw();
 }

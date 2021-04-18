@@ -5,7 +5,6 @@
   UI for clock/timing rules 
   Implement full clock/timing rules
   Implement queued move-ahead 
-  Implement move redo
   Implement click-from/click-to mouse move interface
   Implement circle annotations on mouse right click
   Implement arrow annotations on mouse right click/drag
@@ -31,6 +30,7 @@
   Add controls to SPARGMV for resigning/offering draws
   Implement draws by 3-move repetition
   Implement draws by 50 moves without progress
+* Implement move redo
 * Implement move undo
 * Add information to MV so moves can be undone
 * Clocks don't rotate with rotating board

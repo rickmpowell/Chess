@@ -468,8 +468,7 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 void GA::UndoFullGame(void)
 {
 	while (bdg.imvCur >= 0) {
-		bdg.UndoLastMv();
-		spabd.Redraw();
+		UndoMv(true);
 		spargmv.Redraw();
 	}
 }

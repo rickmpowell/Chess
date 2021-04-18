@@ -424,7 +424,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv();
+        app.pga->UndoMv(true);
         return 1;
     }
 };
@@ -446,7 +446,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv();
+        app.pga->RedoMv(true);
         return 1;
     }
 };
@@ -503,28 +503,6 @@ public:
 bool APP::OnCommand(int cmd)
 {
     return cmdlist.Execute(cmd);
-}
-
-
-/*  APP::CmdUndoMove
- *
- *  Undoes the last move on the board
- */
-int APP::CmdUndoMove(void)
-{
-    pga->UndoMv();
-    return 1;
-}
-
-
-/*  APP::CmdRedoMove
- *
- *  Redoes the last undone move on the board
- */
-int APP::CmdRedoMove(void)
-{
-    pga->RedoMv();
-    return 1;
 }
 
 

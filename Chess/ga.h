@@ -446,8 +446,8 @@ public:
 	void SwitchClock(DWORD tmCur);
 	void StartClock(CPC cpc, DWORD tmCur);
 	void PauseClock(CPC cpc, DWORD tmCur);
-	void UndoMv(void);
-	void RedoMv(void);
+	void UndoMv(bool fRedraw);
+	void RedoMv(bool fRedraw);
 
 	void Test(void);
 	void ValidateFEN(const WCHAR* szFEN) const;

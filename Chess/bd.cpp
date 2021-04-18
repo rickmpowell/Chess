@@ -945,9 +945,21 @@ void BDG::MakeMv(MV mv)
 }
 
 
-void BDG::UndoLastMv(void)
+void BDG::UndoMv(void)
 {
+	if (imvCur < 0)
+		return;
 	BD::UndoMv(rgmvGame[imvCur--]);
+	cpcToMove ^= 1;
+}
+
+
+void BDG::RedoMv(void)
+{
+	if (imvCur+1 >= rgmvGame.size() || rgmvGame[imvCur+1].FIsNil())
+		return;
+	imvCur++;
+	BD::MakeMv(rgmvGame[imvCur]);
 	cpcToMove ^= 1;
 }
 
@@ -977,8 +989,6 @@ void BDG::SetGs(GS gs)
 {
 	this->gs = gs;
 }
-
-
 
 
 /*
@@ -1170,6 +1180,24 @@ void SPABD::MakeMv(MV mv, bool fRedraw)
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	ga.bdg.TestGameOver(rgmvDrag);
+	if (fRedraw)
+		Redraw();
+}
+
+
+void SPABD::UndoMv(bool fRedraw)
+{
+	ga.bdg.UndoMv();
+	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
+	if (fRedraw)
+		Redraw();
+}
+
+
+void SPABD::RedoMv(bool fRedraw)
+{
+	ga.bdg.RedoMv();
+	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	if (fRedraw)
 		Redraw();
 }

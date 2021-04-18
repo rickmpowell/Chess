@@ -403,7 +403,8 @@ public:
 
 	void GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const;
 	void MakeMv(MV mv);
-	void UndoLastMv(void);
+	void UndoMv(void);
+	void RedoMv(void);
 	void TestGameOver(const vector<MV>& rgmv);
 	void SetGs(GS gs);
 
@@ -492,6 +493,8 @@ public:
 
 	void NewGame(void);
 	void MakeMv(MV mv, bool fRedraw);
+	void UndoMv(bool fRedraw);
+	void RedoMv(bool fRedraw);
 	
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 
