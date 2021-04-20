@@ -47,6 +47,32 @@ BD::BD(const BD& bd)
 }
 
 
+/*	BD::operator==
+ *
+ *	Compare two board states for equality. Boards are equal if all the pieces
+ *	are in the same place, the castle states are the same, and the en passant
+ *	state is the same.
+ * 
+ *	This is mainly used to detect 3-repeat draw situations. Note that we don't
+ *	have the current move color in the BD, so this isn't' exactly the draw-state
+ *	comparison. Caller has to make sure the move color is the same.
+ */
+bool BD::operator==(const BD& bd) const
+{
+	for (int tpc = 0; tpc < tpcPieceMax; tpc++)
+		if (mptpcsq[cpcWhite][tpc] != bd.mptpcsq[cpcWhite][tpc] ||
+				mptpcsq[cpcBlack][tpc] != bd.mptpcsq[cpcBlack][tpc])
+			return false;
+	return cs == bd.cs && sqEnPassant == bd.sqEnPassant;
+}
+
+
+bool BD::operator!=(const BD& bd) const
+{
+	return !(*this == bd);
+}
+
+
 /*	BD::SzInitFENPieces
  *
  *	Reads the pieces out a Forsyth-Edwards Notation string. The piece
@@ -790,14 +816,14 @@ void BD::Validate(void) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : cpcToMove(cpcWhite), imvCur(-1)
+BDG::BDG(void) : cpcToMove(cpcWhite), imvCur(-1), imvPawnOrTakeLast(-1)
 {
 	SetGs(GS::Playing);
 }
 
 
 BDG::BDG(const BDG& bdg) : BD(bdg), cpcToMove(bdg.cpcToMove), 
-		rgmvGame(bdg.rgmvGame), imvCur(bdg.imvCur)
+		rgmvGame(bdg.rgmvGame), imvCur(bdg.imvCur), imvPawnOrTakeLast(bdg.imvPawnOrTakeLast)
 {
 	SetGs(bdg.gs);
 }
@@ -819,6 +845,7 @@ void BDG::NewGame(void)
 	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	rgmvGame.clear();
 	imvCur = -1;
+	imvPawnOrTakeLast = -1;
 }
 
 
@@ -919,13 +946,22 @@ void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
 
 void BDG::MakeMv(MV mv)
 {
-	/* store undo information in the mv */
+	/* store undo information in the mv, and keep track of last pawn move or
+	   capture move */
 	
 	mv.SetCsEp(CsPackColor(cs, cpcToMove), sqEnPassant);
+	APC apcFrom = ApcFromSq(mv.SqFrom());
 	SQ sqTake = mv.SqTo();
-	if (sqTake == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn)
-		sqTake = SQ(cpcToMove == cpcWhite ? 4 : 3, sqEnPassant.file());
-	mv.SetCapture(ApcFromSq(sqTake), mpsqtpc[sqTake] & tpcPiece);
+	if (apcFrom == apcPawn) {
+		imvPawnOrTakeLast = imvCur + 1;
+		if (sqTake == sqEnPassant)
+			sqTake = SQ(cpcToMove == cpcWhite ? 4 : 3, sqEnPassant.file());
+	}
+	APC apcTake = ApcFromSq(sqTake);
+	if (apcTake != apcNull) {
+		imvPawnOrTakeLast = imvCur + 1;
+		mv.SetCapture(apcTake, mpsqtpc[sqTake] & tpcPiece);
+	}
 
 	/* make the move and save the move in the move list */
 
@@ -974,10 +1010,96 @@ void BDG::TestGameOver(const vector<MV>& rgmv)
 	}
 	else {
 		/* check for draw circumstances */
-		/* king v king, king-knight v king, king-bishop v king, king-bishop v king-bishop (opp color) */
-		/* identical board position 3 times (including legal moves the same, cf. en passant) */
-		/* both players make 50 moves with no captures or pawn moves */
+		if (FDrawDead())
+			SetGs(GS::DrawDead);
+		if (FDraw3Repeat(3))
+			SetGs(GS::Draw3Repeat);
+		else if (FDraw50Move(50))
+			SetGs(GS::Draw50Move);
 	}
+}
+
+
+/*	BDG::FDrawDead
+ *
+ *	Returns true if we're in a board state where no one can force checkmate on the
+ *	other player.
+ */
+bool BDG::FDrawDead(void) const
+{
+	/* keep total piece count for the color at apcNull, and keep seperate counts for the 
+	   different color square bishops */
+	int mpapccapc[2][apcBishop2 + 1];	
+	memset(mpapccapc, 0, sizeof(mpapccapc));
+
+	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++) {
+		for (int tpc = 0; tpc < tpcPieceMax; tpc++) {
+			SQ sq = mptpcsq[cpc][tpc];
+			if (sq == sqNil)
+				continue;
+			APC apc = ApcFromSq(sq);
+			if (apc == apcBishop)
+				apc += (sq & 1) * (apcBishop2 - apcBishop);
+			else if (apc == apcRook || apc == apcQueen || apc == apcPawn)	// rook, queen, or pawn, not dead
+				return false;
+			mpapccapc[cpc][apc]++;
+			if (++mpapccapc[cpc][apcNull] > 2)	// if total pieces more than 2, not dead
+				return false;; 
+		}
+	}
+
+	assert(mpapccapc[cpcWhite][apcKing] == 1 && mpapccapc[cpcBlack][apcKing] == 1);
+	assert(mpapccapc[cpcWhite][apcNull] <= 2 && mpapccapc[cpcBlack][apcNull] <= 2);
+
+	/* this picks off K vs. K, K vs. K-N, and K vs. K-B */
+
+	if (mpapccapc[cpcWhite][apcNull] == 1 || mpapccapc[cpcBlack][apcNull] == 1)
+		return true;
+
+	/* The other draw case is K-B vs. K-B with bishops on same color */
+
+	assert(mpapccapc[cpcWhite][apcNull] == 2 && mpapccapc[cpcBlack][apcNull] == 2);
+	if ((mpapccapc[cpcWhite][apcBishop] && mpapccapc[cpcBlack][apcBishop]) ||
+			(mpapccapc[cpcWhite][apcBishop2] && mpapccapc[cpcBlack][apcBishop2]))
+		return true;
+
+	/*  otherwise forcing checkmate is still possible */
+
+	return false;
+}
+
+
+/*	BDG::FDraw3Repeat
+ *
+ *	Returns true on the draw condition when we've had the exact same board position
+ *	for 3 times in a single game, where exact board position means same player to move,
+ *	all pieces in the same place, castle state is the same, and en passant possibility
+ *	is the same.
+ */
+bool BDG::FDraw3Repeat(int cbdDraw) const
+{
+	if (imvCur - imvPawnOrTakeLast < cbdDraw * 2)
+		return false;
+	BD bd = *this;
+	int cbdSame = 0;
+	for (int imv = imvCur; imv >= imvPawnOrTakeLast; imv -= 2) {
+		bd.UndoMv(rgmvGame[imv]);
+		bd.UndoMv(rgmvGame[imv - 1]);
+		if (bd == *this && ++cbdSame >= cbdDraw)
+			return true;
+	}
+	return false;
+}
+
+
+/*	BDG::FDraw50Move
+ *
+ *	If we've gone 50 moves (black and white both gone 50 moves each) without a pawn move
+ *	or a capture. 
+ */
+bool BDG::FDraw50Move(int cmvDraw) const
+{
+	return imvCur - imvPawnOrTakeLast >= cmvDraw * 2;
 }
 
 
@@ -1180,6 +1302,8 @@ void SPABD::MakeMv(MV mv, bool fRedraw)
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	ga.bdg.TestGameOver(rgmvDrag);
+	if (ga.bdg.gs != GS::Playing)
+		rgmvDrag.clear();
 	if (fRedraw)
 		Redraw();
 }

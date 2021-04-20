@@ -1,3 +1,8 @@
+  Official game has slightly different rules for some draw situations
+  Playing test PGN files should display result in game over panel
+  Animate the game over panel into position.
+  Need a no-clock mode that works with certain clock games, and playback modes
+  Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
   Change Undo/Redo to be an imvCur operation
   When dragging pieces, highlight square when hovering over a legal move
@@ -28,8 +33,9 @@
   Change SPATI items to be separate UI elements
   Beef up layout code to handle locating clocks et.al.
   Add controls to SPARGMV for resigning/offering draws
-  Implement draws by 3-move repetition
-  Implement draws by 50 moves without progress
+* Lock out move UI when game is over - necessary for non-stalemate draws and resignation
+* Implement draws by 3-move repetition
+* Implement draws by 50 moves without progress
 * Implement move redo
 * Implement move undo
 * Add information to MV so moves can be undone

@@ -60,7 +60,8 @@ enum {
 	apcBishop = 3,
 	apcRook = 4,
 	apcQueen = 5,
-	apcKing = 6
+	apcKing = 6,
+	apcBishop2 = 7	// only used for draw detection computation to keep track of bishop square color
 };
 
 typedef BYTE APC;
@@ -323,6 +324,8 @@ public:
 	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
 	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
 
+	bool operator==(const BD& bd) const;
+	bool operator!=(const BD& bd) const;
 
 #ifndef NDEBUG
 	void Validate(void) const;
@@ -386,6 +389,9 @@ public:
 	CPC cpcToMove;
 	vector<MV> rgmvGame;	// the game moves that resulted in bd board state
 	int imvCur;
+	int imvPawnOrTakeLast;	/* index of last pawn or capture move (used directly for 50-move 
+							   draw detection), but it is also a bound on how far back we need 
+							   to search for 3-move repetition draws */
 
 public:
 	BDG(void);
@@ -406,6 +412,9 @@ public:
 	void UndoMv(void);
 	void RedoMv(void);
 	void TestGameOver(const vector<MV>& rgmv);
+	bool FDrawDead(void) const;
+	bool FDraw3Repeat(int cbdDraw) const;
+	bool FDraw50Move(int cmvDraw) const;
 	void SetGs(GS gs);
 
 	wstring SzMoveAndDecode(MV mv);
