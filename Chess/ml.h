@@ -1,0 +1,126 @@
+#pragma once
+/*
+ *
+ *	ml.h
+ * 
+ *	Definitions for the move list screen panel. This thing is mostly UI
+ *	stuff.
+ * 
+ */
+
+#include "framework.h"
+#include "ui.h"
+#include "bd.h"
+
+
+/*
+ *
+ *	UICLOCK class
+ *
+ *	A UI element to display a chess clock. Usually two of these
+ *	on the screen at any given time.
+ *
+ */
+
+
+class SPARGMV;
+class GA;
+
+class UICLOCK : public UI
+{
+protected:
+	GA& ga;
+	CPC cpc;
+	static IDWriteTextFormat* ptfClock;
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+
+public:
+	UICLOCK(SPARGMV* pspargmv, CPC cpc);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+	void DrawColon(RCF& rcf, unsigned frac) const;
+	bool FTimeOutWarning(DWORD tm) const;
+};
+
+
+/*
+ *
+ *	UIGO
+ *
+ *	Game over sub-panel in the move list.
+ *
+ */
+
+
+class UIGO : public UI
+{
+protected:
+	GA& ga;
+	static IDWriteTextFormat* ptfScore;
+
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+
+public:
+	UIGO(SPARGMV* pspargmv, bool fVisible);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+};
+
+
+/*
+ *
+ *	SPARGMV class
+ * 
+ *	The move list screen panel
+ * 
+ */
+
+
+class SPARGMV : public SPAS
+{
+	friend class UICLOCK;
+	friend class UIGO;
+	friend class GA;
+
+	static IDWriteTextFormat* ptfList;
+	static float mpcoldxf[4];
+	static float dyfList;
+
+	float XfFromCol(int col) const;
+	float DxfFromCol(int col) const;
+	RCF RcfFromCol(float yf, int col) const;
+	RCF RcfFromImv(int imv) const;
+
+	BDG bdgInit;	// initial board at the start of the game list
+	int imvSel;
+	UICLOCK* mpcpcpuiclock[2];
+	UIGO* puigo;
+
+public:
+	SPARGMV(GA* pga);
+	~SPARGMV(void);
+
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwicfHTT);
+	static void DiscardRsrc(void);
+
+	void NewGame(void);
+	void EndGame(void);
+
+	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void DrawContent(const RCF& rcfCont);
+	virtual float DxWidth(void) const;
+	virtual float DyHeight(void) const;
+
+	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
+	void DrawMoveNumber(RCF rcf, int imv);
+	void DrawSel(int imv);
+	void SetSel(int imv);
+
+	bool FMakeVis(int imv);
+	void UpdateContSize(void);
+
+	void DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const;
+};

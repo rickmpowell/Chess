@@ -9,6 +9,16 @@
 #include "ui.h"
 
 
+WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
+{
+	if (imv / 10 != 0)
+		pch = PchDecodeInt(imv / 10, pch);
+	*pch++ = imv % 10 + L'0';
+	*pch = '\0';
+	return pch;
+}
+
+
 /*
  *	UI static drawing objects
  */

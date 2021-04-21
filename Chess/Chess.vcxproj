@@ -147,19 +147,23 @@
     <ClInclude Include="Chess.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ga.h" />
+    <ClInclude Include="ml.h" />
     <ClInclude Include="pl.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="ui.h" />
+    <ClInclude Include="uibd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bd.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ga.cpp" />
+    <ClCompile Include="ml.cpp" />
     <ClCompile Include="parsedecode.cpp" />
     <ClCompile Include="pl.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="ui.cpp" />
+    <ClCompile Include="uibd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Chess.rc" />

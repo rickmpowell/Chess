@@ -1,3 +1,5 @@
+  Break the UI out of the GA.
+  Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
   Official game has slightly different rules for some draw situations
   Playing test PGN files should display result in game over panel
   Animate the game over panel into position.
