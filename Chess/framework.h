@@ -6,26 +6,26 @@
 #pragma once
 
 #include "targetver.h"
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-// Windows Header Files
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-// C RunTime Header Files
+
+
+#include <d2d1_1.h>
+#include <d2d1_1helper.h>
+#include <d3d11_1.h>
+#include <dwrite_1.h>
+#include <wincodec.h>
+#include <d2d1effects.h>
+#include <d2d1effecthelpers.h>
+
+using namespace D2D1;
+
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
 #include <commctrl.h>
 #include <string.h>
-
-
-#include <d2d1.h>
-#include <d2d1helper.h>
-#include <d2d1_1.h>
-#include <dwrite.h>
-#include <wincodec.h>
-#include <d2d1effects.h>
-
-using namespace D2D1;
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -47,47 +47,68 @@ using namespace std;
 
 
 /*
- *	Abbreviations for some long system types
+ *
+ *	PTF class
+ * 
+ *	D2D1 floating point point class, with convenience features added on
+ * 
  */
 
 class PTF : public D2D1_POINT_2F {
 public:
-	PTF() { x = 0.0f; y = 0.0f; }
-	PTF(float xf, float yf) { x = xf; y = yf; }
+	inline PTF() { }
+	inline PTF(float xf, float yf) { x = xf; y = yf; }
 
-	PTF& Offset(float dxf, float dyf) {
+	inline PTF& Offset(float dxf, float dyf) {
 		x += dxf;
 		y += dyf;
 		return *this;
 	}
 
-	PTF& Offset(const PTF& ptf) {
+	inline PTF& Offset(const PTF& ptf) {
 		return Offset(ptf.x, ptf.y);
 	}
 
-	PTF operator+(const PTF& ptf) const {
+	inline PTF operator+(const PTF& ptf) const {
 		PTF ptfT(*this);
 		return ptfT.Offset(ptf);
 	}
 
-	PTF operator-(void) const {
+	inline PTF operator-(void) const {
 		return PTF(-x, -y);
 	}
 };
 
+/*
+ *
+ *	SIZF class
+ * 
+ *	D2D1 floating point size object, with some convenience features added on
+ * 
+ */
+
 class SIZF : public D2D1_SIZE_F
 {
 public:
-	SIZF(float dxf, float dyf) {
+	inline SIZF(void) { }
+	inline SIZF(float dxf, float dyf) {
 		width = dxf;
 		height = dyf;
 	}
 };
 
+/*
+ *
+ *	RCF class
+ * 
+ *	D2D1 floating point rectangle object, with a few convenience features built in.
+ *
+ */
+
 class RCF : public D2D1_RECT_F {
 public:
-	RCF(void) { }
-	RCF(float xfLeft, float yfTop, float xfRight, float yfBot)
+	inline RCF(void) { }
+	inline RCF(float xfLeft, float yfTop, float xfRight, float yfBot)
 	{
 		left = xfLeft;
 		top = yfTop;
@@ -95,14 +116,14 @@ public:
 		bottom = yfBot;
 	}
 
-	RCF(const PTF& ptfTopLeft, const SIZF& sizf) {
+	inline RCF(const PTF& ptfTopLeft, const SIZF& sizf) {
 		left = ptfTopLeft.x;
 		top = ptfTopLeft.y;
 		right = left + sizf.width;
 		bottom = top + sizf.height;
 	}
 
-	RCF& Offset(float dxf, float dyf)
+	inline RCF& Offset(float dxf, float dyf)
 	{
 		left += dxf;
 		right += dxf;
@@ -125,7 +146,7 @@ public:
 		return *this;
 	}
 
-	RCF& Inflate(const PTF& ptf)
+	inline RCF& Inflate(const PTF& ptf)
 	{
 		return Inflate(ptf.x, ptf.y);
 	}
@@ -154,88 +175,95 @@ public:
 		if (rcf.bottom < bottom)
 			bottom = rcf.bottom;
 		return *this;
-
 	}
 
-	bool FEmpty(void) const
+	inline bool FEmpty(void) const
 	{
 		return left >= right || top >= bottom;
 	}
 
-	bool FContainsPtf(const PTF& ptf) const
+	inline bool FContainsPtf(const PTF& ptf) const
 	{
 		return ptf.x >= left && ptf.x < right && ptf.y >= top && ptf.y < bottom;
 	}
 
-	float DxfWidth(void) const {
+	inline float DxfWidth(void) const {
 		return right - left;
 	}
 
-	float DyfHeight(void) const {
+	inline float DyfHeight(void) const {
 		return bottom - top;
 	}
 
-	SIZF Sizf(void) const {
+	inline SIZF Sizf(void) const {
 		return SIZF(DxfWidth(), DyfHeight());
 	}
 
-	PTF PtfTopLeft(void) const {
+	inline PTF PtfTopLeft(void) const {
 		return PTF(left, top);
 	}
 
-	RCF& SetSize(const SIZF& sizf) {
+	inline RCF& SetSize(const SIZF& sizf) {
 		right = left + sizf.width;
 		bottom = top + sizf.height;
 	}
 
-	RCF& Move(const PTF& ptfTopLeft) {
+	inline RCF& Move(const PTF& ptfTopLeft) {
 		return Offset(ptfTopLeft.x - left, ptfTopLeft.y - top);
 	}
 
-	RCF operator+(const PTF& ptf) const {
+	inline RCF operator+(const PTF& ptf) const {
 		RCF rcf = *this;
 		return rcf.Offset(ptf);
 	}
 
-	RCF& operator+=(const PTF& ptf) {
+	inline RCF& operator+=(const PTF& ptf) {
 		return Offset(ptf);
 	}
 	
-	RCF operator-(const PTF& ptf) const {
+	inline RCF operator-(const PTF& ptf) const {
 		RCF rcf(*this);
 		return rcf.Offset(-ptf);
 	}
 
-	RCF& operator-=(const PTF& ptf) {
+	inline RCF& operator-=(const PTF& ptf) {
 		return Offset(-ptf);
 	}
 
-	RCF operator|(const RCF& rcf) const {		
+	inline RCF operator|(const RCF& rcf) const {		
 		RCF rcfT = *this;
 		return rcfT.Union(rcf);
 	}
 
-	RCF& operator|=(const RCF& rcf) {
+	inline RCF& operator|=(const RCF& rcf) {
 		return Union(rcf);
 	}
 	
-	RCF operator&(const RCF& rcf) const {
+	inline RCF operator&(const RCF& rcf) const {
 		RCF rcfT = *this;
 		return rcfT.Intersect(rcf);
 	}
 
-	RCF& operator&=(const RCF& rcf) {
+	inline RCF& operator&=(const RCF& rcf) {
 		return Intersect(rcf);
 	}
 
-	operator int() const {
+	inline operator int() const {
 		return !FEmpty();
 	}
 	
-	bool operator!() const {
+	inline bool operator!() const {
 		return FEmpty();
 	}
 };
+
+/*
+ *
+ *	ELLF convenience class
+ * 
+ *	D2D1 ellipse class with some convenience features
+ * 
+ */
 
 class ELLF : public D2D1_ELLIPSE
 {
@@ -258,9 +286,7 @@ public:
 
 	ELLF& Offset(const PTF& ptf)
 	{
-		point.x += ptf.x;
-		point.y += ptf.y;
-		return *this;
+		return Offset(ptf.x, ptf.y);
 	}
 };
 
