@@ -46,6 +46,28 @@ public:
 
 /*
  *
+ *	UIPL
+ * 
+ *	Player name UI element in the move list. Pretty simple control.
+ * 
+ */
+
+class PL;
+
+class UIPL : public UI
+{
+private:
+	PL* ppl;
+	CPC cpc;
+public:
+	UIPL(SPARGMV* pspargmv, PL* ppl, CPC cpc);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+	void SetPl(PL* pplNew);
+};
+
+
+/*
+ *
  *	UIGO
  *
  *	Game over sub-panel in the move list.
@@ -78,8 +100,11 @@ public:
  */
 
 
+class PL;
+
 class SPARGMV : public SPAS
 {
+	friend class UIPL;
 	friend class UICLOCK;
 	friend class UIGO;
 	friend class GA;
@@ -95,6 +120,7 @@ class SPARGMV : public SPAS
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int imvSel;
+	UIPL* mpcpcpuipl[2];
 	UICLOCK* mpcpcpuiclock[2];
 	UIGO* puigo;
 
@@ -104,6 +130,8 @@ public:
 
 	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwicfHTT);
 	static void DiscardRsrc(void);
+
+	void SetPl(CPC cpc, PL* ppl);
 
 	void NewGame(void);
 	void EndGame(void);

@@ -371,6 +371,7 @@ void GA::SetPl(CPC cpc, PL* ppl)
 	if (mpcpcppl[cpc])
 		delete mpcpcppl[cpc];
 	mpcpcppl[cpc] = ppl;
+	spargmv.SetPl(cpc, ppl);
 }
 
 
@@ -386,6 +387,16 @@ void GA::Draw(const RCF* prcfUpdate)
 	FillRcf(*prcfUpdate, pbrDesktop);
 }
 
+
+void GA::InvalRcf(RCF rcf, bool fErase) const
+{
+	RECT rc;
+	rc.left = (int)(rcf.left - rcfBounds.left);
+	rc.top = (int)(rcf.top - rcfBounds.top);
+	rc.right = (int)(rcf.right - rcfBounds.left);
+	rc.bottom = (int)(rcf.bottom - rcfBounds.top);
+	::InvalidateRect(app.hwnd, &rc, fErase);
+}
 
 ID2D1RenderTarget* GA::PrtGet(void) const
 {

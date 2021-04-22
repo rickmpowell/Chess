@@ -12,6 +12,40 @@
 
 /*
  *
+ *	UIPL
+ * 
+ *	Player name UI element in the move  list. This is just a little static
+ *	item.
+ * 
+ */
+
+
+UIPL::UIPL(SPARGMV* pspargmv, PL* ppl, CPC cpc) : UI(pspargmv), ppl(ppl), cpc(cpc)
+{
+}
+
+
+void UIPL::Draw(const RCF* prcfUpdate)
+{
+	ptfText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	wstring szColor = cpc == cpcWhite ? L"\x26aa  " : L"\x26ab  ";
+	if (ppl)
+		szColor += ppl->SzName();
+	RCF rcf = RcfInterior();
+	rcf.left += 12.0f;
+	rcf.top += 4.0f;
+	DrawSz(szColor, ptfText, rcf);
+}
+
+
+void UIPL::SetPl(PL* pplNew)
+{
+	ppl = pplNew;
+}
+
+
+/*
+ *
  *	UICLOCK implementation
  *
  *	The chess clock implementation
@@ -247,6 +281,8 @@ SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
 {
 	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
 	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
+	mpcpcpuipl[cpcWhite] = new UIPL(this, NULL, cpcWhite);
+	mpcpcpuipl[cpcBlack] = new UIPL(this, NULL, cpcBlack);
 	puigo = new UIGO(this, false);
 }
 
@@ -346,14 +382,22 @@ void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 	}
 	SetView(rcf);
 	SetContent(rcf);
+
+	/*	position the clocks and player names */
+
 	rcf = RcfInterior();
-	rcf.top += 1.5f * dyfList;
+	rcf.bottom = rcf.top + 1.5f * dyfList;
+	mpcpcpuipl[ga.spabd.cpcPointOfView ^ 1]->SetBounds(rcf);
+	rcf.top = rcf.bottom;
 	rcf.bottom = rcf.top + 4.0f * dyfList;
-	mpcpcpuiclock[ga.bdg.cpcToMove ^ 1]->SetBounds(rcf);
+	mpcpcpuiclock[ga.spabd.cpcPointOfView ^ 1]->SetBounds(rcf);
+
 	rcf = RcfInterior();
-	rcf.bottom -= 1.5f * dyfList;
+	rcf.top = rcf.bottom - 1.5f * dyfList;
+	mpcpcpuipl[ga.spabd.cpcPointOfView]->SetBounds(rcf);
+	rcf.bottom = rcf.top;
 	rcf.top = rcf.bottom - 4.0f * dyfList;
-	mpcpcpuiclock[ga.bdg.cpcToMove]->SetBounds(rcf);
+	mpcpcpuiclock[ga.spabd.cpcPointOfView]->SetBounds(rcf);
 }
 
 
@@ -365,46 +409,12 @@ void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 void SPARGMV::Draw(const RCF* prcfUpdate)
 {
 	SPAS::Draw(prcfUpdate); // draws content area of the scrollable area
-
-	/* draw fixed part of the panel */
-
-	/* top player */
-
-	RCF rcf = RcfInterior();
-	rcf.bottom = RcfView().top - 1;
-	DrawPl(ga.spabd.cpcPointOfView, rcf, true);
-	rcf.top = rcf.bottom;
-	rcf.bottom += 1;
-	FillRcf(rcf, pbrGridLine);
-
-	/* bottom player */
-
-	rcf = RcfInterior();
-	rcf.top = RcfView().bottom + 1;
-	DrawPl(ga.spabd.cpcPointOfView, rcf, false);
-	rcf.bottom = rcf.top;
-	rcf.top -= 1;
-	FillRcf(rcf, pbrGridLine);
 }
 
 
-void SPARGMV::DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const
+void SPARGMV::SetPl(CPC cpc, PL* ppl)
 {
-	RCF rcfPl = rcfArea;
-	CPC cpc = cpcPointOfView ^ (int)fTop;
-	if (fTop)
-		rcfPl.bottom = rcfPl.top + 1.5f * dyfList;
-	else
-		rcfPl.top = rcfPl.bottom - 1.5f * dyfList;
-
-	wstring szName = ga.PplFromCpc(cpc)->SzName();
-	ptfList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	wstring szColor = cpc == cpcWhite ? L"\x26aa  " : L"\x26ab  ";
-	szColor += szName;
-	rcfPl.left += 12.0f;
-	rcfPl.top += 5.0f;
-	DrawSz(szColor, ptfList, rcfPl);
-	rcfPl.top -= 5.0f;
+	mpcpcpuipl[cpc]->SetPl(ppl);
 }
 
 

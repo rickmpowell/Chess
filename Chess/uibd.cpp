@@ -128,10 +128,10 @@ void SPABD::DiscardRsrc(void)
  *	Constructor for the board screen panel.
  */
 SPABD::SPABD(GA* pga) : SPA(pga), phtDragInit(NULL), phtCur(NULL), sqHover(sqNil), ictlHover(-1),
-cpcPointOfView(cpcWhite),
-dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
-angle(0.0f),
-dyfLabel(18.0f)	// TODO: this is a font attribute
+		cpcPointOfView(cpcWhite),
+		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
+		angle(0.0f),
+		dyfLabel(18.0f)	// TODO: this is a font attribute
 {
 }
 
@@ -362,7 +362,6 @@ void SPABD::DrawGameState(void)
 	case GS::BlackCheckMated: break;
 	case GS::WhiteTimedOut: break;
 	case GS::BlackTimedOut: break;
-		/* TODO: show king has no moves */
 	case GS::StaleMate: break;
 	default: break;
 	}
@@ -565,6 +564,7 @@ void SPABD::FlipBoard(CPC cpcNew)
 		ga.Redraw();
 	angle = 0.0f;
 	cpcPointOfView = cpcNew;
+	ga.Layout();
 	ga.Redraw();
 }
 
@@ -799,27 +799,11 @@ void SPABD::HiliteControl(int ictl)
  */
 void SPABD::InvalOutsideRcf(RCF rcf) const
 {
-	InvalRectF(rcf.left, rcf.top, rcf.right, rcfBounds.top);
-	InvalRectF(rcf.left, rcfBounds.bottom, rcf.right, rcf.bottom);
-	InvalRectF(rcf.left, rcf.top, rcfBounds.left, rcf.bottom);
-	InvalRectF(rcfBounds.right, rcf.top, rcf.right, rcf.bottom);
+	RCF rcfInt = RcfInterior();
+	InvalRcf(RCF(rcf.left, rcf.top, rcf.right, rcfInt.top), false);
+	InvalRcf(RCF(rcf.left, rcfInt.bottom, rcf.right, rcf.bottom), false);
+	InvalRcf(RCF(rcf.left, rcf.top, rcfInt.left, rcf.bottom), false);
+	InvalRcf(RCF(rcfInt.right, rcf.top, rcf.right, rcf.bottom), false);
 }
 
 
-/*	SPABD::InvalRectF
- *
- *	Helper function to invalidate an area in the containing
- *	window. Used to force redraws of areas outside the board
- *	on the screen. Does nothing if the rectangle is empty.
- */
-void SPABD::InvalRectF(float left, float top, float right, float bottom) const
-{
-	if (left >= right || top >= bottom)
-		return;
-	RECT rc;
-	::SetRect(&rc, (int)(left - rcfBounds.left),
-		(int)(top - rcfBounds.top),
-		(int)(right - rcfBounds.left),
-		(int)(bottom - rcfBounds.bottom));
-	::InvalidateRect(ga.app.hwnd, &rc, false);
-}

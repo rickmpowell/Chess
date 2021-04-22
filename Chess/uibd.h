@@ -84,7 +84,6 @@ public:
 	void DrawDragPc(const RCF& rcf);
 	RCF RcfGetDrag(void);
 	void InvalOutsideRcf(RCF rcf) const;
-	void InvalRectF(float left, float top, float right, float bottom) const;
 	void HiliteLegalMoves(SQ sq);
 	void HiliteControl(int ictl);
 	RCF RcfFromSq(SQ sq) const;

@@ -124,6 +124,7 @@ public:
 	virtual ID2D1RenderTarget* PrtGet(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
+	virtual void InvalRcf(RCF rcf, bool fErase) const;
 
 	void Resize(int dx, int dy);
 	void Layout(void);

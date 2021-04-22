@@ -340,6 +340,14 @@ void UI::Draw(const RCF* prcfDraw)
 }
 
 
+void UI::InvalRcf(RCF rcf, bool fErase) const
+{
+	if (rcf.top >= rcf.bottom || rcf.left >= rcf.right || puiParent == NULL)
+		return;
+	puiParent->InvalRcf(RcfParentFromLocal(rcf), fErase);
+}
+
+
 /*	UI::PrtGet
  *
  *	Gets the render target we need to draw in for all the UI elements.
@@ -369,6 +377,7 @@ void UI::EndDraw(void)
 	else
 		PrtGet()->EndDraw();
 }
+
 
 /*	UI::FillRcf
  *

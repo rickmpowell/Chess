@@ -68,6 +68,7 @@ public:
 
 	void Update(const RCF* prcfUpdate = NULL);
 	void Redraw(void);
+	virtual void InvalRcf(RCF rcf, bool fErase) const;
 	virtual void Draw(const RCF* prcfDraw=NULL);
 	virtual ID2D1RenderTarget* PrtGet(void) const;
 	virtual void BeginDraw(void);
