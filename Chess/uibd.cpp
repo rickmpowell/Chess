@@ -526,7 +526,6 @@ void SPABD::DrawControls(void)
 {
 	ptfControls->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	DrawControl(L'\x2b6f', 0, HTT::FlipBoard);
-	DrawControl(L'\x2690', 1, HTT::Resign);
 }
 
 
@@ -592,8 +591,6 @@ HT* SPABD::PhtHitTest(PTF ptf)
 	if (!rcfSquares.FContainsPtf(ptf)) {
 		if (RcfControl(0).FContainsPtf(ptf))
 			return new HTBD(ptf, HTT::FlipBoard, this, sqNil);
-		if (RcfControl(1).FContainsPtf(ptf))
-			return new HTBD(ptf, HTT::Resign, this, sqNil);
 		return new HTBD(ptf, HTT::Static, this, sqMax);
 	}
 	int rank = (int)((ptf.y - rcfSquares.top) / dxyfSquare);
@@ -641,7 +638,6 @@ void SPABD::StartLeftDrag(HT* pht)
 	switch (pht->htt) {
 	case HTT::MoveablePc:
 	case HTT::FlipBoard:
-	case HTT::Resign:
 		assert(phtDragInit == NULL);
 		assert(phtCur == NULL);
 		phtDragInit = (HTBD*)pht->PhtClone();
@@ -678,9 +674,6 @@ void SPABD::EndLeftDrag(HT* pht)
 			break;
 		case HTT::FlipBoard:
 			FlipBoard(cpcPointOfView ^ 1);
-			break;
-		case HTT::Resign:
-			Resign();
 			break;
 		default:
 			break;
@@ -721,7 +714,6 @@ void SPABD::LeftDrag(HT* pht)
 
 	switch (phtDragInit->htt) {
 	case HTT::FlipBoard:
-	case HTT::Resign:
 		if (pht->htt != phtDragInit->htt)
 			HiliteControl(-1);
 		break;
@@ -752,9 +744,6 @@ void SPABD::MouseHover(HT* pht)
 		break;
 	case HTT::FlipBoard:
 		HiliteControl(0);
-		break;
-	case HTT::Resign:
-		HiliteControl(1);
 		break;
 	default:
 		HiliteLegalMoves(sqNil);

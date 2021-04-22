@@ -310,8 +310,6 @@ void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFacto
 	SPA::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPABD::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
-	UICLOCK::CreateRsrc(prt, pfactdwr, pfactwic);
-	UIGO::CreateRsrc(prt, pfactdwr, pfactwic);
 	SPARGMV::CreateRsrc(prt, pfactdwr, pfactwic);
 }
 
@@ -322,8 +320,6 @@ void GA::DiscardRsrc(void)
 	SPATI::DiscardRsrc();
 	SPABD::DiscardRsrc();
 	SPARGMV::DiscardRsrc();
-	UICLOCK::DiscardRsrc();
-	UIGO::DiscardRsrc();
 	SafeRelease(&pbrDesktop);
 }
 

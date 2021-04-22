@@ -87,5 +87,11 @@
     <Image Include="Chess.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="hands-shaking.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="white-flag.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

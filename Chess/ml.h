@@ -68,6 +68,31 @@ public:
 
 /*
  *
+ *	UIGC
+ * 
+ *	Game control UI element. Button control list for doing a few random
+ *	game operations, like resign, offer draw, new game, etc.
+ * 
+ */
+
+
+class UIGC : public UI
+{
+protected:
+	static ID2D1Bitmap* pbmpResign;
+	static ID2D1Bitmap* pbmpOfferDraw;
+public:
+	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void DiscardRsrc(void);
+
+public:
+	UIGC(SPARGMV* pspargmv);
+	virtual void Draw(const RCF* prcfUpdate = NULL);
+};
+
+
+/*
+ *
  *	UIGO
  *
  *	Game over sub-panel in the move list.
@@ -123,6 +148,7 @@ class SPARGMV : public SPAS
 	UIPL* mpcpcpuipl[2];
 	UICLOCK* mpcpcpuiclock[2];
 	UIGO* puigo;
+	UIGC* puigc;
 
 public:
 	SPARGMV(GA* pga);
@@ -137,6 +163,7 @@ public:
 	void EndGame(void);
 
 	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
+	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);
 	virtual float DxWidth(void) const;

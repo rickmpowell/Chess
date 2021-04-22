@@ -8,6 +8,7 @@
 
 #include "ml.h"
 #include "ga.h"
+#include "Resource.h"
 
 
 /*
@@ -33,7 +34,7 @@ void UIPL::Draw(const RCF* prcfUpdate)
 		szColor += ppl->SzName();
 	RCF rcf = RcfInterior();
 	rcf.left += 12.0f;
-	rcf.top += 4.0f;
+	rcf.top += 6.0f;
 	DrawSz(szColor, ptfText, rcf);
 }
 
@@ -41,6 +42,61 @@ void UIPL::Draw(const RCF* prcfUpdate)
 void UIPL::SetPl(PL* pplNew)
 {
 	ppl = pplNew;
+}
+
+
+/*
+ *
+ *	UIGC implementation
+ * 
+ *	Game control button bar
+ * 
+ */
+
+
+ID2D1Bitmap* UIGC::pbmpResign;
+ID2D1Bitmap* UIGC::pbmpOfferDraw;
+
+
+void UIGC::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+{
+	if (pbmpResign)
+		return;
+	pbmpResign = PbmpFromPngRes(idbWhiteFlag, prt, pfactwic);
+	pbmpOfferDraw = PbmpFromPngRes(idbHandShake, prt, pfactwic);
+}
+
+
+void UIGC::DiscardRsrc(void)
+{
+	SafeRelease(&pbmpResign);
+	SafeRelease(&pbmpOfferDraw);
+}
+
+
+UIGC::UIGC(SPARGMV* pspargmv) : UI(pspargmv)
+{
+}
+
+
+void UIGC::Draw(const RCF* prcfUpdate)
+{
+	RCF rcf = RcfInterior();
+	rcf.bottom = rcf.top + 1;
+	FillRcf(rcf, pbrGridLine);
+
+	D2D1_SIZE_F ptf = pbmpResign->GetSize();
+	RCF rcfFrom(0.0, 0.0, ptf.width, ptf.height);
+	rcf = RcfInterior();
+	rcf.Inflate(0.0, -4.0f);
+	rcf.left += 20.0f;
+	rcf.right = rcf.left + rcf.DyfHeight() * ptf.width / ptf.height;
+	DrawBmp(rcf, pbmpResign, RCF(0.0, 0.0, ptf.width, ptf.height));
+
+	ptf = pbmpOfferDraw->GetSize();
+	rcf.left = rcf.right + 20.0f;
+	rcf.right = rcf.left + rcf.DyfHeight() * ptf.width / ptf.height;
+	DrawBmp(rcf, pbmpOfferDraw, RCF(0.0, 0.0, ptf.width, ptf.height));
 }
 
 
@@ -284,6 +340,7 @@ SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
 	mpcpcpuipl[cpcWhite] = new UIPL(this, NULL, cpcWhite);
 	mpcpcpuipl[cpcBlack] = new UIPL(this, NULL, cpcBlack);
 	puigo = new UIGO(this, false);
+	puigc = new UIGC(this);
 }
 
 
@@ -311,6 +368,10 @@ void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICI
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
 		&ptfList);
+
+	UIGC::CreateRsrc(prt, pfactdwr, pfactwic);
+	UICLOCK::CreateRsrc(prt, pfactdwr, pfactwic);
+	UIGO::CreateRsrc(prt, pfactdwr, pfactwic);
 }
 
 
@@ -322,6 +383,9 @@ void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICI
 void SPARGMV::DiscardRsrc(void)
 {
 	SafeRelease(&ptfList);
+	UIGC::DiscardRsrc();
+	UICLOCK::DiscardRsrc();
+	UIGO::DiscardRsrc();
 }
 
 
@@ -372,32 +436,45 @@ void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
 {
 	SPAS::Layout(ptf, pspa, ll);
 
+	/*	position the top clocks and player names */
+
 	RCF rcf = RcfInterior();
-	rcf.top += 5.5f * dyfList;
-	rcf.bottom -= 5.5f * dyfList;
-	if (puigo->FVisible()) {
-		float dyf = 6.0f * dyfList;
-		rcf.bottom -= dyf;
-		puigo->SetBounds(RCF(0, rcf.bottom, rcf.DxfWidth(), rcf.bottom + dyf));
-	}
-	SetView(rcf);
-	SetContent(rcf);
-
-	/*	position the clocks and player names */
-
-	rcf = RcfInterior();
-	rcf.bottom = rcf.top + 1.5f * dyfList;
-	mpcpcpuipl[ga.spabd.cpcPointOfView ^ 1]->SetBounds(rcf);
-	rcf.top = rcf.bottom;
-	rcf.bottom = rcf.top + 4.0f * dyfList;
-	mpcpcpuiclock[ga.spabd.cpcPointOfView ^ 1]->SetBounds(rcf);
-
-	rcf = RcfInterior();
-	rcf.top = rcf.bottom - 1.5f * dyfList;
-	mpcpcpuipl[ga.spabd.cpcPointOfView]->SetBounds(rcf);
+	RCF rcfCont = rcf;
 	rcf.bottom = rcf.top;
-	rcf.top = rcf.bottom - 4.0f * dyfList;
-	mpcpcpuiclock[ga.spabd.cpcPointOfView]->SetBounds(rcf);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.spabd.cpcPointOfView ^ 1], rcf, true, 1.75f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuiclock[ga.spabd.cpcPointOfView ^ 1], rcf, true, 4.0f * dyfList);
+	rcfCont.top = rcf.bottom;
+
+	/* position the bottom clocks, player names, and game controls */
+
+	rcf = RcfInterior();
+	rcf.top = rcf.bottom;
+	AdjustUIRcfBounds(mpcpcpuipl[ga.spabd.cpcPointOfView], rcf, false, 1.75f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuiclock[ga.spabd.cpcPointOfView], rcf, false, 4.0f * dyfList);
+	AdjustUIRcfBounds(puigo, rcf, false, 6.0f * dyfList);
+	AdjustUIRcfBounds(puigc, rcf, false, 1.5f * dyfList);
+	rcfCont.bottom = rcf.top;
+
+	/* move list content is whatever is left */
+
+	SetView(rcfCont);
+	SetContent(rcfCont);
+}
+
+
+void SPARGMV::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
+{
+	if (pui == NULL || !pui->FVisible())
+		return;
+	if (fTop) {
+		rcf.top = rcf.bottom;
+		rcf.bottom = rcf.top + dyfHeight;
+	}
+	else {
+		rcf.bottom = rcf.top;
+		rcf.top = rcf.bottom - dyfHeight;
+	}
+	pui->SetBounds(rcf);
 }
 
 
