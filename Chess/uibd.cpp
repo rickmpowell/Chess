@@ -61,18 +61,18 @@ PTF rgptfArrowHead[] = {
  *
  *	Creates the drawing resources necessary to draw the board.
  */
-void SPABD::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void SPABD::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrLight)
 		return;
 
 	/* brushes */
 
-	prt->CreateSolidColorBrush(ColorF(0.5f, 0.6f, 0.4f), &pbrDark);
-	prt->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.95f), &pbrLight);
-	prt->CreateSolidColorBrush(ColorF(ColorF::Black), &pbrBlack);
-	prt->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
-	prt->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
+	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.6f, 0.4f), &pbrDark);
+	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.95f), &pbrLight);
+	pdc->CreateSolidColorBrush(ColorF(ColorF::Black), &pbrBlack);
+	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
+	pdc->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
 
 	/* fonts */
 
@@ -91,14 +91,14 @@ void SPABD::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFa
 
 	/* bitmaps */
 
-	pbmpPieces = PbmpFromPngRes(idbPieces, prt, pfactwic);
+	pbmpPieces = PbmpFromPngRes(idbPieces, pdc, pfactwic);
 
 	/* geometries */
 
 	/* capture X, which is created as a cross that is rotated later */
-	pgeomCross = PgeomCreate(pfactd2d, rgptfCross, CArray(rgptfCross));
+	pgeomCross = PgeomCreate(pfactd2, rgptfCross, CArray(rgptfCross));
 	/* arrow head */
-	pgeomArrowHead = PgeomCreate(pfactd2d, rgptfArrowHead, CArray(rgptfArrowHead));
+	pgeomArrowHead = PgeomCreate(pfactd2, rgptfArrowHead, CArray(rgptfArrowHead));
 }
 
 
@@ -237,8 +237,8 @@ void SPABD::RedoMv(bool fRedraw)
  */
 void SPABD::Draw(const RCF* prcfUpdate)
 {
-	ID2D1RenderTarget* prt = PrtGet();
-	prt->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
+	DC* pdc = PdcGet();
+	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
 	DrawMargins();
 	DrawLabels();
 	DrawSquares();
@@ -248,7 +248,7 @@ void SPABD::Draw(const RCF* prcfUpdate)
 	DrawAnnotations();
 	DrawGameState();
 	DrawControls();
-	prt->SetTransform(Matrix3x2F::Identity());
+	pdc->SetTransform(Matrix3x2F::Identity());
 }
 
 
@@ -408,16 +408,16 @@ void SPABD::DrawHover(void)
 			FillEllf(ellf, pbrBlack);
 		}
 		else {
-			ID2D1RenderTarget* prt = PrtGet();
-			prt->SetTransform(
+			DC* pdc = PdcGet();
+			pdc->SetTransform(
 				Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
 				Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),
 					dxyfSquare / (2.0f * dxyfCrossFull)),
 					PTF(0.0, 0.0)) *
 				Matrix3x2F::Translation(SizeF(rcfBounds.left + (rcf.right + rcf.left) / 2,
 					rcfBounds.top + (rcf.top + rcf.bottom) / 2)));
-			prt->FillGeometry(pgeomCross, pbrBlack);
-			prt->SetTransform(Matrix3x2F::Identity());
+			pdc->FillGeometry(pgeomCross, pbrBlack);
+			pdc->SetTransform(Matrix3x2F::Identity());
 		}
 	}
 	pbrBlack->SetOpacity(1.0f);
@@ -558,7 +558,6 @@ RCF SPABD::RcfControl(int ictl) const
 
 void SPABD::FlipBoard(CPC cpcNew)
 {
-	ID2D1RenderTarget* prt = PrtGet();
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
 		ga.Redraw();
 	angle = 0.0f;

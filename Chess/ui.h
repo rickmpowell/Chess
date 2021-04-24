@@ -28,16 +28,16 @@ WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
 class UI
 {
 protected:
-	static ID2D1SolidColorBrush* pbrBack;
-	static ID2D1SolidColorBrush* pbrAltBack;
-	static ID2D1SolidColorBrush* pbrGridLine;
-	static ID2D1SolidColorBrush* pbrText;
-	static IDWriteTextFormat* ptfText;
+	static BRS* pbrBack;
+	static BRS* pbrAltBack;
+	static BRS* pbrGridLine;
+	static BRS* pbrText;
+	static TF* ptfText;
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
-	static ID2D1PathGeometry* PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf);
-	static ID2D1Bitmap* PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic);
+	static ID2D1PathGeometry* PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf);
+	static BMP* PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic);
 
 protected:
 	RCF rcfBounds;	// rectangle is in global coordinates
@@ -70,15 +70,16 @@ public:
 	void Redraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
 	virtual void Draw(const RCF* prcfDraw=NULL);
-	virtual ID2D1RenderTarget* PrtGet(void) const;
+	virtual DC* PdcGet(void) const;
+	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
-	void FillRcf(RCF rcf, ID2D1Brush* pbr) const;
-	void FillEllf(ELLF ellf, ID2D1Brush* pbr) const;
-	void DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
-	void DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
-	void DrawRgch(const WCHAR* rgch, int cch, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr = NULL) const;
-	void DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
+	void FillRcf(RCF rcf, BR* pbr) const;
+	void FillEllf(ELLF ellf, BR* pbr) const;
+	void DrawSz(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
+	void DrawSzCenter(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
+	void DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr = NULL) const;
+	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };
 
 
@@ -153,9 +154,9 @@ public:
 class SPA : public UI
 {
 public:
-	static ID2D1SolidColorBrush* pbrTextSel;
-	static IDWriteTextFormat* ptfTextSm;
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static BRS* pbrTextSel;
+	static TF* ptfTextSm;
+	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
 
 protected:
@@ -259,9 +260,9 @@ public:
 	{
 		SPA::Draw(prcfUpdate);
 		/* just redraw the entire content area clipped to the view */
-		PrtGet()->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		PdcGet()->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 		DrawContent(rcfCont);
-		PrtGet()->PopAxisAlignedClip();
+		PdcGet()->PopAxisAlignedClip();
 		DrawScrollBar();
 	}
 
@@ -276,7 +277,7 @@ public:
 		RCF rcf = rcfView;
 		rcf.left = rcf.right;
 		rcf.right = rcf.left + dxyfScrollBarWidth;
-		PrtGet()->FillRectangle(rcf, pbrAltBack);
+		PdcGet()->FillRectangle(rcf, pbrAltBack);
 	}
 };
 
@@ -310,7 +311,7 @@ public:
 		fHilite = fHiliteNew;
 	}
 
-	void Draw(ID2D1RenderTarget* prt) {
+	virtual void Draw(DC* pdc) {
 	}
 };
 

@@ -28,10 +28,10 @@ class SPATI : public SPA
 	wstring szText;
 
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
-	static IDWriteTextFormat* ptfPlayers;
-	static ID2D1Bitmap* pbmpLogo;
+	static TF* ptfPlayers;
+	static BMP* pbmpLogo;
 
 public:
 	SPATI(GA* pga);
@@ -96,9 +96,9 @@ class GA : public UI
 	friend class SPARGMV;
 
 protected:
-	static ID2D1SolidColorBrush* pbrDesktop;
+	static BRS* pbrDesktop;
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
 
 	APP& app;
@@ -121,7 +121,8 @@ public:
 	void Init(void);
 
 	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual ID2D1RenderTarget* PrtGet(void) const;
+	virtual DC* PdcGet(void) const;
+	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;

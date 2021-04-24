@@ -24,20 +24,20 @@ WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
  */
 
 ID2D1SolidColorBrush* UI::pbrBack;
-ID2D1SolidColorBrush* UI::pbrAltBack;
-ID2D1SolidColorBrush* UI::pbrGridLine;
+BRS* UI::pbrAltBack;
+BRS* UI::pbrGridLine;
 ID2D1SolidColorBrush* UI::pbrText;
 IDWriteTextFormat* UI::ptfText;
 
 
-void UI::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void UI::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrBack)
 		return;
-	prt->CreateSolidColorBrush(ColorF(ColorF::White), &pbrBack);
-	prt->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
-	prt->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
-	prt->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
+	pdc->CreateSolidColorBrush(ColorF(ColorF::White), &pbrBack);
+	pdc->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
+	pdc->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
+	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
@@ -54,11 +54,11 @@ void UI::DiscardRsrc(void)
 	SafeRelease(&ptfText);
 }
 
-ID2D1PathGeometry* UI::PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf)
+ID2D1PathGeometry* UI::PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf)
 {
 	/* capture X, which is created as a cross that is rotated later */
 	ID2D1PathGeometry* pgeom;
-	pfactd2d->CreatePathGeometry(&pgeom);
+	pfactd2->CreatePathGeometry(&pgeom);
 	ID2D1GeometrySink* psink;
 	pgeom->Open(&psink);
 	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
@@ -70,7 +70,7 @@ ID2D1PathGeometry* UI::PgeomCreate(ID2D1Factory* pfactd2d, PTF rgptf[], int cptf
 }
 
 
-ID2D1Bitmap* UI::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFactory* pfactwic)
+BMP* UI::PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic)
 {
 	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
 	if (hres == NULL)
@@ -96,7 +96,7 @@ ID2D1Bitmap* UI::PbmpFromPngRes(int idb, ID2D1RenderTarget* prt, IWICImagingFact
 	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
 		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
 	ID2D1Bitmap* pbmp;
-	hr = prt->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
+	hr = pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
 
 	SafeRelease(&pframe);
 	SafeRelease(&pconv);
@@ -328,7 +328,6 @@ void UI::Redraw(void)
 {
 	if (!fVisible)
 		return;
-	ID2D1RenderTarget* prt = PrtGet();
 	BeginDraw();
 	Update(&rcfBounds);
 	EndDraw();
@@ -348,25 +347,31 @@ void UI::InvalRcf(RCF rcf, bool fErase) const
 }
 
 
-/*	UI::PrtGet
+/*	UI::PdcGet
  *
- *	Gets the render target we need to draw in for all the UI elements.
+ *	Gets the device context we need to draw in for all the UI elements.
  *	The render target will be in global coordinates.
  */
-ID2D1RenderTarget* UI::PrtGet(void) const
+DC* UI::PdcGet(void) const
 {
 	if (puiParent == NULL)
 		return NULL;
-	return puiParent->PrtGet();
+	return puiParent->PdcGet();
 }
 
+void UI::PresentSwch(void) const
+{
+	if (puiParent == NULL)
+		return;
+	puiParent->PresentSwch();
+}
 
 void UI::BeginDraw(void)
 {
 	if (puiParent)
 		puiParent->BeginDraw();
 	else
-		PrtGet()->BeginDraw();
+		PdcGet()->BeginDraw();
 }
 
 
@@ -374,8 +379,11 @@ void UI::EndDraw(void)
 {
 	if (puiParent)
 		puiParent->EndDraw();
-	else
-		PrtGet()->EndDraw();
+	else {
+		DC* pdc = PdcGet();
+		pdc->EndDraw();
+		PresentSwch();
+	}
 }
 
 
@@ -387,7 +395,7 @@ void UI::EndDraw(void)
 void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	PrtGet()->FillRectangle(&rcf, pbr);
+	PdcGet()->FillRectangle(&rcf, pbr);
 }
 
 
@@ -399,7 +407,7 @@ void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 {
 	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
-	PrtGet()->FillEllipse(&ellf, pbr);
+	PdcGet()->FillEllipse(&ellf, pbr);
 }
 
 
@@ -411,7 +419,7 @@ void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 void UI::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	PrtGet()->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
+	PdcGet()->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
 }
 
 
@@ -429,11 +437,10 @@ void UI::DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1B
  *	Helper function for drawing text on the screen panel. Rectangle is in local
  *	UI coordinates
  */
-void UI::DrawRgch(const WCHAR* rgch, int cch, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
+void UI::DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	PrtGet()->DrawText(rgch, (UINT32)cch, ptf, &rcf, pbr == NULL ? pbrText : pbr);
-
+	PdcGet()->DrawText(rgch, (UINT32)cch, ptf, &rcf, pbr == NULL ? pbrText : pbr);
 }
 
 
@@ -442,8 +449,8 @@ void UI::DrawRgch(const WCHAR* rgch, int cch, IDWriteTextFormat* ptf, RCF rcf, I
  *	Helper function for drawing part of a bitmap on the screen panel. Destination
  *	coordinates are in local UI coordinates.
  */
-void UI::DrawBmp(RCF rcfTo, ID2D1Bitmap* pbmp, RCF rcfFrom, float opacity) const
+void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 {
-	PrtGet()->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
+	PdcGet()->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
 		opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcfFrom);
 }

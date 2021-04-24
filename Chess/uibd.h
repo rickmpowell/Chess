@@ -27,17 +27,17 @@ class HTBD;
 class SPABD : public SPA
 {
 public:
-	static ID2D1SolidColorBrush* pbrLight;
-	static ID2D1SolidColorBrush* pbrDark;
-	static ID2D1SolidColorBrush* pbrBlack;
-	static ID2D1SolidColorBrush* pbrAnnotation;
-	static ID2D1SolidColorBrush* pbrHilite;
-	static IDWriteTextFormat* ptfLabel;
-	static IDWriteTextFormat* ptfControls;
-	static IDWriteTextFormat* ptfGameState;
-	static ID2D1Bitmap* pbmpPieces;
-	static ID2D1PathGeometry* pgeomCross;
-	static ID2D1PathGeometry* pgeomArrowHead;
+	static BRS* pbrLight;
+	static BRS* pbrDark;
+	static BRS* pbrBlack;
+	static BRS* pbrAnnotation;
+	static BRS* pbrHilite;
+	static TF* ptfLabel;
+	static TF* ptfControls;
+	static TF* ptfGameState;
+	static BMP* pbmpPieces;
+	static GEOM* pgeomCross;
+	static GEOM* pgeomArrowHead;
 
 	CPC cpcPointOfView;
 	RCF rcfSquares;
@@ -55,7 +55,7 @@ public:
 public:
 	SPABD(GA* pga);
 	~SPABD(void);
-	static void CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
 
 	void NewGame(void);

@@ -67,7 +67,7 @@ int APIENTRY wWinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPWSTR szCmdLine, in
  * 
  *  Throws an exception if something fails.
  */
-APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), prth(NULL), cmdlist(*this)
+APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdcd2(NULL), cmdlist(*this)
 {
     hcurArrow = LoadCursor(NULL, IDC_ARROW);
     hcurMove = LoadCursor(NULL, IDC_SIZEALL);
@@ -155,21 +155,69 @@ DWORD APP::TmMessage(void)
 
 void APP::CreateRsrc(void)
 {
-    if (prth)
+    if (pdcd2)
         return;
-    RECT rc;
-    GetClientRect(hwnd, &rc);
-    pfactd2d->CreateHwndRenderTarget(RenderTargetProperties(),
-        HwndRenderTargetProperties(hwnd, SizeU(rc.right - rc.left, rc.bottom - rc.top)),
-        (ID2D1HwndRenderTarget**)&prth);
-    GA::CreateRsrc(prth, pfactd2d, pfactdwr, pfactwic);
+ 
+    D3D_FEATURE_LEVEL rgfld3[] = {
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_9_3,
+        D3D_FEATURE_LEVEL_9_2,
+        D3D_FEATURE_LEVEL_9_1
+    };
+    ID3D11Device* pdevd3T;
+    ID3D11DeviceContext* pdcd3T;
+    D3D_FEATURE_LEVEL flRet;
+    D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
+            rgfld3, CArray(rgfld3), D3D11_SDK_VERSION,
+            &pdevd3T, &flRet, &pdcd3T);
+    pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3);
+    pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
+    IDXGIDevice* pdevDxgi;
+    pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi);
+    pfactd2->CreateDevice(pdevDxgi, &pdevd2);
+    pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdcd2);
+    IDXGIAdapter* padaptDxgi;
+    pdevDxgi->GetAdapter(&padaptDxgi);
+    IDXGIFactory2* pfactDxgi;
+    padaptDxgi->GetParent(IID_PPV_ARGS(&pfactDxgi));
+    DXGI_SWAP_CHAIN_DESC1 swchd = { 0 };
+    swchd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    swchd.SampleDesc.Count = 1;
+    swchd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swchd.BufferCount = 2;
+    swchd.Scaling = DXGI_SCALING_STRETCH;
+    swchd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    pfactDxgi->CreateSwapChainForHwnd(pdevd3, hwnd, &swchd, NULL, NULL, &pswch);
+    IDXGISurface* psurfDxgi;
+    pswch->GetBuffer(0, IID_PPV_ARGS(&psurfDxgi));
+    float dxyf = (float)GetDpiForWindow(hwnd);
+    D2D1_BITMAP_PROPERTIES1 propBmp = BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+            PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxyf, dxyf);
+    pdcd2->CreateBitmapFromDxgiSurface(psurfDxgi, &propBmp, &pbmpBackBuf);
+    pdcd2->SetTarget(pbmpBackBuf);
+    SafeRelease(&psurfDxgi);
+    SafeRelease(&pfactDxgi);
+    SafeRelease(&padaptDxgi);
+    SafeRelease(&pdevDxgi);
+    SafeRelease(&pdevd3T);
+    SafeRelease(&pdcd3T);
+
+    GA::CreateRsrc(pdcd2, pfactd2, pfactdwr, pfactwic);
 }
 
 
 void APP::DiscardRsrc(void)
 {
     GA::DiscardRsrc();
-    SafeRelease(&prth);
+    SafeRelease(&pdevd3);
+    SafeRelease(&pdcd3);
+    SafeRelease(&pdevd2);
+    SafeRelease(&pswch);
+    SafeRelease(&pbmpBackBuf);
+    SafeRelease(&pdcd2);
 }
 
 
@@ -178,7 +226,7 @@ bool APP::FSizeEnv(int dx, int dy)
 {
     bool fChange = true;
     CreateRsrc();
-    assert(prth != NULL);
+    assert(pdcd2 != NULL);
     pga->Resize(dx, dy);
     return fChange;
 }
@@ -228,29 +276,34 @@ void APP::DestroyTimer(UINT tid)
  */
 void APP::OnSize(UINT dx, UINT dy)
 {
-    if (prth)
-        prth->Resize(SizeU(dx, dy));
-
+    DiscardRsrc();
     if (!FSizeEnv(dx, dy))
         return;
 }
 
 
+/*  APP::OnPaint
+ *
+ *  Handles painting updates on the window.
+ */
 void APP::OnPaint(void)
 {
     PAINTSTRUCT ps;
     BeginPaint(hwnd, &ps);
     CreateRsrc();
-    prth->BeginDraw();
- 
+    pdcd2->BeginDraw();
+
     if (pga) {
         RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top, 
             (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
         pga->Update(&rcf);
     }
 
-    if (prth->EndDraw() == D2DERR_RECREATE_TARGET)
+    if (pdcd2->EndDraw() == D2DERR_RECREATE_TARGET)
         DiscardRsrc();
+    DXGI_PRESENT_PARAMETERS pp = { 0 };
+    pswch->Present1(1, 0, &pp);
+
     EndPaint(hwnd, &ps);
 }
 

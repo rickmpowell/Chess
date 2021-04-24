@@ -23,8 +23,8 @@
  */
 
 
-ID2D1SolidColorBrush* SPA::pbrTextSel;
-IDWriteTextFormat* SPA::ptfTextSm;
+BRS* SPA::pbrTextSel;
+TF* SPA::ptfTextSm;
 
 
 /*	SPA::CreateRsrc
@@ -32,11 +32,11 @@ IDWriteTextFormat* SPA::ptfTextSm;
  *	Static routine for creating the drawing objects necessary to draw the various
  *	screen panels.
  */
-void SPA::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void SPA::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrTextSel)
 		return;
-	prt->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
+	pdc->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
@@ -202,7 +202,7 @@ ID2D1Bitmap* SPATI::pbmpLogo;
   *	panel. Note that this is a static routine working on global static
   *	resources that are shared by all instances of this class.
   */
-void SPATI::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void SPATI::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfPlayers)
 		return;
@@ -214,7 +214,7 @@ void SPATI::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICIma
 		12.0f, L"",
 		&ptfPlayers);
 
-	pbmpLogo = PbmpFromPngRes(idbLogo, prt, pfactwic);
+	pbmpLogo = PbmpFromPngRes(idbLogo, pdc, pfactwic);
 }
 
 
@@ -300,17 +300,17 @@ void SPATI::SetText(const wstring& sz)
 ID2D1SolidColorBrush* GA::pbrDesktop;
 
 
-void GA::CreateRsrc(ID2D1RenderTarget* prt, ID2D1Factory* pfactd2d, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void GA::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrDesktop)
 		return;
-	prt->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
+	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
 
-	UI::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
-	SPA::CreateRsrc(prt, pfactdwr, pfactwic);
-	SPATI::CreateRsrc(prt, pfactdwr, pfactwic);
-	SPABD::CreateRsrc(prt, pfactd2d, pfactdwr, pfactwic);
-	SPARGMV::CreateRsrc(prt, pfactdwr, pfactwic);
+	UI::CreateRsrc(pdc, pfactd2, pfactdwr, pfactwic);
+	SPA::CreateRsrc(pdc, pfactdwr, pfactwic);
+	SPATI::CreateRsrc(pdc, pfactdwr, pfactwic);
+	SPABD::CreateRsrc(pdc, pfactd2, pfactdwr, pfactwic);
+	SPARGMV::CreateRsrc(pdc, pfactdwr, pfactwic);
 }
 
 
@@ -394,25 +394,34 @@ void GA::InvalRcf(RCF rcf, bool fErase) const
 	::InvalidateRect(app.hwnd, &rc, fErase);
 }
 
-ID2D1RenderTarget* GA::PrtGet(void) const
+DC* GA::PdcGet(void) const
 {
-	return app.prth;
+	return app.pdcd2;
 }
 
 
 void GA::BeginDraw(void)
 {
 	app.CreateRsrc();
-	ID2D1RenderTarget* prt = PrtGet();
-	prt->BeginDraw();
-	prt->SetTransform(Matrix3x2F::Identity());
+	DC* pdc = PdcGet();
+	pdc->BeginDraw();
+	pdc->SetTransform(Matrix3x2F::Identity());
 }
 
 
 void GA::EndDraw(void)
 {
-	if (PrtGet()->EndDraw() == D2DERR_RECREATE_TARGET)
+	DC* pdc = PdcGet();
+	if (pdc->EndDraw() == D2DERR_RECREATE_TARGET)
 		app.DiscardRsrc();
+	PresentSwch();
+}
+
+
+void GA::PresentSwch(void) const
+{
+	DXGI_PRESENT_PARAMETERS pp = { 0 };
+	app.pswch->Present1(1, 0, &pp);
 }
 
 

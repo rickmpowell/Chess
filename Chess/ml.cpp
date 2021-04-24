@@ -58,12 +58,12 @@ ID2D1Bitmap* UIGC::pbmpResign;
 ID2D1Bitmap* UIGC::pbmpOfferDraw;
 
 
-void UIGC::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void UIGC::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbmpResign)
 		return;
-	pbmpResign = PbmpFromPngRes(idbWhiteFlag, prt, pfactwic);
-	pbmpOfferDraw = PbmpFromPngRes(idbHandShake, prt, pfactwic);
+	pbmpResign = PbmpFromPngRes(idbWhiteFlag, pdc, pfactwic);
+	pbmpOfferDraw = PbmpFromPngRes(idbHandShake, pdc, pfactwic);
 }
 
 
@@ -232,7 +232,7 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 
 IDWriteTextFormat* UIGO::ptfScore;
 
-void UIGO::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void UIGO::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfScore)
 		return;
@@ -358,7 +358,7 @@ IDWriteTextFormat* SPARGMV::ptfList;
  *	panel. Note that this is a static routine working on global static
  *	resources that are shared by all instances of this class.
  */
-void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void SPARGMV::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfList)
 		return;
@@ -369,9 +369,9 @@ void SPARGMV::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICI
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
 		&ptfList);
 
-	UIGC::CreateRsrc(prt, pfactdwr, pfactwic);
-	UICLOCK::CreateRsrc(prt, pfactdwr, pfactwic);
-	UIGO::CreateRsrc(prt, pfactdwr, pfactwic);
+	UIGC::CreateRsrc(pdc, pfactdwr, pfactwic);
+	UICLOCK::CreateRsrc(pdc, pfactdwr, pfactwic);
+	UIGO::CreateRsrc(pdc, pfactdwr, pfactwic);
 }
 
 

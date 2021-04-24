@@ -4,8 +4,6 @@
 #include "resource.h"
 
 
-
-
 /*
  *
  *	class CO and D2
@@ -29,19 +27,24 @@ public:
 class D2 : public CO
 {
 protected:
-	ID2D1Factory* pfactd2d;
-	IWICImagingFactory* pfactwic;
-	IDWriteFactory* pfactdwr;
+	FACTD2* pfactd2;
+	FACTWIC* pfactwic;
+	FACTDWR* pfactdwr;
 public:
-	D2(void) : pfactd2d(NULL), pfactwic(NULL), pfactdwr(NULL)
+	D2(void) : pfactd2(NULL), pfactwic(NULL), pfactdwr(NULL)
 	{
 		try {
 			int err;
-			if (err = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &pfactd2d))
+			D2D1_FACTORY_OPTIONS opt;
+			memset(&opt, 0, sizeof(opt));
+			if (err = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opt, 
+					reinterpret_cast<void**>(&pfactd2)))
 				throw err;
-			if (err = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory, reinterpret_cast<void**>(&pfactwic)))
+			if (err = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory, 
+					reinterpret_cast<void**>(&pfactwic)))
 				throw err;
-			if (err = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(pfactdwr), reinterpret_cast<IUnknown**>(&pfactdwr)))
+			if (err = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(pfactdwr), 
+					reinterpret_cast<IUnknown**>(&pfactdwr)))
 				throw err;
 		}
 		catch (int err) {
@@ -59,7 +62,7 @@ public:
 	{
 		SafeRelease(&pfactdwr);
 		SafeRelease(&pfactwic);
-		SafeRelease(&pfactd2d);
+		SafeRelease(&pfactd2);
 	}
 };
 
@@ -72,6 +75,7 @@ public:
  *  commands
  *
  */
+
 
 class APP;
 
@@ -126,7 +130,13 @@ public:
 	HINSTANCE hinst;
 	HWND hwnd;
 	HACCEL haccel;
-	ID2D1HwndRenderTarget* prth;
+
+	ID3D11Device1* pdevd3;
+	ID3D11DeviceContext1* pdcd3;
+	ID2D1Device* pdevd2;
+	SWCH* pswch;
+	ID2D1Bitmap1* pbmpBackBuf;
+	DC* pdcd2;
 
 	HCURSOR hcurArrow;
 	HCURSOR hcurMove;
@@ -147,6 +157,7 @@ private:
 	void InitCmdList(void);
 
 	bool FSizeEnv(int dx, int dy);
+	void ResizeDc(UINT dx, UINT dy);
 	void Redraw(const RCF* prcf);
 
 	void OnPaint(void);

@@ -82,7 +82,7 @@ protected:
 	static ID2D1Bitmap* pbmpResign;
 	static ID2D1Bitmap* pbmpOfferDraw;
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
 
 public:
@@ -107,7 +107,7 @@ protected:
 	static IDWriteTextFormat* ptfScore;
 
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
+	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
 
 public:
@@ -154,7 +154,7 @@ public:
 	SPARGMV(GA* pga);
 	~SPARGMV(void);
 
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwicfHTT);
+	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
 
 	void SetPl(CPC cpc, PL* ppl);
