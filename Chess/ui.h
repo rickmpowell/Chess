@@ -36,7 +36,7 @@ protected:
 public:
 	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
-	static ID2D1PathGeometry* PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf);
+	static GEOM* PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf);
 	static BMP* PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic);
 
 protected:

@@ -31,7 +31,7 @@ class UICLOCK : public UI
 protected:
 	GA& ga;
 	CPC cpc;
-	static IDWriteTextFormat* ptfClock;
+	static TF* ptfClock;
 public:
 	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
 	static void DiscardRsrc(void);
@@ -79,8 +79,8 @@ public:
 class UIGC : public UI
 {
 protected:
-	static ID2D1Bitmap* pbmpResign;
-	static ID2D1Bitmap* pbmpOfferDraw;
+	static BMP* pbmpResign;
+	static BMP* pbmpOfferDraw;
 public:
 	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrc(void);
@@ -134,7 +134,7 @@ class SPARGMV : public SPAS
 	friend class UIGO;
 	friend class GA;
 
-	static IDWriteTextFormat* ptfList;
+	static TF* ptfList;
 	static float mpcoldxf[4];
 	static float dyfList;
 

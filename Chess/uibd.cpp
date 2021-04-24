@@ -20,17 +20,17 @@
  */
 
 
-ID2D1SolidColorBrush* SPABD::pbrLight;
-ID2D1SolidColorBrush* SPABD::pbrDark;
-ID2D1SolidColorBrush* SPABD::pbrBlack;
-ID2D1SolidColorBrush* SPABD::pbrAnnotation;
-ID2D1SolidColorBrush* SPABD::pbrHilite;
-IDWriteTextFormat* SPABD::ptfLabel;
-IDWriteTextFormat* SPABD::ptfControls;
-IDWriteTextFormat* SPABD::ptfGameState;
-ID2D1Bitmap* SPABD::pbmpPieces;
-ID2D1PathGeometry* SPABD::pgeomCross;
-ID2D1PathGeometry* SPABD::pgeomArrowHead;
+BRS* SPABD::pbrLight;
+BRS* SPABD::pbrDark;
+BRS* SPABD::pbrBlack;
+BRS* SPABD::pbrAnnotation;
+BRS* SPABD::pbrHilite;
+TF* SPABD::ptfLabel;
+TF* SPABD::ptfControls;
+TF* SPABD::ptfGameState;
+BMP* SPABD::pbmpPieces;
+GEOM* SPABD::pgeomCross;
+GEOM* SPABD::pgeomArrowHead;
 
 const float dxyfCrossFull = 20.0f;
 const float dxyfCrossCenter = 4.0f;

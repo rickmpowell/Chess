@@ -297,7 +297,7 @@ typedef IWICImagingFactory2 FACTWIC;
 typedef ID2D1Brush BR;
 typedef ID2D1SolidColorBrush BRS;
 typedef IDWriteTextFormat TF;
-typedef ID2D1Bitmap BMP;
+typedef ID2D1Bitmap1 BMP;
 typedef ID2D1PathGeometry GEOM;
 typedef IDXGISwapChain1 SWCH;
 

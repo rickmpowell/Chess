@@ -180,9 +180,6 @@ void SPA::MouseHover(HT* pht)
 }
 
 
-
-
-
 /*
  *
  *	SPATI class implementation
@@ -192,8 +189,8 @@ void SPA::MouseHover(HT* pht)
  */
 
 
-IDWriteTextFormat* SPATI::ptfPlayers;
-ID2D1Bitmap* SPATI::pbmpLogo;
+TF* SPATI::ptfPlayers;
+BMP* SPATI::pbmpLogo;
 
 
  /*	SPATI::CreateRsrc
@@ -316,6 +313,7 @@ void GA::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactw
 
 void GA::DiscardRsrc(void)
 {
+	UI::DiscardRsrc();
 	SPA::DiscardRsrc();
 	SPATI::DiscardRsrc();
 	SPABD::DiscardRsrc();

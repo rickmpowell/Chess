@@ -23,11 +23,11 @@ WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
  *	UI static drawing objects
  */
 
-ID2D1SolidColorBrush* UI::pbrBack;
+BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
-ID2D1SolidColorBrush* UI::pbrText;
-IDWriteTextFormat* UI::ptfText;
+BRS* UI::pbrText;
+TF* UI::ptfText;
 
 
 void UI::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
@@ -95,7 +95,7 @@ BMP* UI::PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic)
 	hr = pfactwic->CreateFormatConverter(&pconv);
 	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
 		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
-	ID2D1Bitmap* pbmp;
+	ID2D1Bitmap1* pbmp;
 	hr = pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
 
 	SafeRelease(&pframe);
@@ -452,5 +452,5 @@ void UI::DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr) const
 void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 {
 	PdcGet()->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
-		opacity, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rcfFrom);
+		opacity, D2D1_INTERPOLATION_MODE_ANISOTROPIC, rcfFrom);
 }

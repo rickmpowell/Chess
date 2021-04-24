@@ -54,8 +54,8 @@ void UIPL::SetPl(PL* pplNew)
  */
 
 
-ID2D1Bitmap* UIGC::pbmpResign;
-ID2D1Bitmap* UIGC::pbmpOfferDraw;
+BMP* UIGC::pbmpResign;
+BMP* UIGC::pbmpOfferDraw;
 
 
 void UIGC::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)

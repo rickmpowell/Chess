@@ -1,4 +1,4 @@
-  Move to Direct2D 1.1 and use ID2D1DeviceContext
+  Get BTNs working and dispatching cmds
   Rename SPA to UI
   Dragging pieces outside the board rectangle doesn't redraw the piece right
   Legal move circles disappear when dragging
@@ -25,11 +25,8 @@
   Implement selection in SPARGMV
   Implement mouse interface to change selection on SPARGMV
   Implement keyboard interface to change selection on SPARGMV
-  Add UI for resigning
-  Add UI for offering draw
   Implement dumb AI for computer play
   Scale text on board labels to size of board
-  Better quality scaling on small boards
   Add shadows on screen panels
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
@@ -38,7 +35,11 @@
   Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
   Change SPATI items to be separate UI elements
   Beef up layout code to handle locating clocks et.al.
-  Add controls to SPARGMV for resigning/offering draws
+* Better quality scaling on small boards
+* Add UI for resigning
+* Add UI for offering draw
+* Add controls to SPARGMV for resigning/offering draws
+* Move to Direct2D 1.1 and use ID2D1DeviceContext
 * Change player names in the SPARGMV to use UI elements
 * Lock out move UI when game is over - necessary for non-stalemate draws and resignation
 * Implement draws by 3-move repetition
