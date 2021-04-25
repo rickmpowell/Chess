@@ -147,6 +147,7 @@
     <ClInclude Include="Chess.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ga.h" />
+    <ClInclude Include="app.h" />
     <ClInclude Include="ml.h" />
     <ClInclude Include="pl.h" />
     <ClInclude Include="Resource.h" />

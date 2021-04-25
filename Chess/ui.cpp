@@ -30,7 +30,7 @@ BRS* UI::pbrText;
 TF* UI::ptfText;
 
 
-void UI::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrBack)
 		return;
@@ -45,7 +45,7 @@ void UI::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactw
 }
 
 
-void UI::DiscardRsrc(void)
+void UI::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrBack);
 	SafeRelease(&pbrAltBack);
@@ -53,6 +53,7 @@ void UI::DiscardRsrc(void)
 	SafeRelease(&pbrText);
 	SafeRelease(&ptfText);
 }
+
 
 ID2D1PathGeometry* UI::PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf)
 {
@@ -165,6 +166,55 @@ void UI::RemoveChild(UI* puiChild)
 }
 
 
+/*	UI::PuiPrevSib
+ *
+ *	Returns the UI's previous sibling
+ */
+UI* UI::PuiPrevSib(void) const
+{
+	if (puiParent == NULL)
+		return NULL;
+	UI* puiPrev = NULL;
+	for (UI* pui : puiParent->rgpuiChild) {
+		if (pui == this)
+			return puiPrev;
+		puiPrev = pui;
+	}
+	assert(false);
+	return NULL;
+}
+
+
+UI* UI::PuiNextSib(void) const
+{
+	if (puiParent == NULL)
+		return NULL;
+	for (int ipui = 0; ipui < puiParent->rgpuiChild.size() - 1; ipui++)
+		if (puiParent->rgpuiChild[ipui] == this)
+			return puiParent->rgpuiChild[ipui + 1];
+	return NULL;
+}
+
+
+void UI::CreateRsrc(void)
+{
+	for (UI* puiChild : rgpuiChild)
+		puiChild->CreateRsrc();
+}
+
+
+void UI::DiscardRsrc(void)
+{
+	for (UI* puiChild : rgpuiChild)
+		puiChild->DiscardRsrc();
+}
+
+
+void UI::Layout(void)
+{
+}
+
+
 /*	UI::RcfInterior
  *
  *	Returns the interior of the given UI element, in local coordinates.
@@ -173,6 +223,15 @@ RCF UI::RcfInterior(void) const
 {
 	RCF rcf = rcfBounds;
 	return rcf.Offset(-rcfBounds.left, -rcfBounds.top);
+}
+
+
+RCF UI::RcfBounds(void) const
+{
+	RCF rcf = rcfBounds;
+	if (puiParent)
+		rcf.Offset(-puiParent->rcfBounds.left, -puiParent->rcfBounds.top);
+	return rcf;
 }
 
 
@@ -195,11 +254,14 @@ void UI::SetBounds(RCF rcfNew)
 {
 	if (puiParent)
 		rcfNew.Offset(puiParent->rcfBounds.left, puiParent->rcfBounds.top);
-	rcfBounds = rcfNew;
+	rcfBounds.right = rcfBounds.left + rcfNew.DxfWidth();
+	rcfBounds.bottom = rcfBounds.top + rcfNew.DyfHeight();
+	OffsetBounds(rcfNew.left - rcfBounds.left, rcfNew.top - rcfBounds.top);
+	Layout();
 }
 
 
-/*	UI::Resizes
+/*	UI::Resize
  *
  *	Resizes the UI element.
  */
@@ -207,6 +269,7 @@ void UI::Resize(PTF ptfNew)
 {
 	rcfBounds.right = rcfBounds.left + ptfNew.x;
 	rcfBounds.bottom = rcfBounds.top + ptfNew.y;
+	Layout();
 }
 
 
@@ -218,10 +281,20 @@ void UI::Move(PTF ptfNew)
 {
 	if (puiParent) {
 		/* convert to global coordinates */
-		ptfNew = PTF(ptfNew.x + puiParent->rcfBounds.left, 
-			ptfNew.y + puiParent->rcfBounds.top);
+		ptfNew.x += puiParent->rcfBounds.left;
+		ptfNew.y += puiParent->rcfBounds.top;
 	}
-	rcfBounds.Offset(ptfNew.x - rcfBounds.left, ptfNew.y - rcfBounds.top);
+	float dxf = ptfNew.x - rcfBounds.left;
+	float dyf = ptfNew.y - rcfBounds.top;
+	OffsetBounds(dxf, dyf);
+}
+
+
+void UI::OffsetBounds(float dxf, float dyf)
+{
+	rcfBounds.Offset(dxf, dyf);
+	for (UI* pui : rgpuiChild)
+		pui->OffsetBounds(dxf, dyf);
 }
 
 
@@ -234,6 +307,7 @@ void UI::Show(bool fVisNew)
 	if (fVisible == fVisNew)
 		return;
 	fVisible = fVisNew;
+	Layout();
 	if (puiParent)
 		puiParent->Redraw();
 }
@@ -347,18 +421,6 @@ void UI::InvalRcf(RCF rcf, bool fErase) const
 }
 
 
-/*	UI::PdcGet
- *
- *	Gets the device context we need to draw in for all the UI elements.
- *	The render target will be in global coordinates.
- */
-DC* UI::PdcGet(void) const
-{
-	if (puiParent == NULL)
-		return NULL;
-	return puiParent->PdcGet();
-}
-
 void UI::PresentSwch(void) const
 {
 	if (puiParent == NULL)
@@ -366,24 +428,25 @@ void UI::PresentSwch(void) const
 	puiParent->PresentSwch();
 }
 
+
+APP& UI::AppGet(void) const
+{
+	assert(puiParent);
+	return puiParent->AppGet();
+}
+
+
 void UI::BeginDraw(void)
 {
-	if (puiParent)
-		puiParent->BeginDraw();
-	else
-		PdcGet()->BeginDraw();
+	assert(puiParent);
+	puiParent->BeginDraw();
 }
 
 
 void UI::EndDraw(void)
 {
-	if (puiParent)
-		puiParent->EndDraw();
-	else {
-		DC* pdc = PdcGet();
-		pdc->EndDraw();
-		PresentSwch();
-	}
+	assert(puiParent);
+	puiParent->EndDraw();
 }
 
 
@@ -395,7 +458,7 @@ void UI::EndDraw(void)
 void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	PdcGet()->FillRectangle(&rcf, pbr);
+	AppGet().pdc->FillRectangle(&rcf, pbr);
 }
 
 
@@ -407,7 +470,7 @@ void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 {
 	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
-	PdcGet()->FillEllipse(&ellf, pbr);
+	AppGet().pdc->FillEllipse(&ellf, pbr);
 }
 
 
@@ -419,7 +482,7 @@ void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 void UI::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	PdcGet()->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
+	AppGet().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
 }
 
 
@@ -440,7 +503,7 @@ void UI::DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1B
 void UI::DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	PdcGet()->DrawText(rgch, (UINT32)cch, ptf, &rcf, pbr == NULL ? pbrText : pbr);
+	AppGet().pdc->DrawText(rgch, (UINT32)cch, ptf, &rcf, pbr == NULL ? pbrText : pbr);
 }
 
 
@@ -451,6 +514,6 @@ void UI::DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr) const
  */
 void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 {
-	PdcGet()->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
-		opacity, D2D1_INTERPOLATION_MODE_ANISOTROPIC, rcfFrom);
+	AppGet().pdc->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
+		opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcfFrom);
 }

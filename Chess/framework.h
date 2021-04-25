@@ -77,7 +77,9 @@ public:
 	inline PTF operator-(void) const {
 		return PTF(-x, -y);
 	}
+
 };
+
 
 /*
  *
@@ -91,6 +93,9 @@ class SIZF : public D2D1_SIZE_F
 {
 public:
 	inline SIZF(void) { }
+	inline SIZF(const D2D1_SIZE_F& sizf) {
+		width = sizf.width; height = sizf.height;
+	}
 	inline SIZF(float dxf, float dyf) {
 		width = dxf;
 		height = dyf;

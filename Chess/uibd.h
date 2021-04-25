@@ -55,15 +55,15 @@ public:
 public:
 	SPABD(GA* pga);
 	~SPABD(void);
-	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 	void NewGame(void);
 	void MakeMv(MV mv, bool fRedraw);
 	void UndoMv(bool fRedraw);
 	void RedoMv(bool fRedraw);
 
-	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
+	virtual void Layout(void);
 
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void DrawMargins(void);

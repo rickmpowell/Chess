@@ -54,49 +54,41 @@ void UIPL::SetPl(PL* pplNew)
  */
 
 
-BMP* UIGC::pbmpResign;
-BMP* UIGC::pbmpOfferDraw;
-
-
-void UIGC::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UIGC::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (pbmpResign)
-		return;
-	pbmpResign = PbmpFromPngRes(idbWhiteFlag, pdc, pfactwic);
-	pbmpOfferDraw = PbmpFromPngRes(idbHandShake, pdc, pfactwic);
 }
 
 
-void UIGC::DiscardRsrc(void)
+void UIGC::DiscardRsrcClass(void)
 {
-	SafeRelease(&pbmpResign);
-	SafeRelease(&pbmpOfferDraw);
+}
+
+
+void UIGC::Layout(void)
+{
+	RCF rcf = RcfInterior();
+	rcf.top += 4.0f;
+	rcf.bottom -= 4.0f;
+	rcf.left += 20.0f;
+	SIZF sizf = pbtnResign->SizfImg();
+	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
+	pbtnResign->SetBounds(rcf);
+	rcf.left = rcf.right + 20.0f;
+	sizf = pbtnOfferDraw->SizfImg();
+	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
+	pbtnOfferDraw->SetBounds(rcf);
 }
 
 
 UIGC::UIGC(SPARGMV* pspargmv) : UI(pspargmv)
 {
+	pbtnResign = new BTNIMG(this, RCF(0,0,0,0), idbWhiteFlag);
+	pbtnOfferDraw = new BTNIMG(this, RCF(0,0,0,0), idbHandShake);
 }
 
 
 void UIGC::Draw(const RCF* prcfUpdate)
 {
-	RCF rcf = RcfInterior();
-	rcf.bottom = rcf.top + 1;
-	FillRcf(rcf, pbrGridLine);
-
-	D2D1_SIZE_F ptf = pbmpResign->GetSize();
-	RCF rcfFrom(0.0, 0.0, ptf.width, ptf.height);
-	rcf = RcfInterior();
-	rcf.Inflate(0.0, -4.0f);
-	rcf.left += 20.0f;
-	rcf.right = rcf.left + rcf.DyfHeight() * ptf.width / ptf.height;
-	DrawBmp(rcf, pbmpResign, RCF(0.0, 0.0, ptf.width, ptf.height));
-
-	ptf = pbmpOfferDraw->GetSize();
-	rcf.left = rcf.right + 20.0f;
-	rcf.right = rcf.left + rcf.DyfHeight() * ptf.width / ptf.height;
-	DrawBmp(rcf, pbmpOfferDraw, RCF(0.0, 0.0, ptf.width, ptf.height));
 }
 
 
@@ -111,7 +103,7 @@ void UIGC::Draw(const RCF* prcfUpdate)
 
 IDWriteTextFormat* UICLOCK::ptfClock;
 
-void UICLOCK::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic)
+void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfClock)
 		return;
@@ -121,7 +113,7 @@ void UICLOCK::CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICI
 }
 
 
-void UICLOCK::DiscardRsrc(void)
+void UICLOCK::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptfClock);
 }
@@ -232,7 +224,7 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 
 IDWriteTextFormat* UIGO::ptfScore;
 
-void UIGO::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UIGO::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfScore)
 		return;
@@ -242,7 +234,7 @@ void UIGO::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 }
 
 
-void UIGO::DiscardRsrc(void)
+void UIGO::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptfScore);
 }
@@ -352,13 +344,13 @@ SPARGMV::~SPARGMV(void)
 IDWriteTextFormat* SPARGMV::ptfList;
 
 
-/*	SPARGMV::CreateRsrc
+/*	SPARGMV::CreateRsrcClass
  *
  *	Creates the drawing resources for displaying the move list screen
  *	panel. Note that this is a static routine working on global static
  *	resources that are shared by all instances of this class.
  */
-void SPARGMV::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void SPARGMV::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfList)
 		return;
@@ -369,23 +361,23 @@ void SPARGMV::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
 		&ptfList);
 
-	UIGC::CreateRsrc(pdc, pfactdwr, pfactwic);
-	UICLOCK::CreateRsrc(pdc, pfactdwr, pfactwic);
-	UIGO::CreateRsrc(pdc, pfactdwr, pfactwic);
+	UIGC::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	UICLOCK::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	UIGO::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 }
 
 
-/*	SPARGMV::DiscardRsrc
+/*	SPARGMV::DiscardRsrcClass
  *
  *	Deletes all resources associated with this screen panel. This is a
  *	static routine, and works on static class globals.
  */
-void SPARGMV::DiscardRsrc(void)
+void SPARGMV::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptfList);
-	UIGC::DiscardRsrc();
-	UICLOCK::DiscardRsrc();
-	UIGO::DiscardRsrc();
+	UIGC::DiscardRsrcClass();
+	UICLOCK::DiscardRsrcClass();
+	UIGO::DiscardRsrcClass();
 }
 
 
@@ -432,16 +424,14 @@ RCF SPARGMV::RcfFromCol(float yf, int col) const
  *	Layout helper for placing the move list panel on the game screen.
  *	We basically position it to the right of the board panel.
  */
-void SPARGMV::Layout(const PTF& ptf, SPA* pspa, LL ll)
+void SPARGMV::Layout(void)
 {
-	SPAS::Layout(ptf, pspa, ll);
-
 	/*	position the top clocks and player names */
 
 	RCF rcf = RcfInterior();
 	RCF rcfCont = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.spabd.cpcPointOfView ^ 1], rcf, true, 1.75f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.spabd.cpcPointOfView ^ 1], rcf, true, 2.0f * dyfList);
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.spabd.cpcPointOfView ^ 1], rcf, true, 4.0f * dyfList);
 	rcfCont.top = rcf.bottom;
 
@@ -604,7 +594,6 @@ float SPARGMV::DyHeight(void) const
 void SPARGMV::NewGame(void)
 {
 	puigo->Show(false);
-	Layout(PTF(0, 0), NULL, LL::None);
 	bdgInit = ga.bdg;
 	UpdateContSize();
 }
@@ -618,7 +607,6 @@ void SPARGMV::NewGame(void)
 void SPARGMV::EndGame(void)
 {
 	puigo->Show(true);
-	Layout(PTF(0, 0), NULL, LL::None);
 	Redraw();
 }
 

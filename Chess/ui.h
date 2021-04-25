@@ -11,6 +11,7 @@
 
 #pragma once
 #include "framework.h"
+#include "app.h"
 
 
 WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
@@ -34,8 +35,8 @@ protected:
 	static BRS* pbrText;
 	static TF* ptfText;
 public:
-	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 	static GEOM* PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf);
 	static BMP* PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic);
 
@@ -52,12 +53,17 @@ public:
 
 	void AddChild(UI* puiChild);
 	void RemoveChild(UI* puiChild);
+	UI* PuiPrevSib(void) const;
+	UI* PuiNextSib(void) const;
 	
 	RCF RcfInterior(void) const;	// in local coordinates (top left is always {0,0})
+	RCF RcfBounds(void) const;	// in parent coordinates
 	bool FVisible(void) const;
 	void SetBounds(RCF rcfNew);
 	void Resize(PTF ptfNew);
 	void Move(PTF ptfNew);
+	void OffsetBounds(float dxf, float dyf);
+	virtual void Layout(void);
 	void Show(bool fShow);
 	RCF RcfParentFromLocal(RCF rcf) const; // local to parent coordinates
 	RCF RcfGlobalFromLocal(RCF rcf) const; // local to app global coordinates
@@ -70,10 +76,13 @@ public:
 	void Redraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
 	virtual void Draw(const RCF* prcfDraw=NULL);
-	virtual DC* PdcGet(void) const;
 	virtual void PresentSwch(void) const;
+	virtual APP& AppGet(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
+
 	void FillRcf(RCF rcf, BR* pbr) const;
 	void FillEllf(ELLF ellf, BR* pbr) const;
 	void DrawSz(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
@@ -92,16 +101,6 @@ public:
  *
  */
 class GA;
-
-enum class LL
-{
-	None,
-	Absolute,
-	Left,
-	Right,
-	Below,
-	Above
-};
 
 
 /*
@@ -156,8 +155,8 @@ class SPA : public UI
 public:
 	static BRS* pbrTextSel;
 	static TF* ptfTextSm;
-	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 protected:
 	GA& ga;
@@ -165,7 +164,6 @@ public:
 	SPA(GA* pga);
 	~SPA(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
 	virtual float DxWidth(void) const;
 	virtual float DyHeight(void) const;
 	void SetShadow(void);
@@ -260,9 +258,10 @@ public:
 	{
 		SPA::Draw(prcfUpdate);
 		/* just redraw the entire content area clipped to the view */
-		PdcGet()->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		APP& app = AppGet();
+		app.pdc->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 		DrawContent(rcfCont);
-		PdcGet()->PopAxisAlignedClip();
+		app.pdc->PopAxisAlignedClip();
 		DrawScrollBar();
 	}
 
@@ -277,7 +276,7 @@ public:
 		RCF rcf = rcfView;
 		rcf.left = rcf.right;
 		rcf.right = rcf.left + dxyfScrollBarWidth;
-		PdcGet()->FillRectangle(rcf, pbrAltBack);
+		AppGet().pdc->FillRectangle(rcf, pbrAltBack);
 	}
 };
 
@@ -293,12 +292,10 @@ public:
 
 class BTN : public UI
 {
-	WCHAR ch;
 	bool fHilite;
 	bool fTrack;
 public:
-	BTN(UI* puiParent, WCHAR ch, RCF rcf) : UI(puiParent, rcf) {
-		this->ch = ch;
+	BTN(UI* puiParent, RCF rcf) : UI(puiParent, rcf) {
 		this->fHilite = false;
 		this->fTrack = false;
 	}
@@ -313,5 +310,55 @@ public:
 
 	virtual void Draw(DC* pdc) {
 	}
+};
+
+
+class BTNCH : public BTN
+{
+	WCHAR ch;
+public:
+	BTNCH(UI* puiParent, RCF rcf, WCHAR ch) : BTN(puiParent, rcf), ch(ch)
+	{
+	}
+};
+
+
+class BTNIMG : public BTN
+{
+	int idb;
+	BMP* pbmp;
+public:
+	BTNIMG(UI* puiParent, RCF rcf, int idb) : BTN(puiParent, rcf), idb(idb), pbmp(NULL)
+	{
+	}
+
+	~BTNIMG(void)
+	{
+		DiscardRsrc();
+	}
+
+	virtual void Draw(const RCF* prcfUpdate)
+	{
+		DrawBmp(RcfInterior(), pbmp, RCF(PTF(0, 0), pbmp->GetSize()));
+	}
+
+	virtual void CreateRsrc(void)
+	{
+		if (pbmp)
+			return;
+		APP& app = AppGet();
+		pbmp = PbmpFromPngRes(idb, app.pdc, app.pfactwic);
+	}
+
+	virtual void DiscardRsrc(void)
+	{
+		SafeRelease(&pbmp);
+	}
+
+	SIZF SizfImg(void) const
+	{
+		return pbmp == NULL ? SIZF(0, 0) : pbmp->GetSize();
+	}
+
 };
 

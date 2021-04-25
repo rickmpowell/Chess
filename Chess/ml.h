@@ -33,8 +33,8 @@ protected:
 	CPC cpc;
 	static TF* ptfClock;
 public:
-	static void CreateRsrc(ID2D1RenderTarget* prt, IDWriteFactory* pfactdwr, IWICImagingFactory* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 public:
 	UICLOCK(SPARGMV* pspargmv, CPC cpc);
@@ -78,16 +78,17 @@ public:
 
 class UIGC : public UI
 {
-protected:
-	static BMP* pbmpResign;
-	static BMP* pbmpOfferDraw;
+private:
+	BTNIMG* pbtnResign;
+	BTNIMG* pbtnOfferDraw;
 public:
-	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 public:
 	UIGC(SPARGMV* pspargmv);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Layout(void);
 };
 
 
@@ -107,8 +108,8 @@ protected:
 	static IDWriteTextFormat* ptfScore;
 
 public:
-	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 public:
 	UIGO(SPARGMV* pspargmv, bool fVisible);
@@ -154,15 +155,15 @@ public:
 	SPARGMV(GA* pga);
 	~SPARGMV(void);
 
-	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 	void SetPl(CPC cpc, PL* ppl);
 
 	void NewGame(void);
 	void EndGame(void);
 
-	virtual void Layout(const PTF& ptf, SPA* pspa, LL ll);
+	virtual void Layout(void);
 	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);

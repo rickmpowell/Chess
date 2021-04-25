@@ -27,12 +27,12 @@ BRS* SPA::pbrTextSel;
 TF* SPA::ptfTextSm;
 
 
-/*	SPA::CreateRsrc
+/*	SPA::CreateRsrcClass
  *
  *	Static routine for creating the drawing objects necessary to draw the various
  *	screen panels.
  */
-void SPA::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void SPA::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrTextSel)
 		return;
@@ -44,34 +44,11 @@ void SPA::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 }
 
 
-void SPA::DiscardRsrc(void)
+void SPA::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrTextSel); 
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&ptfTextSm);
-}
-
-
-void SPA::Layout(const PTF& ptf, SPA* pspa, LL ll)
-{
-	SIZF sizf = SIZF(DxWidth(), DyHeight());
-	PTF ptfCur;
-	switch (ll) {
-	case LL::Absolute:
-		SetBounds(RCF(ptf, sizf));
-		break;
-	case LL::Right:
-		ptfCur.x = pspa->rcfBounds.right + ptf.x;
-		ptfCur.y = pspa->rcfBounds.top;
-		SetBounds(RCF(ptfCur, sizf));
-		break;
-	case LL::None:
-		break;
-	default:
-		assert(false);
-		break;
-	}
-	SetShadow();
 }
 
 
@@ -120,8 +97,6 @@ SPA::SPA(GA* pga) : UI(pga), ga(*pga)
 SPA::~SPA(void)
 {
 }
-
-
 
 
 /*	SPA::Draw
@@ -193,13 +168,13 @@ TF* SPATI::ptfPlayers;
 BMP* SPATI::pbmpLogo;
 
 
- /*	SPATI::CreateRsrc
+ /*	SPATI::CreateRsrcClass
   *
   *	Creates the drawing resources for displaying the title screen
   *	panel. Note that this is a static routine working on global static
   *	resources that are shared by all instances of this class.
   */
-void SPATI::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void SPATI::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfPlayers)
 		return;
@@ -215,12 +190,12 @@ void SPATI::CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 }
 
 
-/*	SPATI::DiscardRsrc
+/*	SPATI::DiscardRsrcClass
  *
  *	Deletes all resources associated with this screen panel. This is a
  *	static routine, and works on static class globals.
  */
-void SPATI::DiscardRsrc(void)
+void SPATI::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptfPlayers);
 	SafeRelease(&pbmpLogo);
@@ -297,27 +272,27 @@ void SPATI::SetText(const wstring& sz)
 ID2D1SolidColorBrush* GA::pbrDesktop;
 
 
-void GA::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void GA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrDesktop)
 		return;
 	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
 
-	UI::CreateRsrc(pdc, pfactd2, pfactdwr, pfactwic);
-	SPA::CreateRsrc(pdc, pfactdwr, pfactwic);
-	SPATI::CreateRsrc(pdc, pfactdwr, pfactwic);
-	SPABD::CreateRsrc(pdc, pfactd2, pfactdwr, pfactwic);
-	SPARGMV::CreateRsrc(pdc, pfactdwr, pfactwic);
+	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+	SPA::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	SPATI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	SPABD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+	SPARGMV::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 }
 
 
-void GA::DiscardRsrc(void)
+void GA::DiscardRsrcClass(void)
 {
-	UI::DiscardRsrc();
-	SPA::DiscardRsrc();
-	SPATI::DiscardRsrc();
-	SPABD::DiscardRsrc();
-	SPARGMV::DiscardRsrc();
+	UI::DiscardRsrcClass();
+	SPA::DiscardRsrcClass();
+	SPATI::DiscardRsrcClass();
+	SPABD::DiscardRsrcClass();
+	SPARGMV::DiscardRsrcClass();
 	SafeRelease(&pbrDesktop);
 }
 
@@ -327,7 +302,6 @@ GA::GA(APP& app) : UI(NULL), app(app),
 	phtCapt(NULL)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
-	Layout();
 }
 
 
@@ -336,22 +310,6 @@ GA::~GA(void)
 	for (CPC cpc = 0; cpc < cpcMax; cpc++)
 		if (mpcpcppl[cpc])
 			delete mpcpcppl[cpc];
-}
-
-
-void GA::Resize(int dx, int dy)
-{
-	SetBounds(RCF(0, 0, (float)dx, (float)dy));
-	Layout();
-}
-
-
-void GA::Layout(void)
-{
-	PTF ptfMargin = PTF(10.0f, 10.0f);
-	spati.Layout(ptfMargin, NULL, LL::Absolute);
-	spabd.Layout(ptfMargin, &spati, LL::Right);
-	spargmv.Layout(ptfMargin, &spabd, LL::Right);
 }
 
 
@@ -392,25 +350,24 @@ void GA::InvalRcf(RCF rcf, bool fErase) const
 	::InvalidateRect(app.hwnd, &rc, fErase);
 }
 
-DC* GA::PdcGet(void) const
+
+APP& GA::AppGet(void) const
 {
-	return app.pdcd2;
+	return app;
 }
 
 
 void GA::BeginDraw(void)
 {
 	app.CreateRsrc();
-	DC* pdc = PdcGet();
-	pdc->BeginDraw();
-	pdc->SetTransform(Matrix3x2F::Identity());
+	app.pdc->BeginDraw();
+	app.pdc->SetTransform(Matrix3x2F::Identity());
 }
 
 
 void GA::EndDraw(void)
 {
-	DC* pdc = PdcGet();
-	if (pdc->EndDraw() == D2DERR_RECREATE_TARGET)
+	if (app.pdc->EndDraw() == D2DERR_RECREATE_TARGET)
 		app.DiscardRsrc();
 	PresentSwch();
 }
@@ -420,6 +377,26 @@ void GA::PresentSwch(void) const
 {
 	DXGI_PRESENT_PARAMETERS pp = { 0 };
 	app.pswch->Present1(1, 0, &pp);
+}
+
+
+/*	GA;:Layout
+ *
+ *	Lays out the panels on the game board
+ */
+void GA::Layout(void)
+{
+	RCF rcf(10.0f, 10.0f, 220.0f, 200.0f);
+	spati.SetBounds(rcf);
+
+	rcf.left = rcf.right + 10.0f;
+	rcf.bottom = rcfBounds.bottom - 40.0f;
+	rcf.right = rcf.left + rcf.DyfHeight();
+	spabd.SetBounds(rcf);
+
+	rcf.left = rcf.right + 10.0f;
+	rcf.right = rcf.left + 200.0f;
+	spargmv.SetBounds(rcf);
 }
 
 

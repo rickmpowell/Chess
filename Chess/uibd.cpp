@@ -61,7 +61,7 @@ PTF rgptfArrowHead[] = {
  *
  *	Creates the drawing resources necessary to draw the board.
  */
-void SPABD::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void SPABD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrLight)
 		return;
@@ -107,7 +107,7 @@ void SPABD::CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfa
  *
  *	Cleans up the resources created by CreateRsrc
  */
-void SPABD::DiscardRsrc(void)
+void SPABD::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrLight);
 	SafeRelease(&pbrDark);
@@ -149,10 +149,9 @@ SPABD::~SPABD(void)
  *
  *	Layout work for the board screen panel.
  */
-void SPABD::Layout(const PTF& ptf, SPA* pspa, LL ll)
+void SPABD::Layout(void)
 {
-	SPA::Layout(ptf, pspa, ll);
-	dxyfMargin = (rcfBounds.bottom - rcfBounds.top) / 12.0f;
+	dxyfMargin = rcfBounds.DyfHeight() / 12.0f;
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
 	rcfSquares = RcfInterior();
 	rcfSquares.Inflate(-dxyf, -dxyf);
@@ -237,7 +236,7 @@ void SPABD::RedoMv(bool fRedraw)
  */
 void SPABD::Draw(const RCF* prcfUpdate)
 {
-	DC* pdc = PdcGet();
+	DC* pdc = AppGet().pdc;
 	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
 	DrawMargins();
 	DrawLabels();
@@ -408,7 +407,7 @@ void SPABD::DrawHover(void)
 			FillEllf(ellf, pbrBlack);
 		}
 		else {
-			DC* pdc = PdcGet();
+			DC* pdc = AppGet().pdc;
 			pdc->SetTransform(
 				Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
 				Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),

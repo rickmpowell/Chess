@@ -7,7 +7,7 @@
  * 
  */
 
-#include "Chess.h"
+#include "ga.h"
 
 
 /*	GA::Test

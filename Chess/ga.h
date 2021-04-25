@@ -28,8 +28,8 @@ class SPATI : public SPA
 	wstring szText;
 
 public:
-	static void CreateRsrc(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 	static TF* ptfPlayers;
 	static BMP* pbmpLogo;
 
@@ -76,7 +76,6 @@ public:
 };
 
 
-
 /*
  *
  *	GA class
@@ -98,8 +97,8 @@ class GA : public UI
 protected:
 	static BRS* pbrDesktop;
 public:
-	static void CreateRsrc(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrc(void);
+	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
 
 	APP& app;
 	SPATI spati;
@@ -121,14 +120,12 @@ public:
 	void Init(void);
 
 	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual DC* PdcGet(void) const;
 	virtual void PresentSwch(void) const;
+	virtual APP& AppGet(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
-
-	void Resize(int dx, int dy);
-	void Layout(void);
+	virtual void Layout(void);
 
 	HT* PhtHitTest(PTF ptf);
 	void MouseMove(HT* pht);

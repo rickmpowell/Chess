@@ -67,7 +67,7 @@ int APIENTRY wWinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPWSTR szCmdLine, in
  * 
  *  Throws an exception if something fails.
  */
-APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdcd2(NULL), cmdlist(*this)
+APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(NULL), cmdlist(*this)
 {
     hcurArrow = LoadCursor(NULL, IDC_ARROW);
     hcurMove = LoadCursor(NULL, IDC_SIZEALL);
@@ -155,7 +155,7 @@ DWORD APP::TmMessage(void)
 
 void APP::CreateRsrc(void)
 {
-    if (pdcd2)
+    if (pdc)
         return;
  
     D3D_FEATURE_LEVEL rgfld3[] = {
@@ -178,7 +178,7 @@ void APP::CreateRsrc(void)
     IDXGIDevice* pdevDxgi;
     pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi);
     pfactd2->CreateDevice(pdevDxgi, &pdevd2);
-    pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdcd2);
+    pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdc);
     IDXGIAdapter* padaptDxgi;
     pdevDxgi->GetAdapter(&padaptDxgi);
     IDXGIFactory2* pfactDxgi;
@@ -196,8 +196,8 @@ void APP::CreateRsrc(void)
     float dxyf = (float)GetDpiForWindow(hwnd);
     D2D1_BITMAP_PROPERTIES1 propBmp = BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
             PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxyf, dxyf);
-    pdcd2->CreateBitmapFromDxgiSurface(psurfDxgi, &propBmp, &pbmpBackBuf);
-    pdcd2->SetTarget(pbmpBackBuf);
+    pdc->CreateBitmapFromDxgiSurface(psurfDxgi, &propBmp, &pbmpBackBuf);
+    pdc->SetTarget(pbmpBackBuf);
     SafeRelease(&psurfDxgi);
     SafeRelease(&pfactDxgi);
     SafeRelease(&padaptDxgi);
@@ -205,30 +205,29 @@ void APP::CreateRsrc(void)
     SafeRelease(&pdevd3T);
     SafeRelease(&pdcd3T);
 
-    GA::CreateRsrc(pdcd2, pfactd2, pfactdwr, pfactwic);
+    GA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+    pga->CreateRsrc();
 }
 
 
 void APP::DiscardRsrc(void)
 {
-    GA::DiscardRsrc();
+    pga->DiscardRsrc();
+    GA::DiscardRsrcClass();
     SafeRelease(&pdevd3);
     SafeRelease(&pdcd3);
     SafeRelease(&pdevd2);
     SafeRelease(&pswch);
     SafeRelease(&pbmpBackBuf);
-    SafeRelease(&pdcd2);
+    SafeRelease(&pdc);
 }
-
 
 
 bool APP::FSizeEnv(int dx, int dy)
 {
-    bool fChange = true;
     CreateRsrc();
-    assert(pdcd2 != NULL);
-    pga->Resize(dx, dy);
-    return fChange;
+    pga->Resize(PTF((float)dx, (float)dy));
+    return true;
 }
 
 
@@ -291,7 +290,7 @@ void APP::OnPaint(void)
     PAINTSTRUCT ps;
     BeginPaint(hwnd, &ps);
     CreateRsrc();
-    pdcd2->BeginDraw();
+    pdc->BeginDraw();
 
     if (pga) {
         RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top, 
@@ -299,7 +298,7 @@ void APP::OnPaint(void)
         pga->Update(&rcf);
     }
 
-    if (pdcd2->EndDraw() == D2DERR_RECREATE_TARGET)
+    if (pdc->EndDraw() == D2DERR_RECREATE_TARGET)
         DiscardRsrc();
     DXGI_PRESENT_PARAMETERS pp = { 0 };
     pswch->Present1(1, 0, &pp);
