@@ -608,11 +608,13 @@ BTN::BTN(UI* puiParent, int cmd, RCF rcf) : UI(puiParent, rcf), cmd(cmd)
 void BTN::Track(bool fTrackNew) 
 {
 	fTrack = fTrackNew;
+	Redraw();
 }
 
 void BTN::Hilite(bool fHiliteNew) 
 {
 	fHilite = fHiliteNew;
+	Redraw();
 }
 
 void BTN::Draw(DC* pdc) 
@@ -621,14 +623,14 @@ void BTN::Draw(DC* pdc)
 
 void BTN::StartLeftDrag(PTF ptf)
 {
+	SetCapt(this);
 	Track(true);
-	Redraw();
 }
 
 void BTN::EndLeftDrag(PTF ptf)
 {
+	ReleaseCapt();
 	Track(false);
-	Redraw();
 	if (RcfInterior().FContainsPtf(ptf))
 		DispatchCmd(cmd);
 }
@@ -640,14 +642,10 @@ void BTN::LeftDrag(PTF ptf)
 
 void BTN::MouseHover(PTF ptf, MHT mht)
 {
-	if (mht == MHT::Enter) {
+	if (mht == MHT::Enter)
 		Hilite(true);
-		Redraw();
-	}
-	else if (mht == MHT::Exit) {
+	else if (mht == MHT::Exit)
 		Hilite(false);
-		Redraw();
-	}
 }
 
 

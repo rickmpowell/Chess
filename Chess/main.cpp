@@ -517,6 +517,19 @@ public:
 };
 
 
+class CMDROTATEBOARD : public CMD
+{
+public:
+    CMDROTATEBOARD(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->uibd.FlipBoard(app.pga->uibd.cpcPointOfView ^ 1);
+        return 1;
+    }
+};
+
+
 /*
  *
  *  CMDTEST command
@@ -579,6 +592,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(cmdExit, new CMDEXIT(*this));
     cmdlist.Add(cmdUndoMove, new CMDUNDOMOVE(*this));
     cmdlist.Add(cmdRedoMove, new CMDREDOMOVE(*this));
+    cmdlist.Add(cmdRotateBoard, new CMDROTATEBOARD(*this));
 }
 
 
