@@ -43,17 +43,6 @@ public:
 #include "bd.h"
 
 
-class HTBD : public HT
-{
-public:
-	SQ sq;
-	HTBD(const PTF& ptf, HTT htt, SPA* pspa, SQ sq) : HT(ptf, htt, pspa), sq(sq) { }
-	virtual HT* PhtClone(void) { return new HTBD(ptf, htt, pspa, sq); }
-};
-
-
-
-
 /*
  *
  *	GTM
@@ -91,7 +80,7 @@ class GA : public UI
 {
 	friend class SPA;
 	friend class SPATI;
-	friend class SPABD;
+	friend class UIBD;
 	friend class SPARGMV;
 
 protected:
@@ -102,9 +91,10 @@ public:
 
 	APP& app;
 	SPATI spati;
-	SPABD spabd;
+	UIBD uibd;
 	SPARGMV spargmv;
-	HT* phtCapt;
+	UI* puiCapt;
+	UI* puiHover;
 
 public:
 	BDG bdg;	// board
@@ -127,12 +117,12 @@ public:
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
 	virtual void Layout(void);
 
-	HT* PhtHitTest(PTF ptf);
-	void MouseMove(HT* pht);
-	void LeftDown(HT* pht);
-	void LeftUp(HT* pht);
-	void SetCapt(HT* pht);
-	void ReleaseCapt(void);
+	virtual void DispatchCmd(int cmd);
+
+	UI* PuiHitTest(PTF* pptf, int x, int y);
+	virtual void SetCapt(UI* pui);
+	virtual void ReleaseCapt(void);
+	virtual void SetHover(UI* pui);
 	inline PL*& PlFromCpc(CPC cpc) { return mpcpcppl[cpc]; }
 	inline PL* PplFromCpc(CPC cpc) { return PlFromCpc(cpc); }
 	void SetPl(CPC cpc, PL* ppl);

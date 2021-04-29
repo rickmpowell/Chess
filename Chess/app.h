@@ -160,9 +160,9 @@ private:
 	void OnPaint(void);
 	void OnSize(UINT dx, UINT dy);
 	bool OnCommand(int idm);
-	bool OnMouseMove(UINT x, UINT y);
-	bool OnLeftDown(UINT x, UINT y);
-	bool OnLeftUp(UINT x, UINT y);
+	bool OnMouseMove(int x, int y);
+	bool OnLeftDown(int x, int y);
+	bool OnLeftUp(int x, int y);
 	bool OnTimer(UINT tid);
 
 	int CmdUndoMove(void);

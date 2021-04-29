@@ -7,14 +7,17 @@
 #define idmApp			1
 #define idaApp			1
 
-#define cmdNull     0
+#define cmdNull			0
 #define cmdAbout		1
 #define cmdExit			2
-#define cmdNewGame	3
-#define cmdTest     4
-#define cmdUndoMove 5
-#define cmdRedoMove 6
-#define cmdMax      7
+#define cmdNewGame		3
+#define cmdTest			4
+#define cmdUndoMove		5
+#define cmdRedoMove		6
+#define cmdRotateBoard	7
+#define cmdResign		8
+#define cmdOfferDraw	9
+#define cmdMax			10
 
 #define idiApp			1
 #define idiSmall		2

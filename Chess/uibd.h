@@ -8,23 +8,33 @@
  */
 
 
- /*
-  *
-  *	SPABD class
-  *
-  *	Class that keeps and displays the game board on the screen inside
-  *	the board panel
-  *
-  */
+/*
+ *
+ *	UIBD class
+ *
+ *	Class that keeps and displays the game board on the screen inside
+ *	the board panel
+ *
+ */
 
 #include "framework.h"
 #include "ui.h"
 #include "bd.h"
 
 
-class HTBD;
+enum class HTBD
+{
+	None,
+	Static,
+	FlipBoard,
+	Empty,
+	OpponentPc,
+	MoveablePc,
+	UnmoveablePc
+};
 
-class SPABD : public SPA
+
+class UIBD : public SPA
 {
 public:
 	static BRS* pbrLight;
@@ -33,8 +43,6 @@ public:
 	static BRS* pbrAnnotation;
 	static BRS* pbrHilite;
 	static TF* ptfLabel;
-	static TF* ptfControls;
-	static TF* ptfGameState;
 	static BMP* pbmpPieces;
 	static GEOM* pgeomCross;
 	static GEOM* pgeomArrowHead;
@@ -43,18 +51,22 @@ public:
 	RCF rcfSquares;
 	float dxyfSquare, dxyfBorder, dxyfMargin;
 	float dyfLabel;
+
+	BTN* pbtnRotateBoard;
+
 	float angle;	// angle for rotation animation
-	HTBD* phtDragInit;
-	HTBD* phtCur;
+	SQ sqDragInit;
+	PTF ptfDragInit;
+	PTF ptfDragCur;
 	SQ sqHover;
-	int ictlHover;
 	RCF rcfDragPc;	// rectangle the dragged piece was last drawn in
 	vector<MV> rgmvDrag;	// legal moves in the UI
+
 	vector<ANO> rgano;	// annotations
 
 public:
-	SPABD(GA* pga);
-	~SPABD(void);
+	UIBD(GA* pga);
+	~UIBD(void);
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
 
@@ -76,7 +88,6 @@ public:
 	void DrawAnnotations(void);
 	void DrawSquareAnnotation(SQ sq);
 	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);
-	void DrawControls(void);
 
 	void DrawHilites(void);
 	void DrawGameState(void);
@@ -85,22 +96,18 @@ public:
 	RCF RcfGetDrag(void);
 	void InvalOutsideRcf(RCF rcf) const;
 	void HiliteLegalMoves(SQ sq);
-	void HiliteControl(int ictl);
 	RCF RcfFromSq(SQ sq) const;
-	RCF RcfControl(int ictl) const;
-	void DrawControl(WCHAR ch, int ictl, HTT htt) const;
 
-	void Resign(void);
 	void FlipBoard(CPC cpcNew);
 
 	virtual float DxWidth(void) const;
 	virtual float DyHeight(void) const;
 
-	virtual HT* PhtHitTest(PTF ptf);
-	virtual void StartLeftDrag(HT* pht);
-	virtual void EndLeftDrag(HT* pht);
-	virtual void LeftDrag(HT* pht);
-	virtual void MouseHover(HT* pht);
+	HTBD HtbdHitTest(PTF ptf, SQ* psq) const;
+	virtual void StartLeftDrag(PTF ptf);
+	virtual void EndLeftDrag(PTF ptf);
+	virtual void LeftDrag(PTF ptf);
+	virtual void MouseHover(PTF ptf, MHT mht);
 
-	bool FMoveablePc(SQ sq);
+	bool FMoveablePc(SQ sq) const;
 };

@@ -82,8 +82,8 @@ void UIGC::Layout(void)
 
 UIGC::UIGC(SPARGMV* pspargmv) : UI(pspargmv)
 {
-	pbtnResign = new BTNIMG(this, RCF(0,0,0,0), idbWhiteFlag);
-	pbtnOfferDraw = new BTNIMG(this, RCF(0,0,0,0), idbHandShake);
+	pbtnResign = new BTNIMG(this, cmdResign, RCF(0,0,0,0), idbWhiteFlag);
+	pbtnOfferDraw = new BTNIMG(this, cmdOfferDraw, RCF(0,0,0,0), idbHandShake);
 }
 
 
@@ -431,16 +431,16 @@ void SPARGMV::Layout(void)
 	RCF rcf = RcfInterior();
 	RCF rcfCont = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.spabd.cpcPointOfView ^ 1], rcf, true, 2.0f * dyfList);
-	AdjustUIRcfBounds(mpcpcpuiclock[ga.spabd.cpcPointOfView ^ 1], rcf, true, 4.0f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true, 2.0f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView ^ 1], rcf, true, 4.0f * dyfList);
 	rcfCont.top = rcf.bottom;
 
 	/* position the bottom clocks, player names, and game controls */
 
 	rcf = RcfInterior();
 	rcf.top = rcf.bottom;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.spabd.cpcPointOfView], rcf, false, 1.75f * dyfList);
-	AdjustUIRcfBounds(mpcpcpuiclock[ga.spabd.cpcPointOfView], rcf, false, 4.0f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false, 1.75f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false, 4.0f * dyfList);
 	AdjustUIRcfBounds(puigo, rcf, false, 6.0f * dyfList);
 	AdjustUIRcfBounds(puigc, rcf, false, 1.5f * dyfList);
 	rcfCont.bottom = rcf.top;
@@ -587,7 +587,7 @@ float SPARGMV::DxWidth(void) const
 
 float SPARGMV::DyHeight(void) const
 {
-	return ga.spabd.DyHeight();
+	return ga.uibd.DyHeight();
 }
 
 

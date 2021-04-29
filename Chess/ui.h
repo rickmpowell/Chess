@@ -17,6 +17,15 @@
 WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
 
 
+enum class MHT
+{
+	Nil,
+	Enter,
+	Move,
+	Exit
+};
+
+
 /*
  *
  *	UI class
@@ -65,12 +74,24 @@ public:
 	void OffsetBounds(float dxf, float dyf);
 	virtual void Layout(void);
 	void Show(bool fShow);
+
+	UI* PuiFromPtf(PTF ptf);
+	virtual void SetCapt(UI* pui);
+	virtual void ReleaseCapt(void);	
+	virtual void StartLeftDrag(PTF ptf);
+	virtual void EndLeftDrag(PTF ptf);
+	virtual void LeftDrag(PTF ptf);
+	virtual void MouseHover(PTF ptf, MHT mht);
+	virtual void DispatchCmd(int cmd);
+
+
 	RCF RcfParentFromLocal(RCF rcf) const; // local to parent coordinates
 	RCF RcfGlobalFromLocal(RCF rcf) const; // local to app global coordinates
 	RCF RcfLocalFromGlobal(RCF rcf) const;
 	RCF RcfLocalFromParent(RCF rcf) const;
 	PTF PtfParentFromLocal(PTF ptf) const;
 	PTF PtfGlobalFromLocal(PTF ptf) const;
+	PTF PtfLocalFromGlobal(PTF ptf) const;
 
 	void Update(const RCF* prcfUpdate = NULL);
 	void Redraw(void);
@@ -100,54 +121,6 @@ public:
  *	graphics screen where we can display random stuff.
  *
  */
-class GA;
-
-
-/*
- *
- *	HT class
- *
- *	Hit test class, which includes information for the hit test over various
- *	parts of the game screen. This structure is virtual, which allows for
- *	different data to be hit on in different screen panels.
- *
- *	Because of the virtualness, it must be allocated with new and they must
- *	implement a Clone method. No copy constructors!
- *
- */
-
-enum class HTT
-{
-	Miss,
-	Static,
-	MoveablePc,
-	UnmoveablePc,
-	OpponentPc,
-	EmptyPc,
-	FlipBoard,
-	Resign
-};
-
-class SPA;
-
-class HT
-{
-public:
-	HTT htt;
-	PTF ptf;
-	SPA* pspa;
-	HT(const PTF& ptf, HTT htt, SPA* pspa) : ptf(ptf), htt(htt), pspa(pspa) { }
-	virtual HT* PhtClone(void) { return new HT(ptf, htt, pspa); }
-};
-
-
-/*
- *
- *	SPA class
- *
- *	A screen panel.
- *
- */
 
 
 class SPA : public UI
@@ -168,11 +141,6 @@ public:
 	virtual float DyHeight(void) const;
 	void SetShadow(void);
 
-	virtual HT* PhtHitTest(PTF ptf);
-	virtual void StartLeftDrag(HT* pht);
-	virtual void EndLeftDrag(HT* pht);
-	virtual void LeftDrag(HT* pht);
-	virtual void MouseHover(HT* pht);
 };
 
 
@@ -292,34 +260,35 @@ public:
 
 class BTN : public UI
 {
+protected:
 	bool fHilite;
 	bool fTrack;
+	int cmd;
 public:
-	BTN(UI* puiParent, RCF rcf) : UI(puiParent, rcf) {
-		this->fHilite = false;
-		this->fTrack = false;
-	}
-
-	void Track(bool fTrackNew) {
-		fTrack = fTrackNew;
-	}
-
-	void Hilite(bool fHiliteNew) {
-		fHilite = fHiliteNew;
-	}
-
-	virtual void Draw(DC* pdc) {
-	}
+	BTN(UI* puiParent, int cmd, RCF rcf);
+	void Track(bool fTrackNew);
+	void Hilite(bool fHiliteNew);
+	virtual void Draw(DC* pdc);
+	virtual void StartLeftDrag(PTF ptf);
+	virtual void EndLeftDrag(PTF ptf);
+	virtual void LeftDrag(PTF ptf);
+	virtual void MouseHover(PTF ptf, MHT mht);
 };
 
 
 class BTNCH : public BTN
 {
 	WCHAR ch;
+protected:
+	static TF* ptfButton;
+	static BRS* pbrsButton;
 public:
-	BTNCH(UI* puiParent, RCF rcf, WCHAR ch) : BTN(puiParent, rcf), ch(ch)
-	{
-	}
+	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
+
+public:
+	BTNCH(UI* puiParent, int cmd, RCF rcf, WCHAR ch);
+	virtual void Draw(const RCF* prcfUpdate);
 };
 
 
@@ -328,37 +297,11 @@ class BTNIMG : public BTN
 	int idb;
 	BMP* pbmp;
 public:
-	BTNIMG(UI* puiParent, RCF rcf, int idb) : BTN(puiParent, rcf), idb(idb), pbmp(NULL)
-	{
-	}
-
-	~BTNIMG(void)
-	{
-		DiscardRsrc();
-	}
-
-	virtual void Draw(const RCF* prcfUpdate)
-	{
-		DrawBmp(RcfInterior(), pbmp, RCF(PTF(0, 0), pbmp->GetSize()));
-	}
-
-	virtual void CreateRsrc(void)
-	{
-		if (pbmp)
-			return;
-		APP& app = AppGet();
-		pbmp = PbmpFromPngRes(idb, app.pdc, app.pfactwic);
-	}
-
-	virtual void DiscardRsrc(void)
-	{
-		SafeRelease(&pbmp);
-	}
-
-	SIZF SizfImg(void) const
-	{
-		return pbmp == NULL ? SIZF(0, 0) : pbmp->GetSize();
-	}
-
+	BTNIMG(UI* puiParent, int cmd, RCF rcf, int idb);
+	~BTNIMG(void);
+	virtual void Draw(const RCF* prcfUpdate);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	SIZF SizfImg(void) const;
 };
 

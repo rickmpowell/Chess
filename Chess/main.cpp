@@ -307,31 +307,44 @@ void APP::OnPaint(void)
 }
 
 
-bool APP::OnMouseMove(UINT x, UINT y)
+bool APP::OnMouseMove(int x, int y)
 {
-    HT* pht = pga->PhtHitTest(PTF((float)x, (float)y));
-    pga->MouseMove(pht);
-    delete pht;
+    PTF ptf;
+    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    if (pui) {
+        if (pga->puiCapt)
+            pui->LeftDrag(ptf);
+        else {
+            if (pga->puiHover == pui)
+                pui->MouseHover(ptf, MHT::Move);
+            else {
+                if (pga->puiHover)
+                    pga->puiHover->MouseHover(ptf, MHT::Exit);
+                pui->MouseHover(ptf, MHT::Enter);
+                pga->SetHover(pui);
+            }
+        }
+    }
     return true;
 }
 
 
-bool APP::OnLeftDown(UINT x, UINT y)
+bool APP::OnLeftDown(int x, int y)
 {
-    HT* pht = pga->PhtHitTest(PTF((float)x, (float)y));
-    if (pht == NULL)
-        return true;
-    pga->LeftDown(pht);
-    delete pht;
+    PTF ptf;
+    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    if (pui)
+        pui->StartLeftDrag(ptf);
     return true;
 }
 
 
-bool APP::OnLeftUp(UINT x, UINT y)
+bool APP::OnLeftUp(int x, int y)
 {
-    HT* pht = pga->PhtHitTest(PTF((float)x, (float)y));
-    pga->LeftUp(pht);
-    delete pht;
+    PTF ptf;
+    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    if (pui)
+        pui->EndLeftDrag(ptf);
     return true;
 }
 

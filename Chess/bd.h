@@ -445,7 +445,7 @@ public:
 
 class ANO
 {
-	friend class SPABD;
+	friend class UIBD;
 	SQ sqFrom, sqTo;
 public:
 	ANO(void) { }

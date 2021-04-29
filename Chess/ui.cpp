@@ -42,6 +42,7 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
 		&ptfText);
+	BTNCH::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 }
 
 
@@ -313,6 +314,67 @@ void UI::Show(bool fVisNew)
 }
 
 
+/*	UI::PuiFromPtf
+ *
+ *	Returns the UI element the point is over. Point is in global coordinates.
+ *	Returns NULL if the point is not within the UI.
+ */
+UI* UI::PuiFromPtf(PTF ptf)
+{
+	if (!rcfBounds.FContainsPtf(ptf))
+		return NULL;
+	for (UI* puiChild : rgpuiChild) {
+		UI* pui = puiChild->PuiFromPtf(ptf);
+		if (pui)
+			return pui;
+	}
+	return this;
+}
+
+
+void UI::StartLeftDrag(PTF ptf)
+{
+	SetCapt(this);
+}
+
+
+void UI::EndLeftDrag(PTF ptf)
+{
+	ReleaseCapt();
+}
+
+
+void UI::LeftDrag(PTF ptf)
+{
+}
+
+
+void UI::MouseHover(PTF ptf, MHT mht)
+{
+}
+
+
+void UI::SetCapt(UI* pui)
+{
+	if (puiParent)
+		puiParent->SetCapt(pui);
+}
+
+
+void UI::ReleaseCapt(void)
+{
+	if (puiParent)
+		puiParent->ReleaseCapt();
+}
+
+
+void UI::DispatchCmd(int cmd)
+{
+	if (puiParent)
+		puiParent->DispatchCmd(cmd);;
+}
+
+
 /*	UI::RcfParentFromLocal
  *
  *	Converts a rectangle from local coordinates to parent coordinates
@@ -370,6 +432,17 @@ PTF UI::PtfParentFromLocal(PTF ptf) const
 PTF UI::PtfGlobalFromLocal(PTF ptf) const
 {
 	return PTF(ptf.x + rcfBounds.left, ptf.y + rcfBounds.top);
+}
+
+
+/*	UI::PtfLocalFromGlobal
+ *
+ *	Converts a point from global (relative to the main top-level window) to
+ *	local coordinates.
+ */
+PTF UI::PtfLocalFromGlobal(PTF ptf) const
+{
+	return PTF(ptf.x - rcfBounds.left, ptf.y - rcfBounds.top);
 }
 
 
@@ -516,4 +589,131 @@ void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 {
 	AppGet().pdc->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
 		opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcfFrom);
+}
+
+
+/*
+ *
+ *	BTN classes
+ * 
+ */
+
+
+BTN::BTN(UI* puiParent, int cmd, RCF rcf) : UI(puiParent, rcf), cmd(cmd)
+{
+	this->fHilite = false;
+	this->fTrack = false;
+}
+
+void BTN::Track(bool fTrackNew) 
+{
+	fTrack = fTrackNew;
+}
+
+void BTN::Hilite(bool fHiliteNew) 
+{
+	fHilite = fHiliteNew;
+}
+
+void BTN::Draw(DC* pdc) 
+{
+}
+
+void BTN::StartLeftDrag(PTF ptf)
+{
+	Track(true);
+	Redraw();
+}
+
+void BTN::EndLeftDrag(PTF ptf)
+{
+	Track(false);
+	Redraw();
+	if (RcfInterior().FContainsPtf(ptf))
+		DispatchCmd(cmd);
+}
+
+void BTN::LeftDrag(PTF ptf)
+{
+	Hilite(RcfInterior().FContainsPtf(ptf));
+}
+
+void BTN::MouseHover(PTF ptf, MHT mht)
+{
+	if (mht == MHT::Enter) {
+		Hilite(true);
+		Redraw();
+	}
+	else if (mht == MHT::Exit) {
+		Hilite(false);
+		Redraw();
+	}
+}
+
+
+TF* BTNCH::ptfButton;
+BRS* BTNCH::pbrsButton;
+
+void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+{
+	if (ptfButton)
+		return;
+
+	pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsButton);
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		24.0f, L"",
+		&ptfButton);
+}
+
+
+void BTNCH::DiscardRsrcClass(void)
+{
+	SafeRelease(&ptfButton);
+	SafeRelease(&pbrsButton);
+}
+
+BTNCH::BTNCH(UI* puiParent, int cmd, RCF rcf, WCHAR ch) : BTN(puiParent, cmd, rcf), ch(ch)
+{
+}
+
+void BTNCH::Draw(const RCF* prcfUpdate)
+{
+	WCHAR sz[2];
+	sz[0] = ch;
+	sz[1] = 0;
+	pbrsButton->SetColor(ColorF((fHilite+fTrack)*0.5f, 0.0, 0.0));
+	DrawSz(sz, ptfButton, RcfInterior(), pbrsButton);
+}
+
+BTNIMG::BTNIMG(UI* puiParent, int cmd, RCF rcf, int idb) : BTN(puiParent, cmd, rcf), idb(idb), pbmp(NULL)
+{
+}
+
+BTNIMG::~BTNIMG(void)
+{
+	DiscardRsrc();
+}
+
+void BTNIMG::Draw(const RCF* prcfUpdate)
+{
+	DrawBmp(RcfInterior(), pbmp, RCF(PTF(0, 0), pbmp->GetSize()));
+}
+
+void BTNIMG::CreateRsrc(void)
+{
+	if (pbmp)
+		return;
+	APP& app = AppGet();
+	pbmp = PbmpFromPngRes(idb, app.pdc, app.pfactwic);
+}
+
+void BTNIMG::DiscardRsrc(void)
+{
+	SafeRelease(&pbmp);
+}
+
+SIZF BTNIMG::SizfImg(void) const
+{
+	return pbmp == NULL ? SIZF(0, 0) : pbmp->GetSize();
 }

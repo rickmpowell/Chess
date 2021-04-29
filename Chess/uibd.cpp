@@ -13,24 +13,22 @@
 
 /*
  *
- *	SPABD class
+ *	UIBD class
  *
  *	Screen panel that displays the board
  *
  */
 
 
-BRS* SPABD::pbrLight;
-BRS* SPABD::pbrDark;
-BRS* SPABD::pbrBlack;
-BRS* SPABD::pbrAnnotation;
-BRS* SPABD::pbrHilite;
-TF* SPABD::ptfLabel;
-TF* SPABD::ptfControls;
-TF* SPABD::ptfGameState;
-BMP* SPABD::pbmpPieces;
-GEOM* SPABD::pgeomCross;
-GEOM* SPABD::pgeomArrowHead;
+BRS* UIBD::pbrLight;
+BRS* UIBD::pbrDark;
+BRS* UIBD::pbrBlack;
+BRS* UIBD::pbrAnnotation;
+BRS* UIBD::pbrHilite;
+TF* UIBD::ptfLabel;
+BMP* UIBD::pbmpPieces;
+GEOM* UIBD::pgeomCross;
+GEOM* UIBD::pgeomArrowHead;
 
 const float dxyfCrossFull = 20.0f;
 const float dxyfCrossCenter = 4.0f;
@@ -57,11 +55,11 @@ PTF rgptfArrowHead[] = {
 };
 
 
-/*	SPABD::CreateRsrc
+/*	UIBD::CreateRsrcClass
  *
  *	Creates the drawing resources necessary to draw the board.
  */
-void SPABD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrLight)
 		return;
@@ -80,14 +78,6 @@ void SPABD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
 		&ptfLabel);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_EXTRA_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		32.0f, L"",
-		&ptfGameState);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		24.0f, L"",
-		&ptfControls);
 
 	/* bitmaps */
 
@@ -103,11 +93,11 @@ void SPABD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 
 
 
-/*	SPABD::DiscardRsrc
+/*	UIBD::DiscardRsrcClass
  *
- *	Cleans up the resources created by CreateRsrc
+ *	Cleans up the resources created by CreateRsrcClass
  */
-void SPABD::DiscardRsrcClass(void)
+void UIBD::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrLight);
 	SafeRelease(&pbrDark);
@@ -115,85 +105,87 @@ void SPABD::DiscardRsrcClass(void)
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
 	SafeRelease(&ptfLabel);
-	SafeRelease(&ptfControls);
-	SafeRelease(&ptfGameState);
 	SafeRelease(&pbmpPieces);
 	SafeRelease(&pgeomCross);
 	SafeRelease(&pgeomArrowHead);
 }
 
 
-/*	SPABD::SPABD
+/*	UIBD::UIBD
  *
  *	Constructor for the board screen panel.
  */
-SPABD::SPABD(GA* pga) : SPA(pga), phtDragInit(NULL), phtCur(NULL), sqHover(sqNil), ictlHover(-1),
+UIBD::UIBD(GA* pga) : SPA(pga), sqDragInit(sqNil), sqHover(sqNil),
 		cpcPointOfView(cpcWhite),
 		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
 		angle(0.0f),
 		dyfLabel(18.0f)	// TODO: this is a font attribute
 {
+	pbtnRotateBoard = new BTNCH(this, cmdRotateBoard, RCF(0, 0, 0, 0), L'\x2b6f');
 }
 
 
-/*	SPABD::~SPABD
+/*	UIBD::~UIBD
  *
  *	Destructor for the board screen panel
  */
-SPABD::~SPABD(void)
+UIBD::~UIBD(void)
 {
+	if (pbtnRotateBoard)
+		delete pbtnRotateBoard;
 }
 
 
-/*	SPABD::Layout
+/*	UIBD::Layout
  *
  *	Layout work for the board screen panel.
  */
-void SPABD::Layout(void)
+void UIBD::Layout(void)
 {
+	rcfSquares = RcfInterior();
+	pbtnRotateBoard->SetBounds(RCF(rcfSquares.left+3.0f, rcfSquares.bottom - 30.0f, rcfSquares.left + 33.0f, rcfSquares.bottom));
 	dxyfMargin = rcfBounds.DyfHeight() / 12.0f;
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
-	rcfSquares = RcfInterior();
 	rcfSquares.Inflate(-dxyf, -dxyf);
 	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
 }
 
 
-/*	SPABD::DxWidth
+/*	UIBD::DxWidth
  *
  *	Returns the width of the board screen panel. Used for screen layout.
  */
-float SPABD::DxWidth(void) const
+float UIBD::DxWidth(void) const
 {
 	return (ga.rcfBounds.bottom - ga.rcfBounds.top - 10.0f - 50.0f);
 }
 
 
-/*	SPABD::DyHeight
+/*	UIBD::DyHeight
  *
  *	Returns the height of the board screen panel. Used for screen layout.
  */
-float SPABD::DyHeight(void) const
+float UIBD::DyHeight(void) const
 {
 	return DxWidth();
 }
 
 
-/*	SPABD::NewGame
+/*	UIBD::NewGame
  *
  *	Starts a new game on the screen board
  */
-void SPABD::NewGame(void)
+void UIBD::NewGame(void)
 {
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 }
 
 
-/*	SPABD::MakeMv
+/*	UIBD::MakeMv
  *
  *	Makes a move on the board in the screen panel
  */
-void SPABD::MakeMv(MV mv, bool fRedraw)
+void UIBD::MakeMv(MV mv, bool fRedraw)
 {
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
@@ -205,7 +197,7 @@ void SPABD::MakeMv(MV mv, bool fRedraw)
 }
 
 
-void SPABD::UndoMv(bool fRedraw)
+void UIBD::UndoMv(bool fRedraw)
 {
 	ga.bdg.UndoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
@@ -214,7 +206,7 @@ void SPABD::UndoMv(bool fRedraw)
 }
 
 
-void SPABD::RedoMv(bool fRedraw)
+void UIBD::RedoMv(bool fRedraw)
 {
 	ga.bdg.RedoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
@@ -223,7 +215,7 @@ void SPABD::RedoMv(bool fRedraw)
 }
 
 
-/*	SPABD::Draw
+/*	UIBD::Draw
  *
  *	Draws the board panel on the screen. This particular implementation
  *	does a green and cream chess board with square labels written in the
@@ -234,7 +226,7 @@ void SPABD::RedoMv(bool fRedraw)
  *	in response to user input, which simplifies drawing quite a bit. We
  *	just handle all dragging drawing in here.
  */
-void SPABD::Draw(const RCF* prcfUpdate)
+void UIBD::Draw(const RCF* prcfUpdate)
 {
 	DC* pdc = AppGet().pdc;
 	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
@@ -246,17 +238,16 @@ void SPABD::Draw(const RCF* prcfUpdate)
 	DrawHilites();
 	DrawAnnotations();
 	DrawGameState();
-	DrawControls();
 	pdc->SetTransform(Matrix3x2F::Identity());
 }
 
 
-/*	SPABD::DrawMargins
+/*	UIBD::DrawMargins
  *
  *	For the green and cream board, the margins are the cream color
  *	with a thin green line just outside the square grid.
  */
-void SPABD::DrawMargins(void)
+void UIBD::DrawMargins(void)
 {
 	RCF rcf = RcfInterior();
 	FillRcf(rcf, pbrLight);
@@ -267,13 +258,13 @@ void SPABD::DrawMargins(void)
 }
 
 
-/*	SPABD::DrawSquares
+/*	UIBD::DrawSquares
  *
  *	Draws the squares of the chessboard. Assumes the light color
  *	has already been used to fill the board area, so all we need to
  *	do is draw the dark colors on top
  */
-void SPABD::DrawSquares(void)
+void UIBD::DrawSquares(void)
 {
 	for (SQ sq = 0; sq < sqMax; sq++)
 		if ((sq.rank() + sq.file()) % 2 == 0)
@@ -281,23 +272,23 @@ void SPABD::DrawSquares(void)
 }
 
 
-/*	SPABD::DrawLabels
+/*	UIBD::DrawLabels
  *
  *	Draws the square labels in the margin area of the green and cream
  *	board.
  */
-void SPABD::DrawLabels(void)
+void UIBD::DrawLabels(void)
 {
 	DrawFileLabels();
 	DrawRankLabels();
 }
 
 
-/*	SPABD::DrawFileLabels
+/*	UIBD::DrawFileLabels
  *
  *	Draws the file letter labels along the bottom of the board.
  */
-void SPABD::DrawFileLabels(void)
+void UIBD::DrawFileLabels(void)
 {
 	TCHAR szLabel[2];
 	szLabel[0] = L'a';
@@ -316,11 +307,11 @@ void SPABD::DrawFileLabels(void)
 }
 
 
-/*	SPABD::DrawRankLabels
+/*	UIBD::DrawRankLabels
  *
  *	Draws the numerical rank labels along the side of the board
  */
-void SPABD::DrawRankLabels(void)
+void UIBD::DrawRankLabels(void)
 {
 	RCF rcf(dxyfMargin / 2, rcfSquares.top, dxyfMargin, 0);
 	TCHAR szLabel[2];
@@ -340,17 +331,11 @@ void SPABD::DrawRankLabels(void)
 }
 
 
-void SPABD::Resign(void)
-{
-	MessageBeep(0);
-}
-
-
-/*	SPABD::DrawGameState
+/*	UIBD::DrawGameState
  *
  *	When the game is over, this displays the game state on the board
  */
-void SPABD::DrawGameState(void)
+void UIBD::DrawGameState(void)
 {
 	if (ga.bdg.gs == GS::Playing)
 		return;
@@ -367,11 +352,11 @@ void SPABD::DrawGameState(void)
 }
 
 
-/*	SPABD::RcfFromSq
+/*	UIBD::RcfFromSq
  *
  *	Returns the rectangle of the given square on the screen
  */
-RCF SPABD::RcfFromSq(SQ sq) const
+RCF UIBD::RcfFromSq(SQ sq) const
 {
 	assert(sq >= 0 && sq < sqMax);
 	int rank = sq.rank(), file = sq.file();
@@ -385,14 +370,14 @@ RCF SPABD::RcfFromSq(SQ sq) const
 }
 
 
-/*	SPABD::DrawHover
+/*	UIBD::DrawHover
  *
  *	Draws the move hints that we display while the user is hovering
  *	the mouse over a moveable piece.
  *
  *	We draw a circle over every square you can move to.
  */
-void SPABD::DrawHover(void)
+void UIBD::DrawHover(void)
 {
 	if (sqHover == sqNil)
 		return;
@@ -423,7 +408,7 @@ void SPABD::DrawHover(void)
 }
 
 
-/*	SPABD::DrawPieces
+/*	UIBD::DrawPieces
  *
  *	Draws pieces on the board. Includes support for the trackingn display
  *	while we're dragging pieces.
@@ -431,49 +416,49 @@ void SPABD::DrawHover(void)
  *	Direct2D is fast enough for us to do full screen redraws on just about
  *	any user-initiated change, so there isn't much point in optimizing.
  */
-void SPABD::DrawPieces(void)
+void UIBD::DrawPieces(void)
 {
 	for (SQ sq = 0; sq < sqMax; sq++) {
-		float opacity = (phtDragInit && phtDragInit->sq == sq) ? 0.2f : 1.0f;
+		float opacity = sqDragInit == sq ? 0.2f : 1.0f;
 		DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqtpc[sq]);
 	}
-	if (phtDragInit && phtCur)
+	if (!sqDragInit.FIsNil())
 		DrawDragPc(rcfDragPc);
 }
 
 
-/*	SPABD::DrawDragPc
+/*	UIBD::DrawDragPc
  *
  *	Draws the piece we're currently dragging, as specified by
  *	phtDragInit, on the screen, in the location at rcf. rcf should
  *	track the mouse location.
  */
-void SPABD::DrawDragPc(const RCF& rcf)
+void UIBD::DrawDragPc(const RCF& rcf)
 {
-	assert(phtDragInit);
-	DrawPc(rcf, 1.0f, ga.bdg.mpsqtpc[phtDragInit->sq]);
+	assert(!sqDragInit.FIsNil());
+	DrawPc(rcf, 1.0f, ga.bdg.mpsqtpc[sqDragInit]);
 }
 
 
-/*	SPABD::RcfGetDrag
+/*	UIBD::RcfGetDrag
  *
  *	Gets the current screen rectangle the piece we're dragging
  */
-RCF SPABD::RcfGetDrag(void)
+RCF UIBD::RcfGetDrag(void)
 {
-	RCF rcfInit = RcfFromSq(phtDragInit->sq);
+	RCF rcfInit = RcfFromSq(sqDragInit);
 	RCF rcf(0, 0, dxyfSquare, dxyfSquare);
-	float dxfInit = phtDragInit->ptf.x - rcfInit.left;
-	float dyfInit = phtDragInit->ptf.y - rcfInit.top;
-	return rcf.Offset(phtCur->ptf.x - dxfInit, phtCur->ptf.y - dyfInit);
+	float dxfInit = ptfDragInit.x - rcfInit.left;
+	float dyfInit = ptfDragInit.y - rcfInit.top;
+	return rcf.Offset(ptfDragCur.x - dxfInit, ptfDragCur.y - dyfInit);
 }
 
 
-/*	SPABD::DrawPc
+/*	UIBD::DrawPc
  *
  *	Draws the chess piece on the square at rcf.
  */
-void SPABD::DrawPc(RCF rcf, float opacity, BYTE tpc)
+void UIBD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 {
 	/* the piece png has the 12 different chess pieces oriented like:
 	 *   WK WQ WN WR WB WP
@@ -489,12 +474,12 @@ void SPABD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 }
 
 
-void SPABD::DrawHilites(void)
+void UIBD::DrawHilites(void)
 {
 }
 
 
-void SPABD::DrawAnnotations(void)
+void UIBD::DrawAnnotations(void)
 {
 	pbrAnnotation->SetOpacity(0.5f);
 	for (ANO ano : rgano) {
@@ -507,55 +492,17 @@ void SPABD::DrawAnnotations(void)
 }
 
 
-void SPABD::DrawSquareAnnotation(SQ sq)
+void UIBD::DrawSquareAnnotation(SQ sq)
 {
 }
 
 
-void SPABD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
+void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 {
 }
 
 
-/*	SPABD::DrawControls
- *
- *	Draws controls for manipulating the board
- */
-void SPABD::DrawControls(void)
-{
-	ptfControls->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	DrawControl(L'\x2b6f', 0, HTT::FlipBoard);
-}
-
-
-void SPABD::DrawControl(WCHAR ch, int ictl, HTT htt) const
-{
-	ID2D1Brush* pbr = pbrText;
-	if (phtCur && phtCur->htt == htt)
-		pbr = pbrTextSel;
-	else if (ictlHover == ictl)
-		pbr = pbrBlack;
-	WCHAR sz[2];
-	sz[0] = ch;
-	sz[1] = 0;
-	DrawSz(wstring(sz), ptfControls, RcfControl(ictl), pbr);
-}
-
-
-/*	SPABD::RcfControl
- *
- *	Returns the local coordinates of the ictl control on the playing
- *	board.
- */
-RCF SPABD::RcfControl(int ictl) const
-{
-	RCF rcf(0, 0, 35.0f, 35.0f);
-	rcf.Offset(12.0f + ictl * 35.0f, rcfBounds.DyfHeight() - 35.0f);
-	return rcf;
-}
-
-
-void SPABD::FlipBoard(CPC cpcNew)
+void UIBD::FlipBoard(CPC cpcNew)
 {
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
 		ga.Redraw();
@@ -566,7 +513,7 @@ void SPABD::FlipBoard(CPC cpcNew)
 }
 
 
-/*	SPABD::PhtHitTest
+/*	UIBD::HtbdHitTest
  *
  *	Hit tests the given mouse coordinate and returns a HT implementation
  *	if it belongs to this panel. Returns NULL if there is no hit.
@@ -577,45 +524,37 @@ void SPABD::FlipBoard(CPC cpcNew)
  *
  *	The point is in global coordinates.
  */
-HT* SPABD::PhtHitTest(PTF ptf)
+HTBD UIBD::HtbdHitTest(PTF ptf, SQ* psq) const
 {
-	if (!rcfBounds.FContainsPtf(ptf)) {
-		if (phtDragInit)
-			return new HTBD(ptf, HTT::Miss, this, sqNil);
-		return NULL;
-	}
-	ptf.x -= rcfBounds.left;
-	ptf.y -= rcfBounds.top;
-	if (!rcfSquares.FContainsPtf(ptf)) {
-		if (RcfControl(0).FContainsPtf(ptf))
-			return new HTBD(ptf, HTT::FlipBoard, this, sqNil);
-		return new HTBD(ptf, HTT::Static, this, sqMax);
-	}
+	if (!RcfInterior().FContainsPtf(ptf))
+		return HTBD::None;
+	if (!rcfSquares.FContainsPtf(ptf))
+		return HTBD::Static;
 	int rank = (int)((ptf.y - rcfSquares.top) / dxyfSquare);
 	int file = (int)((ptf.x - rcfSquares.left) / dxyfSquare);
 	if (cpcPointOfView == cpcWhite)
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
-	SQ sq = SQ(rank, file);
-	if (ga.bdg.mpsqtpc[sq] == tpcEmpty)
-		return new HTBD(ptf, HTT::EmptyPc, this, sq);
-	if (CpcFromTpc(ga.bdg.mpsqtpc[sq]) != ga.bdg.cpcToMove)
-		return new HTBD(ptf, HTT::OpponentPc, this, sq);
+	*psq = SQ(rank, file);
+	if (ga.bdg.mpsqtpc[*psq] == tpcEmpty)
+		return HTBD::Empty;
+	if (CpcFromTpc(ga.bdg.mpsqtpc[*psq]) != ga.bdg.cpcToMove)
+		return HTBD::OpponentPc;
 
-	if (FMoveablePc(sq))
-		return new HTBD(ptf, HTT::MoveablePc, this, sq);
+	if (FMoveablePc(*psq))
+		return HTBD::MoveablePc;
 	else
-		return new HTBD(ptf, HTT::UnmoveablePc, this, sq);
+		return HTBD::UnmoveablePc;
 }
 
 
-/*	SPABD::FMoveablePc
+/*	UIBD::FMoveablePc
  *
  *	Returns true if the square contains a piece that has a
  *	legal move
  */
-bool SPABD::FMoveablePc(SQ sq)
+bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(CpcFromTpc(ga.bdg.mpsqtpc[sq]) == ga.bdg.cpcToMove);
 	for (MV mv : rgmvDrag)
@@ -625,73 +564,52 @@ bool SPABD::FMoveablePc(SQ sq)
 }
 
 
-/*	SPABD::StartLeftDrag
+/*	UIBD::StartLeftDrag
  *
  *	Starts the mouse left button down drag operation on the board panel.
  */
-void SPABD::StartLeftDrag(HT* pht)
+void UIBD::StartLeftDrag(PTF ptf)
 {
+	SQ sq;
+	HTBD htbd = HtbdHitTest(ptf, &sq);
 	sqHover = sqNil;
+	SetCapt(this);
 
-	switch (pht->htt) {
-	case HTT::MoveablePc:
-	case HTT::FlipBoard:
-		assert(phtDragInit == NULL);
-		assert(phtCur == NULL);
-		phtDragInit = (HTBD*)pht->PhtClone();
-		phtCur = (HTBD*)pht->PhtClone();
-		if (pht->htt == HTT::MoveablePc)
-			rcfDragPc = RcfGetDrag();
-		break;
-	default:
-		MessageBeep(0);
-		return;
+	if (htbd == HTBD::MoveablePc) {
+		ptfDragInit = ptf;
+		sqDragInit = sq;
+		ptfDragCur = ptf;
+		rcfDragPc = RcfGetDrag();
+		Redraw();
 	}
-
-	Redraw();
+	else {
+		MessageBeep(0);
+	}
 }
 
 
-void SPABD::EndLeftDrag(HT* pht)
+void UIBD::EndLeftDrag(PTF ptf)
 {
-	if (phtDragInit == NULL)
+	ReleaseCapt();
+	if (sqDragInit.FIsNil())
 		return;
-	HTBD* phtbd = (HTBD*)pht;
-	if (phtbd) {
-		switch (phtDragInit->htt) {
-		case HTT::MoveablePc:
-			if (phtbd->sq == sqNil)
+	SQ sq;
+	HTBD htbd = HtbdHitTest(ptf, &sq);
+	if (!sq.FIsNil()) {
+		for (MV mv : rgmvDrag) {
+			if (mv.SqFrom() == sqDragInit && mv.SqTo() == sq) {
+				ga.MakeMv(mv, true);
 				break;
-			/* find the to/from square in the move list  */
-			for (MV mv : rgmvDrag) {
-				if (mv.SqFrom() == phtDragInit->sq && mv.SqTo() == phtbd->sq) {
-					ga.MakeMv(mv, true);
-					break;
-				}
 			}
-			break;
-		case HTT::FlipBoard:
-			FlipBoard(cpcPointOfView ^ 1);
-			break;
-		default:
-			break;
 		}
 	}
 
-	/* clean up drag */
-
-	delete phtDragInit;
-	phtDragInit = NULL;
-	if (phtCur)
-		delete phtCur;
-	phtCur = NULL;
-
 	InvalOutsideRcf(rcfDragPc);
-	Redraw();
+	sqDragInit = sqNil;
 }
 
 
-/*	SPABD::LeftDrag
+/*	UIBD::LeftDrag
  *
  *	Notification while the mouse button is down and dragging around. The
  *	hit test for the captured mouse position is in pht.
@@ -699,84 +617,65 @@ void SPABD::EndLeftDrag(HT* pht)
  *	We use this for users to drag pieces around while they are trying to
  *	move.
  */
-void SPABD::LeftDrag(HT* pht)
+void UIBD::LeftDrag(PTF ptf)
 {
-	if (phtDragInit == NULL || pht == NULL || pht->htt == HTT::Miss) {
-		EndLeftDrag(pht);
+	SQ sq;
+	HTBD htbd = HtbdHitTest(ptf, &sq);
+	if (sqDragInit.FIsNil()) {
+		EndLeftDrag(ptf);
 		return;
 	}
-
-	if (phtCur)
-		delete phtCur;
-	phtCur = (HTBD*)pht->PhtClone();
-
-	switch (phtDragInit->htt) {
-	case HTT::FlipBoard:
-		if (pht->htt != phtDragInit->htt)
-			HiliteControl(-1);
-		break;
-	default:
-		InvalOutsideRcf(rcfDragPc);
-		rcfDragPc = RcfGetDrag();
-		break;
-	}
+	ptfDragCur = ptf;
+	InvalOutsideRcf(rcfDragPc);
+	rcfDragPc = RcfGetDrag();
 	Redraw();
 }
 
 
-/*	SPABD::MouseHover
+/*	UIBD::MouseHover
  *
  *	Notification that tells us the mouse is hovering over the board.
  *	The mouse button will not be down. the pht is the this test
  *	class for the mouse location. It is guaranteed to be a HTBD
- *	for hit testing over the SPABD.
+ *	for hit testing over the UIBD.
  */
-void SPABD::MouseHover(HT* pht)
+void UIBD::MouseHover(PTF ptf, MHT mht)
 {
-	if (pht == NULL)
-		return;
-	HTBD* phtbd = (HTBD*)pht;
-	switch (phtbd->htt) {
-	case HTT::MoveablePc:
-		HiliteLegalMoves(phtbd->sq);
+	SQ sq;
+	HTBD htbd = HtbdHitTest(ptf, &sq);
+	HiliteLegalMoves(htbd == HTBD::MoveablePc ? sq : sqNil);
+	switch (htbd) {
+	case HTBD::MoveablePc:
+		::SetCursor(ga.app.hcurMove);
 		break;
-	case HTT::FlipBoard:
-		HiliteControl(0);
+	case HTBD::Empty:
+	case HTBD::OpponentPc:
+	case HTBD::UnmoveablePc:
+		::SetCursor(ga.app.hcurNo);
 		break;
 	default:
-		HiliteLegalMoves(sqNil);
+		::SetCursor(ga.app.hcurArrow);
 		break;
 	}
 }
 
 
-/*	SPABD::HiliteLegalMoves
+/*	UIBD::HiliteLegalMoves
  *
  *	When the mouse is hovering over square sq, causes the screen to
  *	be redrawn with squares that the piece can move to with a
  *	hilight. If sq is sqNil, no hilights are drawn.
  */
-void SPABD::HiliteLegalMoves(SQ sq)
+void UIBD::HiliteLegalMoves(SQ sq)
 {
 	if (sq == sqHover)
 		return;
-	ictlHover = -1;
 	sqHover = sq;
 	Redraw();
 }
 
 
-void SPABD::HiliteControl(int ictl)
-{
-	if (ictl == ictlHover)
-		return;
-	sqHover = sqNil;
-	ictlHover = ictl;
-	Redraw();
-}
-
-
-/*	SPABD::InvalOutsideRcf
+/*	UIBD::InvalOutsideRcf
  *
  *	While we're tracking piece dragging, it's possible for a piece
  *	to be drawn outside the bounding box of the board. Any drawing
@@ -784,7 +683,7 @@ void SPABD::HiliteControl(int ictl)
  *	we handle these outside parts by just invalidating the area so
  *	they'll get picked off eventually by normal update paints.
  */
-void SPABD::InvalOutsideRcf(RCF rcf) const
+void UIBD::InvalOutsideRcf(RCF rcf) const
 {
 	RCF rcfInt = RcfInterior();
 	InvalRcf(RCF(rcf.left, rcf.top, rcf.right, rcfInt.top), false);

@@ -127,34 +127,6 @@ float SPA::DyHeight(void) const
 }
 
 
-HT* SPA::PhtHitTest(PTF ptf)
-{
-	RCF rcfInterior = RcfGlobalFromLocal(RcfInterior());
-	if (!rcfInterior.FContainsPtf(ptf))
-		return NULL;
-	return new HT(ptf, HTT::Static, this);
-}
-
-
-void SPA::StartLeftDrag(HT* pht)
-{
-}
-
-
-void SPA::EndLeftDrag(HT* pht)
-{
-}
-
-
-void SPA::LeftDrag(HT* pht)
-{
-}
-
-void SPA::MouseHover(HT* pht)
-{
-}
-
-
 /*
  *
  *	SPATI class implementation
@@ -281,7 +253,7 @@ void GA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 	SPA::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 	SPATI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	SPABD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+	UIBD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 	SPARGMV::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 }
 
@@ -291,15 +263,15 @@ void GA::DiscardRsrcClass(void)
 	UI::DiscardRsrcClass();
 	SPA::DiscardRsrcClass();
 	SPATI::DiscardRsrcClass();
-	SPABD::DiscardRsrcClass();
+	UIBD::DiscardRsrcClass();
 	SPARGMV::DiscardRsrcClass();
 	SafeRelease(&pbrDesktop);
 }
 
 
 GA::GA(APP& app) : UI(NULL), app(app), 
-	spati(this), spabd(this), spargmv(this),
-	phtCapt(NULL)
+	spati(this), uibd(this), spargmv(this),
+	puiCapt(NULL), puiHover(NULL)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
 }
@@ -392,7 +364,7 @@ void GA::Layout(void)
 	rcf.left = rcf.right + 10.0f;
 	rcf.bottom = rcfBounds.bottom - 40.0f;
 	rcf.right = rcf.left + rcf.DyfHeight();
-	spabd.SetBounds(rcf);
+	uibd.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
 	rcf.right = rcf.left + 200.0f;
@@ -407,7 +379,7 @@ void GA::Layout(void)
 void GA::NewGame(void)
 {
 	bdg.NewGame();
-	spabd.NewGame();
+	uibd.NewGame();
 	spargmv.NewGame();
 	StartGame();
 }
@@ -428,100 +400,50 @@ void GA::EndGame(void)
 }
 
 
-/*	GA::PhtHitTest
- *
- *	Figures out where the point passed is hitting on the screen. If
- *	there is capture, it forces a hit on the captured panel. Returns
- *	an allocated HT on success, NULL if we hit nothing.
- */
-HT* GA::PhtHitTest(PTF ptf)
+UI* GA::PuiHitTest(PTF* pptf, int x, int y)
 {
-	if (phtCapt) 
-		return phtCapt->pspa->PhtHitTest(ptf);
-
-	HT* pht;
-	if ((pht = spati.PhtHitTest(ptf)) != NULL)
-		return pht;
-	if ((pht = spabd.PhtHitTest(ptf)) != NULL)
-		return pht;
-	if ((pht = spargmv.PhtHitTest(ptf)) != NULL)
-		return pht;
-	return NULL;
+	PTF ptf((float)x, (float)y);
+	UI* pui;
+	if (puiCapt)
+		pui = puiCapt;
+	else
+		pui = PuiFromPtf(ptf);
+	if (pui)
+		ptf = pui->PtfLocalFromGlobal(ptf);
+	*pptf = ptf;
+	return pui;
 }
 
 
-/*	GA::MouseMove
- *
- *	Handles mouse move messages over the game. If capture has been taken
- *	by a screen panel, we assume a button is being held down and dragging
- *	is going on. Otherwise we're just hovering.
- */
-void GA::MouseMove(HT* pht)
+void GA::SetCapt(UI* pui)
 {
-	if (phtCapt)
-		phtCapt->pspa->LeftDrag(pht);
-	else if (pht == NULL)
-		::SetCursor(app.hcurArrow);
-	else {
-		switch (pht->htt) {
-		case HTT::Static:
-			::SetCursor(app.hcurArrow);
-			break;
-		case HTT::MoveablePc:
-			::SetCursor(app.hcurMove);
-			break;
-		case HTT::UnmoveablePc:
-			::SetCursor(app.hcurNo);
-			break;
-		case HTT::EmptyPc:
-		case HTT::OpponentPc:
-			::SetCursor(app.hcurNo);
-			break;
-		default:
-			::SetCursor(app.hcurArrow);
-			break;
-		}
-		pht->pspa->MouseHover(pht);
-	}
-}
-
-
-void GA::SetCapt(HT* pht)
-{
-	ReleaseCapt();
-	if (pht) {
+	if (pui) {
 		::SetCapture(app.hwnd);
-		phtCapt = pht->PhtClone();
+		puiCapt = pui;
 	}
 }
 
 
 void GA::ReleaseCapt(void)
 {
-	if (phtCapt == NULL)
+	if (puiCapt == NULL)
 		return;
-	delete phtCapt;
-	phtCapt = NULL;
+	puiCapt = NULL;
 	::ReleaseCapture();
 }
 
 
-void GA::LeftDown(HT* pht)
+void GA::SetHover(UI* pui)
 {
-	SetCapt(pht);
-	if (pht)
-		pht->pspa->StartLeftDrag(pht);
+	if (pui == puiHover)
+		return;
+	puiHover = pui;
 }
 
 
-void GA::LeftUp(HT* pht)
+void GA::DispatchCmd(int cmd)
 {
-	if (phtCapt) {
-		phtCapt->pspa->EndLeftDrag(pht);
-		ReleaseCapt();
-	}
-	else if (pht)
-		pht->pspa->EndLeftDrag(pht);
+	app.cmdlist.Execute(cmd);
 }
 
 
@@ -569,7 +491,7 @@ void GA::MakeMv(MV mv, bool fRedraw)
 {
 	DWORD tm = app.TmMessage();
 	SwitchClock(tm == 0 ? 1 : tm);
-	spabd.MakeMv(mv, fRedraw);
+	uibd.MakeMv(mv, fRedraw);
 	if (bdg.gs != GS::Playing)
 		EndGame();
 	if (fRedraw) {
@@ -587,7 +509,7 @@ void GA::MakeMv(MV mv, bool fRedraw)
  */
 void GA::UndoMv(bool fRedraw)
 {
-	spabd.UndoMv(fRedraw);
+	uibd.UndoMv(fRedraw);
 	if (fRedraw)
 		spargmv.Redraw();
 }
@@ -600,7 +522,7 @@ void GA::UndoMv(bool fRedraw)
  */
 void GA::RedoMv(bool fRedraw)
 {
-	spabd.RedoMv(fRedraw);
+	uibd.RedoMv(fRedraw);
 	if (fRedraw)
 		spargmv.Redraw();
 }
