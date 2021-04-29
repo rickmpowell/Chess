@@ -607,7 +607,6 @@ void SPARGMV::NewGame(void)
 void SPARGMV::EndGame(void)
 {
 	puigo->Show(true);
-	Redraw();
 }
 
 

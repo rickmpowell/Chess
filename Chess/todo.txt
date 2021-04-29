@@ -1,8 +1,10 @@
-  Get BTNs working and dispatching cmds
+  Implement disabled menu items hooked to the CMD
+  Implement disabled buttons that hook to CMD
+  Hovering and tracking feedback over image buttons
+  Remove DxWidth and DyHeight from SPA
   Rename SPA to UI
   Dragging pieces outside the board rectangle doesn't redraw the piece right
   Legal move circles disappear when dragging
-  Remove dependency on app in all the UIs
   Break the UI out of the GA.
   Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
   Official game has slightly different rules for some draw situations
@@ -31,10 +33,13 @@
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
   Add tooltip for items in control list
-  Assert when dragging and upclick off control
   Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
   Change SPATI items to be separate UI elements
-  Beef up layout code to handle locating clocks et.al.
+* Game Over panel isn't working
+* Assert when dragging and upclick off control
+* Remove dependency on app in all the UIs
+* Get BTNs working and dispatching cmds
+* Beef up layout code to handle locating clocks et.al.
 * Better quality scaling on small boards
 * Add UI for resigning
 * Add UI for offering draw

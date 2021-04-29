@@ -308,9 +308,14 @@ void UI::Show(bool fVisNew)
 	if (fVisible == fVisNew)
 		return;
 	fVisible = fVisNew;
-	Layout();
-	if (puiParent)
+	if (puiParent) {
+		puiParent->Layout();
 		puiParent->Redraw();
+	}
+	else {
+		Layout();
+		Redraw();
+	}
 }
 
 
