@@ -21,7 +21,7 @@
  */
 
 
-UIPL::UIPL(SPARGMV* pspargmv, PL* ppl, CPC cpc) : UI(pspargmv), ppl(ppl), cpc(cpc)
+UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), cpc(cpc), ppl(NULL)
 {
 }
 
@@ -80,7 +80,7 @@ void UIGC::Layout(void)
 }
 
 
-UIGC::UIGC(SPARGMV* pspargmv) : UI(pspargmv)
+UIGC::UIGC(UIML* puiml) : UI(puiml)
 {
 	pbtnResign = new BTNIMG(this, cmdResign, RCF(0,0,0,0), idbWhiteFlag);
 	pbtnOfferDraw = new BTNIMG(this, cmdOfferDraw, RCF(0,0,0,0), idbHandShake);
@@ -119,7 +119,7 @@ void UICLOCK::DiscardRsrcClass(void)
 }
 
 
-UICLOCK::UICLOCK(SPARGMV* pspargmv, CPC cpc) : UI(pspargmv), ga(pspargmv->ga), cpc(cpc)
+UICLOCK::UICLOCK(UIML* puiml, CPC cpc) : UI(puiml), ga(puiml->ga), cpc(cpc)
 {
 }
 
@@ -240,7 +240,7 @@ void UIGO::DiscardRsrcClass(void)
 }
 
 
-UIGO::UIGO(SPARGMV* pspargmv, bool fVisible) : UI(pspargmv, fVisible), ga(pspargmv->ga)
+UIGO::UIGO(UIML* puiml, bool fVisible) : UI(puiml, fVisible), ga(puiml->ga)
 {
 }
 
@@ -318,39 +318,39 @@ void UIGO::Draw(const RCF* prcfUpdate)
 
 /*
  *
- *	SPARGMV class implementation
+ *	UIML class implementation
  *
  *	Move list implementation
  *
  */
 
 
-SPARGMV::SPARGMV(GA* pga) : SPAS(pga), imvSel(0)
+UIML::UIML(GA* pga) : SPAS(pga), imvSel(0)
 {
 	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
 	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
-	mpcpcpuipl[cpcWhite] = new UIPL(this, NULL, cpcWhite);
-	mpcpcpuipl[cpcBlack] = new UIPL(this, NULL, cpcBlack);
+	mpcpcpuipl[cpcWhite] = new UIPL(this, cpcWhite);
+	mpcpcpuipl[cpcBlack] = new UIPL(this, cpcBlack);
 	puigo = new UIGO(this, false);
 	puigc = new UIGC(this);
 }
 
 
-SPARGMV::~SPARGMV(void)
+UIML::~UIML(void)
 {
 }
 
 
-IDWriteTextFormat* SPARGMV::ptfList;
+IDWriteTextFormat* UIML::ptfList;
 
 
-/*	SPARGMV::CreateRsrcClass
+/*	UIML::CreateRsrcClass
  *
  *	Creates the drawing resources for displaying the move list screen
  *	panel. Note that this is a static routine working on global static
  *	resources that are shared by all instances of this class.
  */
-void SPARGMV::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UIML::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptfList)
 		return;
@@ -367,12 +367,12 @@ void SPARGMV::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 }
 
 
-/*	SPARGMV::DiscardRsrcClass
+/*	UIML::DiscardRsrcClass
  *
  *	Deletes all resources associated with this screen panel. This is a
  *	static routine, and works on static class globals.
  */
-void SPARGMV::DiscardRsrcClass(void)
+void UIML::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptfList);
 	UIGC::DiscardRsrcClass();
@@ -381,11 +381,11 @@ void SPARGMV::DiscardRsrcClass(void)
 }
 
 
-float SPARGMV::mpcoldxf[] = { 40.0f, 70.0f, 70.0f, 20.0f };
-float SPARGMV::dyfList = 20.0f;
+float UIML::mpcoldxf[] = { 40.0f, 70.0f, 70.0f, 20.0f };
+float UIML::dyfList = 20.0f;
 
 
-float SPARGMV::XfFromCol(int col) const
+float UIML::XfFromCol(int col) const
 {
 	assert(col >= 0 && col < CArray(mpcoldxf) + 1);
 	float xf = 0;
@@ -395,36 +395,36 @@ float SPARGMV::XfFromCol(int col) const
 }
 
 
-/*	SPARGMV::DxfFromCol
+/*	UIML::DxfFromCol
  *
  *	Returns the width of the col column in the move list
  */
-float SPARGMV::DxfFromCol(int col) const
+float UIML::DxfFromCol(int col) const
 {
 	assert(col >= 0 && col < CArray(mpcoldxf));
 	return mpcoldxf[col];
 }
 
 
-/*	SPARGMV::RcfFromCol
+/*	UIML::RcfFromCol
  *
  *	Returns the rectangle a for a specific column and row in the move
  *	list. yf is the top of the rectangle and is typically computed relative
  *	to the content rectangle, which is in panel coordinates.
  */
-RCF SPARGMV::RcfFromCol(float yf, int col) const
+RCF UIML::RcfFromCol(float yf, int col) const
 {
 	float xf = XfFromCol(col);
 	return RCF(xf, yf, xf + DxfFromCol(col), yf + dyfList);
 }
 
 
-/*	SPARGMV::Layout
+/*	UIML::Layout
  *
  *	Layout helper for placing the move list panel on the game screen.
  *	We basically position it to the right of the board panel.
  */
-void SPARGMV::Layout(void)
+void UIML::Layout(void)
 {
 	/*	position the top clocks and player names */
 
@@ -452,7 +452,7 @@ void SPARGMV::Layout(void)
 }
 
 
-void SPARGMV::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
+void UIML::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
 {
 	if (pui == NULL || !pui->FVisible())
 		return;
@@ -468,18 +468,18 @@ void SPARGMV::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
 }
 
 
-/*	SPARGMV::Draw
+/*	UIML::Draw
  *
  *	Draws the move list screen panel, which includes a top header box and
  *	a scrollable move list
  */
-void SPARGMV::Draw(const RCF* prcfUpdate)
+void UIML::Draw(const RCF* prcfUpdate)
 {
 	SPAS::Draw(prcfUpdate); // draws content area of the scrollable area
 }
 
 
-void SPARGMV::SetPl(CPC cpc, PL* ppl)
+void UIML::SetPl(CPC cpc, PL* ppl)
 {
 	mpcpcpuipl[cpc]->SetPl(ppl);
 }
@@ -491,7 +491,7 @@ void SPARGMV::SetPl(CPC cpc, PL* ppl)
  *	are relative to the content rectangle, which is in turn relative to
  *	the panel.
  */
-RCF SPARGMV::RcfFromImv(int imv) const
+RCF UIML::RcfFromImv(int imv) const
 {
 	int rw = imv / 2;
 	float yf = RcfContent().top + rw * dyfList;
@@ -499,12 +499,12 @@ RCF SPARGMV::RcfFromImv(int imv) const
 }
 
 
-/*	SPARGMV::DrawContent
+/*	UIML::DrawContent
  *
  *	Draws the content of the scrollable part of the move list screen
  *	panel.
  */
-void SPARGMV::DrawContent(const RCF& rcfCont)
+void UIML::DrawContent(const RCF& rcfCont)
 {
 	BDG bdgT(bdgInit);
 	float yfCont = RcfContent().top;
@@ -519,34 +519,34 @@ void SPARGMV::DrawContent(const RCF& rcfCont)
 }
 
 
-/*	SPARGMV::SetSel
+/*	UIML::SetSel
  *
  *	Sets the selection
  */
-void SPARGMV::SetSel(int imv)
+void UIML::SetSel(int imv)
 {
 	imvSel = imv;
 	Redraw();
 }
 
 
-/*	SPARGMV::DrawSel
+/*	UIML::DrawSel
  *
  *	Draws the selection in the move list.
  */
-void SPARGMV::DrawSel(int imv)
+void UIML::DrawSel(int imv)
 {
 }
 
 
-/*	SPARGMV::DrawAndMakeMv
+/*	UIML::DrawAndMakeMv
  *
  *	Draws the text of an individual move in the rectangle given, using the
  *	given board bdg and move mv, and makes the move on the board. Note that
  *	the text of the decoded move is dependent on the board to take advantage
  *	of shorter text when there are no ambiguities.
  */
-void SPARGMV::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
+void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 {
 	rcf.left += 4.0f;
 	rcf.top += 4.0f;
@@ -557,12 +557,12 @@ void SPARGMV::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 }
 
 
-/*	SPARGMV::DrawMoveNumber
+/*	UIML::DrawMoveNumber
  *
  *	Draws the move number in the move list. Followed by a period. Rectangle
  *	to draw the text within is supplied by caller.
  */
-void SPARGMV::DrawMoveNumber(RCF rcf, int imv)
+void UIML::DrawMoveNumber(RCF rcf, int imv)
 {
 	rcf.top += 4.0f;
 	rcf.bottom -= 2.0f;
@@ -576,7 +576,7 @@ void SPARGMV::DrawMoveNumber(RCF rcf, int imv)
 }
 
 
-void SPARGMV::NewGame(void)
+void UIML::NewGame(void)
 {
 	puigo->Show(false);
 	bdgInit = ga.bdg;
@@ -584,29 +584,29 @@ void SPARGMV::NewGame(void)
 }
 
 
-/*	SPARGMV::EndGame
+/*	UIML::EndGame
  *
  *	Notification that a game is over and we should display the end
  *	game result sub-panel
  */
-void SPARGMV::EndGame(void)
+void UIML::EndGame(void)
 {
 	puigo->Show(true);
 }
 
 
-/*	SPARGMV::UpdateContSize
+/*	UIML::UpdateContSize
  *
  *	Keeps the content rectangle of the move list content in sync with the data
  *	in the move list
  */
-void SPARGMV::UpdateContSize(void)
+void UIML::UpdateContSize(void)
 {
 	SPAS::UpdateContSize(PTF(RcfContent().DxfWidth(), ga.bdg.rgmvGame.size() / 2 * dyfList + dyfList));
 }
 
 
-bool SPARGMV::FMakeVis(int imv)
+bool UIML::FMakeVis(int imv)
 {
 	return SPAS::FMakeVis(RcfContent().top + (imv / 2) * dyfList, dyfList);
 }

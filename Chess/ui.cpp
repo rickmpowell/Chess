@@ -28,6 +28,7 @@ BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
 BRS* UI::pbrText;
 TF* UI::ptfText;
+TF* UI::ptfList;
 
 
 void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
@@ -42,6 +43,10 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
 		&ptfText);
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptfList);
 	BTNCH::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 }
 

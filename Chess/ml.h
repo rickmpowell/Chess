@@ -23,7 +23,7 @@
  */
 
 
-class SPARGMV;
+class UIML;
 class GA;
 
 class UICLOCK : public UI
@@ -37,33 +37,12 @@ public:
 	static void DiscardRsrcClass(void);
 
 public:
-	UICLOCK(SPARGMV* pspargmv, CPC cpc);
+	UICLOCK(UIML* puiml, CPC cpc);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void DrawColon(RCF& rcf, unsigned frac) const;
 	bool FTimeOutWarning(DWORD tm) const;
 };
 
-
-/*
- *
- *	UIPL
- * 
- *	Player name UI element in the move list. Pretty simple control.
- * 
- */
-
-class PL;
-
-class UIPL : public UI
-{
-private:
-	PL* ppl;
-	CPC cpc;
-public:
-	UIPL(SPARGMV* pspargmv, PL* ppl, CPC cpc);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
-	void SetPl(PL* pplNew);
-};
 
 
 /*
@@ -86,7 +65,7 @@ public:
 	static void DiscardRsrcClass(void);
 
 public:
-	UIGC(SPARGMV* pspargmv);
+	UIGC(UIML* puiml);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void Layout(void);
 };
@@ -112,14 +91,14 @@ public:
 	static void DiscardRsrcClass(void);
 
 public:
-	UIGO(SPARGMV* pspargmv, bool fVisible);
+	UIGO(UIML* puiml, bool fVisible);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 };
 
 
 /*
  *
- *	SPARGMV class
+ *	UIML class
  * 
  *	The move list screen panel
  * 
@@ -128,7 +107,7 @@ public:
 
 class PL;
 
-class SPARGMV : public SPAS
+class UIML : public SPAS
 {
 	friend class UIPL;
 	friend class UICLOCK;
@@ -152,8 +131,8 @@ class SPARGMV : public SPAS
 	UIGC* puigc;
 
 public:
-	SPARGMV(GA* pga);
-	~SPARGMV(void);
+	UIML(GA* pga);
+	~UIML(void);
 
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);

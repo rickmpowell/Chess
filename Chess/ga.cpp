@@ -110,110 +110,7 @@ void SPA::Draw(const RCF* prcfUpdate)
 }
 
 
-/*
- *
- *	SPATI class implementation
- * 
- *	The title screen panel
- * 
- */
 
-
-TF* SPATI::ptfPlayers;
-BMP* SPATI::pbmpLogo;
-
-
- /*	SPATI::CreateRsrcClass
-  *
-  *	Creates the drawing resources for displaying the title screen
-  *	panel. Note that this is a static routine working on global static
-  *	resources that are shared by all instances of this class.
-  */
-void SPATI::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (ptfPlayers)
-		return;
-
-	/* fonts */
-
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptfPlayers);
-
-	pbmpLogo = PbmpFromPngRes(idbLogo, pdc, pfactwic);
-}
-
-
-/*	SPATI::DiscardRsrcClass
- *
- *	Deletes all resources associated with this screen panel. This is a
- *	static routine, and works on static class globals.
- */
-void SPATI::DiscardRsrcClass(void)
-{
-	SafeRelease(&ptfPlayers);
-	SafeRelease(&pbmpLogo);
-}
-
-
-SPATI::SPATI(GA* pga) : SPA(pga), szText(L"")
-{
-}
-
-
-void SPATI::Draw(const RCF* prcfUpdate)
-{
-	SPA::Draw(prcfUpdate);
-	
-	/* draw the logo */
-
-	RCF rcf = RcfInterior();
-	D2D1_SIZE_F ptf = pbmpLogo->GetSize();
-	RCF rcfLogo(0, 0, ptf.width, ptf.height);
-	rcf.top = 10.0f;
-	rcf.left = 20.0f;
-	rcf.bottom = 80.0f;
-	rcf.right = rcf.left + ptf.width * 70.0f / ptf.height;
-	DrawBmp(rcf, pbmpLogo, rcfLogo, 1.0f);
-	
-	/* draw the type of game we're playing */
-
-	rcf = RcfInterior();
-	rcf.left += 80.f;
-	rcf.top += 25.0f;
-	DrawSz(wstring(L"Rapid \x2022 10+0 \x2022 Casual \x2022 Local Computer"), ptfPlayers, rcf);
-
-	/* draw the players */
-
-	PL* pplWhite = ga.PplFromCpc(cpcWhite);
-	PL* pplBlack = ga.PplFromCpc(cpcBlack);
-	rcf.top = 90.0f;
-	rcf.left = 12.0f;
-	ptfText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	DrawSz(wstring(L"\x26aa   ")+pplWhite->SzName(), ptfPlayers, rcf);
-	rcf.top += 25.0f;
-	DrawSz(wstring(L"\x26ab   ")+pplBlack->SzName(), ptfPlayers, rcf);
-
-	rcf.left = 0;
-	rcf.top += 25.0f;
-	rcf.bottom = rcf.top + 1.0f;
-	FillRcf(rcf, pbrGridLine);
-
-	if (szText.size() <= 0)
-		return;
-
-	rcf = RcfInterior();
-	rcf.top = rcf.bottom - 36.0f;
-	DrawSz(szText, ptfTextSm, rcf);
-}
-
-
-void SPATI::SetText(const wstring& sz)
-{
-	szText = sz;
-	Redraw();
-}
 
 
 /*
@@ -235,9 +132,9 @@ void GA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 
 	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 	SPA::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	SPATI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	UITI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 	UIBD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	SPARGMV::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	UIML::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 }
 
 
@@ -245,18 +142,20 @@ void GA::DiscardRsrcClass(void)
 {
 	UI::DiscardRsrcClass();
 	SPA::DiscardRsrcClass();
-	SPATI::DiscardRsrcClass();
+	UITI::DiscardRsrcClass();
 	UIBD::DiscardRsrcClass();
-	SPARGMV::DiscardRsrcClass();
+	UIML::DiscardRsrcClass();
 	SafeRelease(&pbrDesktop);
 }
 
 
 GA::GA(APP& app) : UI(NULL), app(app), 
-	spati(this), uibd(this), spargmv(this),
+	uiti(this), uibd(this), uiml(this),
 	puiCapt(NULL), puiHover(NULL)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
+	tmLast = 0L;
+	mpcpctmClock[cpcWhite] = mpcpctmClock[cpcBlack] = 0;
 }
 
 
@@ -278,7 +177,8 @@ void GA::SetPl(CPC cpc, PL* ppl)
 	if (mpcpcppl[cpc])
 		delete mpcpcppl[cpc];
 	mpcpcppl[cpc] = ppl;
-	spargmv.SetPl(cpc, ppl);
+	uiml.SetPl(cpc, ppl);
+	uiti.SetPl(cpc, ppl);
 }
 
 
@@ -341,8 +241,8 @@ void GA::PresentSwch(void) const
  */
 void GA::Layout(void)
 {
-	RCF rcf(10.0f, 10.0f, 220.0f, 200.0f);
-	spati.SetBounds(rcf);
+	RCF rcf(10.0f, 10.0f, 220.0f, 240.0f);
+	uiti.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
 	rcf.bottom = rcfBounds.bottom - 40.0f;
@@ -351,7 +251,7 @@ void GA::Layout(void)
 
 	rcf.left = rcf.right + 10.0f;
 	rcf.right = rcf.left + 200.0f;
-	spargmv.SetBounds(rcf);
+	uiml.SetBounds(rcf);
 }
 
 
@@ -363,7 +263,7 @@ void GA::NewGame(void)
 {
 	bdg.NewGame();
 	uibd.NewGame();
-	spargmv.NewGame();
+	uiml.NewGame();
 	StartGame();
 }
 
@@ -379,7 +279,7 @@ void GA::StartGame(void)
 void GA::EndGame(void)
 {
 	app.DestroyTimer(tidClock);
-	spargmv.EndGame();
+	uiml.EndGame();
 }
 
 
@@ -440,7 +340,7 @@ void GA::Timer(UINT tid, DWORD tmCur)
 	}
 	mpcpctmClock[bdg.cpcToMove] -= dtm;
 	tmLast = tmCur;
-	spargmv.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
+	uiml.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
 }
 
 
@@ -452,7 +352,7 @@ void GA::StartClock(CPC cpc, DWORD tmCur)
 void GA::PauseClock(CPC cpc, DWORD tmCur)
 {
 	mpcpctmClock[cpc] -= tmCur - tmLast;
-	spargmv.mpcpcpuiclock[cpc]->Redraw();
+	uiml.mpcpcpuiclock[cpc]->Redraw();
 }
 
 
@@ -478,8 +378,8 @@ void GA::MakeMv(MV mv, bool fRedraw)
 	if (bdg.gs != GS::Playing)
 		EndGame();
 	if (fRedraw) {
-		spargmv.UpdateContSize();
-		if (!spargmv.FMakeVis((int)bdg.rgmvGame.size()-1))
+		uiml.UpdateContSize();
+		if (!uiml.FMakeVis((int)bdg.rgmvGame.size()-1))
 			Redraw();
 	}
 }
@@ -494,7 +394,7 @@ void GA::UndoMv(bool fRedraw)
 {
 	uibd.UndoMv(fRedraw);
 	if (fRedraw)
-		spargmv.Redraw();
+		uiml.Redraw();
 }
 
 
@@ -507,5 +407,5 @@ void GA::RedoMv(bool fRedraw)
 {
 	uibd.RedoMv(fRedraw);
 	if (fRedraw)
-		spargmv.Redraw();
+		uiml.Redraw();
 }

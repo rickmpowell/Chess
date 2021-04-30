@@ -1,3 +1,4 @@
+  Hook up TI elements to real information from the GA
   Implement disabled menu items hooked to the CMD
   Implement disabled buttons that hook to CMD
   Rename SPA to UI
@@ -20,19 +21,19 @@
   Implement click-from/click-to mouse move interface
   Implement circle annotations on mouse right click
   Implement arrow annotations on mouse right click/drag
-  Optimize redraw on SPARGMV to only draw changes
-  Optimize redraw of SPABD
-  Implement selection in SPARGMV
-  Implement mouse interface to change selection on SPARGMV
-  Implement keyboard interface to change selection on SPARGMV
+  Optimize redraw on UIML to only draw changes
+  Optimize redraw of UIBD
+  Implement selection in UIML
+  Implement mouse interface to change selection on UIML
+  Implement keyboard interface to change selection on UIML
   Implement dumb AI for computer play
   Scale text on board labels to size of board
   Add shadows on screen panels
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
   Add tooltip for items in control list
-  Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
-  Change SPATI items to be separate UI elements
+  Promoted pawn moves on UIBD are displayed with dark circle instead of light circle
+* Change SPATI items to be separate UI elements
 * Hovering and tracking feedback over image buttons
 * Remove DxWidth and DyHeight from SPA
 * Game Over panel isn't working
@@ -43,9 +44,9 @@
 * Better quality scaling on small boards
 * Add UI for resigning
 * Add UI for offering draw
-* Add controls to SPARGMV for resigning/offering draws
+* Add controls to UIML for resigning/offering draws
 * Move to Direct2D 1.1 and use ID2D1DeviceContext
-* Change player names in the SPARGMV to use UI elements
+* Change player names in the UIML to use UI elements
 * Lock out move UI when game is over - necessary for non-stalemate draws and resignation
 * Implement draws by 3-move repetition
 * Implement draws by 50 moves without progress

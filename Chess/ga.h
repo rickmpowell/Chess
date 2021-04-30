@@ -13,6 +13,8 @@
 #include "ui.h"
 #include "ml.h"
 #include "uibd.h"
+#include "ti.h"
+#include "bd.h"
 
 
 /*
@@ -20,27 +22,6 @@
  */
 
 const UINT tidClock = 1;
-
-
-
-class SPATI : public SPA
-{
-	wstring szText;
-
-public:
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
-	static TF* ptfPlayers;
-	static BMP* pbmpLogo;
-
-public:
-	SPATI(GA* pga);
-	virtual void Draw(const RCF* prcfUpdate=NULL);
-	void SetText(const wstring& sz);
-};
-
-
-#include "bd.h"
 
 
 /*
@@ -79,9 +60,9 @@ class APP;
 class GA : public UI
 {
 	friend class SPA;
-	friend class SPATI;
+	friend class UITI;
 	friend class UIBD;
-	friend class SPARGMV;
+	friend class UIML;
 
 protected:
 	static BRS* pbrDesktop;
@@ -90,9 +71,9 @@ public:
 	static void DiscardRsrcClass(void);
 
 	APP& app;
-	SPATI spati;
+	UITI uiti;
 	UIBD uibd;
-	SPARGMV spargmv;
+	UIML uiml;
 	UI* puiCapt;
 	UI* puiHover;
 

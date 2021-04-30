@@ -152,6 +152,7 @@
     <ClInclude Include="pl.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ti.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="uibd.h" />
   </ItemGroup>
@@ -163,6 +164,7 @@
     <ClCompile Include="parsedecode.cpp" />
     <ClCompile Include="pl.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="ti.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="uibd.cpp" />
   </ItemGroup>

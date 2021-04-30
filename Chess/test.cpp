@@ -192,7 +192,7 @@ int GA::PlayPGNFile(const WCHAR szFile[])
 			wstring szVal(wcsrchr(szFile, L'\\')+1);
 			szVal += L"\nGame ";
 			szVal += to_wstring(igame + 1);
-			spati.SetText(szVal);
+			uiti.SetText(szVal);
 			if (PlayPGNGame(istkpgn) != 1)
 				break;
 		}
@@ -393,7 +393,7 @@ void GA::HandleTag(int tkpgn, const string& szVal)
 	{
 		wstring wszVal(szVal.begin(), szVal.end());
 		mpcpcppl[tkpgn == tkpgnBlack ? cpcBlack : cpcWhite]->SetName(wszVal);
-		spati.Redraw();
+		uiti.Redraw();
 		break;
 	}
 	case tkpgnEvent:
@@ -446,7 +446,7 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 			wstring szVal(wcsrchr(szFile, L'\\') + 1);
 			szVal += L"\nGame ";
 			szVal += to_wstring(igame + 1);
-			spati.SetText(szVal);
+			uiti.SetText(szVal);
 			if (PlayPGNGame(istkpgn) != 1)
 				break;
 			UndoFullGame();
@@ -469,6 +469,6 @@ void GA::UndoFullGame(void)
 {
 	while (bdg.imvCur >= 0) {
 		UndoMv(true);
-		spargmv.Redraw();
+		uiml.Redraw();
 	}
 }

@@ -43,6 +43,7 @@ protected:
 	static BRS* pbrGridLine;
 	static BRS* pbrText;
 	static TF* ptfText;
+	static TF* ptfList;
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
