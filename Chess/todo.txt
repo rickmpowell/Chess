@@ -1,7 +1,5 @@
   Implement disabled menu items hooked to the CMD
   Implement disabled buttons that hook to CMD
-  Hovering and tracking feedback over image buttons
-  Remove DxWidth and DyHeight from SPA
   Rename SPA to UI
   Dragging pieces outside the board rectangle doesn't redraw the piece right
   Legal move circles disappear when dragging
@@ -35,6 +33,8 @@
   Add tooltip for items in control list
   Promoted pawn moves on SPABD are displayed with dark circle instead of light circle
   Change SPATI items to be separate UI elements
+* Hovering and tracking feedback over image buttons
+* Remove DxWidth and DyHeight from SPA
 * Game Over panel isn't working
 * Assert when dragging and upclick off control
 * Remove dependency on app in all the UIs

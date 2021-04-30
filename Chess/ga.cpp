@@ -110,23 +110,6 @@ void SPA::Draw(const RCF* prcfUpdate)
 }
 
 
-/*	SPA::DxWidth
- *
- *	Virtual function for returning the panel width, which is used for our simple
- *	panel layout system. May be ignored for certain layout options.
- */
-float SPA::DxWidth(void) const
-{
-	return 250.0f;
-}
-
-
-float SPA::DyHeight(void) const
-{
-	return 250.0f;
-}
-
-
 /*
  *
  *	SPATI class implementation

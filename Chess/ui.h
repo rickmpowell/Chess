@@ -105,6 +105,7 @@ public:
 	virtual void DiscardRsrc(void);
 
 	void FillRcf(RCF rcf, BR* pbr) const;
+	virtual void FillRcfBack(RCF rcf) const;
 	void FillEllf(ELLF ellf, BR* pbr) const;
 	void DrawSz(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
 	void DrawSzCenter(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
@@ -137,8 +138,6 @@ public:
 	SPA(GA* pga);
 	~SPA(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual float DxWidth(void) const;
-	virtual float DyHeight(void) const;
 	void SetShadow(void);
 
 };

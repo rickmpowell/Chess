@@ -98,10 +98,9 @@ public:
 	void HiliteLegalMoves(SQ sq);
 	RCF RcfFromSq(SQ sq) const;
 
-	void FlipBoard(CPC cpcNew);
+	virtual void FillRcfBack(RCF rcf) const;
 
-	virtual float DxWidth(void) const;
-	virtual float DyHeight(void) const;
+	void FlipBoard(CPC cpcNew);
 
 	HTBD HtbdHitTest(PTF ptf, SQ* psq) const;
 	virtual void StartLeftDrag(PTF ptf);

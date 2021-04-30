@@ -167,8 +167,6 @@ public:
 	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);
-	virtual float DxWidth(void) const;
-	virtual float DyHeight(void) const;
 
 	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
 	void DrawMoveNumber(RCF rcf, int imv);

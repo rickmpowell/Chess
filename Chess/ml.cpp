@@ -576,21 +576,6 @@ void SPARGMV::DrawMoveNumber(RCF rcf, int imv)
 }
 
 
-float SPARGMV::DxWidth(void) const
-{
-	float dxf = 0;
-	for (int col = 0; col < CArray(mpcoldxf); col++)
-		dxf += mpcoldxf[col];
-	return dxf;
-}
-
-
-float SPARGMV::DyHeight(void) const
-{
-	return ga.uibd.DyHeight();
-}
-
-
 void SPARGMV::NewGame(void)
 {
 	puigo->Show(false);

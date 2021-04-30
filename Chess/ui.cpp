@@ -540,6 +540,15 @@ void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 }
 
 
+void UI::FillRcfBack(RCF rcf) const
+{
+	if (puiParent == NULL)
+		FillRcf(rcf, pbrBack);
+	else
+		puiParent->FillRcfBack(RcfParentFromLocal(rcf));
+}
+
+
 /*	UI::FillEllf
  *
  *	Helper function for filling an ellipse with a brush. Rectangle is in
@@ -685,8 +694,10 @@ void BTNCH::Draw(const RCF* prcfUpdate)
 	WCHAR sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
-	pbrsButton->SetColor(ColorF((fHilite+fTrack)*0.5f, 0.0, 0.0));
-	DrawSz(sz, ptfButton, RcfInterior(), pbrsButton);
+	RCF rcfTo = RcfInterior();
+	FillRcfBack(rcfTo);
+	pbrsButton->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
+	DrawSz(sz, ptfButton, rcfTo, pbrsButton);
 }
 
 BTNIMG::BTNIMG(UI* puiParent, int cmd, RCF rcf, int idb) : BTN(puiParent, cmd, rcf), idb(idb), pbmp(NULL)
@@ -700,8 +711,18 @@ BTNIMG::~BTNIMG(void)
 
 void BTNIMG::Draw(const RCF* prcfUpdate)
 {
-	DrawBmp(RcfInterior(), pbmp, RCF(PTF(0, 0), pbmp->GetSize()));
+	DC* pdc = AppGet().pdc;
+	pdc->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+	RCF rcfTo = RcfInterior();
+	FillRcfBack(rcfTo);
+	rcfTo.Offset(rcfBounds.PtfTopLeft());
+	RCF rcfFrom = RCF(PTF(0, 0), pbmp->GetSize());
+	D2D1_COLOR_F colorSav = pbrText->GetColor();
+	pbrText->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
+	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcfTo, rcfFrom);
+	pbrText->SetColor(colorSav);
 }
+
 
 void BTNIMG::CreateRsrc(void)
 {

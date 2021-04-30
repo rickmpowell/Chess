@@ -517,6 +517,14 @@ public:
 };
 
 
+/*
+ *
+ *  CMDROTATEBOARD command
+ * 
+ *  Command to rotate the orientation of the screen board.
+ */
+
+
 class CMDROTATEBOARD : public CMD
 {
 public:
@@ -528,6 +536,47 @@ public:
         return 1;
     }
 };
+
+
+/*
+ *
+ *  CMDRESIGN command
+ * 
+ *  Command for the player with the current move to resign
+ * 
+ */
+class CMDRESIGN : public CMD
+{
+public:
+    CMDRESIGN(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDOFFERDRAW
+ * 
+ *  Command for the player with the move to offer a draw to the other player.
+ * 
+ */
+
+
+class CMDOFFERDRAW : public CMD
+{
+public:
+    CMDOFFERDRAW(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        return 1;
+    }
+};
+
 
 
 /*
@@ -593,6 +642,8 @@ void APP::InitCmdList(void)
     cmdlist.Add(cmdUndoMove, new CMDUNDOMOVE(*this));
     cmdlist.Add(cmdRedoMove, new CMDREDOMOVE(*this));
     cmdlist.Add(cmdRotateBoard, new CMDROTATEBOARD(*this));
+    cmdlist.Add(cmdOfferDraw, new CMDOFFERDRAW(*this));
+    cmdlist.Add(cmdResign, new CMDRESIGN(*this));
 }
 
 

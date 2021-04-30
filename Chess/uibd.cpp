@@ -151,26 +151,6 @@ void UIBD::Layout(void)
 }
 
 
-/*	UIBD::DxWidth
- *
- *	Returns the width of the board screen panel. Used for screen layout.
- */
-float UIBD::DxWidth(void) const
-{
-	return (ga.rcfBounds.bottom - ga.rcfBounds.top - 10.0f - 50.0f);
-}
-
-
-/*	UIBD::DyHeight
- *
- *	Returns the height of the board screen panel. Used for screen layout.
- */
-float UIBD::DyHeight(void) const
-{
-	return DxWidth();
-}
-
-
 /*	UIBD::NewGame
  *
  *	Starts a new game on the screen board
@@ -437,6 +417,13 @@ void UIBD::DrawDragPc(const RCF& rcf)
 {
 	assert(!sqDragInit.FIsNil());
 	DrawPc(rcf, 1.0f, ga.bdg.mpsqtpc[sqDragInit]);
+}
+
+
+void UIBD::FillRcfBack(RCF rcf) const
+{
+	/* TODO: should probably draw the entire board (squares and labels) here */
+	FillRcf(rcf, pbrLight);
 }
 
 
