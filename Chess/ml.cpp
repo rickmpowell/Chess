@@ -28,6 +28,7 @@ UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), cpc(cpc), ppl(NULL)
 
 void UIPL::Draw(const RCF* prcfUpdate)
 {
+	FillRcf(*prcfUpdate, pbrBack);
 	ptfText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	wstring szColor = cpc == cpcWhite ? L"\x26aa  " : L"\x26ab  ";
 	if (ppl)
@@ -69,11 +70,11 @@ void UIGC::Layout(void)
 	RCF rcf = RcfInterior();
 	rcf.top += 4.0f;
 	rcf.bottom -= 4.0f;
-	rcf.left += 20.0f;
+	rcf.left += 32.0f;
 	SIZF sizf = pbtnResign->SizfImg();
 	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
 	pbtnResign->SetBounds(rcf);
-	rcf.left = rcf.right + 20.0f;
+	rcf.left = rcf.right + 62.0f;
 	sizf = pbtnOfferDraw->SizfImg();
 	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
 	pbtnOfferDraw->SetBounds(rcf);
@@ -89,6 +90,7 @@ UIGC::UIGC(UIML* puiml) : UI(puiml)
 
 void UIGC::Draw(const RCF* prcfUpdate)
 {
+	FillRcf(*prcfUpdate, pbrBack);
 }
 
 
@@ -136,9 +138,7 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 		pbrAltBack->SetColor(ColorF(1.0f, 0.9f, 0.9f));
 	FillRcf(rcf, pbrAltBack);
 	pbrAltBack->SetColor(coSav);
-	FillRcf(RCF(rcf.left, rcf.top, rcf.right, rcf.top + 1), pbrGridLine);
-	FillRcf(RCF(rcf.left, rcf.bottom - 1, rcf.right, rcf.bottom), pbrGridLine);
-	rcf.top += 11.0f;
+	rcf.top += 12.0f;
 
 	/* break down time into parts */
 
@@ -248,12 +248,13 @@ UIGO::UIGO(UIML* puiml, bool fVisible) : UI(puiml, fVisible), ga(puiml->ga)
 void UIGO::Draw(const RCF* prcfUpdate)
 {
 	RCF rcfEndType = RcfInterior();
-	rcfEndType.bottom = rcfEndType.top + 20.0f;
-	rcfEndType.Offset(0, 20.0f);
+	FillRcf(rcfEndType, pbrBack);
+	rcfEndType.bottom = rcfEndType.top + 36.0f;
+	rcfEndType.Offset(0, 24.0f);
 	RCF rcfResult = rcfEndType;
-	rcfResult.Offset(0, 20.0f);
+	rcfResult.Offset(0, 24.0f);
 	RCF rcfScore = rcfResult;
-	rcfScore.Offset(0, 20.0f);
+	rcfScore.Offset(0, 24.0f);
 	CPC cpcWin = cpcNil;
 
 	switch (ga.bdg.gs) {
@@ -431,7 +432,7 @@ void UIML::Layout(void)
 	RCF rcf = RcfInterior();
 	RCF rcfCont = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true, 2.0f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true, 1.75f * dyfList);
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView ^ 1], rcf, true, 4.0f * dyfList);
 	rcfCont.top = rcf.bottom;
 
@@ -441,8 +442,8 @@ void UIML::Layout(void)
 	rcf.top = rcf.bottom;
 	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false, 1.75f * dyfList);
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false, 4.0f * dyfList);
+	AdjustUIRcfBounds(puigc, rcf, false, 1.5f * dyfList); 
 	AdjustUIRcfBounds(puigo, rcf, false, 6.0f * dyfList);
-	AdjustUIRcfBounds(puigc, rcf, false, 1.5f * dyfList);
 	rcfCont.bottom = rcf.top;
 
 	/* move list content is whatever is left */
@@ -465,6 +466,10 @@ void UIML::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
 		rcf.top = rcf.bottom - dyfHeight;
 	}
 	pui->SetBounds(rcf);
+	if (fTop)
+		rcf.bottom++;
+	else
+		rcf.top--;
 }
 
 
@@ -475,6 +480,7 @@ void UIML::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
  */
 void UIML::Draw(const RCF* prcfUpdate)
 {
+	FillRcf(*prcfUpdate, pbrGridLine);
 	SPAS::Draw(prcfUpdate); // draws content area of the scrollable area
 }
 

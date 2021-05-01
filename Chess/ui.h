@@ -224,10 +224,10 @@ public:
 
 	virtual void Draw(const RCF* prcfUpdate = NULL)
 	{
-		SPA::Draw(prcfUpdate);
 		/* just redraw the entire content area clipped to the view */
 		APP& app = AppGet();
 		app.pdc->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		FillRcf(RcfLocalFromGlobal(rcfView), pbrBack);
 		DrawContent(rcfCont);
 		app.pdc->PopAxisAlignedClip();
 		DrawScrollBar();

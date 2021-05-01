@@ -1,3 +1,11 @@
+  Add command to load PGN files and load specific games for analysis
+  Hook up resignation button
+  Add a UI for offering draws
+  UI for specifying player names
+  UI for choosing computer player
+  There is a weird hit test on the left edge of the board that is hitting squares three squares over
+  Center character in character buttons
+  Turn off rotate icon during rotation
   Hook up TI elements to real information from the GA
   Implement disabled menu items hooked to the CMD
   Implement disabled buttons that hook to CMD
@@ -31,8 +39,9 @@
   Add shadows on screen panels
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
-  Add tooltip for items in control list
+  Add tooltips for buttons
   Promoted pawn moves on UIBD are displayed with dark circle instead of light circle
+* Fix gridlines between panels in UIML
 * Change SPATI items to be separate UI elements
 * Hovering and tracking feedback over image buttons
 * Remove DxWidth and DyHeight from SPA
