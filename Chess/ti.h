@@ -74,7 +74,7 @@ class UITI : public SPA
 public:
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
-	static TF* ptfPlayers;
+	static TX* ptxPlayers;
 
 public:
 	UITI(GA* pga);

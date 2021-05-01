@@ -25,7 +25,7 @@ BRS* UIBD::pbrDark;
 BRS* UIBD::pbrBlack;
 BRS* UIBD::pbrAnnotation;
 BRS* UIBD::pbrHilite;
-TF* UIBD::ptfLabel;
+TX* UIBD::ptxLabel;
 BMP* UIBD::pbmpPieces;
 GEOM* UIBD::pgeomCross;
 GEOM* UIBD::pgeomArrowHead;
@@ -77,7 +77,7 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
-		&ptfLabel);
+		&ptxLabel);
 
 	/* bitmaps */
 
@@ -104,7 +104,7 @@ void UIBD::DiscardRsrcClass(void)
 	SafeRelease(&pbrBlack);
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
-	SafeRelease(&ptfLabel);
+	SafeRelease(&ptxLabel);
 	SafeRelease(&pbmpPieces);
 	SafeRelease(&pgeomCross);
 	SafeRelease(&pgeomArrowHead);
@@ -276,12 +276,12 @@ void UIBD::DrawFileLabels(void)
 	RCF rcf;
 	rcf.top = rcfSquares.bottom + 3.0f * dxyfBorder + dxyfBorder;
 	rcf.bottom = rcf.top + dyfLabel;
-	ptfLabel->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	ptxLabel->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	for (int file = 0; file < fileMax; file++) {
 		RCF rcfT(RcfFromSq(SQ(0, file)));
 		rcf.left = rcfT.left;
 		rcf.right = rcfT.right;
-		DrawSz(wstring(szLabel), ptfLabel, rcf, pbrDark);
+		DrawSz(wstring(szLabel), ptxLabel, rcf, pbrDark);
 		szLabel[0]++;
 	}
 }
@@ -299,7 +299,7 @@ void UIBD::DrawRankLabels(void)
 	szLabel[1] = 0;
 	for (int rank = 0; rank < rankMax; rank++) {
 		rcf.bottom = rcf.top + dxyfSquare;
-		DrawSz(wstring(szLabel), ptfLabel,
+		DrawSz(wstring(szLabel), ptxLabel,
 			RCF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
 			pbrDark);
 		rcf.top = rcf.bottom;
@@ -498,12 +498,17 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 
 void UIBD::FlipBoard(CPC cpcNew)
 {
+	/* assumes all children are visible */
+	for (UI* pui : rgpuiChild)
+		pui->Show(false);
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
 		ga.Redraw();
 	angle = 0.0f;
 	cpcPointOfView = cpcNew;
 	ga.Layout();
 	ga.Redraw();
+	for (UI* pui : rgpuiChild)
+		pui->Show(true);
 }
 
 

@@ -27,8 +27,8 @@ BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
 BRS* UI::pbrText;
-TF* UI::ptfText;
-TF* UI::ptfList;
+TX* UI::ptxText;
+TX* UI::ptxList;
 
 
 void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
@@ -42,11 +42,11 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
-		&ptfText);
+		&ptxText);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
-		&ptfList);
+		&ptxList);
 	BTNCH::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 }
 
@@ -57,7 +57,8 @@ void UI::DiscardRsrcClass(void)
 	SafeRelease(&pbrAltBack);
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
-	SafeRelease(&ptfText);
+	SafeRelease(&ptxList);
+	SafeRelease(&ptxText);
 }
 
 
@@ -571,19 +572,19 @@ void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
  *	Helper function for writing text on the screen panel. Rectangle is in
  *	local UI coordinates.
  */
-void UI::DrawSz(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
+void UI::DrawSz(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	AppGet().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptf, &rcf, pbr==NULL ? pbrText : pbr);
+	AppGet().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rcf, pbr==NULL ? pbrText : pbr);
 }
 
 
-void UI::DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1Brush* pbr) const
+void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
 {
-	DWRITE_TEXT_ALIGNMENT taSav = ptf->GetTextAlignment();
-	ptf->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-	DrawSz(sz, ptf, rcf, pbr);
-	ptf->SetTextAlignment(taSav);
+	DWRITE_TEXT_ALIGNMENT taSav = ptx->GetTextAlignment();
+	ptx->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	DrawSz(sz, ptx, rcf, pbr);
+	ptx->SetTextAlignment(taSav);
 }
 
 
@@ -592,10 +593,10 @@ void UI::DrawSzCenter(const wstring& sz, IDWriteTextFormat* ptf, RCF rcf, ID2D1B
  *	Helper function for drawing text on the screen panel. Rectangle is in local
  *	UI coordinates
  */
-void UI::DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr) const
+void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	AppGet().pdc->DrawText(rgch, (UINT32)cch, ptf, &rcf, pbr == NULL ? pbrText : pbr);
+	AppGet().pdc->DrawText(rgch, (UINT32)cch, ptx, &rcf, pbr == NULL ? pbrText : pbr);
 }
 
 
@@ -668,25 +669,25 @@ void BTN::MouseHover(PTF ptf, MHT mht)
 }
 
 
-TF* BTNCH::ptfButton;
+TX* BTNCH::ptxButton;
 BRS* BTNCH::pbrsButton;
 
 void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (ptfButton)
+	if (ptxButton)
 		return;
 
 	pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsButton);
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		24.0f, L"",
-		&ptfButton);
+		&ptxButton);
 }
 
 
 void BTNCH::DiscardRsrcClass(void)
 {
-	SafeRelease(&ptfButton);
+	SafeRelease(&ptxButton);
 	SafeRelease(&pbrsButton);
 }
 
@@ -702,7 +703,8 @@ void BTNCH::Draw(const RCF* prcfUpdate)
 	RCF rcfTo = RcfInterior();
 	FillRcfBack(rcfTo);
 	pbrsButton->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
-	DrawSz(sz, ptfButton, rcfTo, pbrsButton);
+	rcfTo.top -= 2.f;
+	DrawSzCenter(sz, ptxButton, rcfTo, pbrsButton);
 }
 
 BTNIMG::BTNIMG(UI* puiParent, int cmd, RCF rcf, int idb) : BTN(puiParent, cmd, rcf), idb(idb), pbmp(NULL)

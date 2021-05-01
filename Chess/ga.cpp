@@ -24,7 +24,7 @@
 
 
 BRS* SPA::pbrTextSel;
-TF* SPA::ptfTextSm;
+TX* SPA::ptxTextSm;
 
 
 /*	SPA::CreateRsrcClass
@@ -40,7 +40,7 @@ void SPA::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
-		&ptfTextSm);
+		&ptxTextSm);
 }
 
 
@@ -48,7 +48,7 @@ void SPA::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrTextSel); 
 	SafeRelease(&pbrGridLine);
-	SafeRelease(&ptfTextSm);
+	SafeRelease(&ptxTextSm);
 }
 
 

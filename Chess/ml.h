@@ -31,7 +31,7 @@ class UICLOCK : public UI
 protected:
 	GA& ga;
 	CPC cpc;
-	static TF* ptfClock;
+	static TX* ptxClock;
 public:
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
@@ -84,7 +84,7 @@ class UIGO : public UI
 {
 protected:
 	GA& ga;
-	static IDWriteTextFormat* ptfScore;
+	static TX* ptxScore;
 
 public:
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
@@ -114,7 +114,7 @@ class UIML : public SPAS
 	friend class UIGO;
 	friend class GA;
 
-	static TF* ptfList;
+	static TX* ptxList;
 	static float mpcoldxf[4];
 	static float dyfList;
 

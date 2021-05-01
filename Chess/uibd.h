@@ -42,7 +42,7 @@ public:
 	static BRS* pbrBlack;
 	static BRS* pbrAnnotation;
 	static BRS* pbrHilite;
-	static TF* ptfLabel;
+	static TX* ptxLabel;
 	static BMP* pbmpPieces;
 	static GEOM* pgeomCross;
 	static GEOM* pgeomArrowHead;

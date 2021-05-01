@@ -42,8 +42,8 @@ protected:
 	static BRS* pbrAltBack;
 	static BRS* pbrGridLine;
 	static BRS* pbrText;
-	static TF* ptfText;
-	static TF* ptfList;
+	static TX* ptxText;
+	static TX* ptxList;
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
@@ -108,9 +108,9 @@ public:
 	void FillRcf(RCF rcf, BR* pbr) const;
 	virtual void FillRcfBack(RCF rcf) const;
 	void FillEllf(ELLF ellf, BR* pbr) const;
-	void DrawSz(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
-	void DrawSzCenter(const wstring& sz, TF* ptf, RCF rcf, BR* pbr = NULL) const;
-	void DrawRgch(const WCHAR* rgch, int cch, TF* ptf, RCF rcf, BR* pbr = NULL) const;
+	void DrawSz(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
+	void DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
+	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };
 
@@ -129,7 +129,7 @@ class SPA : public UI
 {
 public:
 	static BRS* pbrTextSel;
-	static TF* ptfTextSm;
+	static TX* ptxTextSm;
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
 
@@ -280,7 +280,7 @@ class BTNCH : public BTN
 {
 	WCHAR ch;
 protected:
-	static TF* ptfButton;
+	static TX* ptxButton;
 	static BRS* pbrsButton;
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);

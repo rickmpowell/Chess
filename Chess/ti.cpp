@@ -66,7 +66,7 @@ UIGT::UIGT(UI* puiParent) : UI(puiParent)
 
 void UIGT::Draw(const RCF* prcfUpdate)
 {
-	DrawSz(L"Casual", ptfList, RcfInterior());
+	DrawSz(L"Casual", ptxList, RcfInterior());
 }
 
 
@@ -84,7 +84,7 @@ UILOCALE::UILOCALE(UI* puiParent) : UI(puiParent)
 
 void UILOCALE::Draw(const RCF* prcfUpdate)
 {
-	DrawSz(L"Local Machine", ptfList, RcfInterior());
+	DrawSz(L"Local Machine", ptxList, RcfInterior());
 }
 
 
@@ -102,7 +102,7 @@ UIGTM::UIGTM(UI* puiParent) : UI(puiParent)
 
 void UIGTM::Draw(const RCF* prcfUpdate)
 {
-	DrawSz(L"Rapid \x2022 10+0", ptfList, RcfInterior());
+	DrawSz(L"Rapid \x2022 10+0", ptxList, RcfInterior());
 }
 
 
@@ -184,7 +184,7 @@ void UITI::Draw(const RCF* prcfUpdate)
 	FillRcf(rcfLine, pbrGridLine);
 
 	if (szText.size() > 0)
-		DrawSz(szText, ptfTextSm, rcf);
+		DrawSz(szText, ptxTextSm, rcf);
 }
 
 

@@ -29,14 +29,14 @@ UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), cpc(cpc), ppl(NULL)
 void UIPL::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(*prcfUpdate, pbrBack);
-	ptfText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	ptxText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	wstring szColor = cpc == cpcWhite ? L"\x26aa  " : L"\x26ab  ";
 	if (ppl)
 		szColor += ppl->SzName();
 	RCF rcf = RcfInterior();
 	rcf.left += 12.0f;
 	rcf.top += 6.0f;
-	DrawSz(szColor, ptfText, rcf);
+	DrawSz(szColor, ptxText, rcf);
 }
 
 
@@ -103,21 +103,21 @@ void UIGC::Draw(const RCF* prcfUpdate)
  */
 
 
-IDWriteTextFormat* UICLOCK::ptfClock;
+IDWriteTextFormat* UICLOCK::ptxClock;
 
 void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (ptfClock)
+	if (ptxClock)
 		return;
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 50.0f, L"",
-		&ptfClock);
+		&ptxClock);
 }
 
 
 void UICLOCK::DiscardRsrcClass(void)
 {
-	SafeRelease(&ptfClock);
+	SafeRelease(&ptxClock);
 }
 
 
@@ -167,31 +167,31 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 
 	/* print out the text piece at a time */
 
-	ptfClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	ptxClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	const float dxfDigit = 30.0f;
 	const float dxfPunc = 18.0f;
 	if (hr > 0) {
-		DrawRgch(sz, 1, ptfClock, rcf);	// hours
+		DrawRgch(sz, 1, ptxClock, rcf);	// hours
 		rcf.left += dxfDigit;
 		DrawColon(rcf, frac);
-		DrawRgch(sz + 2, 2, ptfClock, rcf); // minutes
+		DrawRgch(sz + 2, 2, ptxClock, rcf); // minutes
 		rcf.left += 2 * dxfDigit;
 		DrawColon(rcf, frac);
-		DrawRgch(sz + 5, 2, ptfClock, rcf); // seconds
+		DrawRgch(sz + 5, 2, ptxClock, rcf); // seconds
 	}
 	else if (min > 0) {
 		rcf.left += 30.0f;
-		DrawRgch(sz + 2, 2, ptfClock, rcf);	// minutes
+		DrawRgch(sz + 2, 2, ptxClock, rcf);	// minutes
 		rcf.left += 2 * dxfDigit;
 		DrawColon(rcf, frac);
-		DrawRgch(sz + 5, 2, ptfClock, rcf);	// seconds 
+		DrawRgch(sz + 5, 2, ptxClock, rcf);	// seconds 
 	}
 	else {
 		rcf.left += 23.0f;
-		DrawRgch(sz + 3, 1, ptfClock, rcf);	// minutes (=0)
+		DrawRgch(sz + 3, 1, ptxClock, rcf);	// minutes (=0)
 		rcf.left += dxfDigit;
 		DrawColon(rcf, frac);
-		DrawRgch(sz + 5, 4, ptfClock, rcf);	// seconds and tenths
+		DrawRgch(sz + 5, 4, ptxClock, rcf);	// seconds and tenths
 	}
 }
 
@@ -207,7 +207,7 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 	if (frac < 500 && cpc == ga.bdg.cpcToMove)
 		pbrText->SetOpacity(0.33f);
 	rcf.top -= 3.0f;
-	DrawSz(L":", ptfClock, rcf, pbrText);
+	DrawSz(L":", ptxClock, rcf, pbrText);
 	pbrText->SetOpacity(1.0f);
 	rcf.top += 3.0f;
 	rcf.left += 18.0f;
@@ -222,21 +222,21 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
  *
  */
 
-IDWriteTextFormat* UIGO::ptfScore;
+IDWriteTextFormat* UIGO::ptxScore;
 
 void UIGO::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (ptfScore)
+	if (ptxScore)
 		return;
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
-		&ptfScore);
+		&ptxScore);
 }
 
 
 void UIGO::DiscardRsrcClass(void)
 {
-	SafeRelease(&ptfScore);
+	SafeRelease(&ptxScore);
 }
 
 
@@ -259,43 +259,43 @@ void UIGO::Draw(const RCF* prcfUpdate)
 
 	switch (ga.bdg.gs) {
 	case GS::WhiteCheckMated:
-		DrawSzCenter(L"Checkmate", ptfText, rcfEndType);
+		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
 		cpcWin = cpcBlack;
 		break;
 	case GS::BlackCheckMated:
-		DrawSzCenter(L"Checkmate", ptfText, rcfEndType);
+		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
 		cpcWin = cpcWhite;
 		break;
 	case GS::WhiteResigned:
-		DrawSzCenter(L"White Resigned", ptfText, rcfEndType);
+		DrawSzCenter(L"White Resigned", ptxText, rcfEndType);
 		cpcWin = cpcBlack;
 		break;
 	case GS::BlackResigned:
-		DrawSzCenter(L"Black Resigned", ptfText, rcfEndType);
+		DrawSzCenter(L"Black Resigned", ptxText, rcfEndType);
 		cpcWin = cpcWhite;
 		break;
 	case GS::WhiteTimedOut:
-		DrawSzCenter(L"Time Expired", ptfText, rcfEndType);
+		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
 		cpcWin = cpcBlack;
 		break;
 	case GS::BlackTimedOut:
-		DrawSzCenter(L"Time Expired", ptfText, rcfEndType);
+		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
 		cpcWin = cpcWhite;
 		break;
 	case GS::StaleMate:
-		DrawSzCenter(L"Stalemate", ptfText, rcfEndType);
+		DrawSzCenter(L"Stalemate", ptxText, rcfEndType);
 		break;
 	case GS::Draw3Repeat:
-		DrawSzCenter(L"3-Fold Repitition", ptfText, rcfEndType);
+		DrawSzCenter(L"3-Fold Repitition", ptxText, rcfEndType);
 		break;
 	case GS::Draw50Move:
-		DrawSzCenter(L"50-Move", ptfText, rcfEndType);
+		DrawSzCenter(L"50-Move", ptxText, rcfEndType);
 		break;
 	case GS::DrawAgree:
-		DrawSzCenter(L"Draw Agreed", ptfText, rcfEndType);
+		DrawSzCenter(L"Draw Agreed", ptxText, rcfEndType);
 		break;
 	case GS::DrawDead:
-		DrawSzCenter(L"Dead Position", ptfText, rcfEndType);
+		DrawSzCenter(L"Dead Position", ptxText, rcfEndType);
 		break;
 	default:
 		assert(false);
@@ -312,8 +312,8 @@ void UIGO::Draw(const RCF* prcfUpdate)
 		szResult = L"Black Wins";
 		szScore = L"0-1";
 	}
-	DrawSzCenter(szResult, ptfText, rcfResult);
-	DrawSzCenter(szScore, ptfScore, rcfScore);
+	DrawSzCenter(szResult, ptxText, rcfResult);
+	DrawSzCenter(szScore, ptxScore, rcfScore);
 }
 
 
@@ -342,7 +342,7 @@ UIML::~UIML(void)
 }
 
 
-IDWriteTextFormat* UIML::ptfList;
+IDWriteTextFormat* UIML::ptxList;
 
 
 /*	UIML::CreateRsrcClass
@@ -353,14 +353,14 @@ IDWriteTextFormat* UIML::ptfList;
  */
 void UIML::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (ptfList)
+	if (ptxList)
 		return;
 
 	/* fonts */
 
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
-		&ptfList);
+		&ptxList);
 
 	UIGC::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 	UICLOCK::CreateRsrcClass(pdc, pfactdwr, pfactwic);
@@ -375,7 +375,7 @@ void UIML::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
  */
 void UIML::DiscardRsrcClass(void)
 {
-	SafeRelease(&ptfList);
+	SafeRelease(&ptxList);
 	UIGC::DiscardRsrcClass();
 	UICLOCK::DiscardRsrcClass();
 	UIGO::DiscardRsrcClass();
@@ -558,8 +558,8 @@ void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 	rcf.top += 4.0f;
 	rcf.bottom -= 2.0f;
 	wstring sz = bdg.SzMoveAndDecode(mv);
-	ptfList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	DrawSz(sz, ptfList, rcf);
+	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	DrawSz(sz, ptxList, rcf);
 }
 
 
@@ -577,8 +577,8 @@ void UIML::DrawMoveNumber(RCF rcf, int imv)
 	WCHAR* pch = PchDecodeInt(imv, sz);
 	*pch++ = L'.';
 	*pch = 0;
-	ptfList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING);
-	DrawSz(wstring(sz), ptfList, rcf);
+	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING);
+	DrawSz(wstring(sz), ptxList, rcf);
 }
 
 
