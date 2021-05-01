@@ -751,6 +751,16 @@ void BD::GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const
 }
 
 
+/*	BD::FMvEnPassant
+ *
+ *	Returns true if the move is an en passant captur
+ */
+bool BD::FMvEnPassant(MV mv) const
+{
+	return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn;
+}
+
+
 /*	BD::Validate
  *
  *	Checks the board state for internal consistency

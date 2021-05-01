@@ -213,8 +213,8 @@ void UIBD::Draw(const RCF* prcfUpdate)
 	DrawMargins();
 	DrawLabels();
 	DrawSquares();
-	DrawPieces();
 	DrawHover();
+	DrawPieces();
 	DrawHilites();
 	DrawAnnotations();
 	DrawGameState();
@@ -362,16 +362,23 @@ void UIBD::DrawHover(void)
 	if (sqHover == sqNil)
 		return;
 	pbrBlack->SetOpacity(0.33f);
+	unsigned long grfDrawn = 0L;
 	for (MV mv : rgmvDrag) {
 		if (mv.SqFrom() != sqHover)
 			continue;
-		RCF rcf = RcfFromSq(mv.SqTo());
-		if (ga.bdg.mpsqtpc[mv.SqTo()] == tpcEmpty) {
+		SQ sqTo = mv.SqTo();
+		if (grfDrawn & (1L << sqTo))
+			continue;
+		grfDrawn |= 1L << sqTo;
+		RCF rcf = RcfFromSq(sqTo);
+		if (ga.bdg.mpsqtpc[sqTo] == tpcEmpty && !ga.bdg.FMvEnPassant(mv)) {
+			/* moving to an empty square - draw a circle */
 			ELLF ellf(PTF((rcf.right + rcf.left) / 2, (rcf.top + rcf.bottom) / 2),
 				PTF(dxyfSquare / 5, dxyfSquare / 5));
 			FillEllf(ellf, pbrBlack);
 		}
 		else {
+			/* taking an opponent piece - draw an X */
 			DC* pdc = AppGet().pdc;
 			pdc->SetTransform(
 				Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *

@@ -312,6 +312,7 @@ public:
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC co) const;
 	bool FInCheck(SQ sqKing) const;
 	bool FSqAttacked(SQ sq, CPC cpcBy) const;
+	bool FMvEnPassant(MV mv) const;
 
 	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
 	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }

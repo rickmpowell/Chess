@@ -40,7 +40,7 @@
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
   Add tooltips for buttons
-  Promoted pawn moves on UIBD are displayed with dark circle instead of light circle
+* Promoted pawn moves on UIBD are displayed with dark circle instead of light circle
 * Fix gridlines between panels in UIML
 * Change SPATI items to be separate UI elements
 * Hovering and tracking feedback over image buttons
