@@ -23,7 +23,6 @@
 #define idiSmall		2
 
 #define idbPieces		1
-#define idbTest		  2
 #define idbLogo		  3
 #define idbWhiteFlag 4
 #define idbHandShake 5
