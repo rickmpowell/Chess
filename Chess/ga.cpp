@@ -250,7 +250,7 @@ void GA::Layout(void)
 	uibd.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
-	rcf.right = rcf.left + 200.0f;
+	rcf.right = rcf.left + 220.0f;
 	uiml.SetBounds(rcf);
 }
 

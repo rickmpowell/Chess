@@ -70,13 +70,17 @@ void UIGC::Layout(void)
 	RCF rcf = RcfInterior();
 	rcf.top += 4.0f;
 	rcf.bottom -= 4.0f;
-	rcf.left += 32.0f;
+	rcf.left += 48.0f;
 	SIZF sizf = pbtnResign->SizfImg();
 	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
 	pbtnResign->SetBounds(rcf);
-	rcf.left = rcf.right + 62.0f;
+
+	rcf = RcfInterior();
+	rcf.top += 4.0f;
+	rcf.bottom -= 4.0f;
+	rcf.right -= 48.0f;
 	sizf = pbtnOfferDraw->SizfImg();
-	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
+	rcf.left= rcf.right - (rcf.DyfHeight() * sizf.width / sizf.height);
 	pbtnOfferDraw->SetBounds(rcf);
 }
 
@@ -130,7 +134,7 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 {
 	DWORD tm = ga.mpcpctmClock[cpc];
 
-	/* fill edges and background */
+	/* fill background */
 
 	RCF rcf = RcfInterior();
 	D2D1_COLOR_F coSav = pbrAltBack->GetColor();
@@ -171,6 +175,8 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 	const float dxfDigit = 30.0f;
 	const float dxfPunc = 18.0f;
 	if (hr > 0) {
+		float dxfClock = dxfDigit + dxfPunc + 2.0f * dxfDigit + dxfPunc + 2.0f * dxfDigit;
+		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
 		DrawRgch(sz, 1, ptxClock, rcf);	// hours
 		rcf.left += dxfDigit;
 		DrawColon(rcf, frac);
@@ -180,14 +186,16 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 		DrawRgch(sz + 5, 2, ptxClock, rcf); // seconds
 	}
 	else if (min > 0) {
-		rcf.left += 30.0f;
+		float dxfClock = 2.0f * dxfDigit + dxfPunc + 2.0f * dxfDigit;
+		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
 		DrawRgch(sz + 2, 2, ptxClock, rcf);	// minutes
 		rcf.left += 2 * dxfDigit;
 		DrawColon(rcf, frac);
 		DrawRgch(sz + 5, 2, ptxClock, rcf);	// seconds 
 	}
 	else {
-		rcf.left += 23.0f;
+		float dxfClock = dxfDigit + dxfPunc + 2.0f * dxfDigit + dxfPunc + dxfDigit;
+		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
 		DrawRgch(sz + 3, 1, ptxClock, rcf);	// minutes (=0)
 		rcf.left += dxfDigit;
 		DrawColon(rcf, frac);
@@ -382,7 +390,7 @@ void UIML::DiscardRsrcClass(void)
 }
 
 
-float UIML::mpcoldxf[] = { 40.0f, 70.0f, 70.0f, 20.0f };
+float UIML::mpcoldxf[] = { 40.0f, 80.0f, 80.0f, 20.0f };
 float UIML::dyfList = 20.0f;
 
 

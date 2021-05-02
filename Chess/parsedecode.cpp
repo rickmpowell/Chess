@@ -82,7 +82,7 @@ FinishCastle:
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
-	if (sqTo == sqEnPassant) {
+	if (apc == apcPawn && sqTo == sqEnPassant) {
 		*pch++ = L' ';
 		*pch++ = L'e';
 		*pch++ = L'.';

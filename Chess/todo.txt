@@ -1,3 +1,8 @@
+  Merge UIGO and UIGC
+  Checkmates should have a # instead of a +
+  Add message pump to the PL for getting player moves
+  With small windows, need to do something about the move list. Or limit window size?
+  Move list does not redraw on window resize
   Add command to load PGN files and load specific games for analysis
   Hook up resignation button
   Add a UI for offering draws
@@ -11,7 +16,6 @@
   Dragging pieces outside the board rectangle doesn't redraw the piece right
   Legal move circles disappear when dragging
   Break the UI out of the GA.
-  Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
   Official game has slightly different rules for some draw situations
   Playing test PGN files should display result in game over panel
   Animate the game over panel into position.
@@ -27,6 +31,7 @@
   Implement click-from/click-to mouse move interface
   Implement circle annotations on mouse right click
   Implement arrow annotations on mouse right click/drag
+  Implement scrolling in UIML move list
   Optimize redraw on UIML to only draw changes
   Optimize redraw of UIBD
   Implement selection in UIML
@@ -38,6 +43,8 @@
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
   Add tooltips for buttons
+* Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
+* Move list isn't wide enough for Pxd6 e.p.+
 * Turn off rotate icon during rotation
 * Rename TF to TX
 * Center character in character buttons
