@@ -409,3 +409,20 @@ void GA::RedoMv(bool fRedraw)
 	if (fRedraw)
 		uiml.Redraw();
 }
+
+
+void GA::GenRgmv(vector<MV>& rgmv)
+{
+	bdg.GenRgmv(rgmv, RMCHK::Remove);
+}
+
+
+void GA::Play(void)
+{
+	NewGame();
+	do {
+		PL* ppl = mpcpcppl[bdg.cpcToMove];
+		MV mv = ppl->MvGetNext(*this);
+		MakeMv(mv, true);
+	} while (bdg.gs == GS::Playing);
+}

@@ -35,7 +35,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
  *
  *  The main entry point for Windows applications. 
  */
-int APIENTRY wWinMain(HINSTANCE hinst, HINSTANCE hinstPrev, LPWSTR szCmdLine, int sw)
+int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ LPWSTR szCmdLine, _In_ int sw)
 {
     try {
         APP app(hinst, sw);
@@ -173,16 +173,20 @@ void APP::CreateRsrc(void)
     D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
             rgfld3, CArray(rgfld3), D3D11_SDK_VERSION,
             &pdevd3T, &flRet, &pdcd3T);
-    pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3);
+    if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
+        throw 1;
     pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
     IDXGIDevice* pdevDxgi;
-    pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi);
-    pfactd2->CreateDevice(pdevDxgi, &pdevd2);
+    if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
+        throw 1;
+    if (pfactd2->CreateDevice(pdevDxgi, &pdevd2) != S_OK)
+        throw 1;
     pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdc);
     IDXGIAdapter* padaptDxgi;
     pdevDxgi->GetAdapter(&padaptDxgi);
     IDXGIFactory2* pfactDxgi;
-    padaptDxgi->GetParent(IID_PPV_ARGS(&pfactDxgi));
+    if (padaptDxgi->GetParent(IID_PPV_ARGS(&pfactDxgi)) != S_OK)
+        throw 1;
     DXGI_SWAP_CHAIN_DESC1 swchd = { 0 };
     swchd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     swchd.SampleDesc.Count = 1;
@@ -190,11 +194,14 @@ void APP::CreateRsrc(void)
     swchd.BufferCount = 2;
     swchd.Scaling = DXGI_SCALING_STRETCH;
     swchd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    pfactDxgi->CreateSwapChainForHwnd(pdevd3, hwnd, &swchd, NULL, NULL, &pswch);
+    if (pfactDxgi->CreateSwapChainForHwnd(pdevd3, hwnd, &swchd, NULL, NULL, &pswch) != S_OK)
+        throw 1;
     IDXGISurface* psurfDxgi;
-    pswch->GetBuffer(0, IID_PPV_ARGS(&psurfDxgi));
+    if (pswch->GetBuffer(0, IID_PPV_ARGS(&psurfDxgi)) != S_OK)
+        throw 1;
     float dxyf = (float)GetDpiForWindow(hwnd);
-    D2D1_BITMAP_PROPERTIES1 propBmp = BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+    D2D1_BITMAP_PROPERTIES1 propBmp;
+    propBmp = BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
             PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxyf, dxyf);
     pdc->CreateBitmapFromDxgiSurface(psurfDxgi, &propBmp, &pbmpBackBuf);
     pdc->SetTarget(pbmpBackBuf);
@@ -473,6 +480,20 @@ public:
     }
 };
 
+
+class CMDPLAY : public CMD
+{
+public:
+    CMDPLAY(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->Play();
+        return 1;
+    }
+};
+
+
 /*
  *
  *  CMDUNDOMOVE command
@@ -644,6 +665,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(cmdRotateBoard, new CMDROTATEBOARD(*this));
     cmdlist.Add(cmdOfferDraw, new CMDOFFERDRAW(*this));
     cmdlist.Add(cmdResign, new CMDRESIGN(*this));
+    cmdlist.Add(cmdPlay, new CMDPLAY(*this));
 }
 
 

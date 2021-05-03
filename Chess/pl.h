@@ -8,6 +8,8 @@
 #pragma once
 
 #include "framework.h"
+#include "bd.h"
+
 
 
 /*
@@ -18,6 +20,8 @@
  * 
  */
 
+
+class GA;
 
 class PL
 {
@@ -32,11 +36,12 @@ public:
 	void SetName(const wstring& szNew) {
 		szName = szNew;
 	}
+
+	virtual MV MvGetNext(GA& ga);
 };
 
 
 #include "ui.h"
-#include "bd.h"
 
 
 /*

@@ -110,6 +110,7 @@ public:
 
 	void Timer(UINT tid, DWORD tm);
 
+	void Play(void);
 	void NewGame(void);
 	void StartGame(void);
 	void EndGame(void);
@@ -119,6 +120,7 @@ public:
 	void PauseClock(CPC cpc, DWORD tmCur);
 	void UndoMv(bool fRedraw);
 	void RedoMv(bool fRedraw);
+	void GenRgmv(vector<MV>& rgmv);
 
 	void Test(void);
 	void ValidateFEN(const WCHAR* szFEN) const;

@@ -17,7 +17,8 @@
 #define cmdRotateBoard	7
 #define cmdResign		8
 #define cmdOfferDraw	9
-#define cmdMax			10
+#define cmdPlay         10
+#define cmdMax			11
 
 #define idiApp			1
 #define idiSmall		2

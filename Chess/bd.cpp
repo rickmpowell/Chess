@@ -1088,15 +1088,26 @@ bool BDG::FDrawDead(void) const
  */
 bool BDG::FDraw3Repeat(int cbdDraw) const
 {
-	if (imvCur - imvPawnOrTakeLast < cbdDraw * 2)
+	if (imvCur - imvPawnOrTakeLast < (cbdDraw-1) * 2 * 2)
 		return false;
 	BD bd = *this;
-	int cbdSame = 0;
-	for (int imv = imvCur; imv >= imvPawnOrTakeLast; imv -= 2) {
+	int cbdSame = 1;
+	bd.UndoMv(rgmvGame[imvCur]);
+	bd.UndoMv(rgmvGame[imvCur - 1]);
+	for (int imv = imvCur - 2; imv >= imvPawnOrTakeLast + 2; imv -= 2) {
 		bd.UndoMv(rgmvGame[imv]);
 		bd.UndoMv(rgmvGame[imv - 1]);
-		if (bd == *this && ++cbdSame >= cbdDraw)
-			return true;
+		if (bd == *this) {
+			if (++cbdSame >= cbdDraw)
+				return true;
+			imv -= 2;
+			/* let's go ahead and back up two more moves here, since we can't possibly match */
+			if (imv < imvPawnOrTakeLast + 2)
+				break;
+			bd.UndoMv(rgmvGame[imv]);
+			bd.UndoMv(rgmvGame[imv - 1]);
+			assert(bd != *this);
+		}
 	}
 	return false;
 }
