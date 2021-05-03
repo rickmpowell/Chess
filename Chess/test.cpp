@@ -413,7 +413,7 @@ void GA::ProcessMove(const string& szMove)
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
-	MakeMv(mv, true);
+	MakeMv(mv, SPMV::Fast);
 }
 
 
@@ -468,7 +468,7 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 void GA::UndoFullGame(void)
 {
 	while (bdg.imvCur >= 0) {
-		UndoMv(true);
+		UndoMv(SPMV::Fast);
 		uiml.Redraw();
 	}
 }

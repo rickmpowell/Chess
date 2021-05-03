@@ -114,12 +114,12 @@ public:
 	void NewGame(void);
 	void StartGame(void);
 	void EndGame(void);
-	void MakeMv(MV mv, bool fRedraw);
+	void MakeMv(MV mv, SPMV spmv);
 	void SwitchClock(DWORD tmCur);
 	void StartClock(CPC cpc, DWORD tmCur);
 	void PauseClock(CPC cpc, DWORD tmCur);
-	void UndoMv(bool fRedraw);
-	void RedoMv(bool fRedraw);
+	void UndoMv(SPMV spmv);
+	void RedoMv(SPMV spmv);
 	void GenRgmv(vector<MV>& rgmv);
 
 	void Test(void);

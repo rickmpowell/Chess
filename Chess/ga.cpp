@@ -370,14 +370,14 @@ void GA::SwitchClock(DWORD tmCur)
 }
 
 
-void GA::MakeMv(MV mv, bool fRedraw)
+void GA::MakeMv(MV mv, SPMV spmv)
 {
 	DWORD tm = app.TmMessage();
 	SwitchClock(tm == 0 ? 1 : tm);
-	uibd.MakeMv(mv, fRedraw);
+	uibd.MakeMv(mv, spmv);
 	if (bdg.gs != GS::Playing)
 		EndGame();
-	if (fRedraw) {
+	if (spmv != SPMV::Hidden) {
 		uiml.UpdateContSize();
 		if (!uiml.FMakeVis((int)bdg.rgmvGame.size()-1))
 			Redraw();
@@ -390,10 +390,10 @@ void GA::MakeMv(MV mv, bool fRedraw)
  *	Moves the current move pointer back one through the move list and undoes
  *	the last move on the game board.
  */
-void GA::UndoMv(bool fRedraw)
+void GA::UndoMv(SPMV spmv)
 {
-	uibd.UndoMv(fRedraw);
-	if (fRedraw)
+	uibd.UndoMv(spmv);
+	if (spmv != SPMV::Hidden)
 		uiml.Redraw();
 }
 
@@ -403,10 +403,10 @@ void GA::UndoMv(bool fRedraw)
  *	Moves the current move pointer forward through the move list and remakes
  *	the next move on the game board.
  */
-void GA::RedoMv(bool fRedraw)
+void GA::RedoMv(SPMV spmv)
 {
-	uibd.RedoMv(fRedraw);
-	if (fRedraw)
+	uibd.RedoMv(spmv);
+	if (spmv != SPMV::Hidden)
 		uiml.Redraw();
 }
 
@@ -422,7 +422,7 @@ void GA::Play(void)
 	NewGame();
 	do {
 		PL* ppl = mpcpcppl[bdg.cpcToMove];
-		MV mv = ppl->MvGetNext(*this);
-		MakeMv(mv, true);
+		MV mv = ppl->MvGetNext(this->bdg);
+		MakeMv(mv, SPMV::Animate);
 	} while (bdg.gs == GS::Playing);
 }

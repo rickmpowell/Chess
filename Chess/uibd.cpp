@@ -165,32 +165,34 @@ void UIBD::NewGame(void)
  *
  *	Makes a move on the board in the screen panel
  */
-void UIBD::MakeMv(MV mv, bool fRedraw)
+void UIBD::MakeMv(MV mv, SPMV spmv)
 {
+	if (spmv == SPMV::Animate)
+		AnimateMv(mv);
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	ga.bdg.TestGameOver(rgmvDrag);
 	if (ga.bdg.gs != GS::Playing)
 		rgmvDrag.clear();
-	if (fRedraw)
+	if (spmv != SPMV::Hidden)
 		Redraw();
 }
 
 
-void UIBD::UndoMv(bool fRedraw)
+void UIBD::UndoMv(SPMV spmv)
 {
 	ga.bdg.UndoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
-	if (fRedraw)
+	if (spmv != SPMV::Hidden)
 		Redraw();
 }
 
 
-void UIBD::RedoMv(bool fRedraw)
+void UIBD::RedoMv(SPMV spmv)
 {
 	ga.bdg.RedoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
-	if (fRedraw)
+	if (spmv != SPMV::Hidden)
 		Redraw();
 }
 
@@ -468,6 +470,23 @@ void UIBD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 }
 
 
+void UIBD::AnimateMv(MV mv)
+{
+	int frameMax = 40;
+	sqDragInit = mv.SqFrom();
+	RCF rcfFrom = RcfFromSq(sqDragInit);
+	ptfDragInit = rcfFrom.PtfTopLeft();
+	RCF rcfTo = RcfFromSq(mv.SqTo());
+	for (int frame = 0; frame < frameMax; frame++) {
+		rcfDragPc = rcfFrom;
+		rcfDragPc.Offset((rcfFrom.left * (float)(frameMax - frame) + rcfTo.left * (float)frame) / (float)frameMax - rcfFrom.left,
+			(rcfFrom.top * (float)(frameMax - frame) + rcfTo.top * (float)frame) / (float)frameMax - rcfFrom.top);
+		Redraw();
+	}
+	sqDragInit = sqNil;
+}
+
+
 void UIBD::DrawHilites(void)
 {
 }
@@ -597,7 +616,7 @@ void UIBD::EndLeftDrag(PTF ptf)
 	if (!sq.FIsNil()) {
 		for (MV mv : rgmvDrag) {
 			if (mv.SqFrom() == sqDragInit && mv.SqTo() == sq) {
-				ga.MakeMv(mv, true);
+				ga.MakeMv(mv, SPMV::Fast);
 				break;
 			}
 		}

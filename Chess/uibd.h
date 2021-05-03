@@ -34,6 +34,14 @@ enum class HTBD
 };
 
 
+enum class SPMV
+{
+	Hidden,
+	Fast,
+	Animate
+};
+
+
 class UIBD : public SPA
 {
 public:
@@ -71,9 +79,9 @@ public:
 	static void DiscardRsrcClass(void);
 
 	void NewGame(void);
-	void MakeMv(MV mv, bool fRedraw);
-	void UndoMv(bool fRedraw);
-	void RedoMv(bool fRedraw);
+	void MakeMv(MV mv, SPMV spmv);
+	void UndoMv(SPMV spmv);
+	void RedoMv(SPMV spmv);
 
 	virtual void Layout(void);
 
@@ -92,6 +100,7 @@ public:
 	void DrawHilites(void);
 	void DrawGameState(void);
 	void DrawPc(RCF rcf, float opacity, TPC tpc);
+	void AnimateMv(MV mv);
 	void DrawDragPc(const RCF& rcf);
 	RCF RcfGetDrag(void);
 	void InvalOutsideRcf(RCF rcf) const;

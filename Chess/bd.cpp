@@ -195,7 +195,8 @@ int BD::TpcUnusedPawn(CPC cpc) const
  */
 void BD::ComputeAttacked(CPC cpc)
 {
-	vector<MV> rgmv;
+	static vector<MV> rgmv;
+	rgmv.reserve(50);
 	GenRgmvColor(rgmv, cpc);
 	UINT64 grfAttacked = 0;
 	for (MV mv : rgmv)
@@ -563,6 +564,42 @@ void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 }
 
 
+/*	BD::FGenRgmvDsq
+ *
+ *	Checks the square in the direction given by dsq for a valid
+ *	destination square. Adds the move to rgmv if it is valid.
+ *	Returns true if the destination square was empty; returns
+ *	false if it's not a legal square or there is a piece in the
+ *	square.
+ */
+bool BD::FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const
+{
+	SQ sqTo = sq + dsq;
+
+	/* did we move off the bottom or top edge of the board? */
+	if (!sqTo.FIsValid())
+		return false;
+
+	/* have we run into one of our own pieces? */
+	if (mpsqtpc[sqTo] != tpcEmpty && ((mpsqtpc[sqTo] ^ tpcFrom) & tpcColor) == 0)
+		return false;
+
+	/* knights can potentially move 2 files away, all other pieces
+	   only move at most one file at a time during the slide; any
+	   other value is a wrap-around on the side, which is not legal */
+	int dfile = sq.file() - sqTo.file();
+	if (dfile < -2 || dfile > 2)
+		return false;
+
+	/* add the move to the list */
+	AddRgmvMv(rgmv, MV(sqFrom, sqTo));
+
+	/* return false if we've reach an enemy piece - this capture
+	   is the end of a potential slide move */
+	return mpsqtpc[sqTo] == tpcEmpty;
+}
+
+
 /*	BD::GenRgmvKnight
  *
  *	Generates legal moves for the knight at sqFrom. Does not check that
@@ -575,41 +612,6 @@ void BD::GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const
 		FGenRgmvDsq(rgmv, sqFrom, sqFrom, mpsqtpc[sqFrom], rgdsq[idsq]);
 }
 
-
-/*	BD::FGenRgmvDsq
- *
- *	Checks the square in the direction given by dsq for a valid
- *	destination square. Adds the move to rgmv if it is valid.
- *	Returns true if the destination square was empty; returns
- *	false if it's not a legal square or there is a piece in the
- *	square.
- */
-bool BD::FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const
-{
-	SQ sqTo = sq + dsq;
-	
-	/* did we move off the bottom or top edge of the board? */
-	if (!sqTo.FIsValid())
-		return false;
-
-	/* have we run into one of our own pieces? */
-	if (mpsqtpc[sqTo] != tpcEmpty && ((mpsqtpc[sqTo] ^ tpcFrom) & tpcColor) == 0)
-		return false;
-	
-	/* knights can potentially move 2 files away, all other pieces 
-	   only move at most one file at a time during the slide; any 
-	   other value is a wrap-around on the side, which is not legal */
-	int dfile = sq.file() - sqTo.file();
-	if (dfile < -2 || dfile > 2)
-		return false;
-	
-	/* add the move to the list */
-	AddRgmvMv(rgmv, MV(sqFrom, sqTo));
-
-	/* return false if we've reach an enemy piece - this capture
-	   is the end of a potential slide move */
-	return mpsqtpc[sqTo] == tpcEmpty;
-}
 
 
 /*	BD::GenRgmvBishop
@@ -759,6 +761,21 @@ bool BD::FMvEnPassant(MV mv) const
 {
 	return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn;
 }
+
+
+int BD::CMaterial(CPC cpc) const
+{
+	static int mpapccMat[] = { 0, 1, 3, 3, 5, 8, 0 }; 
+
+	int cMaterial = 0;
+	for (int tpc = 0; tpc < tpcPieceMax; tpc++) {
+		SQ sq = mptpcsq[cpc][tpc];
+		if (!sq.FIsNil())
+			cMaterial += mpapccMat[ApcFromSq(sq)];
+	}
+	return cMaterial;
+}
+
 
 
 /*	BD::Validate

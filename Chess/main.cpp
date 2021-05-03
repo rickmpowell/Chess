@@ -510,7 +510,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv(true);
+        app.pga->UndoMv(SPMV::Animate);
         return 1;
     }
 };
@@ -532,7 +532,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv(true);
+        app.pga->RedoMv(SPMV::Animate);
         return 1;
     }
 };

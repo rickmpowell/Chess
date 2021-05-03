@@ -37,7 +37,10 @@ public:
 		szName = szNew;
 	}
 
-	virtual MV MvGetNext(GA& ga);
+	virtual MV MvGetNext(const BDG& bdg);
+	MV MvGetNextDepth(BDG bdg, int depth);
+	float EvalBdg(BDG bdg);
+	float EvalBdgDepth(BDG bdg, int depth);
 };
 
 

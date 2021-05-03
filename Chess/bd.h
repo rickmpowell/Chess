@@ -306,7 +306,7 @@ public:
 	void AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const;
 	void GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
-	bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const;
+	inline bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const;
 	void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
 
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC co) const;
@@ -325,6 +325,8 @@ public:
 	inline bool FCanCastle(CPC cpc, int csSide) const { return (this->cs & (csSide << cpc)) != 0;  }
 	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
 	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
+
+	int CMaterial(CPC cpc) const;
 
 	bool operator==(const BD& bd) const;
 	bool operator!=(const BD& bd) const;

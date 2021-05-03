@@ -1,3 +1,4 @@
+  Change test PGN games to use a player move picker that pulls moves from the PGN file
   Merge UIGO and UIGC
   Checkmates should have a # instead of a +
   Add message pump to the PL for getting player moves
@@ -37,12 +38,12 @@
   Implement selection in UIML
   Implement mouse interface to change selection on UIML
   Implement keyboard interface to change selection on UIML
-  Implement dumb AI for computer play
   Scale text on board labels to size of board
   Add shadows on screen panels
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
   Add tooltips for buttons
+* Implement dumb AI for computer play
 * Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
 * Move list isn't wide enough for Pxd6 e.p.+
 * Turn off rotate icon during rotation
