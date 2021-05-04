@@ -777,7 +777,6 @@ int BD::CMaterial(CPC cpc) const
 }
 
 
-
 /*	BD::Validate
  *
  *	Checks the board state for internal consistency
@@ -971,6 +970,10 @@ void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
 }
 
 
+/*	BDG::MakeMv
+ *
+ *	Make a move on the board.
+ */
 void BDG::MakeMv(MV mv)
 {
 	/* store undo information in the mv, and keep track of last pawn move or
@@ -1027,23 +1030,30 @@ void BDG::RedoMv(void)
 }
 
 
-void BDG::TestGameOver(const vector<MV>& rgmv)
+GS BDG::GsTestGameOver(const vector<MV>& rgmv) const
 {
 	if (rgmv.size() == 0) {
 		if (FSqAttacked(mptpcsq[cpcToMove][tpcKing], cpcToMove ^ 1))
-			SetGs(cpcToMove == cpcWhite ? GS::WhiteCheckMated : GS::BlackCheckMated);
+			return cpcToMove == cpcWhite ? GS::WhiteCheckMated : GS::BlackCheckMated;
 		else
-			SetGs(GS::StaleMate);
+			return GS::StaleMate;
 	}
 	else {
 		/* check for draw circumstances */
 		if (FDrawDead())
-			SetGs(GS::DrawDead);
+			return GS::DrawDead;
 		if (FDraw3Repeat(3))
-			SetGs(GS::Draw3Repeat);
-		else if (FDraw50Move(50))
-			SetGs(GS::Draw50Move);
+			return GS::Draw3Repeat;
+		if (FDraw50Move(50))
+			return GS::Draw50Move;
 	}
+	return GS::Playing;
+}
+
+
+void BDG::SetGameOver(const vector<MV>& rgmv)
+{
+	SetGs(GsTestGameOver(rgmv));
 }
 
 

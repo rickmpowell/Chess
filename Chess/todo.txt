@@ -1,3 +1,12 @@
+  Add message pump while AI is thinking
+  Hilite last made move on board
+  Add ability to load and save PGN files
+  Have File/Play play the game on screen instead of creating new game
+  Add an AI for setting up a board
+  Have AI play through checks before evaluation
+  Have AI play through captures before board evaluation
+  Sort moves in AI to improve alpha-beta pruning
+  AI isn't taking checkmates when they are available
   Change test PGN games to use a player move picker that pulls moves from the PGN file
   Merge UIGO and UIGC
   Checkmates should have a # instead of a +
@@ -43,6 +52,7 @@
   Implement a debug screen panel and UI to show/hide it
   Modify move list to do real algebraic notation with full optimzations
   Add tooltips for buttons
+* Do Alpha-Beta prunming in AI
 * Implement dumb AI for computer play
 * Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
 * Move list isn't wide enough for Pxd6 e.p.+

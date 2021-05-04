@@ -37,10 +37,9 @@ public:
 		szName = szNew;
 	}
 
-	virtual MV MvGetNext(const BDG& bdg);
-	MV MvGetNextDepth(BDG bdg, int depth);
-	float EvalBdg(BDG bdg);
-	float EvalBdgDepth(BDG bdg, int depth);
+	virtual MV MvGetNext(BDG bdg);
+	float EvalBdg(const BDG& bdg) const;
+	float EvalBdgDepth(BDG& bdg, int depth, float evalAlpha, float evalBeta) const;
 };
 
 

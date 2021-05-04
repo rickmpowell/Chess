@@ -305,11 +305,11 @@ public:
 	void GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
 	void AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const;
 	void GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
+	inline void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
 	inline bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const;
-	void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
+	inline void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
 
-	void RemoveInCheckMoves(vector<MV>& rgmv, CPC co) const;
+	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
 	bool FInCheck(SQ sqKing) const;
 	bool FSqAttacked(SQ sq, CPC cpcBy) const;
 	bool FMvEnPassant(MV mv) const;
@@ -317,8 +317,10 @@ public:
 	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
 	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }
 
-	inline SQ& SqFromTpc(TPC tpc) { return mptpcsq[CpcFromTpc(tpc)][tpc & tpcPiece]; }
-	inline SQ SqFromTpc(TPC tpc) const { return mptpcsq[CpcFromTpc(tpc)][tpc & tpcPiece]; }
+	inline SQ& SqFromTpc(TPC tpc, CPC cpc) { return mptpcsq[cpc][tpc]; }
+	inline SQ& SqFromTpc(TPC tpc) { return SqFromTpc(tpc & tpcPiece, CpcFromTpc(tpc)); }
+	inline SQ SqFromTpc(TPC tpc, CPC cpc) const { return mptpcsq[cpc][tpc]; }
+	inline SQ SqFromTpc(TPC tpc) const { return SqFromTpc(tpc & tpcPiece, CpcFromTpc(tpc)); }
 	inline APC ApcFromSq(SQ sq) const { return ApcFromTpc(mpsqtpc[sq]); }
 	inline CPC CpcFromSq(SQ sq) const { return CpcFromTpc(mpsqtpc[sq]); }
 
@@ -415,7 +417,9 @@ public:
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);
-	void TestGameOver(const vector<MV>& rgmv);
+	GS GsTestGameOver(const vector<MV>& rgmv) const;
+	void SetGameOver(const vector<MV>& rgmv);
+
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int cmvDraw) const;

@@ -171,7 +171,7 @@ void UIBD::MakeMv(MV mv, SPMV spmv)
 		AnimateMv(mv);
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
-	ga.bdg.TestGameOver(rgmvDrag);
+	ga.bdg.SetGameOver(rgmvDrag);
 	if (ga.bdg.gs != GS::Playing)
 		rgmvDrag.clear();
 	if (spmv != SPMV::Hidden)
