@@ -419,7 +419,6 @@ void GA::GenRgmv(vector<MV>& rgmv)
 
 void GA::Play(void)
 {
-	NewGame();
 	do {
 		PL* ppl = mpcpcppl[bdg.cpcToMove];
 		MV mv = ppl->MvGetNext(this->bdg);

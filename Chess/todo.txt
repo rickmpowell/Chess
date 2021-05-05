@@ -1,21 +1,21 @@
-  Add message pump while AI is thinking
-  Hilite last made move on board
-  Add ability to load and save PGN files
-  Have File/Play play the game on screen instead of creating new game
-  Add an AI for setting up a board
-  Have AI play through checks before evaluation
-  Have AI play through captures before board evaluation
-  Sort moves in AI to improve alpha-beta pruning
-  AI isn't taking checkmates when they are available
-  Change test PGN games to use a player move picker that pulls moves from the PGN file
-  Merge UIGO and UIGC
-  Checkmates should have a # instead of a +
-  Add message pump to the PL for getting player moves
-  With small windows, need to do something about the move list. Or limit window size?
-  Move list does not redraw on window resize
+  AI: Add debug ability to pause and step through eval tree
+  AI: Display progress in the debug panel
+  AI: Add message pump while thinking
+  UIBD: Hilite last made move on board
+  Add ability to save PGN files
+  Add a UI for setting up a board
+  AI: Play through until no checks before evaluation
+  AI: Play through until no captures before board evaluation
+  AI: Sort moves to improve alpha-beta pruning
+  Test: PGN games should feed moves through a PL
+  ML: Merge UIGO and UIGC
+  ML: Checkmates should have a # instead of a +
+  PL: Add message pump to the PL for getting player moves
+  ML: With small windows, need to do something about the move list. Or limit window size?
+  ML: Move list does not redraw on window resize
   Add command to load PGN files and load specific games for analysis
-  Hook up resignation button
-  Add a UI for offering draws
+  ML: Hook up resignation button
+  ML: Add a UI for offering draws
   UI for specifying player names
   UI for choosing computer player
   There is a weird hit test on the left edge of the board that is hitting squares three squares over
@@ -44,14 +44,17 @@
   Implement scrolling in UIML move list
   Optimize redraw on UIML to only draw changes
   Optimize redraw of UIBD
-  Implement selection in UIML
-  Implement mouse interface to change selection on UIML
-  Implement keyboard interface to change selection on UIML
-  Scale text on board labels to size of board
-  Add shadows on screen panels
-  Implement a debug screen panel and UI to show/hide it
-  Modify move list to do real algebraic notation with full optimzations
-  Add tooltips for buttons
+  ML: Implement selection in UIML
+  ML: Implement mouse interface to change selection on UIML
+  ML: Implement keyboard interface to change selection on UIML
+  UIBD: Scale text on labels to size of board
+  UI: Add shadows on screen panels
+  UI: Implement a debug screen panel and UI to show/hide it
+  ML: Modify move list to do real algebraic notation with full optimzations
+  UI: Add tooltips for buttons
+* BDG eval: checkmates should be adjusted by number of moves
+* AI: Not taking checkmates when they are available
+* Have File/Play play the game on screen instead of creating new game
 * Do Alpha-Beta prunming in AI
 * Implement dumb AI for computer play
 * Bug: e.p. gets put on non-pawn moves sometimes during the full test. 

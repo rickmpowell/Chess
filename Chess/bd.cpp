@@ -867,11 +867,11 @@ BDG::BDG(const WCHAR* szFEN)
 
 void BDG::NewGame(void)
 {
-	SetGs(GS::Playing);
 	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	rgmvGame.clear();
 	imvCur = -1;
 	imvPawnOrTakeLast = -1;
+	SetGs(GS::Playing);
 }
 
 

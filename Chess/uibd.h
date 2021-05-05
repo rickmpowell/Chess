@@ -1,4 +1,3 @@
-#pragma once
 /*
  *
  *	uibd.h
@@ -6,6 +5,11 @@
  *	UI for board panel
  * 
  */
+
+#pragma once
+#include "framework.h"
+#include "ui.h"
+#include "bd.h"
 
 
 /*
@@ -17,11 +21,10 @@
  *
  */
 
-#include "framework.h"
-#include "ui.h"
-#include "bd.h"
 
-
+/*
+ *	Hit test codes
+ */
 enum class HTBD
 {
 	None,
@@ -34,6 +37,10 @@ enum class HTBD
 };
 
 
+
+/*
+ *	Move speeds
+ */
 enum class SPMV
 {
 	Hidden,
@@ -118,4 +125,24 @@ public:
 	virtual void MouseHover(PTF ptf, MHT mht);
 
 	bool FMoveablePc(SQ sq) const;
+};
+
+
+/*
+ *
+ *	UIPCP screen panel
+ * 
+ *	A screen panel that holds a chess piece toolbar for building boards. User drags
+ *	pieces from the panel to the board. Includes buttons for deleting and OK/Cancel.
+ * 
+ */
+
+
+class UIPCP : public SPA
+{
+public:
+	UIPCP(GA* pga);
+	~UIPCP(void);
+
+	virtual void Draw(const RCF* prcfUpdate = NULL);
 };

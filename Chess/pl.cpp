@@ -40,15 +40,9 @@ MV PL::MvGetNext(BDG bdg)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, CpcOpposite(bdg.cpcToMove));
-	int depth = (int)round(log(20000.0f*20000.0f) / (log((float)(rgmv.size()*rgmvOpp.size()))));
-	if (depth < 3)
-		depth = 3;
-
-	/* now that we have that, get rid of those illegal check moves */
-
-//	bdg.RemoveInCheckMoves(rgmv, bdg.cpcToMove);
-//	if (rgmv.size() == 0)
-//		return MV();
+	int depthMax = (int)round(log(20000.0f*20000.0f) / (log((float)(rgmv.size()*rgmvOpp.size()))));
+	if (depthMax < 3)
+		depthMax = 3;
 
 	/* and find the best move - we have illegal moves in this move list, so be sure to skip
 	   them */
@@ -58,7 +52,7 @@ MV PL::MvGetNext(BDG bdg)
 	for (MV mv : rgmv) {
 		bdg.MakeMv(mv);
 		if (!bdg.FSqAttacked(bdg.SqFromTpc(tpcKing, CpcOpposite(bdg.cpcToMove)), bdg.cpcToMove)) {
-			float eval = -EvalBdgDepth(bdg, depth, -1000.0, 1000.0);
+			float eval = -EvalBdgDepth(bdg, 0, depthMax, -1000.0, 1000.0);
 			if (eval > evalBest) {
 				evalBest = eval;
 				mvBest = mv;
@@ -71,7 +65,7 @@ MV PL::MvGetNext(BDG bdg)
 }
 
 
-float PL::EvalBdgDepth(BDG& bdg, int depth, float evalAlpha, float evalBeta) const
+float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta) const
 {
 	vector<MV> rgmv;	/* can't be static because this is called recursively */
 	rgmv.reserve(50);
@@ -82,27 +76,30 @@ float PL::EvalBdgDepth(BDG& bdg, int depth, float evalAlpha, float evalBeta) con
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		return -100.0f;
+		return (float)-(100-depth);
 
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		return -100.0f;
+		return (float)-(100-depth);
 
 	default:	/* draws */
 		return 0.0;
 
 	case GS::Playing:
-		if (depth == 0)
+		if (depth >= depthMax)
 			return EvalBdg(bdg);
 		break;
 	}
+
+//	vector<MV> rgmvScratch;
+//	PreSortRgmv(bdg, rgmv, rgmvScratch, 0, (unsigned)rgmv.size());
 
 	/* find the best move */
 
 	for (MV mv : rgmv) {
 		bdg.MakeMv(mv);
-		float eval = -EvalBdgDepth(bdg, depth - 1, -evalBeta, -evalAlpha);
+		float eval = -EvalBdgDepth(bdg, depth+1, depthMax, -evalBeta, -evalAlpha);
 		bdg.UndoMv();
 		/* prune if the move is too good */
 		if (eval >= evalBeta)
@@ -111,6 +108,42 @@ float PL::EvalBdgDepth(BDG& bdg, int depth, float evalAlpha, float evalBeta) con
 			evalAlpha = eval;
 	}
 	return evalAlpha;
+}
+
+
+int PL::CmpEvalMv(BDG& bdg, MV mv1, MV mv2) const
+{
+	bdg.MakeMv(mv1);
+	float eval1 = EvalBdg(bdg);
+	bdg.UndoMv();
+	bdg.MakeMv(mv2);
+	float eval2 = EvalBdg(bdg);
+	bdg.UndoMv();
+	return eval1 < eval2 ? -1 : (eval2 > eval2 ? 1 : 0);
+}
+
+
+void PL::PreSortRgmv(BDG& bdg, vector<MV>& rgmv, vector<MV>& rgmvScratch, unsigned imvFirst, unsigned imvLim) const
+{
+	if (imvLim - imvFirst <= 1)
+		return;
+	unsigned imvMid = (imvLim + imvFirst) / 2;
+	PreSortRgmv(bdg, rgmv, rgmvScratch, imvFirst, imvMid);
+	PreSortRgmv(bdg, rgmv, rgmvScratch, imvMid + 1, imvLim);
+	rgmvScratch.clear();
+
+	unsigned imvLeft, imvRight, imvOut;
+	for (imvOut = imvFirst, imvLeft = imvFirst, imvRight = imvMid+1; imvLeft < imvMid && imvRight < imvLim; ) {
+		if (CmpEvalMv(bdg, rgmvScratch[imvLeft], rgmvScratch[imvRight]) > 0)
+			rgmvScratch[imvOut++] = rgmv[imvLeft++];
+		else
+			rgmvScratch[imvOut++] = rgmv[imvRight++];
+	}
+	while (imvLeft < imvMid)
+		rgmvScratch[imvOut++] = rgmv[imvLeft++];
+	while (imvRight < imvLim)
+		rgmvScratch[imvOut++] = rgmv[imvRight++];
+	rgmv = rgmvScratch;
 }
 
 
