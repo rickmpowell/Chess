@@ -15,6 +15,7 @@
 #include "uibd.h"
 #include "ti.h"
 #include "bd.h"
+#include "debug.h"
 
 
 /*
@@ -63,6 +64,7 @@ class GA : public UI
 	friend class UITI;
 	friend class UIBD;
 	friend class UIML;
+	friend class UIDB;
 
 protected:
 	static BRS* pbrDesktop;
@@ -74,6 +76,7 @@ public:
 	UITI uiti;
 	UIBD uibd;
 	UIML uiml;
+	UIDB uidb;
 	UI* puiCapt;
 	UI* puiHover;
 

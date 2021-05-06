@@ -145,6 +145,7 @@
   <ItemGroup>
     <ClInclude Include="bd.h" />
     <ClInclude Include="Chess.h" />
+    <ClInclude Include="debug.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ga.h" />
     <ClInclude Include="app.h" />
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bd.cpp" />
+    <ClCompile Include="debug.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ga.cpp" />
     <ClCompile Include="ml.cpp" />

@@ -180,6 +180,7 @@ public:
 	int FileEpPrev(void) const { return (grf >> 24) & 0x07; }
 	bool FEpPrev(void) const { return (grf >> 23) & 0x01; }
 	APC ApcCapture(void) const { return (grf >> 20) & 0x07; }
+	bool FIsCapture(void) const { return  ApcCapture() != apcNull; }
 	TPC TpcCapture(void) const { return (grf >> 16) & 0x0f; }
 	bool operator==(const MV& mv) const { return grf == mv.grf; }
 	bool operator!=(const MV& mv) const { return grf != mv.grf; }
@@ -270,6 +271,7 @@ enum class RMCHK {	// GenRgmv Option to optionally remove checks
 
 class BD
 {
+	static const float mpapcvpc[];
 public:
 	BD(void);
 	BD(const BD& bd);
@@ -293,7 +295,8 @@ public:
 	void ComputeAttacked(CPC cpcMove);
 
 	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove) const;
+	void GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const;
 	void GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const;
@@ -313,6 +316,7 @@ public:
 	bool FInCheck(SQ sqKing) const;
 	bool FSqAttacked(SQ sq, CPC cpcBy) const;
 	bool FMvEnPassant(MV mv) const;
+	bool FMvIsCapture(MV mv) const;
 
 	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
 	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }
@@ -323,12 +327,13 @@ public:
 	inline SQ SqFromTpc(TPC tpc) const { return SqFromTpc(tpc & tpcPiece, CpcFromTpc(tpc)); }
 	inline APC ApcFromSq(SQ sq) const { return ApcFromTpc(mpsqtpc[sq]); }
 	inline CPC CpcFromSq(SQ sq) const { return CpcFromTpc(mpsqtpc[sq]); }
+	inline float VpcFromSq(SQ sq) const { return mpapcvpc[ApcFromTpc(mpsqtpc[sq])]; }
 
 	inline bool FCanCastle(CPC cpc, int csSide) const { return (this->cs & (csSide << cpc)) != 0;  }
 	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
 	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
 
-	int CMaterial(CPC cpc) const;
+	float VpcFromCpc(CPC cpc) const;
 
 	bool operator==(const BD& bd) const;
 	bool operator!=(const BD& bd) const;
@@ -414,6 +419,7 @@ public:
 	void InitFENFullmoveCounter(const WCHAR*& sz);
 
 	void GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const;
+	void GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const;
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);

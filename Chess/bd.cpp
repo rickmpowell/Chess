@@ -10,6 +10,7 @@
 #include "bd.h"
 
 
+
 /*
  *
  *	BD class implementation
@@ -20,6 +21,7 @@
  *
  */
 
+const float BD::mpapcvpc[] = { 0.0f, 1.0f, 2.75f, 3.0f, 5.0f, 8.5f, 0.0f, -1.0f };
 
 BD::BD(void)
 {
@@ -197,7 +199,7 @@ void BD::ComputeAttacked(CPC cpc)
 {
 	static vector<MV> rgmv;
 	rgmv.reserve(50);
-	GenRgmvColor(rgmv, cpc);
+	GenRgmvColor(rgmv, cpc, false);
 	UINT64 grfAttacked = 0;
 	for (MV mv : rgmv)
 		grfAttacked |= 1LL << mv.SqTo();
@@ -393,7 +395,15 @@ void BD::UndoMv(MV mv)
 void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 {
 	Validate();
-	GenRgmvColor(rgmv, cpcMove);
+	GenRgmvColor(rgmv, cpcMove, false);
+	if (rmchk == RMCHK::Remove)
+		RemoveInCheckMoves(rgmv, cpcMove);
+}
+
+
+void BD::GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
+{
+	GenRgmvColor(rgmv, cpcMove, true);
 	if (rmchk == RMCHK::Remove)
 		RemoveInCheckMoves(rgmv, cpcMove);
 }
@@ -431,7 +441,7 @@ bool BD::FSqAttacked(SQ sq, CPC cpcBy) const
  *	Generates moves for the given color pieces. The previous move is
  *	provided, for checking en passant moves.
  */
-void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove) const
+void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const
 {
 	rgmv.clear();
 
@@ -470,6 +480,16 @@ void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove) const
 			assert(false);
 			break;
 		}
+	}
+
+	if (fQuiescent) {
+		int imvTo = 0;
+		for (unsigned imv = 0; imv < rgmv.size(); imv++) {
+			MV mv = rgmv[imv];
+			if (ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv))
+				rgmv[imvTo++] = mv;
+		}
+		rgmv.resize(imvTo);
 	}
 }
 
@@ -763,17 +783,31 @@ bool BD::FMvEnPassant(MV mv) const
 }
 
 
-int BD::CMaterial(CPC cpc) const
+/*	BD::FMvIsCapture
+ *
+ *	Returns true if the move is a capture move. Does not rely on undo information
+ *	in the MV; instead, it checks destination squares to determine if we're removing
+ *	a piece. Also checks en passant.
+ */
+bool BD::FMvIsCapture(MV mv) const
 {
-	static int mpapccMat[] = { 0, 1, 3, 3, 5, 8, 0 }; 
+	return ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv);
+}
 
-	int cMaterial = 0;
+
+/*	BD::VpcFromCpc
+ *
+ *	Piece value of the entire board for the given color
+ */
+float BD::VpcFromCpc(CPC cpc) const
+{
+	float vpc = 0;
 	for (int tpc = 0; tpc < tpcPieceMax; tpc++) {
 		SQ sq = mptpcsq[cpc][tpc];
 		if (!sq.FIsNil())
-			cMaterial += mpapccMat[ApcFromSq(sq)];
+			vpc += VpcFromSq(sq);
 	}
-	return cMaterial;
+	return vpc;
 }
 
 
@@ -967,6 +1001,12 @@ void BDG::InitFENFullmoveCounter(const WCHAR*& sz)
 void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
 {
 	BD::GenRgmv(rgmv, cpcToMove, rmchk);
+}
+
+
+void BDG::GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const
+{
+	BD::GenRgmvQuiescent(rgmv, cpcToMove, rmchk);
 }
 
 

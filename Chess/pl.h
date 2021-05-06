@@ -37,11 +37,12 @@ public:
 		szName = szNew;
 	}
 
-	virtual MV MvGetNext(BDG bdg);
+	virtual MV MvGetNext(GA& ga);
 	void PreSortRgmv(BDG& bdg, vector<MV>& rgmv, vector<MV>& rgmvScratch, unsigned imvFirst, unsigned imvLim) const;
 	int CmpEvalMv(BDG& bdg, MV mv1, MV mv2) const;
 	float EvalBdg(const BDG& bdg) const;
 	float EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta) const;
+	float EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta) const;
 };
 
 

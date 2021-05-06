@@ -150,7 +150,7 @@ void GA::DiscardRsrcClass(void)
 
 
 GA::GA(APP& app) : UI(NULL), app(app), 
-	uiti(this), uibd(this), uiml(this),
+	uiti(this), uibd(this), uiml(this), uidb(this),
 	puiCapt(NULL), puiHover(NULL)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
@@ -252,6 +252,10 @@ void GA::Layout(void)
 	rcf.left = rcf.right + 10.0f;
 	rcf.right = rcf.left + 220.0f;
 	uiml.SetBounds(rcf);
+
+	rcf.left = rcf.right + 10.0f;
+	rcf.right = rcf.left + 220.0f;
+	uidb.SetBounds(rcf);
 }
 
 
@@ -421,7 +425,7 @@ void GA::Play(void)
 {
 	do {
 		PL* ppl = mpcpcppl[bdg.cpcToMove];
-		MV mv = ppl->MvGetNext(this->bdg);
+		MV mv = ppl->MvGetNext(*this);
 		MakeMv(mv, SPMV::Animate);
 	} while (bdg.gs == GS::Playing);
 }
