@@ -38,17 +38,6 @@ BD::BD(void)
 }
 
 
-BD::BD(const BD& bd)
-{
-	memcpy(mpsqtpc, bd.mpsqtpc, sizeof(mpsqtpc));
-	memcpy(rggrfAttacked, bd.rggrfAttacked, sizeof(rggrfAttacked));
-	memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
-	cs = bd.cs;
-	sqEnPassant = bd.sqEnPassant;
-	Validate();
-}
-
-
 /*	BD::operator==
  *
  *	Compare two board states for equality. Boards are equal if all the pieces
@@ -876,16 +865,8 @@ void BD::Validate(void) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : cpcToMove(cpcWhite), imvCur(-1), imvPawnOrTakeLast(-1)
+BDG::BDG(void) : gs(GS::Playing), cpcToMove(cpcWhite), imvCur(-1), imvPawnOrTakeLast(-1)
 {
-	SetGs(GS::Playing);
-}
-
-
-BDG::BDG(const BDG& bdg) : BD(bdg), cpcToMove(bdg.cpcToMove), 
-		rgmvGame(bdg.rgmvGame), imvCur(bdg.imvCur), imvPawnOrTakeLast(bdg.imvPawnOrTakeLast)
-{
-	SetGs(bdg.gs);
 }
 
 

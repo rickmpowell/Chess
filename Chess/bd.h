@@ -274,7 +274,6 @@ class BD
 	static const float mpapcvpc[];
 public:
 	BD(void);
-	BD(const BD& bd);
 	
 	TPC mpsqtpc[sqMax];	// the board itself (maps square to piece)
 	UINT64 rggrfAttacked[cpcMax];	// bit field of attacked squares (black=1, white=0)
@@ -406,7 +405,6 @@ public:
 
 public:
 	BDG(void);
-	BDG(const BDG& BDG);
 	BDG(const WCHAR* szFEN);
 
 	void NewGame(void);

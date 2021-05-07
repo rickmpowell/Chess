@@ -1,3 +1,4 @@
+  AI: build lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   AI: Display progress in the debug panel
   AI: Add message pump while thinking
@@ -5,8 +6,6 @@
   Add ability to save PGN files
   Add a UI for setting up a board
   AI: Play through until no checks before evaluation
-  AI: Play through until no captures before board evaluation
-  AI: Sort moves to improve alpha-beta pruning
   Test: PGN games should feed moves through a PL
   ML: Merge UIGO and UIGC
   ML: Checkmates should have a # instead of a +
@@ -52,6 +51,8 @@
   UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
+* AI: Sort moves to improve alpha-beta pruning
+* AI: Play through until no captures before board evaluation
 * BDG eval: checkmates should be adjusted by number of moves
 * AI: Not taking checkmates when they are available
 * Have File/Play play the game on screen instead of creating new game

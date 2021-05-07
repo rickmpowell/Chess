@@ -11,6 +11,15 @@
 #include "bd.h"
 
 
+class BDGMVEV : public BDG
+{
+public:
+	MV mv;
+	float eval;
+	BDGMVEV(void) : mv(MV()), eval(0.0f) { }
+	BDGMVEV(const BDG& bdg, MV mv) : BDG(bdg), mv(mv), eval(0.0f) { MakeMv(mv); }
+};
+
 
 /*
  *
@@ -38,8 +47,9 @@ public:
 	}
 
 	virtual MV MvGetNext(GA& ga);
-	void PreSortRgmv(BDG& bdg, vector<MV>& rgmv, vector<MV>& rgmvScratch, unsigned imvFirst, unsigned imvLim) const;
-	int CmpEvalMv(BDG& bdg, MV mv1, MV mv2) const;
+	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg) const;
+	void PreSortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, unsigned ibdgFirst, unsigned ibdgLim) const;
+	int CmpEvalMv(const BDG& bdg1, const BDG& bdg2) const;
 	float EvalBdg(const BDG& bdg) const;
 	float EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta) const;
 	float EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta) const;

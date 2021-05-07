@@ -24,6 +24,8 @@ PL::~PL(void)
 }
 
 
+
+
 /*	PL::MvGetNext
  *
  *	Returns the next move the player wants to make on the given board. Returns mvNil if
@@ -43,32 +45,33 @@ MV PL::MvGetNext(GA& ga)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, CpcOpposite(bdg.cpcToMove), false);
-	int depthMax = (int)round(log(50000.0f*50000.0f) / (log((float)(rgmv.size()*rgmvOpp.size()))));
-	if (depthMax < 3)
-		depthMax = 3;
+	int depthMax = (int)round(log(10000000.0f*10000000.0f) / (log((float)(rgmv.size()*rgmvOpp.size()))));
+	if (depthMax < 5)
+		depthMax = 5;
 
-	/* and find the best move - we have illegal moves in this move list, so be sure to skip
-	   them */
-	
+	/* and find the best move */
+
+	bdg.GenRgmv(rgmv, RMCHK::Remove);
+	vector<BDGMVEV> rgbdg;
+	PreSortMoves(bdg, rgmv, rgbdg);
+
 	MV mvBest;
-	float evalBest = -1000.f;
-	for (MV mv : rgmv) {
-		bdg.MakeMv(mv);
-		if (!bdg.FSqAttacked(bdg.SqFromTpc(tpcKing, CpcOpposite(bdg.cpcToMove)), bdg.cpcToMove)) {
-			float eval = -EvalBdgDepth(bdg, 0, depthMax, -1000.0, 1000.0);
-			ga.uidb.AddEval(bdg, mv, eval);
-			if (eval > evalBest) {
-				evalBest = eval;
-				mvBest = mv;
-			}
+	float evalAlpha = -1000.0f, evalBeta = 1000.0f;
+	for (BDGMVEV& bdgmvev : rgbdg) {
+		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha);
+		if (eval > evalAlpha) {
+			evalAlpha = eval;
+			mvBest = bdgmvev.mv;
 		}
-		bdg.UndoMv();
 	}
-	
 	return mvBest;
 }
 
 
+/*	PL::EvalBdgDepth
+ *
+ *	Evaluates the board from the point of view of the person who made the previous move.
+ */
 float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta) const
 {
 	vector<MV> rgmv;	/* can't be static because this is called recursively */
@@ -91,16 +94,13 @@ float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float
 		break;
 	}
 
-//	vector<MV> rgmvScratch;
-//	PreSortRgmv(bdg, rgmv, rgmvScratch, 0, (unsigned)rgmv.size());
-
 	/* find the best move */
 
-	for (MV mv : rgmv) {
-		bdg.MakeMv(mv);
-		float eval = -EvalBdgDepth(bdg, depth+1, depthMax, -evalBeta, -evalAlpha);
-		bdg.UndoMv();
-		/* prune if the move is too good */
+	vector<BDGMVEV> rgbdg;
+	PreSortMoves(bdg, rgmv, rgbdg);
+
+	for (BDGMVEV& bdgmvev : rgbdg) {
+		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha);
 		if (eval >= evalBeta)
 			return evalBeta;
 		if (eval > evalAlpha)
@@ -110,9 +110,15 @@ float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float
 }
 
 
+/*	PL::EvalBdgQuiescent
+ *
+ *	Returns the quiescent evaluation of the board from the point of view of the previous 
+ *	move player, i.e., it evaluates the previous move.
+ */
 float PL::EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta) const
 {
-	float eval = EvalBdg(bdg);
+	float eval = -EvalBdg(bdg);
+	return eval;
 
 	vector<MV> rgmv;	/* can't be static because this is called recursively */
 	rgmv.reserve(50);
@@ -121,6 +127,7 @@ float PL::EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta)
 	if (rgmv.size() == 0)
 		return eval;
 
+	/* include no-move as possible quiescent stopping point */
 	if (eval >= evalBeta)
 		return evalBeta;
 	if (eval > evalAlpha)
@@ -140,39 +147,38 @@ float PL::EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta)
 }
 
 
-int PL::CmpEvalMv(BDG& bdg, MV mv1, MV mv2) const
+void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg) const
 {
-	bdg.MakeMv(mv1);
-	float eval1 = EvalBdg(bdg);
-	bdg.UndoMv();
-	bdg.MakeMv(mv2);
-	float eval2 = EvalBdg(bdg);
-	bdg.UndoMv();
-	return eval1 < eval2 ? -1 : (eval2 > eval2 ? 1 : 0);
+	for (MV mv : rgmv) {
+		BDGMVEV bdgmvev(bdg, mv);
+		bdgmvev.eval = EvalBdg(bdgmvev);
+		rgbdg.push_back(bdgmvev);
+	}
+	static vector<BDGMVEV> rgbdgScratch;
+	rgbdgScratch.resize(rgbdg.size());
+	PreSortRgbdgmvev(rgbdg, rgbdgScratch, 0, (unsigned)rgbdg.size());
 }
 
 
-void PL::PreSortRgmv(BDG& bdg, vector<MV>& rgmv, vector<MV>& rgmvScratch, unsigned imvFirst, unsigned imvLim) const
+void PL::PreSortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, unsigned ibdgFirst, unsigned ibdgLim) const
 {
-	if (imvLim - imvFirst <= 1)
+	if (ibdgLim - ibdgFirst <= 1)
 		return;
-	unsigned imvMid = (imvLim + imvFirst) / 2;
-	PreSortRgmv(bdg, rgmv, rgmvScratch, imvFirst, imvMid);
-	PreSortRgmv(bdg, rgmv, rgmvScratch, imvMid + 1, imvLim);
-	rgmvScratch.clear();
+	unsigned ibdgMid = (ibdgLim + ibdgFirst) / 2;
+	PreSortRgbdgmvev(rgbdg, rgbdgScratch, ibdgFirst, ibdgMid);
+	PreSortRgbdgmvev(rgbdg, rgbdgScratch, ibdgMid, ibdgLim);
 
-	unsigned imvLeft, imvRight, imvOut;
-	for (imvOut = imvFirst, imvLeft = imvFirst, imvRight = imvMid+1; imvLeft < imvMid && imvRight < imvLim; ) {
-		if (CmpEvalMv(bdg, rgmvScratch[imvLeft], rgmvScratch[imvRight]) > 0)
-			rgmvScratch[imvOut++] = rgmv[imvLeft++];
+	unsigned ibdgLeft, ibdgRight, ibdgOut;
+	for (ibdgOut = ibdgFirst, ibdgLeft = ibdgFirst, ibdgRight = ibdgMid; ibdgLeft < ibdgMid && ibdgRight < ibdgLim; ) {
+		if (rgbdg[ibdgLeft].eval >= rgbdg[ibdgRight].eval)
+			swap(rgbdgScratch[ibdgOut++], rgbdg[ibdgLeft++]);
 		else
-			rgmvScratch[imvOut++] = rgmv[imvRight++];
+			swap(rgbdgScratch[ibdgOut++], rgbdg[ibdgRight++]);
 	}
-	while (imvLeft < imvMid)
-		rgmvScratch[imvOut++] = rgmv[imvLeft++];
-	while (imvRight < imvLim)
-		rgmvScratch[imvOut++] = rgmv[imvRight++];
-	rgmv = rgmvScratch;
+	while (ibdgLeft < ibdgMid)
+		swap(rgbdgScratch[ibdgOut++], rgbdg[ibdgLeft++]);
+	for (unsigned ibdg = ibdgFirst; ibdg < ibdgOut; ibdg++)
+		swap(rgbdg[ibdg], rgbdgScratch[ibdg]);
 }
 
 
@@ -182,18 +188,18 @@ void PL::PreSortRgmv(BDG& bdg, vector<MV>& rgmv, vector<MV>& rgmvScratch, unsign
  */
 float PL::EvalBdg(const BDG& bdg) const
 {
-	float vpcSelf = bdg.VpcFromCpc(bdg.cpcToMove);
-	float vpcOpp = bdg.VpcFromCpc(CpcOpposite(bdg.cpcToMove));
-	float evalMat = (float)(vpcSelf - vpcOpp) / (float)(vpcSelf + vpcOpp);
+	float vpcNext = bdg.VpcFromCpc(bdg.cpcToMove);
+	float vpcSelf = bdg.VpcFromCpc(CpcOpposite(bdg.cpcToMove));
+	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
 
-	static vector<MV> rgmvOpp;
-	static vector<MV> rgmv;
-	rgmv.reserve(50);
-	rgmvOpp.reserve(50);
-	bdg.GenRgmvColor(rgmv, bdg.cpcToMove, false);
-	bdg.GenRgmvColor(rgmvOpp, CpcOpposite(bdg.cpcToMove), false);
-	float evalMob = (float)((int)rgmv.size() - (int)rgmvOpp.size()) /
-		(float)((int)rgmv.size() + (int)rgmvOpp.size());
+	static vector<MV> rgmvNext;
+	static vector<MV> rgmvSelf;
+	rgmvNext.reserve(50);
+	rgmvSelf.reserve(50);
+	bdg.GenRgmvColor(rgmvNext, bdg.cpcToMove, false);
+	bdg.GenRgmvColor(rgmvSelf, CpcOpposite(bdg.cpcToMove), false);
+	float evalMob = (float)((int)rgmvSelf.size() - (int)rgmvNext.size()) /
+		(float)((int)rgmvSelf.size() + (int)rgmvNext.size());
 
 	return 2.5f * evalMob + 5.f * evalMat;
 }
