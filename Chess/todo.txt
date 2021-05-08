@@ -1,3 +1,4 @@
+  Don't display resign/draw controls during test playback
   Allow human to play the AI
   AI: Don't prune moves during quiescent move gen if we're in check
   AI: build lookahead tree 
@@ -30,21 +31,19 @@
   Official game has slightly different rules for some draw situations
   Playing test PGN files should display result in game over panel
   ML: Animate the game over panel into position.
-  Need a no-clock mode that works with certain clock games, and playback modes
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
   Change Undo/Redo to be an imvCur operation
   UIBD: When dragging pieces, highlight square when hovering over a legal move
   Animate moves when manually going through move list
   UI for clock/timing rules 
-  Implement full clock/timing rules
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Implement move list scrolling 
   ML: Optimize redraw
-  UIBD: Optimize redraw of
+  UIBD: Optimize redraw
   ML: Implement selection in UIML
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
@@ -53,6 +52,9 @@
   UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
+* Need a no-clock mode that works with certain clock games, and playback modes
+* Implement full clock/timing rules
+* Convert to 0x88 board
 * AI: Sort moves to improve alpha-beta pruning
 * AI: Play through until no captures before board evaluation
 * BDG eval: checkmates should be adjusted by number of moves
@@ -98,4 +100,3 @@
 * Make default Draw() draw child UIs
 * Change title panel to display players with color icons, and type of game (e.g., 5+3 Blitz, Correspondence)
 * Aborting Tests run does not really abort 
-

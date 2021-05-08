@@ -171,7 +171,7 @@ void UIBD::MakeMv(MV mv, SPMV spmv)
 		AnimateMv(mv);
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
-	ga.bdg.SetGameOver(rgmvDrag);
+	ga.bdg.SetGameOver(rgmvDrag, *ga.prule);
 	if (ga.bdg.gs != GS::Playing)
 		rgmvDrag.clear();
 	if (spmv != SPMV::Hidden)
@@ -248,9 +248,12 @@ void UIBD::DrawMargins(void)
  */
 void UIBD::DrawSquares(void)
 {
-	for (SQ sq = 0; sq < sqMax; sq++)
-		if ((sq.rank() + sq.file()) % 2 == 0)
-			FillRcf(RcfFromSq(sq), pbrDark);
+	for (int rank = 0; rank < rankMax; rank++)
+		for (int file = 0; file < fileMax; file++) {
+			SQ sq(rank, file);
+			if ((rank + file) % 2 == 0)
+				FillRcf(RcfFromSq(sq), pbrDark);
+		}
 }
 
 
@@ -340,7 +343,7 @@ void UIBD::DrawGameState(void)
  */
 RCF UIBD::RcfFromSq(SQ sq) const
 {
-	assert(sq >= 0 && sq < sqMax);
+	assert(!sq.FIsOffBoard());
 	int rank = sq.rank(), file = sq.file();
 	if (cpcPointOfView == cpcWhite)
 		rank = rankMax - 1 - rank;
@@ -399,7 +402,7 @@ void UIBD::DrawHover(void)
 
 /*	UIBD::DrawPieces
  *
- *	Draws pieces on the board. Includes support for the trackingn display
+ *	Draws pieces on the board. Includes support for the tracking display
  *	while we're dragging pieces.
  *
  *	Direct2D is fast enough for us to do full screen redraws on just about
@@ -407,10 +410,14 @@ void UIBD::DrawHover(void)
  */
 void UIBD::DrawPieces(void)
 {
-	for (SQ sq = 0; sq < sqMax; sq++) {
-		float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-		DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqtpc[sq]);
-	}
+	for (CPC cpc = 0; cpc < cpcMax; cpc++)
+		for (TPC tpc = 0; tpc < tpcPieceMax; tpc++) {
+			SQ sq = ga.bdg.SqFromTpc(tpc, cpc);
+			if (sq.FIsNil())
+				continue;
+			float opacity = sqDragInit == sq ? 0.2f : 1.0f;
+			DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqtpc[sq]);
+		}
 	if (!sqDragInit.FIsNil())
 		DrawDragPc(rcfDragPc);
 }

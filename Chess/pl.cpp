@@ -58,7 +58,7 @@ MV PL::MvGetNext(GA& ga)
 	MV mvBest;
 	float evalAlpha = -1000.0f, evalBeta = 1000.0f;
 	for (BDGMVEV& bdgmvev : rgbdg) {
-		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha);
+		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
 		if (eval > evalAlpha) {
 			evalAlpha = eval;
 			mvBest = bdgmvev.mv;
@@ -72,13 +72,13 @@ MV PL::MvGetNext(GA& ga)
  *
  *	Evaluates the board from the point of view of the person who made the previous move.
  */
-float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta) const
+float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule) const
 {
 	vector<MV> rgmv;	/* can't be static because this is called recursively */
 	rgmv.reserve(50);
 	bdg.GenRgmv(rgmv, RMCHK::Remove);
 
-	switch (bdg.GsTestGameOver(rgmv)) {
+	switch (bdg.GsTestGameOver(rgmv, rule)) {
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
@@ -100,7 +100,7 @@ float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float
 	PreSortMoves(bdg, rgmv, rgbdg);
 
 	for (BDGMVEV& bdgmvev : rgbdg) {
-		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha);
+		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		if (eval >= evalBeta)
 			return evalBeta;
 		if (eval > evalAlpha)

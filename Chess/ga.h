@@ -25,27 +25,6 @@
 const UINT tidClock = 1;
 
 
-/*
- *
- *	GTM
- * 
- *	Game timing options
- * 
- */
-class GTM
-{
-	DWORD tmGame;
-	DWORD dtmMove;
-public:
-	GTM(void) : tmGame(3 * 60 * 1000), dtmMove(5 * 1000) { }
-	DWORD TmGame(void) const {
-		return tmGame;
-	}
-	DWORD DtmMove(void) const {
-		return dtmMove;
-	}
-};
-
 
 /*
  *
@@ -83,15 +62,13 @@ public:
 public:
 	BDG bdg;	// board
 	PL* mpcpcppl[2];	// players
-	GTM gtm;
+	RULE* prule;
 	DWORD mpcpctmClock[2];	// player clocks
 	DWORD tmLast;	// time of last move
 
 public:
 	GA(APP& app);
 	~GA(void);
-
-	void Init(void);
 
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void PresentSwch(void) const;
@@ -114,7 +91,7 @@ public:
 	void Timer(UINT tid, DWORD tm);
 
 	void Play(void);
-	void NewGame(void);
+	void NewGame(RULE* prule);
 	void StartGame(void);
 	void EndGame(void);
 	void MakeMv(MV mv, SPMV spmv);

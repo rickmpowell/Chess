@@ -106,7 +106,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
     pga = new GA(*this);
     pga->SetPl(cpcWhite, new PL(L"Squub"));
     pga->SetPl(cpcBlack, new PL(L"Frapija"));
-    pga->NewGame();
+    pga->NewGame(new RULE);
 
     /* create the main window */
 
@@ -474,7 +474,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->NewGame();
+        app.pga->NewGame(new RULE);
         app.pga->Redraw();
         return 1;
     }

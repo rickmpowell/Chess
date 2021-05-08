@@ -16,7 +16,7 @@
  */
 void GA::Test(void)
 {
-	NewGame();
+	NewGame(new RULE(0, 0, 0));
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	UndoTest();
 	PlayPGNFiles(L"..\\Chess\\Test");
@@ -210,14 +210,9 @@ int GA::PlayPGNFile(const WCHAR szFile[])
 }
 
 
-void GA::Init(void)
-{
-	NewGame();
-}
-
 int GA::PlayPGNGame(ISTKPGN& istkpgn)
 {
-	Init();
+	NewGame(new RULE(0, 0, 0));
 	if (!ReadPGNHeaders(istkpgn))
 		return 0;
 	ReadPGNMoveList(istkpgn);

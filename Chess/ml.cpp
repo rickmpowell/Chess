@@ -593,6 +593,10 @@ void UIML::DrawMoveNumber(RCF rcf, int imv)
 void UIML::NewGame(void)
 {
 	puigo->Show(false);
+	bool fTimed = ga.prule->TmGame() != 0;
+	mpcpcpuiclock[cpcWhite]->Show(fTimed);
+	mpcpcpuiclock[cpcBlack]->Show(fTimed);
+
 	bdgInit = ga.bdg;
 	UpdateContSize();
 }

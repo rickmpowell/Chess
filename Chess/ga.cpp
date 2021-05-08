@@ -149,7 +149,7 @@ void GA::DiscardRsrcClass(void)
 }
 
 
-GA::GA(APP& app) : UI(NULL), app(app), 
+GA::GA(APP& app) : UI(NULL), app(app), prule(NULL), 
 	uiti(this), uibd(this), uiml(this), uidb(this),
 	puiCapt(NULL), puiHover(NULL)
 {
@@ -164,6 +164,8 @@ GA::~GA(void)
 	for (CPC cpc = 0; cpc < cpcMax; cpc++)
 		if (mpcpcppl[cpc])
 			delete mpcpcppl[cpc];
+	if (prule)
+		delete prule;
 }
 
 
@@ -261,10 +263,15 @@ void GA::Layout(void)
 
 /*	GA::NewGame 
  *
- *	Starts a new game, initializing everything and redrawing the screen
+ *	Starts a new game with the given rule set, initializing everything and redrawing 
+ *	the screen
  */
-void GA::NewGame(void)
+void GA::NewGame(RULE* prule)
 {
+	if (this->prule)
+		delete this->prule;
+	this->prule = prule;
+
 	bdg.NewGame();
 	uibd.NewGame();
 	uiml.NewGame();
@@ -275,14 +282,15 @@ void GA::NewGame(void)
 void GA::StartGame(void)
 {
 	tmLast = 0;
-	mpcpctmClock[cpcWhite] = gtm.TmGame();
-	mpcpctmClock[cpcBlack] = gtm.TmGame();
+	mpcpctmClock[cpcWhite] = prule->TmGame();
+	mpcpctmClock[cpcBlack] = prule->TmGame();
 }
 
 
 void GA::EndGame(void)
 {
-	app.DestroyTimer(tidClock);
+	if (prule->TmGame())
+		app.DestroyTimer(tidClock);
 	uiml.EndGame();
 }
 
@@ -336,6 +344,8 @@ void GA::DispatchCmd(int cmd)
 
 void GA::Timer(UINT tid, DWORD tmCur)
 {
+	if (prule->TmGame() == 0)
+		return;
 	DWORD dtm = tmCur - tmLast;
 	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
 		dtm = mpcpctmClock[bdg.cpcToMove];
@@ -350,11 +360,15 @@ void GA::Timer(UINT tid, DWORD tmCur)
 
 void GA::StartClock(CPC cpc, DWORD tmCur)
 {
+	if (prule->TmGame() == 0)
+		return;
 }
 
 
 void GA::PauseClock(CPC cpc, DWORD tmCur)
 {
+	if (prule->TmGame() == 0)
+		return;
 	mpcpctmClock[cpc] -= tmCur - tmLast;
 	uiml.mpcpcpuiclock[cpc]->Redraw();
 }
@@ -362,9 +376,12 @@ void GA::PauseClock(CPC cpc, DWORD tmCur)
 
 void GA::SwitchClock(DWORD tmCur)
 {
+	if (prule->TmGame() == 0)
+		return;
+
 	if (tmLast) {
 		PauseClock(bdg.cpcToMove, tmCur);
-		mpcpctmClock[bdg.cpcToMove] += gtm.DtmMove();
+		mpcpctmClock[bdg.cpcToMove] += prule->DtmMove();
 	}
 	else {
 		app.CreateTimer(tidClock, 10);

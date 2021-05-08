@@ -51,7 +51,7 @@ public:
 	void PreSortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, unsigned ibdgFirst, unsigned ibdgLim) const;
 	int CmpEvalMv(const BDG& bdg1, const BDG& bdg2) const;
 	float EvalBdg(const BDG& bdg) const;
-	float EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta) const;
+	float EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule) const;
 	float EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta) const;
 };
 

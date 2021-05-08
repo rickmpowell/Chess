@@ -11,6 +11,37 @@
 #include "framework.h"
 
 
+/*
+ *
+ *	RULE
+ *
+ *	Game rules
+ *
+ */
+
+
+class RULE
+{
+	DWORD tmGame;	// if zero, untimed game
+	DWORD dtmMove;
+	unsigned cmvRepeatDraw; // if zero, no automatic draw detection
+public:
+	RULE(void) : tmGame(3 * 60 * 1000), dtmMove(5 * 1000), cmvRepeatDraw(3) { }
+	RULE(DWORD tmGame, DWORD dtmMove, unsigned cmvRepeatDraw) : tmGame(tmGame), dtmMove(dtmMove),
+		cmvRepeatDraw(cmvRepeatDraw) {
+	}
+	DWORD TmGame(void) const {
+		return tmGame;
+	}
+	DWORD DtmMove(void) const {
+		return dtmMove;
+	}
+	int CmvRepeatDraw(void) const {
+		return cmvRepeatDraw;
+	}
+};
+
+
 enum {
 	tpcQueenRook = 0,
 	tpcQueenKnight = 1,
@@ -40,7 +71,8 @@ enum {
 
 	tpcApc = 0x70,
 
-	tpcEmpty = 0x80
+	tpcEmpty = 0x80,
+	tpcNil = 0xf0
 };
 
 typedef BYTE TPC;
@@ -103,21 +135,22 @@ private:
 public:
 	inline SQ(void) : grf(0xff) { }
 	inline SQ(BYTE grf) : grf(grf) { }
-	inline SQ(int rank, int file) { grf = (rank << 3) | file; }
+	inline SQ(int rank, int file) { grf = (rank << 4) | file; }
 	inline SQ(const SQ& sq) { grf = sq.grf; }
 	inline int file(void) const { return grf & 0x07; }
-	inline int rank(void) const { return (grf >> 3) & 0x07; }
+	inline int rank(void) const { return (grf >> 4) & 0x07; }
 	inline bool FIsNil(void) const { return grf == 0xff; }
-	inline bool FIsMax(void) const { return grf == rankMax * fileMax; }
-	inline SQ operator++(int) { BYTE grfT = grf++; return SQ(grfT); }
+	inline bool FIsOffBoard(void) const { return grf & 0x88; }
 	inline SQ& operator+=(int dsq) { grf += dsq; return *this; }
 	inline SQ operator+(int dsq) const { return SQ(grf + dsq); }
 	inline operator int() const { return grf; }
-	inline bool FIsValid(void) const { return (grf & 0xc0) == 0; }
+	inline SQ operator++(int) { BYTE grfT = grf++; return SQ(grfT); }
+	inline SQ operator-(int dsq) const { return SQ((BYTE)(grf - dsq)); }
 	inline SQ SqFlip(void) { return SQ(rankMax - 1 - rank(), file()); }
+	inline int shgrf(void) const { return (grf & 7) | ((grf >> 1) & 0x38); }
+	inline UINT64 fgrf(void) const { return 1LL << shgrf(); }
 };
 
-const int sqMax = rankMax*8;
 const SQ sqNil = SQ();
 
 
@@ -128,7 +161,7 @@ const SQ sqNil = SQ();
  *	A move is a from and to square, with a little extra info for
  *	weird moves, along with enough information to undo the move.
  * 
- *	Low 6 bits is the source square, the next 6 bits are the 
+ *	Low 8 bits is the source square, the next 8 bits are the 
  *	destination square. The rest of the bottom word is currently
  *	unused, reserved for a change in board representation.
  *	
@@ -144,9 +177,9 @@ const SQ sqNil = SQ();
  *	There are opportunities to compress the upper word of the move.
  * 
  *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
- *  +-----------+--------+--------+--------+--------+
- *  |           |        to       |       from      |
- *  +-----------+--------+--------+--------+--------+
+ *  +-----------+-----------+-----------+-----------+
+ *  |           to          |         from          |
+ *  +-----------+-----------+-----------+-----------+
  *  +--------+-----+--------+--+--------+-----------+
  *  | promote|  cs | ep file|ep| cap apc|  cap tpc  |
  *  +--------+-----+--------+--+--------+-----------+
@@ -160,12 +193,12 @@ private:
 public:
 	MV(void) { grf = grfNil; }
 	MV(SQ sqFrom, SQ sqTo, APC apcPromote = apcNull) {
-		grf = (unsigned long)sqFrom.grf | ((unsigned long)sqTo.grf << 6) | 
+		grf = (unsigned long)sqFrom.grf | ((unsigned long)sqTo.grf << 8) | 
 			((unsigned long)apcPromote << 29);
 	}
 	
-	SQ SqFrom(void) const { return grf & 0x3f; }
-	SQ SqTo(void) const { return (grf >> 6) & 0x3f; }
+	SQ SqFrom(void) const { return grf & 0xff; }
+	SQ SqTo(void) const { return (grf >> 8) & 0xff; }
 	APC ApcPromote(void) const { return (grf >> 29) & 0x07; }
 	bool FIsNil(void) const { return grf == grfNil; }
 	MV& SetApcPromote(APC apc) { grf = (grf & 0x1fffffffL) | ((unsigned long)apc << 29); return *this;  }
@@ -247,7 +280,7 @@ inline int RankInitPawnFromCpc(CPC cpc)
 
 inline int DsqPawnFromCpc(CPC cpc)
 {
-	return 8 - (cpc << 4);
+	return 16 - (cpc << 5);
 }
 
 inline CPC CpcOpposite(CPC cpc)
@@ -261,7 +294,12 @@ inline CPC CpcOpposite(CPC cpc)
  *
  *	BD class
  * 
- *	The board.
+ *	The board. Our board is 8 rows (rank) x 16 column (file) representation, with unused
+ *	files 8-15. This representation is convenient because it leaves an extra bit worth of 
+ *	space for overflowing the legal range, which we use for representing "off board". 
+ * 
+ *	Be careful how you enumerate over the squares of the board, since there are invalid 
+ *	squares in the naive loop.
  * 
  */
 
@@ -274,14 +312,16 @@ class BD
 {
 	static const float mpapcvpc[];
 public:
-	BD(void);
-	
-	TPC mpsqtpc[sqMax];	// the board itself (maps square to piece)
+	TPC mpsqtpc[64*2];	// the board itself (maps square to piece)
 	UINT64 rggrfAttacked[cpcMax];	// bit field of attacked squares (black=1, white=0)
 	SQ mptpcsq[cpcMax][tpcPieceMax]; // reverse mapping of mpsqtpc (black=1, white=0)
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	BYTE cs;	/* castle sides */
+
+public:
+	BD(void);
+	void SetEmpty(void);
 
 	void InitFENPieces(const WCHAR*& szFEN);
 	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
@@ -422,8 +462,8 @@ public:
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);
-	GS GsTestGameOver(const vector<MV>& rgmv) const;
-	void SetGameOver(const vector<MV>& rgmv);
+	GS GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const;
+	void SetGameOver(const vector<MV>& rgmv, const RULE& rule);
 
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;

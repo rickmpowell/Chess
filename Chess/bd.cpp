@@ -25,16 +25,26 @@ const float BD::mpapcvpc[] = { 0.0f, 1.0f, 2.75f, 3.0f, 5.0f, 8.5f, 0.0f, -1.0f 
 
 BD::BD(void)
 {
+	SetEmpty();
+	cs = ((csKing | csQueen) << cpcWhite) | ((csKing | csQueen) << cpcBlack); 
+	sqEnPassant = sqNil;
+	Validate();
+}
+
+
+void BD::SetEmpty(void)
+{
 	assert(sizeof(mpsqtpc[0]) == 1);
 	memset(mpsqtpc, tpcEmpty, sizeof(mpsqtpc));
+	for (int file = 8; file < 16; file++)
+		for (int rank = 0; rank < 8; rank++)
+			mpsqtpc[SQ(rank, file)] = tpcNil;
+
 	for (int color = 0; color < 2; color++) {
 		rggrfAttacked[color] = 0L;
 		for (int tpc = 0; tpc < tpcPieceMax; tpc++)
 			mptpcsq[color][tpc] = sqNil;
 	}
-	cs = ((csKing | csQueen) << cpcWhite) | ((csKing | csQueen) << cpcBlack); 
-	sqEnPassant = sqNil;
-	Validate();
 }
 
 
@@ -72,20 +82,13 @@ bool BD::operator!=(const BD& bd) const
  */
 void BD::InitFENPieces(const WCHAR*& szFEN)
 {
-	/* mark everything empty */
-	
-	SQ sq;
-	for (sq = 0; sq < sqMax; sq++)
-		mpsqtpc[sq] = tpcEmpty;
-	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++)
-		for (int tpc = 0; tpc < tpcPieceMax; tpc++)
-			mptpcsq[cpc][tpc] = sqNil;
+	SetEmpty();
 
 	/* parse the line */
 
 	int rank = rankMax - 1;
 	int tpcPawn = tpcPawnFirst;
-	sq = SQ(rank, 0);
+	SQ sq = SQ(rank, 0);
 	const WCHAR* pch;
 	for (pch = szFEN; *pch != L' ' && *pch != L'\0'; pch++) {
 		switch (*pch) {
@@ -191,7 +194,7 @@ void BD::ComputeAttacked(CPC cpc)
 	GenRgmvColor(rgmv, cpc, false);
 	UINT64 grfAttacked = 0;
 	for (MV mv : rgmv)
-		grfAttacked |= 1LL << mv.SqTo();
+		grfAttacked |= mv.SqTo().fgrf();
 	rggrfAttacked[cpc] = grfAttacked;
 }
 
@@ -420,8 +423,7 @@ void BD::RemoveInCheckMoves(vector<MV>& rgmv, CPC cpcMove) const
  */
 bool BD::FSqAttacked(SQ sq, CPC cpcBy) const
 {
-	UINT64 grf = 1LL << sq;
-	return (rggrfAttacked[cpcBy] & grf) != 0;
+	return (rggrfAttacked[cpcBy] & sq.fgrf()) != 0;
 }
 
 
@@ -505,7 +507,7 @@ void BD::AddRgmvMv(vector<MV>& rgmv, MV mv) const
 bool BD::FInCheck(SQ sqKing) const
 {
 	assert((mpsqtpc[sqKing] & tpcPiece) == tpcKing);
-	return ((1LL << sqKing) & rggrfAttacked[!CpcFromTpc(mpsqtpc[sqKing])]);
+	return (sqKing.fgrf() & rggrfAttacked[CpcOpposite(CpcFromTpc(mpsqtpc[sqKing]))]);
 }
 
 
@@ -537,10 +539,8 @@ void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
 
 	/* captures */
 
-	if (sqFrom.file() != 0)
-		GenRgmvPawnCapture(rgmv, sqFrom, dsq - 1);
-	if (sqFrom.file() != 7)
-		GenRgmvPawnCapture(rgmv, sqFrom, dsq + 1);
+	GenRgmvPawnCapture(rgmv, sqFrom, dsq - 1);
+	GenRgmvPawnCapture(rgmv, sqFrom, dsq + 1);
 }
 
 
@@ -565,6 +565,8 @@ void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 {
 	assert(ApcFromSq(sqFrom) == apcPawn);
 	SQ sqTo = sqFrom + dsq;
+	if (sqTo.FIsOffBoard())
+		return;
 	TPC tpcFrom = mpsqtpc[sqFrom];
 	CPC cpcFrom = CpcFromTpc(tpcFrom);
 	if (mpsqtpc[sqTo] != tpcEmpty && ((mpsqtpc[sqTo] ^ tpcFrom) & tpcColor)) {
@@ -588,20 +590,11 @@ void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 bool BD::FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) const
 {
 	SQ sqTo = sq + dsq;
-
-	/* did we move off the bottom or top edge of the board? */
-	if (!sqTo.FIsValid())
+	if (sqTo.FIsOffBoard())
 		return false;
 
 	/* have we run into one of our own pieces? */
 	if (mpsqtpc[sqTo] != tpcEmpty && ((mpsqtpc[sqTo] ^ tpcFrom) & tpcColor) == 0)
-		return false;
-
-	/* knights can potentially move 2 files away, all other pieces
-	   only move at most one file at a time during the slide; any
-	   other value is a wrap-around on the side, which is not legal */
-	int dfile = sq.file() - sqTo.file();
-	if (dfile < -2 || dfile > 2)
 		return false;
 
 	/* add the move to the list */
@@ -620,7 +613,7 @@ bool BD::FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, TPC tpcFrom, int dsq) c
  */
 void BD::GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const
 {
-	int rgdsq[8] = { 17, 15, 10, 6, -6, -10, -15, -17 };
+	int rgdsq[8] = { 33, 31, 18, 14, -14, -18, -31, -33 };
 	for (int idsq = 0; idsq < 8; idsq++)
 		FGenRgmvDsq(rgmv, sqFrom, sqFrom, mpsqtpc[sqFrom], rgdsq[idsq]);
 }
@@ -633,19 +626,19 @@ void BD::GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const
  */
 void BD::GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const
 {
-	GenRgmvSlide(rgmv, sqFrom, 9);
-	GenRgmvSlide(rgmv, sqFrom, 7);
-	GenRgmvSlide(rgmv, sqFrom, -7); 
-	GenRgmvSlide(rgmv, sqFrom, -9);
+	GenRgmvSlide(rgmv, sqFrom, 17);
+	GenRgmvSlide(rgmv, sqFrom, 15);
+	GenRgmvSlide(rgmv, sqFrom, -15); 
+	GenRgmvSlide(rgmv, sqFrom, -17);
 }
 
 
 void BD::GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const
 {
-	GenRgmvSlide(rgmv, sqFrom, 8);
+	GenRgmvSlide(rgmv, sqFrom, 16);
 	GenRgmvSlide(rgmv, sqFrom, 1);
 	GenRgmvSlide(rgmv, sqFrom, -1); 
-	GenRgmvSlide(rgmv, sqFrom, -8);
+	GenRgmvSlide(rgmv, sqFrom, -16);
 }
 
 
@@ -669,7 +662,7 @@ void BD::GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const
 void BD::GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == apcKing);
-	static int rgdsq[8] = { 9, 8, 7, 1, -1, -7, -8, -9 };
+	static int rgdsq[8] = { 17, 16, 15, 1, -1, -15, -16, -17 };
 	for (int idsq = 0; idsq < 8; idsq++)
 		FGenRgmvDsq(rgmv, sqFrom, sqFrom, mpsqtpc[sqFrom], rgdsq[idsq]);
 }
@@ -699,9 +692,9 @@ void BD::GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 void BD::GenRgmvCastle(vector<MV>& rgmv, SQ sqKing) const
 {
 	BYTE tpcKing = mpsqtpc[sqKing];
-	const UINT64 grfQueenSideCastleAttacked = ((UINT64)((1 << fileQueenBishop) | (1 << fileQueen) | (1 << fileKing))) << (sqKing - fileKing);
+	const UINT64 grfQueenSideCastleAttacked = ((UINT64)((1 << fileQueenBishop) | (1 << fileQueen) | (1 << fileKing))) << (sqKing - fileKing).shgrf();
 	const UINT64 grfKingSideCastleAttacked = grfQueenSideCastleAttacked << 2;
-	UINT64 grfAttacked = rggrfAttacked[!CpcFromTpc(tpcKing)];
+	UINT64 grfAttacked = rggrfAttacked[CpcOpposite(CpcFromTpc(tpcKing))];
 	if (FCanCastle(CpcFromTpc(tpcKing), csKing)) {
 		if (!(grfKingSideCastleAttacked & grfAttacked))
 			GenRgmvCastleSide(rgmv, sqKing, fileKingRook, 1);
@@ -788,75 +781,10 @@ bool BD::FMvIsCapture(MV mv) const
 }
 
 
-const float mpapcsqvpc[][sqMax] = {
-	{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,	// apcNull
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcPawn
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.1f, 1.1f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.1f, 1.1f, 1.0f, 1.0f, 1.0f,
-	 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f,
-	 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcKnight
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcBishop
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcRook
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcQueen
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcKing
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f} 
-};
-
-
-
 float BD::VpcFromSq(SQ sq) const
 {
+	assert(!sq.FIsOffBoard());
 	APC apc = ApcFromTpc(mpsqtpc[sq]);
-#ifdef LATER
-	if (CpcFromSq(sq) == cpcBlack)
-		sq = sq.SqFlip();
-	return mpapcvpc[apc] * mpapcsqvpc[apc][sq]; 
-#endif
 	return mpapcvpc[apc];
 }
 
@@ -887,38 +815,45 @@ void BD::Validate(void) const
 	/* check the two mapping arrays are consistent, and make sure apc is legal
 	   for the tpc in place */
 
-	for (int sq = 0; sq < sqMax; sq++) {
-		BYTE tpc = mpsqtpc[sq];
-		if (tpc == tpcEmpty)
-			continue;
+	for (int rank = 0; rank < rankMax; rank++) {
+		int file;
+		for (file = 0; file < fileMax; file++) {
+			SQ sq(rank, file);
+			BYTE tpc = mpsqtpc[sq];
+			if (tpc == tpcEmpty)
+				continue;
 
-		assert(SqFromTpc(tpc) == sq);
+			assert(SqFromTpc(tpc) == sq);
 
-		int tpcPc = tpc & tpcPiece;
-		int apc = ApcFromTpc(tpc);
-		switch (tpcPc) {
-		case tpcQueenRook:
-		case tpcKingRook:
-			assert(apc == apcRook);
-			break;
-		case tpcQueenKnight:
-		case tpcKingKnight:
-			assert(apc == apcKnight);
-			break;
-		case tpcQueenBishop:
-		case tpcKingBishop:
-			assert(apc == apcBishop);
-			break;
-		case tpcQueen:
-			assert(apc == apcQueen);
-			break;
-		case tpcKing:
-			assert(apc == apcKing);
-			break;
-		default:
-			assert(tpcPc >= tpcPawnFirst && tpcPc < tpcPawnLim);
-			assert(apc == apcPawn || apc == apcQueen || apc == apcRook || apc == apcBishop || apc == apcKnight);
-			break;
+			int tpcPc = tpc & tpcPiece;
+			int apc = ApcFromTpc(tpc);
+			switch (tpcPc) {
+			case tpcQueenRook:
+			case tpcKingRook:
+				assert(apc == apcRook);
+				break;
+			case tpcQueenKnight:
+			case tpcKingKnight:
+				assert(apc == apcKnight);
+				break;
+			case tpcQueenBishop:
+			case tpcKingBishop:
+				assert(apc == apcBishop);
+				break;
+			case tpcQueen:
+				assert(apc == apcQueen);
+				break;
+			case tpcKing:
+				assert(apc == apcKing);
+				break;
+			default:
+				assert(tpcPc >= tpcPawnFirst && tpcPc < tpcPawnLim);
+				assert(apc == apcPawn || apc == apcQueen || apc == apcRook || apc == apcBishop || apc == apcKnight);
+				break;
+			}
+		}
+		for (file = 8; file < 16; file++) {
+			assert(mpsqtpc[SQ(rank, file)] == tpcNil);
 		}
 	}
 
@@ -1105,7 +1040,7 @@ void BDG::MakeMv(MV mv)
 
 	/* other player's move */
 
-	cpcToMove ^= 1;
+	cpcToMove = CpcOpposite(cpcToMove);
 }
 
 
@@ -1114,7 +1049,7 @@ void BDG::UndoMv(void)
 	if (imvCur < 0)
 		return;
 	BD::UndoMv(rgmvGame[imvCur--]);
-	cpcToMove ^= 1;
+	cpcToMove = CpcOpposite(cpcToMove);
 }
 
 
@@ -1124,14 +1059,14 @@ void BDG::RedoMv(void)
 		return;
 	imvCur++;
 	BD::MakeMv(rgmvGame[imvCur]);
-	cpcToMove ^= 1;
+	cpcToMove = CpcOpposite(cpcToMove);
 }
 
 
-GS BDG::GsTestGameOver(const vector<MV>& rgmv) const
+GS BDG::GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const
 {
 	if (rgmv.size() == 0) {
-		if (FSqAttacked(mptpcsq[cpcToMove][tpcKing], cpcToMove ^ 1))
+		if (FSqAttacked(mptpcsq[cpcToMove][tpcKing], CpcOpposite(cpcToMove)))
 			return cpcToMove == cpcWhite ? GS::WhiteCheckMated : GS::BlackCheckMated;
 		else
 			return GS::StaleMate;
@@ -1140,7 +1075,7 @@ GS BDG::GsTestGameOver(const vector<MV>& rgmv) const
 		/* check for draw circumstances */
 		if (FDrawDead())
 			return GS::DrawDead;
-		if (FDraw3Repeat(3))
+		if (FDraw3Repeat(rule.CmvRepeatDraw()))
 			return GS::Draw3Repeat;
 		if (FDraw50Move(50))
 			return GS::Draw50Move;
@@ -1149,9 +1084,9 @@ GS BDG::GsTestGameOver(const vector<MV>& rgmv) const
 }
 
 
-void BDG::SetGameOver(const vector<MV>& rgmv)
+void BDG::SetGameOver(const vector<MV>& rgmv, const RULE& rule)
 {
-	SetGs(GsTestGameOver(rgmv));
+	SetGs(GsTestGameOver(rgmv, rule));
 }
 
 
@@ -1213,6 +1148,8 @@ bool BDG::FDrawDead(void) const
  */
 bool BDG::FDraw3Repeat(int cbdDraw) const
 {
+	if (cbdDraw == 0)
+		return false;
 	if (imvCur - imvPawnOrTakeLast < (cbdDraw-1) * 2 * 2)
 		return false;
 	BD bd = *this;
