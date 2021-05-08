@@ -427,8 +427,7 @@ bool BD::FSqAttacked(SQ sq, CPC cpcBy) const
 
 /*	BD::GenRgmvColor
  *
- *	Generates moves for the given color pieces. The previous move is
- *	provided, for checking en passant moves.
+ *	Generates moves for the given color pieces. 
  */
 void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const
 {
@@ -471,14 +470,19 @@ void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const
 		}
 	}
 
+	/* if we're generating to a quiescent state, only return captures and checks, unless
+	 * we're in check, in which case we need to check every move */
+
 	if (fQuiescent) {
-		int imvTo = 0;
-		for (unsigned imv = 0; imv < rgmv.size(); imv++) {
-			MV mv = rgmv[imv];
-			if (ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv))
-				rgmv[imvTo++] = mv;
+		/*if (!FInCheck(mptpcsq[cpcMove][tpcKing]))*/ {
+			int imvTo = 0;
+			for (unsigned imv = 0; imv < rgmv.size(); imv++) {
+				MV mv = rgmv[imv];
+				if (ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv))
+					rgmv[imvTo++] = mv;
+			}
+			rgmv.resize(imvTo);
 		}
-		rgmv.resize(imvTo);
 	}
 }
 
@@ -784,11 +788,84 @@ bool BD::FMvIsCapture(MV mv) const
 }
 
 
-/*	BD::VpcFromCpc
+const float mpapcsqvpc[][sqMax] = {
+	{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,	// apcNull
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcPawn
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.1f, 1.1f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.1f, 1.1f, 1.0f, 1.0f, 1.0f,
+	 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f,
+	 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f, 1.2f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcKnight
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcBishop
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcRook
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcQueen
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// apcKing
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f} 
+};
+
+
+
+float BD::VpcFromSq(SQ sq) const
+{
+	APC apc = ApcFromTpc(mpsqtpc[sq]);
+#ifdef LATER
+	if (CpcFromSq(sq) == cpcBlack)
+		sq = sq.SqFlip();
+	return mpapcvpc[apc] * mpapcsqvpc[apc][sq]; 
+#endif
+	return mpapcvpc[apc];
+}
+
+
+/*	BD::VpcTotalFromCpc
  *
  *	Piece value of the entire board for the given color
  */
-float BD::VpcFromCpc(CPC cpc) const
+float BD::VpcTotalFromCpc(CPC cpc) const
 {
 	float vpc = 0;
 	for (int tpc = 0; tpc < tpcPieceMax; tpc++) {

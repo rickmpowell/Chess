@@ -118,7 +118,6 @@ float PL::EvalBdgDepth(BDG& bdg, int depth, int depthMax, float evalAlpha, float
 float PL::EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta) const
 {
 	float eval = -EvalBdg(bdg);
-	return eval;
 
 	vector<MV> rgmv;	/* can't be static because this is called recursively */
 	rgmv.reserve(50);
@@ -137,7 +136,6 @@ float PL::EvalBdgQuiescent(BDG& bdg, int depth, float evalAlpha, float evalBeta)
 		bdg.MakeMv(mv);
 		eval = -EvalBdgQuiescent(bdg, depth + 1, -evalBeta, -evalAlpha);
 		bdg.UndoMv();
-		/* prune if the move is too good */
 		if (eval >= evalBeta)
 			return evalBeta;
 		if (eval > evalAlpha)
@@ -188,8 +186,8 @@ void PL::PreSortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch,
  */
 float PL::EvalBdg(const BDG& bdg) const
 {
-	float vpcNext = bdg.VpcFromCpc(bdg.cpcToMove);
-	float vpcSelf = bdg.VpcFromCpc(CpcOpposite(bdg.cpcToMove));
+	float vpcNext = bdg.VpcTotalFromCpc(bdg.cpcToMove);
+	float vpcSelf = bdg.VpcTotalFromCpc(CpcOpposite(bdg.cpcToMove));
 	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
 
 	static vector<MV> rgmvNext;

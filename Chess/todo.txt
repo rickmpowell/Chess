@@ -1,3 +1,5 @@
+  Allow human to play the AI
+  AI: Don't prune moves during quiescent move gen if we're in check
   AI: build lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   AI: Display progress in the debug panel
@@ -17,32 +19,32 @@
   ML: Add a UI for offering draws
   UI for specifying player names
   UI for choosing computer player
-  There is a weird hit test on the left edge of the board that is hitting squares three squares over
-  Hook up TI elements to real information from the GA
+  UIBD: There is a weird hit test on the left edge of the board that is hitting squares three squares over
+  TI: Hook up UI elements to real information from the GA
   Implement disabled menu items hooked to the CMD
   Implement disabled buttons that hook to CMD
   Rename SPA to UI
-  Dragging pieces outside the board rectangle doesn't redraw the piece right
-  Legal move circles disappear when dragging
+  UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
+  UIBD: Legal move circles disappear when dragging
   Break the UI out of the GA.
   Official game has slightly different rules for some draw situations
   Playing test PGN files should display result in game over panel
-  Animate the game over panel into position.
+  ML: Animate the game over panel into position.
   Need a no-clock mode that works with certain clock games, and playback modes
-  Add undo/redo/play/pause buttons in a panel
+  ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
   Change Undo/Redo to be an imvCur operation
-  When dragging pieces, highlight square when hovering over a legal move
+  UIBD: When dragging pieces, highlight square when hovering over a legal move
   Animate moves when manually going through move list
   UI for clock/timing rules 
   Implement full clock/timing rules
-  Implement queued move-ahead 
-  Implement click-from/click-to mouse move interface
-  Implement circle annotations on mouse right click
-  Implement arrow annotations on mouse right click/drag
-  Implement scrolling in UIML move list
-  Optimize redraw on UIML to only draw changes
-  Optimize redraw of UIBD
+  UIBD: Implement queued move-ahead 
+  UIBD: Implement click-from/click-to mouse move interface
+  UIBD: Implement circle annotations on mouse right click
+  UIBD: Implement arrow annotations on mouse right click/drag
+  ML: Implement move list scrolling 
+  ML: Optimize redraw
+  UIBD: Optimize redraw of
   ML: Implement selection in UIML
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML

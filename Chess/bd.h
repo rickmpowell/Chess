@@ -114,6 +114,7 @@ public:
 	inline SQ operator+(int dsq) const { return SQ(grf + dsq); }
 	inline operator int() const { return grf; }
 	inline bool FIsValid(void) const { return (grf & 0xc0) == 0; }
+	inline SQ SqFlip(void) { return SQ(rankMax - 1 - rank(), file()); }
 };
 
 const int sqMax = rankMax*8;
@@ -291,7 +292,7 @@ public:
 	void MakeMv(MV mv);
 	void UndoMv(MV mv);
 	void MakeMvSq(MV mv);
-	void ComputeAttacked(CPC cpcMove);
+	inline void ComputeAttacked(CPC cpcMove);
 
 	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
@@ -312,10 +313,10 @@ public:
 	inline void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
 
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
-	bool FInCheck(SQ sqKing) const;
-	bool FSqAttacked(SQ sq, CPC cpcBy) const;
-	bool FMvEnPassant(MV mv) const;
-	bool FMvIsCapture(MV mv) const;
+	inline bool FInCheck(SQ sqKing) const;
+	inline bool FSqAttacked(SQ sq, CPC cpcBy) const;
+	inline bool FMvEnPassant(MV mv) const;
+	inline bool FMvIsCapture(MV mv) const;
 
 	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
 	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }
@@ -326,13 +327,13 @@ public:
 	inline SQ SqFromTpc(TPC tpc) const { return SqFromTpc(tpc & tpcPiece, CpcFromTpc(tpc)); }
 	inline APC ApcFromSq(SQ sq) const { return ApcFromTpc(mpsqtpc[sq]); }
 	inline CPC CpcFromSq(SQ sq) const { return CpcFromTpc(mpsqtpc[sq]); }
-	inline float VpcFromSq(SQ sq) const { return mpapcvpc[ApcFromTpc(mpsqtpc[sq])]; }
+	inline float VpcFromSq(SQ sq) const;
 
 	inline bool FCanCastle(CPC cpc, int csSide) const { return (this->cs & (csSide << cpc)) != 0;  }
 	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
 	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
 
-	float VpcFromCpc(CPC cpc) const;
+	float VpcTotalFromCpc(CPC cpc) const;
 
 	bool operator==(const BD& bd) const;
 	bool operator!=(const BD& bd) const;
@@ -427,7 +428,7 @@ public:
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int cmvDraw) const;
-	void SetGs(GS gs);
+	void SetGs(GS gs); 
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv) const;
