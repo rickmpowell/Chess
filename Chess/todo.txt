@@ -1,3 +1,5 @@
+  Add option to not draw moves during test run
+  Add test button to the debug panel.
   Don't display resign/draw controls during test playback
   Allow human to play the AI
   AI: Don't prune moves during quiescent move gen if we're in check
@@ -24,7 +26,6 @@
   TI: Hook up UI elements to real information from the GA
   Implement disabled menu items hooked to the CMD
   Implement disabled buttons that hook to CMD
-  Rename SPA to UI
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
   Break the UI out of the GA.
@@ -52,6 +53,7 @@
   UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
+* Rename SPA to UI
 * Need a no-clock mode that works with certain clock games, and playback modes
 * Implement full clock/timing rules
 * Convert to 0x88 board

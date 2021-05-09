@@ -49,7 +49,7 @@ enum class SPMV
 };
 
 
-class UIBD : public SPA
+class UIBD : public UIP
 {
 public:
 	static BRS* pbrLight;
@@ -138,7 +138,7 @@ public:
  */
 
 
-class UIPCP : public SPA
+class UIPCP : public UIP
 {
 public:
 	UIPCP(GA* pga);

@@ -115,7 +115,7 @@ void UIBD::DiscardRsrcClass(void)
  *
  *	Constructor for the board screen panel.
  */
-UIBD::UIBD(GA* pga) : SPA(pga), sqDragInit(sqNil), sqHover(sqNil),
+UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
 		cpcPointOfView(cpcWhite),
 		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
 		angle(0.0f),

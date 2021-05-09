@@ -11,8 +11,19 @@
 
 
 
-class UIDB : public SPA
+class UIDBBTNS : public UI
 {
+	BTNCH btnTest;
+public:
+	UIDBBTNS(UI* puiParent);
+	void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Layout(void);
+};
+
+
+class UIDB : public UIPS
+{
+	UIDBBTNS uidbbtns;
 public:
 	UIDB(GA* pga);
 	virtual void Layout(void);

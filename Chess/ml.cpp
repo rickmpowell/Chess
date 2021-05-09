@@ -334,14 +334,12 @@ void UIGO::Draw(const RCF* prcfUpdate)
  */
 
 
-UIML::UIML(GA* pga) : SPAS(pga), imvSel(0)
+UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this)
 {
 	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
 	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
 	mpcpcpuipl[cpcWhite] = new UIPL(this, cpcWhite);
 	mpcpcpuipl[cpcBlack] = new UIPL(this, cpcBlack);
-	puigo = new UIGO(this, false);
-	puigc = new UIGC(this);
 }
 
 
@@ -450,34 +448,14 @@ void UIML::Layout(void)
 	rcf.top = rcf.bottom;
 	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false, 1.75f * dyfList);
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false, 4.0f * dyfList);
-	AdjustUIRcfBounds(puigc, rcf, false, 1.5f * dyfList); 
-	AdjustUIRcfBounds(puigo, rcf, false, 6.0f * dyfList);
+	AdjustUIRcfBounds(&uigc, rcf, false, 1.5f * dyfList); 
+	AdjustUIRcfBounds(&uigo, rcf, false, 6.0f * dyfList);
 	rcfCont.bottom = rcf.top;
 
 	/* move list content is whatever is left */
 
 	SetView(rcfCont);
 	SetContent(rcfCont);
-}
-
-
-void UIML::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
-{
-	if (pui == NULL || !pui->FVisible())
-		return;
-	if (fTop) {
-		rcf.top = rcf.bottom;
-		rcf.bottom = rcf.top + dyfHeight;
-	}
-	else {
-		rcf.bottom = rcf.top;
-		rcf.top = rcf.bottom - dyfHeight;
-	}
-	pui->SetBounds(rcf);
-	if (fTop)
-		rcf.bottom++;
-	else
-		rcf.top--;
 }
 
 
@@ -489,7 +467,7 @@ void UIML::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
 void UIML::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(*prcfUpdate, pbrGridLine);
-	SPAS::Draw(prcfUpdate); // draws content area of the scrollable area
+	UIPS::Draw(prcfUpdate); // draws content area of the scrollable area
 }
 
 
@@ -592,7 +570,7 @@ void UIML::DrawMoveNumber(RCF rcf, int imv)
 
 void UIML::NewGame(void)
 {
-	puigo->Show(false);
+	uigo.Show(false);
 	bool fTimed = ga.prule->TmGame() != 0;
 	mpcpcpuiclock[cpcWhite]->Show(fTimed);
 	mpcpcpuiclock[cpcBlack]->Show(fTimed);
@@ -609,7 +587,7 @@ void UIML::NewGame(void)
  */
 void UIML::EndGame(void)
 {
-	puigo->Show(true);
+	uigo.Show(true);
 }
 
 
@@ -620,11 +598,11 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	SPAS::UpdateContSize(PTF(RcfContent().DxfWidth(), ga.bdg.rgmvGame.size() / 2 * dyfList + dyfList));
+	UIPS::UpdateContSize(PTF(RcfContent().DxfWidth(), ga.bdg.rgmvGame.size() / 2 * dyfList + dyfList));
 }
 
 
 bool UIML::FMakeVis(int imv)
 {
-	return SPAS::FMakeVis(RcfContent().top + (imv / 2) * dyfList, dyfList);
+	return UIPS::FMakeVis(RcfContent().top + (imv / 2) * dyfList, dyfList);
 }

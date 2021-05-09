@@ -107,7 +107,7 @@ public:
 
 class PL;
 
-class UIML : public SPAS
+class UIML : public UIPS
 {
 	friend class UIPL;
 	friend class UICLOCK;
@@ -127,8 +127,8 @@ class UIML : public SPAS
 	int imvSel;
 	UIPL* mpcpcpuipl[2];
 	UICLOCK* mpcpcpuiclock[2];
-	UIGO* puigo;
-	UIGC* puigc;
+	UIGO uigo;
+	UIGC uigc;
 
 public:
 	UIML(GA* pga);
@@ -143,7 +143,6 @@ public:
 	void EndGame(void);
 
 	virtual void Layout(void);
-	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);
 

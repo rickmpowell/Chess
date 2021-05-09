@@ -60,7 +60,7 @@ public:
 class UIPL;
 
 
-class UITI : public SPA
+class UITI : public UIP
 {
 	UIICON uiicon;
 	UILOCALE uilocale;

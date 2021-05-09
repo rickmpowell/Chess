@@ -117,7 +117,7 @@ public:
 
 /*
  *
- *	SPA class
+ *	UIP class
  *
  *	Screen panel class. Base class for reserving space on the
  *	graphics screen where we can display random stuff.
@@ -125,7 +125,7 @@ public:
  */
 
 
-class SPA : public UI
+class UIP : public UI
 {
 public:
 	static BRS* pbrTextSel;
@@ -136,24 +136,24 @@ public:
 protected:
 	GA& ga;
 public:
-	SPA(GA* pga);
-	~SPA(void);
+	UIP(GA* pga);
+	~UIP(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void SetShadow(void);
-
+	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight);
 };
 
 
 /*
  *
- *	SPAS class
+ *	UIPS class
  *
  *	A scrolling screen panel base class.
  *
  */
 
 
-class SPAS : public SPA
+class UIPS : public UIP
 {
 private:
 	RCF rcfView;
@@ -161,7 +161,7 @@ private:
 protected:
 	const float dxyfScrollBarWidth = 10.0f;
 public:
-	SPAS(GA* pga) : SPA(pga) { }
+	UIPS(GA* pga) : UIP(pga) { }
 
 
 	void SetView(const RCF& rcfView)

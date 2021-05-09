@@ -15,7 +15,7 @@
 
 /*
  * 
- *	SPA class implementation
+ *	UIP class implementation
  *
  *	Screen panel implementation. Base class for the pieces of stuff
  *	that gets displayed on the screen
@@ -23,16 +23,16 @@
  */
 
 
-BRS* SPA::pbrTextSel;
-TX* SPA::ptxTextSm;
+BRS* UIP::pbrTextSel;
+TX* UIP::ptxTextSm;
 
 
-/*	SPA::CreateRsrcClass
+/*	UIP::CreateRsrcClass
  *
  *	Static routine for creating the drawing objects necessary to draw the various
  *	screen panels.
  */
-void SPA::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UIP::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrTextSel)
 		return;
@@ -44,7 +44,7 @@ void SPA::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 }
 
 
-void SPA::DiscardRsrcClass(void)
+void UIP::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrTextSel); 
 	SafeRelease(&pbrGridLine);
@@ -52,7 +52,7 @@ void SPA::DiscardRsrcClass(void)
 }
 
 
-void SPA::SetShadow(void)
+void UIP::SetShadow(void)
 {
 #ifdef LATER
 	ID2D1DeviceContext* pdc;
@@ -81,33 +81,60 @@ void SPA::SetShadow(void)
 }
 
 
-/*	SPA::SPA
+/*	UIP::UIP
  *
  *	The screen panel constructor. 
  */
-SPA::SPA(GA* pga) : UI(pga), ga(*pga)
+UIP::UIP(GA* pga) : UI(pga), ga(*pga)
 {
 }
 
 
-/*	SPA::~SPA
+/*	UIP::~UIP
  *
  *	The screen panel destructor
  */
-SPA::~SPA(void)
+UIP::~UIP(void)
 {
 }
 
 
-/*	SPA::Draw
+/*	UIP::Draw
  *
  *	Base class for drawing a screen panel. The default implementation
  *	just fills the panel with the background brush.
  */
-void SPA::Draw(const RCF* prcfUpdate)
+void UIP::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(RcfInterior(), pbrBack);
 }
+
+
+/*	UIP::AdjustUIRcfBounds
+ *
+ *	Helper layout function for creating top/bottom strip UIs in screen panels. If the
+ *	child UI in pui is visible, it moves it just below (or above) the rcf rectangle
+ *	supplied, depending on fTop. The height of the child will be dyfHeight.
+ */
+void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
+{
+	if (pui == NULL || !pui->FVisible())
+		return;
+	if (fTop) {
+		rcf.top = rcf.bottom;
+		rcf.bottom = rcf.top + dyfHeight;
+	}
+	else {
+		rcf.bottom = rcf.top;
+		rcf.top = rcf.bottom - dyfHeight;
+	}
+	pui->SetBounds(rcf);
+	if (fTop)
+		rcf.bottom++;
+	else
+		rcf.top--;
+}
+
 
 
 
@@ -131,7 +158,7 @@ void GA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
 
 	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	SPA::CreateRsrcClass(pdc, pfactdwr, pfactwic);
+	UIP::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 	UITI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 	UIBD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 	UIML::CreateRsrcClass(pdc, pfactdwr, pfactwic);
@@ -141,7 +168,7 @@ void GA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 void GA::DiscardRsrcClass(void)
 {
 	UI::DiscardRsrcClass();
-	SPA::DiscardRsrcClass();
+	UIP::DiscardRsrcClass();
 	UITI::DiscardRsrcClass();
 	UIBD::DiscardRsrcClass();
 	UIML::DiscardRsrcClass();
