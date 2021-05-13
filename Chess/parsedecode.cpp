@@ -22,7 +22,7 @@
 
 WCHAR mpapcch[] = { L' ', L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
 
-wstring BDG::SzDecodeMv(MV mv) const
+wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 {
 	vector<MV> rgmv;
 	GenRgmv(rgmv, RMCHK::NoRemove);
@@ -48,10 +48,10 @@ wstring BDG::SzDecodeMv(MV mv) const
 				goto FinishCastle;
 			if (sqTo.file() == fileQueenBishop) {
 				*pch++ = L'O';
-				*pch++ = L'\x2013';
+				*pch++ = fPretty ? L'-' : L'\x2013';
 FinishCastle:
 				*pch++ = L'O';
-				*pch++ = L'\x2013';
+				*pch++ = fPretty ? L'-' : L'\x2013';
 				*pch++ = L'O';
 				goto FinishMove;
 			}
@@ -78,12 +78,16 @@ FinishCastle:
 	}
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
-	*pch++ = mpsqtpc[sqCapture] != tpcEmpty ? L'\x00d7' : L'\x2013';
+	if (mpsqtpc[sqCapture] != tpcEmpty)
+		*pch++ = fPretty ? L'\x00d7' : 'x';
+	else if (fPretty)
+		*pch++ = L'\x2013';
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
 	if (apc == apcPawn && sqTo == sqEnPassant) {
-		*pch++ = L' ';
+		if (fPretty)
+			*pch++ = L'\x00a0';
 		*pch++ = L'e';
 		*pch++ = L'.';
 		*pch++ = L'p';
@@ -102,6 +106,29 @@ FinishMove:
 }
 
 
+string BDG::SzFlattenMvSz(const wstring& wsz) const
+{
+	string sz;
+	for (int ich = 0; wsz[ich]; ich++) {
+		switch (wsz[ich]) {
+		case L'\x00a0':
+			sz += ' ';
+			break;
+		case L'\x00d7':
+			sz += 'x';
+			break;
+		case L'\x2013':
+			sz += '-';
+			break;
+		default:
+			sz += (char)wsz[ich];
+			break;
+		}
+	}
+	return sz;
+}
+
+
 /*	BDG::SzMoveAndDecode
  *
  *	Makes a move and returns the decoded text of the move. This is the only
@@ -110,10 +137,10 @@ FinishMove:
  */
 wstring BDG::SzMoveAndDecode(MV mv)
 {
-	wstring sz = SzDecodeMv(mv);
+	wstring sz = SzDecodeMv(mv, true);
 	CPC cpc = CpcFromSq(mv.SqFrom());
 	MakeMv(mv);
-	if (FSqAttacked(mptpcsq[CpcOpposite(cpc)][tpcKing], cpc))
+	if (FSqAttacked(cpc, mptpcsq[CpcOpposite(cpc)][tpcKing]))
 		sz += L'+';
 	return sz;
 }

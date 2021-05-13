@@ -18,7 +18,9 @@
 #define cmdResign		8
 #define cmdOfferDraw	9
 #define cmdPlay         10
-#define cmdMax			11
+#define cmdSavePGN		11
+#define cmdOpenPGN		12
+#define cmdMax			13
 
 #define idiApp			1
 #define idiSmall		2

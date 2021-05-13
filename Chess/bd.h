@@ -26,7 +26,7 @@ class RULE
 	DWORD dtmMove;
 	unsigned cmvRepeatDraw; // if zero, no automatic draw detection
 public:
-	RULE(void) : tmGame(3 * 60 * 1000), dtmMove(5 * 1000), cmvRepeatDraw(3) { }
+	RULE(void) : tmGame(10 * 60 * 1000), dtmMove(5 * 1000), cmvRepeatDraw(3) { }
 	RULE(DWORD tmGame, DWORD dtmMove, unsigned cmvRepeatDraw) : tmGame(tmGame), dtmMove(dtmMove),
 		cmvRepeatDraw(cmvRepeatDraw) {
 	}
@@ -146,6 +146,7 @@ public:
 	inline operator int() const { return grf; }
 	inline SQ operator++(int) { BYTE grfT = grf++; return SQ(grfT); }
 	inline SQ operator-(int dsq) const { return SQ((BYTE)(grf - dsq)); }
+	inline int operator-(const SQ& sq) const { return (int)grf - (int)sq.grf; }
 	inline SQ SqFlip(void) { return SQ(rankMax - 1 - rank(), file()); }
 	inline int shgrf(void) const { return (grf & 7) | ((grf >> 1) & 0x38); }
 	inline UINT64 fgrf(void) const { return 1LL << shgrf(); }
@@ -313,7 +314,7 @@ class BD
 	static const float mpapcvpc[];
 public:
 	TPC mpsqtpc[64*2];	// the board itself (maps square to piece)
-	UINT64 rggrfAttacked[cpcMax];	// bit field of attacked squares (black=1, white=0)
+//	UINT64 rggrfAttacked[cpcMax];	// bit field of attacked squares (black=1, white=0)
 	SQ mptpcsq[cpcMax][tpcPieceMax]; // reverse mapping of mpsqtpc (black=1, white=0)
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
@@ -332,11 +333,11 @@ public:
 	void MakeMv(MV mv);
 	void UndoMv(MV mv);
 	void MakeMvSq(MV mv);
-	inline void ComputeAttacked(CPC cpcMove);
+//	inline void ComputeAttacked(CPC cpcMove);
 
 	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const;
+	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const;
 	void GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const;
@@ -353,8 +354,16 @@ public:
 	inline void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
 
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
-	inline bool FInCheck(SQ sqKing) const;
-	inline bool FSqAttacked(SQ sq, CPC cpcBy) const;
+	void RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const;
+	//inline bool FInCheck(SQ sqKing) const;
+	bool FInCheck(CPC cpc) const;
+	bool FSqAttacked(CPC cpc, SQ sqKing) const;
+	inline bool FDsqAttack(SQ sqKing, SQ sq, int dsq) const;
+	inline bool FDiagAttack(SQ sqKing, SQ sq, int dsq) const;
+	inline bool FRankAttack(SQ sqKing, SQ sq) const;
+	inline bool FFileAttack(SQ sqKing, SQ sq) const;
+
+	//inline bool FSqAttacked(SQ sq, CPC cpcBy) const;
 	inline bool FMvEnPassant(MV mv) const;
 	inline bool FMvIsCapture(MV mv) const;
 
@@ -471,7 +480,8 @@ public:
 	void SetGs(GS gs); 
 
 	wstring SzMoveAndDecode(MV mv);
-	wstring SzDecodeMv(MV mv) const;
+	wstring SzDecodeMv(MV mv, bool fPretty) const;
+	string SzFlattenMvSz(const wstring& wsz) const;
 	int ParseMv(const char*& pch, MV& mv) const;
 	int ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const;
 	int ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;

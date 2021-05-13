@@ -6,8 +6,8 @@
  * 
  */
 
-#include "framework.h"
 #include "chess.h"
+#include <commdlg.h>
 
 
 /*  AboutDlgProc
@@ -78,7 +78,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
 
     const TCHAR szWndClassMain[] = L"ChessMain";
 
-     /* register the window class */
+    /* register the window class */
 
     WNDCLASSEXW wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -104,8 +104,10 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
     InitCmdList();
 
     pga = new GA(*this);
-    pga->SetPl(cpcWhite, new PL(L"Squub"));
-    pga->SetPl(cpcBlack, new PL(L"Frapija"));
+    float rgfAI[] = { 5.0f, 1.0f };
+    pga->SetPl(cpcWhite, new PL(L"Squub", rgfAI));
+    rgfAI[1] = 2.0f;
+    pga->SetPl(cpcBlack, new PL(L"Frapija", rgfAI));
     pga->NewGame(new RULE);
 
     /* create the main window */
@@ -622,6 +624,58 @@ public:
 };
 
 
+class CMDSAVEPGN : public CMD
+{
+public:
+    CMDSAVEPGN(APP& app) : CMD(app) {}
+
+    virtual int Execute(void)
+    {
+        WCHAR szFileName[1024] = L"game.pgn";
+        OPENFILENAME ofn = { 0 };
+
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = app.hwnd;
+        ofn.lpstrFilter = L"PGN Files\0*.pgn\0\0";
+        ofn.lpstrFile = szFileName;
+        ofn.nMaxFile = CArray(szFileName);
+        ofn.lpstrTitle = L"Save Game";
+        ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+        ofn.lpstrDefExt = L"pgn";
+        if (::GetSaveFileName(&ofn))
+            app.pga->SavePGNFile(szFileName);
+
+        return 1;
+    }
+};
+
+
+class CMDOPENPGN : public CMD
+{
+public:
+    CMDOPENPGN(APP& app) : CMD(app) {}
+    
+    virtual int Execute(void)
+    {
+        WCHAR szFileName[1024] = { 0 };
+        OPENFILENAME ofn = { 0 };
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = app.hwnd;
+        ofn.lpstrFilter = L"PGN Files\0*.pgn\0\0";
+        ofn.lpstrFile = szFileName;
+        ofn.nMaxFile = CArray(szFileName);
+        ofn.lpstrTitle = L"Open Game";
+        ofn.Flags = OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
+        ofn.lpstrDefExt = L"pgn";
+
+        if (::GetOpenFileName(&ofn))
+            app.pga->OpenPGNFile(szFileName);
+        return 1;
+    }
+};
+
+
+
 /*
  *
  *  CMDEXIT command
@@ -666,6 +720,8 @@ void APP::InitCmdList(void)
     cmdlist.Add(cmdOfferDraw, new CMDOFFERDRAW(*this));
     cmdlist.Add(cmdResign, new CMDRESIGN(*this));
     cmdlist.Add(cmdPlay, new CMDPLAY(*this));
+    cmdlist.Add(cmdSavePGN, new CMDSAVEPGN(*this));
+    cmdlist.Add(cmdOpenPGN, new CMDOPENPGN(*this));
 }
 
 

@@ -1,14 +1,12 @@
+  Undo doesn't take down game over panel
   Add option to not draw moves during test run
-  Add test button to the debug panel.
   Don't display resign/draw controls during test playback
   Allow human to play the AI
-  AI: Don't prune moves during quiescent move gen if we're in check
   AI: build lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   AI: Display progress in the debug panel
   AI: Add message pump while thinking
   UIBD: Hilite last made move on board
-  Add ability to save PGN files
   Add a UI for setting up a board
   AI: Play through until no checks before evaluation
   Test: PGN games should feed moves through a PL
@@ -28,7 +26,7 @@
   Implement disabled buttons that hook to CMD
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
-  Break the UI out of the GA.
+  Break the UI out of the GA
   Official game has slightly different rules for some draw situations
   Playing test PGN files should display result in game over panel
   ML: Animate the game over panel into position.
@@ -53,6 +51,14 @@
   UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
+  Debug version should assert if we try to make an illegal move
+* Add ability to open PGN files
+* Add ability to save PGN files
+* AI: convert presort to use a binary search and insertion sort
+* Bug: kings are moving into queen check
+* Bug: don't display all possible moves during mouse hover
+* AI: Don't prune moves during quiescent move gen if we're in check
+* Add test button to the debug panel.
 * Rename SPA to UI
 * Need a no-clock mode that works with certain clock games, and playback modes
 * Implement full clock/timing rules

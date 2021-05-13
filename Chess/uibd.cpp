@@ -372,9 +372,9 @@ void UIBD::DrawHover(void)
 		if (mv.SqFrom() != sqHover)
 			continue;
 		SQ sqTo = mv.SqTo();
-		if (grfDrawn & (1L << sqTo))
+		if (grfDrawn & sqTo.fgrf())
 			continue;
-		grfDrawn |= 1L << sqTo;
+		grfDrawn |= sqTo.fgrf();
 		RCF rcf = RcfFromSq(sqTo);
 		if (ga.bdg.mpsqtpc[sqTo] == tpcEmpty && !ga.bdg.FMvEnPassant(mv)) {
 			/* moving to an empty square - draw a circle */

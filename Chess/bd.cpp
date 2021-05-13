@@ -41,7 +41,7 @@ void BD::SetEmpty(void)
 			mpsqtpc[SQ(rank, file)] = tpcNil;
 
 	for (int color = 0; color < 2; color++) {
-		rggrfAttacked[color] = 0L;
+//		rggrfAttacked[color] = 0L;
 		for (int tpc = 0; tpc < tpcPieceMax; tpc++)
 			mptpcsq[color][tpc] = sqNil;
 	}
@@ -187,16 +187,18 @@ int BD::TpcUnusedPawn(CPC cpc) const
  *
  *	Computes the attacked square bit mask for the given color
  */
+#ifdef NOPE
 void BD::ComputeAttacked(CPC cpc)
 {
 	static vector<MV> rgmv;
 	rgmv.reserve(50);
-	GenRgmvColor(rgmv, cpc, false);
+	GenRgmvColor(rgmv, cpc, true);
 	UINT64 grfAttacked = 0;
 	for (MV mv : rgmv)
 		grfAttacked |= mv.SqTo().fgrf();
 	rggrfAttacked[cpc] = grfAttacked;
 }
+#endif
 
 
 /*	BD::MakeMv
@@ -210,8 +212,8 @@ void BD::MakeMv(MV mv)
 {
 	Validate();
 	MakeMvSq(mv);
-	ComputeAttacked(cpcWhite);
-	ComputeAttacked(cpcBlack);
+//	ComputeAttacked(cpcWhite);
+//	ComputeAttacked(cpcBlack);
 	Validate();
 }
 
@@ -223,6 +225,10 @@ void BD::MakeMv(MV mv)
  */
 void BD::MakeMvSq(MV mv)
 {
+#ifndef NDEBUG
+	rggrfAttacked[cpcWhite] = rggrfAttacked[cpcBlack] = 0LL;
+#endif
+
 	SQ sqFrom = mv.SqFrom();
 	SQ sqTo = mv.SqTo();
 	BYTE tpcFrom = mpsqtpc[sqFrom];
@@ -374,6 +380,10 @@ void BD::UndoMv(MV mv)
 		}
 	}
 
+#ifndef NDEBUG
+	rggrfAttacked[cpcWhite] = rggrfAttacked[cpcBlack] = 0LL;
+#endif
+
 	Validate();
 }
 
@@ -396,23 +406,43 @@ void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 void BD::GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 {
 	GenRgmvColor(rgmv, cpcMove, true);
-	if (rmchk == RMCHK::Remove)
+	if (rmchk == RMCHK::Remove) {
 		RemoveInCheckMoves(rgmv, cpcMove);
+		RemoveQuiescentMoves(rgmv, cpcMove);
+	}
 }
 
 
 void BD::RemoveInCheckMoves(vector<MV>& rgmv, CPC cpcMove) const
 {
  	unsigned imvDest = 0;
-	int cpcOpp = CpcOpposite(cpcMove);
 	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
-		BD bd = *this;
+		BD bd(*this);
 		bd.MakeMvSq(rgmv[imv]);
-		bd.ComputeAttacked(cpcOpp);
-		if (!(bd.FSqAttacked(bd.mptpcsq[cpcMove][tpcKing], cpcOpp)))
+		if (!bd.FInCheck(cpcMove))
 			rgmv[imvDest++] = rgmv[imv];
 	}
 	rgmv.resize(imvDest);
+}
+
+
+/*	BD::RemoveQuiescentMoves
+ *
+ *	Removes quiet moves from the given move list. For now quiet moves are
+ *	anything that is not a capture or check.
+ */
+void BD::RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const
+{
+	if (FInCheck(cpcMove))	/* don't prune if we're in check */
+		return;
+	int imvTo = 0;
+	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
+		MV mv = rgmv[imv];
+		if (ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv))
+			rgmv[imvTo++] = mv;
+		/* TODO: need to test for checks */
+	}
+	rgmv.resize(imvTo);
 }
 
 
@@ -421,17 +451,21 @@ void BD::RemoveInCheckMoves(vector<MV>& rgmv, CPC cpcMove) const
  *	Checks that the square sq is attacked by a piece of color tpcBy. Returns true if
  *	the square is attacked.
  */
+#ifdef NOPE
 bool BD::FSqAttacked(SQ sq, CPC cpcBy) const
 {
+	assert(rggrfAttacked[cpcBy]);
 	return (rggrfAttacked[cpcBy] & sq.fgrf()) != 0;
 }
+#endif
 
 
 /*	BD::GenRgmvColor
  *
- *	Generates moves for the given color pieces. 
+ *	Generates moves for the given color pieces. Does not check if the king is left in
+ *	check, so caller must weed those moves out.
  */
-void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const
+void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const
 {
 	rgmv.clear();
 
@@ -464,26 +498,12 @@ void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fQuiescent) const
 			break;
 		case apcKing:
 			GenRgmvKing(rgmv, sqFrom);
-			GenRgmvCastle(rgmv, sqFrom);
+			if (!fForAttack)
+				GenRgmvCastle(rgmv, sqFrom);
 			break;
 		default:
 			assert(false);
 			break;
-		}
-	}
-
-	/* if we're generating to a quiescent state, only return captures and checks, unless
-	 * we're in check, in which case we need to check every move */
-
-	if (fQuiescent) {
-		/*if (!FInCheck(mptpcsq[cpcMove][tpcKing]))*/ {
-			int imvTo = 0;
-			for (unsigned imv = 0; imv < rgmv.size(); imv++) {
-				MV mv = rgmv[imv];
-				if (ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv))
-					rgmv[imvTo++] = mv;
-			}
-			rgmv.resize(imvTo);
 		}
 	}
 }
@@ -502,12 +522,118 @@ void BD::AddRgmvMv(vector<MV>& rgmv, MV mv) const
 /*	BD::FInCheck
  *
  *	Returns true if the king at square sqKing is under attack by an opponent
- *	piece.
+ *	piece. ComputeAttacked must be called prior to using this version.
  */
+#ifdef NOPE
 bool BD::FInCheck(SQ sqKing) const
 {
 	assert((mpsqtpc[sqKing] & tpcPiece) == tpcKing);
 	return (sqKing.fgrf() & rggrfAttacked[CpcOpposite(CpcFromTpc(mpsqtpc[sqKing]))]);
+}
+#endif
+
+
+bool BD::FDsqAttack(SQ sqKing, SQ sq, int dsq) const
+{
+	SQ sqScan = sq;
+	do {
+		sqScan += dsq;
+		if (sqScan == sqKing)
+			return true;
+	} while (mpsqtpc[sqScan] == tpcEmpty);
+	return false;
+}
+
+
+bool BD::FDiagAttack(SQ sqKing, SQ sq, int dsq) const
+{
+	return FDsqAttack(sqKing, sq, sqKing > sq ? dsq : -dsq);
+}
+
+
+bool BD::FRankAttack(SQ sqKing, SQ sq) const
+{
+	return FDsqAttack(sqKing, sq, sqKing > sq ? 1 : -1);
+}
+
+
+bool BD::FFileAttack(SQ sqKing, SQ sq) const
+{
+	return FDsqAttack(sqKing, sq, sqKing > sq ? 16 : -16);
+}
+
+
+/*	BD::FInCheck
+ *
+ *	Returns true if the given color's king is in check. Does not require ComputeAttacked,
+ *	and does a complete scan of the opponent pieces to find checks.
+ */
+
+bool BD::FInCheck(CPC cpc) const
+{
+	SQ sqKing = mptpcsq[cpc][tpcKing];
+	return FSqAttacked(CpcOpposite(cpc), sqKing);
+}
+
+
+bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
+{
+	for (TPC tpc = 0; tpc < tpcPieceMax; tpc++) {
+		SQ sq = mptpcsq[cpcBy][tpc];
+		if (sq.FIsNil())
+			continue;
+		int dsq = sq - sqKing;
+		switch (ApcFromSq(sq)) {
+		case apcPawn:
+			if (cpcBy == cpcBlack) {
+				if (dsq == 17 || dsq == 15)
+					return true;
+			}
+			else {
+				if (dsq == -17 || dsq == -15)
+					return true;
+			}
+			break;
+		case apcKnight:
+			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14 ||
+					dsq == -33 || dsq == -31 || dsq == -18 || dsq == -14)
+				return true;
+			break;
+		case apcQueen:
+			if (sq.rank() == sqKing.rank()) {
+				if (FRankAttack(sqKing, sq))
+					return true;
+			}
+			else if (sq.file() == sqKing.file()) {
+				if (FFileAttack(sqKing, sq))
+					return true;
+			}
+			/* fall through */
+		case apcBishop:
+			if (dsq % 17 == 0) {
+				if (FDiagAttack(sqKing, sq, 17))
+					return true;
+			}
+			else if (dsq % 15 == 0) {
+				if (FDiagAttack(sqKing, sq, 15))
+					return true;
+			}
+			break;
+		case apcRook:
+			if (sq.rank() == sqKing.rank()) {
+				if (FRankAttack(sqKing, sq))
+					return true;
+			}
+			else if (sq.file() == sqKing.file()) {
+				if (FFileAttack(sqKing, sq))
+					return true;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	return false;
 }
 
 
@@ -692,17 +818,10 @@ void BD::GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 void BD::GenRgmvCastle(vector<MV>& rgmv, SQ sqKing) const
 {
 	BYTE tpcKing = mpsqtpc[sqKing];
-	const UINT64 grfQueenSideCastleAttacked = ((UINT64)((1 << fileQueenBishop) | (1 << fileQueen) | (1 << fileKing))) << (sqKing - fileKing).shgrf();
-	const UINT64 grfKingSideCastleAttacked = grfQueenSideCastleAttacked << 2;
-	UINT64 grfAttacked = rggrfAttacked[CpcOpposite(CpcFromTpc(tpcKing))];
-	if (FCanCastle(CpcFromTpc(tpcKing), csKing)) {
-		if (!(grfKingSideCastleAttacked & grfAttacked))
-			GenRgmvCastleSide(rgmv, sqKing, fileKingRook, 1);
-	}
-	if (FCanCastle(CpcFromTpc(tpcKing), csQueen)) {
-		if (!(grfQueenSideCastleAttacked & grfAttacked))
-			GenRgmvCastleSide(rgmv, sqKing, fileQueenRook, -1);
-	}
+	if (FCanCastle(CpcFromTpc(tpcKing), csKing))
+		GenRgmvCastleSide(rgmv, sqKing, fileKingRook, 1);
+	if (FCanCastle(CpcFromTpc(tpcKing), csQueen))
+		GenRgmvCastleSide(rgmv, sqKing, fileQueenRook, -1);
 }
 
 
@@ -725,11 +844,14 @@ void BD::GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) c
 		if (mpsqtpc[sq] != tpcEmpty)
 			return;
 	}
-	/* still must be legal to castle on this side */
-	if (FCanCastle(CpcFromSq(sqKing), fileRook == fileQueenRook ? csQueen : csKing)) {
-		assert(ApcFromSq(sq) == apcRook);
-		AddRgmvMv(rgmv, MV(sqKing, sqKing + 2 * dsq));
-	}
+	CPC cpcOpp = CpcOpposite(CpcFromSq(sqKing));
+	/* TODO: it's probably possible to do a faster range test to see if some pieces
+	 * attack this full range, rather than go through each piece 4 times */
+	if (FSqAttacked(cpcOpp, sqKing) || FSqAttacked(cpcOpp, sqKing + dsq) ||
+		FSqAttacked(cpcOpp, sqKing + 2 * dsq) || FSqAttacked(cpcOpp, sqKing + 3 * dsq))
+		return;
+	assert(ApcFromSq(sq) == apcRook);
+	AddRgmvMv(rgmv, MV(sqKing, sqKing + 2 * dsq));
 }
 
 
@@ -899,6 +1021,10 @@ void BDG::NewGame(void)
 	imvCur = -1;
 	imvPawnOrTakeLast = -1;
 	SetGs(GS::Playing);
+#ifdef NOPE
+	ComputeAttacked(cpcWhite);
+	ComputeAttacked(cpcBlack);
+#endif
 }
 
 
@@ -1066,7 +1192,7 @@ void BDG::RedoMv(void)
 GS BDG::GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const
 {
 	if (rgmv.size() == 0) {
-		if (FSqAttacked(mptpcsq[cpcToMove][tpcKing], CpcOpposite(cpcToMove)))
+		if (FInCheck(cpcToMove))
 			return cpcToMove == cpcWhite ? GS::WhiteCheckMated : GS::BlackCheckMated;
 		else
 			return GS::StaleMate;
