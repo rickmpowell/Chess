@@ -467,9 +467,40 @@ void GA::GenRgmv(vector<MV>& rgmv)
 
 void GA::Play(void)
 {
-	do {
-		PL* ppl = mpcpcppl[bdg.cpcToMove];
-		MV mv = ppl->MvGetNext(*this);
-		MakeMv(mv, SPMV::Animate);
-	} while (bdg.gs == GS::Playing);
+	try {
+		do {
+			PL* ppl = mpcpcppl[bdg.cpcToMove];
+			MV mv = ppl->MvGetNext();
+			MakeMv(mv, SPMV::Animate);
+		} while (bdg.gs == GS::Playing);
+	}
+	catch (int err) {
+		MessageBoxW(app.hwnd, L"Game play has been aborted.", NULL, MB_OK);
+	}
+}
+
+
+/*	GA::PumpMsg
+ *
+ *	Pumps and dispatches a system message. Throws an exception if the user 
+ *	hit escape.
+ */
+void GA::PumpMsg(void)
+{
+	MSG msg;
+	if (::PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE | PM_NOYIELD)) {
+		switch (msg.message) {
+		case WM_KEYDOWN:
+			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
+			if (msg.wParam == VK_ESCAPE)
+				throw -1;
+			break;
+		case WM_QUIT:
+			throw - 1;
+		default:
+			if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE))
+				::DispatchMessage(&msg);
+			break;
+		}
+	}
 }

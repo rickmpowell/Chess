@@ -286,25 +286,8 @@ GotTag:
  */
 int GA::ReadPGNMoveList(ISTKPGN& istkpgn)
 {
-	while (ReadPGNMove(istkpgn)) {
-		// Yield a minute
-		MSG msg;
-		if (::PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE | PM_NOYIELD)) {
-			switch (msg.message) {
-			case WM_KEYDOWN:
-				::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
-				if (msg.wParam == VK_ESCAPE)
-					throw -1;
-				break;
-			case WM_QUIT:
-				throw -1;
-			default:
-				if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE))
-					::DispatchMessage(&msg);
-				break;
-			}
-		}
-	}
+	while (ReadPGNMove(istkpgn))
+		PumpMsg();
 	return 1;
 }
 

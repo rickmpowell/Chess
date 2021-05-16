@@ -7,7 +7,6 @@
   AI: build lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   AI: Display progress in the debug panel
-  AI: Add message pump while thinking
   UIBD: Hilite last made move on board
   Add a UI for setting up a board
   AI: Play through until no checks before evaluation
@@ -53,6 +52,7 @@
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
   Debug version should assert if we try to make an illegal move
+* AI: Add message pump while thinking
 * Add command to load PGN files and load specific games for analysis
 * Add ability to open PGN files
 * Add ability to save PGN files

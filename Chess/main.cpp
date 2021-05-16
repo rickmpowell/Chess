@@ -105,9 +105,9 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
 
     pga = new GA(*this);
     float rgfAI[] = { 5.0f, 1.0f };
-    pga->SetPl(cpcWhite, new PL(L"Squub", rgfAI));
+    pga->SetPl(cpcWhite, new PL(*pga, L"Squub", rgfAI));
     rgfAI[1] = 2.0f;
-    pga->SetPl(cpcBlack, new PL(L"Frapija", rgfAI));
+    pga->SetPl(cpcBlack, new PL(*pga, L"Frapija", rgfAI));
     pga->NewGame(new RULE);
 
     /* create the main window */

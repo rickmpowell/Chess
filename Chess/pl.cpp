@@ -14,7 +14,7 @@
 mt19937 rgen(0);
 
 
-PL::PL(wstring szName, const float* rgfAICoeef) : szName(szName)
+PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName)
 {
 	memcpy(this->rgfAICoeef, rgfAICoeef, sizeof(this->rgfAICoeef));
 }
@@ -32,7 +32,7 @@ PL::~PL(void)
  * 
  *	This is a compauter AI implementation.
  */
-MV PL::MvGetNext(GA& ga)
+MV PL::MvGetNext(void)
 {
 	/* generate all moves without removing checks. we'll use this as a heuristic for the amount of
 	 * mobillity on the board, which we can use to estimate the depth we can search */
@@ -57,6 +57,7 @@ MV PL::MvGetNext(GA& ga)
 	vector<BDGMVEV> rgbdgmvev;
 	PreSortMoves(bdg, rgmv, rgbdgmvev);
 
+	cYield = 0;
 	MV mvBest;
 	float evalAlpha = -1000.0f, evalBeta = 1000.0f;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
@@ -75,10 +76,13 @@ MV PL::MvGetNext(GA& ga)
  *	Evaluates the board from the point of view of the person who last moved,
  *	i.e., the previous move.
  */
-float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule) const
+float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule)
 {
 	if (depth >= depthMax)
 		return EvalBdgQuiescent(bdgmvevEval, depth, evalAlpha, evalBeta);
+
+	if (++cYield % 1000 == 0)
+		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
 	PreSortMoves(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
@@ -115,7 +119,7 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
  *	Returns the quiescent evaluation of the board from the point of view of the 
  *	previous move player, i.e., it evaluates the previous move.
  */
-float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta) const
+float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
 {
 	float eval = -bdgmvevEval.eval;
 	
@@ -124,15 +128,6 @@ float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, flo
 
 	if (bdgmvevEval.rgmvReplyAll.size() == 0)
 		return eval;
-
-#ifdef NOPE
-	/* include no-move as possible quiescent stopping point */
-
-	if (eval >= evalBeta)
-		return evalBeta;
-	if (eval > evalAlpha)
-		evalAlpha = eval;
-#endif
 
 	vector<BDGMVEV> rgbdgmvev;
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);

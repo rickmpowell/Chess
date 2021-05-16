@@ -42,10 +42,12 @@ class GA;
 
 class PL
 {
+	GA& ga;
 	wstring szName;
 	float rgfAICoeef[2];
+	long cYield;
 public:
-	PL(wstring szName, const float rgfAICoeef[]);
+	PL(GA& ga, wstring szName, const float rgfAICoeef[]);
 	~PL(void);
 	wstring& SzName(void) {
 		return szName;
@@ -55,9 +57,9 @@ public:
 		szName = szNew;
 	}
 
-	virtual MV MvGetNext(GA& ga);
-	float EvalBdgDepth(BDGMVEV& bdg, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule) const;
-	float EvalBdgQuiescent(BDGMVEV& bdg, int depth, float evalAlpha, float evalBeta) const;
+	virtual MV MvGetNext(void);
+	float EvalBdgDepth(BDGMVEV& bdg, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
+	float EvalBdgQuiescent(BDGMVEV& bdg, int depth, float evalAlpha, float evalBeta);
 	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg) const;
 	void FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev) const;
 	void SortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, unsigned ibdgFirst, unsigned ibdgLim) const;

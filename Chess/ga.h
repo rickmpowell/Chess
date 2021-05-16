@@ -89,6 +89,7 @@ public:
 	void SetPl(CPC cpc, PL* ppl);
 
 	void Timer(UINT tid, DWORD tm);
+	void PumpMsg(void);
 
 	void Play(void);
 	void NewGame(RULE* prule);
