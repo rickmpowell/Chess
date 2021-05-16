@@ -1,3 +1,5 @@
+  Do 3-move repetition draws in the AI lookahead
+  AI: Do a multithreaded lookup
   Undo doesn't take down game over panel
   Add option to not draw moves during test run
   Don't display resign/draw controls during test playback
@@ -15,7 +17,6 @@
   PL: Add message pump to the PL for getting player moves
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Move list does not redraw on window resize
-  Add command to load PGN files and load specific games for analysis
   ML: Hook up resignation button
   ML: Add a UI for offering draws
   UI for specifying player names
@@ -52,6 +53,7 @@
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
   Debug version should assert if we try to make an illegal move
+* Add command to load PGN files and load specific games for analysis
 * Add ability to open PGN files
 * Add ability to save PGN files
 * AI: convert presort to use a binary search and insertion sort

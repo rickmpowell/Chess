@@ -183,24 +183,6 @@ int BD::TpcUnusedPawn(CPC cpc) const
 }
 
 
-/*	BD::ComputeAttacked
- *
- *	Computes the attacked square bit mask for the given color
- */
-#ifdef NOPE
-void BD::ComputeAttacked(CPC cpc)
-{
-	static vector<MV> rgmv;
-	rgmv.reserve(50);
-	GenRgmvColor(rgmv, cpc, true);
-	UINT64 grfAttacked = 0;
-	for (MV mv : rgmv)
-		grfAttacked |= mv.SqTo().fgrf();
-	rggrfAttacked[cpc] = grfAttacked;
-}
-#endif
-
-
 /*	BD::MakeMv
  *
  *	Makes a move on the board. Assumes the move is well-formed.
@@ -212,8 +194,6 @@ void BD::MakeMv(MV mv)
 {
 	Validate();
 	MakeMvSq(mv);
-//	ComputeAttacked(cpcWhite);
-//	ComputeAttacked(cpcBlack);
 	Validate();
 }
 
@@ -225,10 +205,6 @@ void BD::MakeMv(MV mv)
  */
 void BD::MakeMvSq(MV mv)
 {
-#ifndef NDEBUG
-	rggrfAttacked[cpcWhite] = rggrfAttacked[cpcBlack] = 0LL;
-#endif
-
 	SQ sqFrom = mv.SqFrom();
 	SQ sqTo = mv.SqTo();
 	BYTE tpcFrom = mpsqtpc[sqFrom];
@@ -380,10 +356,6 @@ void BD::UndoMv(MV mv)
 		}
 	}
 
-#ifndef NDEBUG
-	rggrfAttacked[cpcWhite] = rggrfAttacked[cpcBlack] = 0LL;
-#endif
-
 	Validate();
 }
 
@@ -438,26 +410,13 @@ void BD::RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const
 	int imvTo = 0;
 	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
 		MV mv = rgmv[imv];
-		if (ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv))
+		if (mpsqtpc[mv.SqTo()] != tpcEmpty && 
+				VpcFromSq(mv.SqFrom()) + 0.5 < VpcFromSq(mv.SqTo()))
 			rgmv[imvTo++] = mv;
 		/* TODO: need to test for checks */
 	}
 	rgmv.resize(imvTo);
 }
-
-
-/*	BD::FSqAttacked
- *
- *	Checks that the square sq is attacked by a piece of color tpcBy. Returns true if
- *	the square is attacked.
- */
-#ifdef NOPE
-bool BD::FSqAttacked(SQ sq, CPC cpcBy) const
-{
-	assert(rggrfAttacked[cpcBy]);
-	return (rggrfAttacked[cpcBy] & sq.fgrf()) != 0;
-}
-#endif
 
 
 /*	BD::GenRgmvColor
@@ -519,20 +478,6 @@ void BD::AddRgmvMv(vector<MV>& rgmv, MV mv) const
 }
 
 
-/*	BD::FInCheck
- *
- *	Returns true if the king at square sqKing is under attack by an opponent
- *	piece. ComputeAttacked must be called prior to using this version.
- */
-#ifdef NOPE
-bool BD::FInCheck(SQ sqKing) const
-{
-	assert((mpsqtpc[sqKing] & tpcPiece) == tpcKing);
-	return (sqKing.fgrf() & rggrfAttacked[CpcOpposite(CpcFromTpc(mpsqtpc[sqKing]))]);
-}
-#endif
-
-
 bool BD::FDsqAttack(SQ sqKing, SQ sq, int dsq) const
 {
 	SQ sqScan = sq;
@@ -582,21 +527,20 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 		SQ sq = mptpcsq[cpcBy][tpc];
 		if (sq.FIsNil())
 			continue;
-		int dsq = sq - sqKing;
+		int dsq;
 		switch (ApcFromSq(sq)) {
 		case apcPawn:
-			if (cpcBy == cpcBlack) {
-				if (dsq == 17 || dsq == 15)
-					return true;
-			}
-			else {
-				if (dsq == -17 || dsq == -15)
-					return true;
-			}
+			dsq = sq - sqKing;
+			if (cpcBy == cpcWhite)
+				dsq = -dsq;
+			if (dsq == 17 || dsq == 15)
+				return true;
 			break;
 		case apcKnight:
-			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14 ||
-					dsq == -33 || dsq == -31 || dsq == -18 || dsq == -14)
+			dsq = sq - sqKing;
+			if (dsq < 0)
+				dsq = -dsq;
+			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14)
 				return true;
 			break;
 		case apcQueen:
@@ -610,6 +554,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 			}
 			/* fall through */
 		case apcBishop:
+			dsq = sq - sqKing;
 			if (dsq % 17 == 0) {
 				if (FDiagAttack(sqKing, sq, 17))
 					return true;
@@ -628,6 +573,13 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 				if (FFileAttack(sqKing, sq))
 					return true;
 			}
+			break;
+		case apcKing:
+			dsq = sq - sqKing;
+			if (dsq < 0)
+				dsq = -dsq;
+			if (dsq == 17 || dsq == 16 || dsq == 15 || dsq == 1)
+				return true;
 			break;
 		default:
 			break;
@@ -881,28 +833,6 @@ void BD::GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const
 }
 
 
-/*	BD::FMvEnPassant
- *
- *	Returns true if the move is an en passant captur
- */
-bool BD::FMvEnPassant(MV mv) const
-{
-	return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn;
-}
-
-
-/*	BD::FMvIsCapture
- *
- *	Returns true if the move is a capture move. Does not rely on undo information
- *	in the MV; instead, it checks destination squares to determine if we're removing
- *	a piece. Also checks en passant.
- */
-bool BD::FMvIsCapture(MV mv) const
-{
-	return ApcFromSq(mv.SqTo()) != apcNull || FMvEnPassant(mv);
-}
-
-
 float BD::VpcFromSq(SQ sq) const
 {
 	assert(!sq.FIsOffBoard());
@@ -1021,10 +951,6 @@ void BDG::NewGame(void)
 	imvCur = -1;
 	imvPawnOrTakeLast = -1;
 	SetGs(GS::Playing);
-#ifdef NOPE
-	ComputeAttacked(cpcWhite);
-	ComputeAttacked(cpcBlack);
-#endif
 }
 
 
@@ -1146,10 +1072,9 @@ void BDG::MakeMv(MV mv)
 		if (sqTake == sqEnPassant)
 			sqTake = SQ(cpcToMove == cpcWhite ? 4 : 3, sqEnPassant.file());
 	}
-	APC apcTake = ApcFromSq(sqTake);
-	if (apcTake != apcNull) {
+	if (mpsqtpc[sqTake] != tpcEmpty) {
 		imvPawnOrTakeLast = imvCur + 1;
-		mv.SetCapture(apcTake, mpsqtpc[sqTake] & tpcPiece);
+		mv.SetCapture(ApcFromSq(sqTake), mpsqtpc[sqTake] & tpcPiece);
 	}
 
 	/* make the move and save the move in the move list */

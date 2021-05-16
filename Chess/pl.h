@@ -18,9 +18,9 @@ public:
 	float eval;
 	vector<MV> rgmvReplyAll;	// all reply moves, including illegal moves that leave king in check
 
-	BDGMVEV(void) : mv(MV()), eval(0.0f) { }
+	inline BDGMVEV(void) : mv(MV()), eval(0.0f) { }
 
-	BDGMVEV(const BDG& bdg, MV mv) : BDG(bdg), mv(mv), eval(0.0f) 
+	inline BDGMVEV(const BDG& bdg, MV mv) : BDG(bdg), mv(mv), eval(0.0f) 
 	{ 
 		MakeMv(mv); 
 		rgmvReplyAll.reserve(50);  

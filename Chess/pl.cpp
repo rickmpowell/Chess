@@ -44,9 +44,12 @@ MV PL::MvGetNext(GA& ga)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, CpcOpposite(bdg.cpcToMove), false);
-	int depthMax = (int)round(log(10000000.0f*10000000.0f) / (log((float)(rgmv.size()*rgmvOpp.size()))));
-	if (depthMax < 5)
-		depthMax = 5;
+	const float cmvSearch = 500000.0f;
+	const float fracAlphaBeta = 3.0f; // cuts moves we analyze by this factor
+	float size2 = (float)(rgmv.size() * rgmvOpp.size());
+	int depthMax = (int)round(2.0f*log(cmvSearch) / (log(size2)-log(2.0f*fracAlphaBeta)));
+	if (depthMax < 4)
+		depthMax = 4;
 
 	/* and find the best move */
 
@@ -69,7 +72,8 @@ MV PL::MvGetNext(GA& ga)
 
 /*	PL::EvalBdgDepth
  *
- *	Evaluates the board from the point of view of the person who made the previous move.
+ *	Evaluates the board from the point of view of the person who last moved,
+ *	i.e., the previous move.
  */
 float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule) const
 {
@@ -81,7 +85,7 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 
 	int cmv = 0;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
-		if (bdgmvev.FInCheck(bdgmvev.cpcToMove))
+		if (bdgmvev.FInCheck(CpcOpposite(bdgmvev.cpcToMove)))
 			continue;
 		cmv++;
 		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
@@ -95,10 +99,12 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 
 	if (cmv == 0) {
 		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
-			return (float)-(100 - depth);
+			return -(float)(100 - depth);
 		else
 			return 0.0f;
 	}
+
+	/* TODO: check for 3-position repeat draw */
 
 	return evalAlpha;
 }
@@ -106,25 +112,27 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 
 /*	PL::EvalBdgQuiescent
  *
- *	Returns the quiescent evaluation of the board from the point of view of the previous 
- *	move player, i.e., it evaluates the previous move.
+ *	Returns the quiescent evaluation of the board from the point of view of the 
+ *	previous move player, i.e., it evaluates the previous move.
  */
 float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta) const
 {
 	float eval = -bdgmvevEval.eval;
-
+	
 	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 
 	if (bdgmvevEval.rgmvReplyAll.size() == 0)
 		return eval;
 
+#ifdef NOPE
 	/* include no-move as possible quiescent stopping point */
 
 	if (eval >= evalBeta)
 		return evalBeta;
 	if (eval > evalAlpha)
 		evalAlpha = eval;
+#endif
 
 	vector<BDGMVEV> rgbdgmvev;
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
@@ -200,7 +208,7 @@ void PL::SortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, un
 
 /*	PL::EvalBdg
  *
- *	Evaluates the board from the point of view of the cpc color
+ *	Evaluates the board from the point of view of the color that just moved.
  */
 float PL::EvalBdg(const BDGMVEV& bdgmvev) const
 {

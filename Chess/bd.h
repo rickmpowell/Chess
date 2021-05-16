@@ -99,10 +99,32 @@ enum {
 
 typedef BYTE APC;
 
-inline APC ApcFromTpc(BYTE tpc) { return (tpc & tpcApc) >> 4; }
-inline TPC Tpc(TPC tpc, CPC cpc, APC apc) { return tpc | (cpc << 7) | (apc << 4); }
-inline int CpcFromTpc(TPC tpc) { return (tpc & tpcColor) == tpcBlack; }
-inline TPC TpcSetApc(TPC tpc, APC apc) { return (tpc & ~tpcApc) | (apc << 4); }
+inline APC ApcFromTpc(BYTE tpc) 
+{
+	assert(tpc != tpcEmpty);
+	return (tpc >> 4) & 0x07;
+}
+
+inline TPC Tpc(TPC tpc, CPC cpc, APC apc) 
+{
+	assert(tpc >= 0 && tpc < tpcPieceMax);
+	assert(cpc == cpcWhite || cpc == cpcBlack);
+	assert(apc >= apcPawn && apc <= apcKing);
+	return tpc | (cpc << 7) | (apc << 4); 
+}
+
+inline int CpcFromTpc(TPC tpc) 
+{ 
+	assert(tpc != tpcEmpty);
+	return (tpc & tpcColor) == tpcBlack; 
+
+}
+inline TPC TpcSetApc(TPC tpc, APC apc) 
+{
+	assert(tpc != tpcEmpty);
+	assert(apc >= apcPawn && apc <= apcKing);
+	return (tpc & ~tpcApc) | (apc << 4); 
+}
 
 enum {
 	fileQueenRook = 0,
@@ -314,7 +336,6 @@ class BD
 	static const float mpapcvpc[];
 public:
 	TPC mpsqtpc[64*2];	// the board itself (maps square to piece)
-//	UINT64 rggrfAttacked[cpcMax];	// bit field of attacked squares (black=1, white=0)
 	SQ mptpcsq[cpcMax][tpcPieceMax]; // reverse mapping of mpsqtpc (black=1, white=0)
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
@@ -333,7 +354,6 @@ public:
 	void MakeMv(MV mv);
 	void UndoMv(MV mv);
 	void MakeMvSq(MV mv);
-//	inline void ComputeAttacked(CPC cpcMove);
 
 	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
@@ -355,7 +375,6 @@ public:
 
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
 	void RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const;
-	//inline bool FInCheck(SQ sqKing) const;
 	bool FInCheck(CPC cpc) const;
 	bool FSqAttacked(CPC cpc, SQ sqKing) const;
 	inline bool FDsqAttack(SQ sqKing, SQ sq, int dsq) const;
@@ -363,9 +382,15 @@ public:
 	inline bool FRankAttack(SQ sqKing, SQ sq) const;
 	inline bool FFileAttack(SQ sqKing, SQ sq) const;
 
-	//inline bool FSqAttacked(SQ sq, CPC cpcBy) const;
-	inline bool FMvEnPassant(MV mv) const;
-	inline bool FMvIsCapture(MV mv) const;
+	inline bool FMvEnPassant(MV mv) const
+	{
+		return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn;
+	}
+
+	inline bool FMvIsCapture(MV mv) const
+	{
+		return mpsqtpc[mv.SqTo()] != tpcEmpty || FMvEnPassant(mv);
+	}
 
 	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
 	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }
@@ -379,8 +404,16 @@ public:
 	inline float VpcFromSq(SQ sq) const;
 
 	inline bool FCanCastle(CPC cpc, int csSide) const { return (this->cs & (csSide << cpc)) != 0;  }
-	inline void SetCastle(CPC cpc, int csSide) { this->cs |= csSide << cpc; }
-	inline void ClearCastle(CPC cpc, int csSide) { this->cs &= ~(csSide << cpc); }
+	
+	inline void SetCastle(CPC cpc, int csSide) 
+	{ 
+		this->cs |= csSide << cpc; 
+	}
+	
+	inline void ClearCastle(CPC cpc, int csSide) 
+	{ 
+		this->cs &= ~(csSide << cpc); 
+	}
 
 	float VpcTotalFromCpc(CPC cpc) const;
 

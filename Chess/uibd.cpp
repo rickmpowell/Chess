@@ -371,12 +371,14 @@ void UIBD::DrawHover(void)
 	for (MV mv : rgmvDrag) {
 		if (mv.SqFrom() != sqHover)
 			continue;
+		/* don't draw percentage fill markers multiple times on the 
+		 * same square (which can only happens during pawn promotions) */
 		SQ sqTo = mv.SqTo();
 		if (grfDrawn & sqTo.fgrf())
 			continue;
 		grfDrawn |= sqTo.fgrf();
 		RCF rcf = RcfFromSq(sqTo);
-		if (ga.bdg.mpsqtpc[sqTo] == tpcEmpty && !ga.bdg.FMvEnPassant(mv)) {
+		if (!ga.bdg.FMvIsCapture(mv)) {
 			/* moving to an empty square - draw a circle */
 			ELLF ellf(PTF((rcf.right + rcf.left) / 2, (rcf.top + rcf.bottom) / 2),
 				PTF(dxyfSquare / 5, dxyfSquare / 5));
@@ -463,6 +465,9 @@ RCF UIBD::RcfGetDrag(void)
  */
 void UIBD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 {
+	if (tpc == tpcEmpty)
+		return;
+
 	/* the piece png has the 12 different chess pieces oriented like:
 	 *   WK WQ WN WR WB WP
 	 *   BK BQ BN BR BB BP
