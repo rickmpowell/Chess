@@ -26,7 +26,7 @@ class RULE
 	DWORD dtmMove;
 	unsigned cmvRepeatDraw; // if zero, no automatic draw detection
 public:
-	RULE(void) : tmGame(10 * 60 * 1000), dtmMove(5 * 1000), cmvRepeatDraw(3) { }
+	RULE(void) : tmGame(60 * 60 * 1000), dtmMove(0 * 1000), cmvRepeatDraw(3) { }
 	RULE(DWORD tmGame, DWORD dtmMove, unsigned cmvRepeatDraw) : tmGame(tmGame), dtmMove(dtmMove),
 		cmvRepeatDraw(cmvRepeatDraw) {
 	}
@@ -86,31 +86,45 @@ enum {
 };
 typedef int CPC;
 
-enum {
-	apcNull = 0,
-	apcPawn = 1,
-	apcKnight = 2,
-	apcBishop = 3,
-	apcRook = 4,
-	apcQueen = 5,
-	apcKing = 6,
-	apcBishop2 = 7	// only used for draw detection computation to keep track of bishop square color
+enum class APC {
+	Error = -1,
+	Null = 0,
+	Pawn = 1,
+	Knight = 2,
+	Bishop = 3,
+	Rook = 4,
+	Queen = 5,
+	King = 6,
+	Max = 7,
+	Bishop2 = 7,	// only used for draw detection computation to keep track of bishop square color
+	Max2 = 8
 };
 
-typedef BYTE APC;
+inline APC& operator++(APC& apc)
+{
+	apc = static_cast<APC>(static_cast<int>(apc) + 1);
+	return apc;
+}
 
-inline APC ApcFromTpc(BYTE tpc) 
+inline APC& operator+=(APC& apc, int dapc)
+{
+	apc = static_cast<APC>(static_cast<int>(apc) + dapc);
+	return apc;
+}
+
+
+inline APC ApcFromTpc(TPC tpc) 
 {
 	assert(tpc != tpcEmpty);
-	return (tpc >> 4) & 0x07;
+	return (APC)((tpc >> 4) & 0x07);
 }
 
 inline TPC Tpc(TPC tpc, CPC cpc, APC apc) 
 {
 	assert(tpc >= 0 && tpc < tpcPieceMax);
 	assert(cpc == cpcWhite || cpc == cpcBlack);
-	assert(apc >= apcPawn && apc <= apcKing);
-	return tpc | (cpc << 7) | (apc << 4); 
+	assert(apc >= APC::Pawn && apc <= APC::King);
+	return tpc | (cpc << 7) | ((BYTE)apc << 4); 
 }
 
 inline int CpcFromTpc(TPC tpc) 
@@ -122,8 +136,8 @@ inline int CpcFromTpc(TPC tpc)
 inline TPC TpcSetApc(TPC tpc, APC apc) 
 {
 	assert(tpc != tpcEmpty);
-	assert(apc >= apcPawn && apc <= apcKing);
-	return (tpc & ~tpcApc) | (apc << 4); 
+	assert(apc >= APC::Pawn && apc <= APC::King);
+	return (tpc & ~tpcApc) | ((BYTE)apc << 4); 
 }
 
 enum {
@@ -215,14 +229,14 @@ private:
 	unsigned long grf;
 public:
 	MV(void) { grf = grfNil; }
-	MV(SQ sqFrom, SQ sqTo, APC apcPromote = apcNull) {
+	MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
 		grf = (unsigned long)sqFrom.grf | ((unsigned long)sqTo.grf << 8) | 
 			((unsigned long)apcPromote << 29);
 	}
 	
 	SQ SqFrom(void) const { return grf & 0xff; }
 	SQ SqTo(void) const { return (grf >> 8) & 0xff; }
-	APC ApcPromote(void) const { return (grf >> 29) & 0x07; }
+	APC ApcPromote(void) const { return (APC)((grf >> 29) & 0x07); }
 	bool FIsNil(void) const { return grf == grfNil; }
 	MV& SetApcPromote(APC apc) { grf = (grf & 0x1fffffffL) | ((unsigned long)apc << 29); return *this;  }
 	MV& SetCapture(APC apc, TPC tpc) { grf = (grf & 0xff80ffffL) | ((unsigned long)apc << 20) | ((unsigned long)tpc << 16); return *this;  }
@@ -236,8 +250,8 @@ public:
 	int CsPrev(void) const { return (grf >> 27) & 0x03; }
 	int FileEpPrev(void) const { return (grf >> 24) & 0x07; }
 	bool FEpPrev(void) const { return (grf >> 23) & 0x01; }
-	APC ApcCapture(void) const { return (grf >> 20) & 0x07; }
-	bool FIsCapture(void) const { return  ApcCapture() != apcNull; }
+	APC ApcCapture(void) const { return (APC)((grf >> 20) & 0x07); }
+	bool FIsCapture(void) const { return  ApcCapture() != APC::Null; }
 	TPC TpcCapture(void) const { return (grf >> 16) & 0x0f; }
 	bool operator==(const MV& mv) const { return grf == mv.grf; }
 	bool operator!=(const MV& mv) const { return grf != mv.grf; }
@@ -296,21 +310,35 @@ inline int RankPromoteFromCpc(CPC cpc)
 	return ~-cpc & 7;
 }
 
+
+/*	RankInitPawnFromCpc
+ *
+ *	Initial rank pawns of the given color occupy. Either 1 or 6.
+ */
 inline int RankInitPawnFromCpc(CPC cpc)
 {
 	return (-cpc ^ 1) & 7;
 }
 
+
+/*	DsqPawnFromCpc
+ *
+ *	Number of squares a pawn of the given color moves
+ */
 inline int DsqPawnFromCpc(CPC cpc)
 {
 	return 16 - (cpc << 5);
 }
 
+
+/*	CpcOpposite
+ *
+ *	The opposite color of the given color
+ */
 inline CPC CpcOpposite(CPC cpc)
 {
 	return cpc ^ 1;
 }
-
 
 
 /*
@@ -384,7 +412,7 @@ public:
 
 	inline bool FMvEnPassant(MV mv) const
 	{
-		return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == apcPawn;
+		return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == APC::Pawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const
@@ -392,7 +420,7 @@ public:
 		return mpsqtpc[mv.SqTo()] != tpcEmpty || FMvEnPassant(mv);
 	}
 
-	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*8+file]; }
+	inline TPC& operator()(int rank, int file) { return mpsqtpc[rank*16+file]; }
 	inline TPC& operator()(SQ sq) { return mpsqtpc[sq]; }
 
 	inline SQ& SqFromTpc(TPC tpc, CPC cpc) { return mptpcsq[cpc][tpc]; }

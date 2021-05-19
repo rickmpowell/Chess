@@ -44,10 +44,10 @@ class PL
 {
 	GA& ga;
 	wstring szName;
-	float rgfAICoeef[2];
+	float rgfAICoeff[3];
 	long cYield;
 public:
-	PL(GA& ga, wstring szName, const float rgfAICoeef[]);
+	PL(GA& ga, wstring szName, const float rgfAICoeff[]);
 	~PL(void);
 	wstring& SzName(void) {
 		return szName;
@@ -62,8 +62,10 @@ public:
 	float EvalBdgQuiescent(BDGMVEV& bdg, int depth, float evalAlpha, float evalBeta);
 	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg) const;
 	void FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev) const;
-	void SortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, unsigned ibdgFirst, unsigned ibdgLim) const;
-	float EvalBdg(const BDGMVEV& bdgmvev) const;
+	float EvalBdg(const BDGMVEV& bdgmvev, bool fFull) const;
+	float EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmv) const;
+	void FillKingCoeff(float mpsqcoeffControl[], SQ sq) const;
+
 };
 
 

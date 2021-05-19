@@ -92,18 +92,18 @@ void BD::InitFENPieces(const WCHAR*& szFEN)
 	const WCHAR* pch;
 	for (pch = szFEN; *pch != L' ' && *pch != L'\0'; pch++) {
 		switch (*pch) {
-		case 'p': AddPieceFEN(sq++, tpcPawnFirst, cpcBlack, apcPawn); break;
-		case 'r': AddPieceFEN(sq++, tpcQueenRook, cpcBlack, apcRook); break;
-		case 'n': AddPieceFEN(sq++, tpcQueenKnight, cpcBlack, apcKnight); break;
-		case 'b': AddPieceFEN(sq++, tpcQueenBishop, cpcBlack, apcBishop); break;
-		case 'q': AddPieceFEN(sq++, tpcQueen, cpcBlack, apcQueen); break;
-		case 'k': AddPieceFEN(sq++, tpcKing, cpcBlack, apcKing); break;
-		case 'P': AddPieceFEN(sq++, tpcPawnFirst, cpcWhite, apcPawn); break;
-		case 'R': AddPieceFEN(sq++, tpcQueenRook, cpcWhite, apcRook); break;
-		case 'N': AddPieceFEN(sq++, tpcQueenKnight, cpcWhite, apcKnight); break;
-		case 'B': AddPieceFEN(sq++, tpcQueenBishop, cpcWhite, apcBishop); break;
-		case 'Q': AddPieceFEN(sq++, tpcQueen, cpcWhite, apcQueen); break;
-		case 'K': AddPieceFEN(sq++, tpcKing, cpcWhite, apcKing); break;
+		case 'p': AddPieceFEN(sq++, tpcPawnFirst, cpcBlack, APC::Pawn); break;
+		case 'r': AddPieceFEN(sq++, tpcQueenRook, cpcBlack, APC::Rook); break;
+		case 'n': AddPieceFEN(sq++, tpcQueenKnight, cpcBlack, APC::Knight); break;
+		case 'b': AddPieceFEN(sq++, tpcQueenBishop, cpcBlack, APC::Bishop); break;
+		case 'q': AddPieceFEN(sq++, tpcQueen, cpcBlack, APC::Queen); break;
+		case 'k': AddPieceFEN(sq++, tpcKing, cpcBlack, APC::King); break;
+		case 'P': AddPieceFEN(sq++, tpcPawnFirst, cpcWhite, APC::Pawn); break;
+		case 'R': AddPieceFEN(sq++, tpcQueenRook, cpcWhite, APC::Rook); break;
+		case 'N': AddPieceFEN(sq++, tpcQueenKnight, cpcWhite, APC::Knight); break;
+		case 'B': AddPieceFEN(sq++, tpcQueenBishop, cpcWhite, APC::Bishop); break;
+		case 'Q': AddPieceFEN(sq++, tpcQueen, cpcWhite, APC::Queen); break;
+		case 'K': AddPieceFEN(sq++, tpcKing, cpcWhite, APC::King); break;
 		case '/': sq = SQ(--rank, 0);  break;
 		case '1':
 		case '2': 
@@ -138,14 +138,14 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 	if (mptpcsq[cpc][tpc] != sqNil) {
 		switch (apc) {
 		/* TODO: two kings is an error */
-		case apcKing: assert(false); return;
+		case APC::King: assert(false); return;
 		default:
 			/* try piece on other side; otherwise it's a promoted pawn */
 			if (mptpcsq[cpc][tpc ^= 0x07] == sqNil)
 				break;
 			/* fall through */
-		case apcPawn:
-		case apcQueen:
+		case APC::Pawn:
+		case APC::Queen:
 			tpc = TpcUnusedPawn(cpc);
 			break;
 		}
@@ -228,7 +228,7 @@ void BD::MakeMvSq(MV mv)
 	SqFromTpc(tpcFrom) = sqTo;
 
 	switch (ApcFromTpc(tpcFrom)) {
-	case apcPawn:
+	case APC::Pawn:
 		/* save double-pawn moves for potential en passant and return */
 		if (((sqFrom.rank() ^ sqTo.rank()) & 0x03) == 0x02) {
 			sqEnPassant = SQ((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file());
@@ -248,7 +248,7 @@ void BD::MakeMvSq(MV mv)
 		} 
 		break;
 
-	case apcKing:
+	case APC::King:
 		ClearCastle(CpcFromTpc(tpcFrom), csKing|csQueen);
 		if (sqFrom.file() - sqTo.file() > 1 || sqFrom.file() - sqTo.file() < -1) {
 			/* castle moves */
@@ -270,7 +270,7 @@ void BD::MakeMvSq(MV mv)
 		}
 		break;
 
-	case apcRook:
+	case APC::Rook:
 		ClearCastle(CpcFromTpc(tpcFrom), (tpcFrom & tpcPiece) == tpcQueenRook ? csQueen : csKing);
 		break;
 
@@ -312,8 +312,8 @@ void BD::UndoMv(MV mv)
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
 
-	if (mv.ApcPromote() != apcNull)
-		tpcMove = TpcSetApc(tpcMove, apcPawn);
+	if (mv.ApcPromote() != APC::Null)
+		tpcMove = TpcSetApc(tpcMove, APC::Pawn);
 	mpsqtpc[sqFrom] = tpcMove;
 	SqFromTpc(tpcMove) = sqFrom;
 	APC apcMove = ApcFromTpc(tpcMove);	// get the type of moved piece after we've undone promotion
@@ -322,7 +322,7 @@ void BD::UndoMv(MV mv)
 	   the destination square becomes empty */
 
 	APC apcCapt = mv.ApcCapture();
-	if (apcCapt == apcNull)
+	if (apcCapt == APC::Null)
 		mpsqtpc[sqTo] = tpcEmpty;
 	else {
 		TPC tpcTake = Tpc(mv.TpcCapture(), cpcMove ^ 1, apcCapt);
@@ -330,7 +330,7 @@ void BD::UndoMv(MV mv)
 		if (sqTake == sqEnPassant) {
 			/* capture into the en passant square must be en passant capture
 			   pawn x pawn */
-			assert(ApcFromSq(sqTo) == apcPawn && apcCapt == apcPawn);
+			assert(ApcFromSq(sqTo) == APC::Pawn && apcCapt == APC::Pawn);
 			sqTake = SQ(sqEnPassant.rank() + cpcMove*2 - 1, sqEnPassant.file());
 			mpsqtpc[sqTo] = tpcEmpty;
 		}
@@ -340,7 +340,7 @@ void BD::UndoMv(MV mv)
 
 	/* undoing a castle means we need to undo the rook, too */
 
-	if (apcMove == apcKing) {
+	if (apcMove == APC::King) {
 		int dfile = sqTo.file() - sqFrom.file();
 		if (dfile < -1) { /* queen side castle */
 			TPC tpcRook = mpsqtpc[sqTo + 1];
@@ -438,24 +438,24 @@ void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const
 		assert(CpcFromTpc(mpsqtpc[sqFrom]) == cpcMove);
 	
 		switch (ApcFromSq(sqFrom)) {
-		case apcPawn:
+		case APC::Pawn:
 			GenRgmvPawn(rgmv, sqFrom);
 			if (sqEnPassant != sqNil)
 				GenRgmvEnPassant(rgmv, sqFrom);
 			break;
-		case apcKnight:
+		case APC::Knight:
 			GenRgmvKnight(rgmv, sqFrom);
 			break;
-		case apcBishop:
+		case APC::Bishop:
 			GenRgmvBishop(rgmv, sqFrom);
 			break;
-		case apcRook:
+		case APC::Rook:
 			GenRgmvRook(rgmv, sqFrom);
 			break;
-		case apcQueen:
+		case APC::Queen:
 			GenRgmvQueen(rgmv, sqFrom);
 			break;
-		case apcKing:
+		case APC::King:
 			GenRgmvKing(rgmv, sqFrom);
 			if (!fForAttack)
 				GenRgmvCastle(rgmv, sqFrom);
@@ -529,21 +529,21 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 			continue;
 		int dsq;
 		switch (ApcFromSq(sq)) {
-		case apcPawn:
+		case APC::Pawn:
 			dsq = sq - sqKing;
 			if (cpcBy == cpcWhite)
 				dsq = -dsq;
 			if (dsq == 17 || dsq == 15)
 				return true;
 			break;
-		case apcKnight:
+		case APC::Knight:
 			dsq = sq - sqKing;
 			if (dsq < 0)
 				dsq = -dsq;
 			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14)
 				return true;
 			break;
-		case apcQueen:
+		case APC::Queen:
 			if (sq.rank() == sqKing.rank()) {
 				if (FRankAttack(sqKing, sq))
 					return true;
@@ -553,7 +553,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 					return true;
 			}
 			/* fall through */
-		case apcBishop:
+		case APC::Bishop:
 			dsq = sq - sqKing;
 			if (dsq % 17 == 0) {
 				if (FDiagAttack(sqKing, sq, 17))
@@ -564,7 +564,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 					return true;
 			}
 			break;
-		case apcRook:
+		case APC::Rook:
 			if (sq.rank() == sqKing.rank()) {
 				if (FRankAttack(sqKing, sq))
 					return true;
@@ -574,7 +574,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 					return true;
 			}
 			break;
-		case apcKing:
+		case APC::King:
 			dsq = sq - sqKing;
 			if (dsq < 0)
 				dsq = -dsq;
@@ -630,8 +630,10 @@ void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
  */
 void BD::AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const
 {
-	for (BYTE apc = apcQueen; apc >= apcKnight; apc--)
-		AddRgmvMv(rgmv, mv.SetApcPromote(apc));
+	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Queen));
+	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Rook));
+	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Bishop));
+	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Knight));
 }
 
 
@@ -641,7 +643,7 @@ void BD::AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const
  */
 void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 {
-	assert(ApcFromSq(sqFrom) == apcPawn);
+	assert(ApcFromSq(sqFrom) == APC::Pawn);
 	SQ sqTo = sqFrom + dsq;
 	if (sqTo.FIsOffBoard())
 		return;
@@ -726,7 +728,7 @@ void BD::GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const
  */
 void BD::GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const
 {
-	assert(ApcFromSq(sqFrom) == apcQueen);
+	assert(ApcFromSq(sqFrom) == APC::Queen);
 	GenRgmvBishop(rgmv, sqFrom);
 	GenRgmvRook(rgmv, sqFrom);
 }
@@ -739,7 +741,7 @@ void BD::GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const
  */
 void BD::GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const
 {
-	assert(ApcFromSq(sqFrom) == apcKing);
+	assert(ApcFromSq(sqFrom) == APC::King);
 	static int rgdsq[8] = { 17, 16, 15, 1, -1, -15, -16, -17 };
 	for (int idsq = 0; idsq < 8; idsq++)
 		FGenRgmvDsq(rgmv, sqFrom, sqFrom, mpsqtpc[sqFrom], rgdsq[idsq]);
@@ -802,7 +804,7 @@ void BD::GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) c
 	if (FSqAttacked(cpcOpp, sqKing) || FSqAttacked(cpcOpp, sqKing + dsq) ||
 		FSqAttacked(cpcOpp, sqKing + 2 * dsq) || FSqAttacked(cpcOpp, sqKing + 3 * dsq))
 		return;
-	assert(ApcFromSq(sq) == apcRook);
+	assert(ApcFromSq(sq) == APC::Rook);
 	AddRgmvMv(rgmv, MV(sqKing, sqKing + 2 * dsq));
 }
 
@@ -814,7 +816,7 @@ void BD::GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) c
 void BD::GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const
 {
 	assert(sqEnPassant != sqNil);
-	assert(ApcFromSq(sqFrom) == apcPawn);
+	assert(ApcFromSq(sqFrom) == APC::Pawn);
 
 	/* make sure the piece we're checking is on the correct rank */
 
@@ -837,7 +839,18 @@ float BD::VpcFromSq(SQ sq) const
 {
 	assert(!sq.FIsOffBoard());
 	APC apc = ApcFromTpc(mpsqtpc[sq]);
-	return mpapcvpc[apc];
+	float vpc = mpapcvpc[(int)apc];
+	if (apc == APC::Pawn) {
+		if (CpcFromSq(sq) == cpcWhite) {
+			if (sq.rank() >= 5)
+				vpc += 0.1f * (sq.rank() - 4);
+		}
+		else {
+			if (sq.rank() <= 2)
+				vpc += 0.1f * (3 - sq.rank());
+		}
+	}
+	return vpc;
 }
 
 
@@ -878,29 +891,29 @@ void BD::Validate(void) const
 			assert(SqFromTpc(tpc) == sq);
 
 			int tpcPc = tpc & tpcPiece;
-			int apc = ApcFromTpc(tpc);
+			APC apc = ApcFromTpc(tpc);
 			switch (tpcPc) {
 			case tpcQueenRook:
 			case tpcKingRook:
-				assert(apc == apcRook);
+				assert(apc == APC::Rook);
 				break;
 			case tpcQueenKnight:
 			case tpcKingKnight:
-				assert(apc == apcKnight);
+				assert(apc == APC::Knight);
 				break;
 			case tpcQueenBishop:
 			case tpcKingBishop:
-				assert(apc == apcBishop);
+				assert(apc == APC::Bishop);
 				break;
 			case tpcQueen:
-				assert(apc == apcQueen);
+				assert(apc == APC::Queen);
 				break;
 			case tpcKing:
-				assert(apc == apcKing);
+				assert(apc == APC::King);
 				break;
 			default:
 				assert(tpcPc >= tpcPawnFirst && tpcPc < tpcPawnLim);
-				assert(apc == apcPawn || apc == apcQueen || apc == apcRook || apc == apcBishop || apc == apcKnight);
+				assert(apc == APC::Pawn || apc == APC::Queen || apc == APC::Rook || apc == APC::Bishop || apc == APC::Knight);
 				break;
 			}
 		}
@@ -1067,7 +1080,7 @@ void BDG::MakeMv(MV mv)
 	mv.SetCsEp(CsPackColor(cs, cpcToMove), sqEnPassant);
 	APC apcFrom = ApcFromSq(mv.SqFrom());
 	SQ sqTake = mv.SqTo();
-	if (apcFrom == apcPawn) {
+	if (apcFrom == APC::Pawn) {
 		imvPawnOrTakeLast = imvCur + 1;
 		if (sqTake == sqEnPassant)
 			sqTake = SQ(cpcToMove == cpcWhite ? 4 : 3, sqEnPassant.file());
@@ -1114,6 +1127,11 @@ void BDG::RedoMv(void)
 }
 
 
+/*	BDG::GsTestGameOver
+ *
+ *	Tests for the game in an end state. Returns the new state. Takes the legal move
+ *	list for the current to-move player and the rule struture.
+ */
 GS BDG::GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const
 {
 	if (rgmv.size() == 0) {
@@ -1150,7 +1168,7 @@ bool BDG::FDrawDead(void) const
 {
 	/* keep total piece count for the color at apcNull, and keep seperate counts for the 
 	   different color square bishops */
-	int mpapccapc[2][apcBishop2 + 1];	
+	int mpapccapc[2][(int)APC::Max2];	
 	memset(mpapccapc, 0, sizeof(mpapccapc));
 
 	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++) {
@@ -1159,29 +1177,29 @@ bool BDG::FDrawDead(void) const
 			if (sq == sqNil)
 				continue;
 			APC apc = ApcFromSq(sq);
-			if (apc == apcBishop)
-				apc += (sq & 1) * (apcBishop2 - apcBishop);
-			else if (apc == apcRook || apc == apcQueen || apc == apcPawn)	// rook, queen, or pawn, not dead
+			if (apc == APC::Bishop)
+				apc += (sq & 1) * ((int)APC::Bishop2 - (int)APC::Bishop);
+			else if (apc == APC::Rook || apc == APC::Queen || apc == APC::Pawn)	// rook, queen, or pawn, not dead
 				return false;
-			mpapccapc[cpc][apc]++;
-			if (++mpapccapc[cpc][apcNull] > 2)	// if total pieces more than 2, not dead
+			mpapccapc[cpc][(int)apc]++;
+			if (++mpapccapc[cpc][(int)APC::Null] > 2)	// if total pieces more than 2, not dead
 				return false;; 
 		}
 	}
 
-	assert(mpapccapc[cpcWhite][apcKing] == 1 && mpapccapc[cpcBlack][apcKing] == 1);
-	assert(mpapccapc[cpcWhite][apcNull] <= 2 && mpapccapc[cpcBlack][apcNull] <= 2);
+	assert(mpapccapc[cpcWhite][(int)APC::King] == 1 && mpapccapc[cpcBlack][(int)APC::King] == 1);
+	assert(mpapccapc[cpcWhite][(int)APC::Null] <= 2 && mpapccapc[cpcBlack][(int)APC::Null] <= 2);
 
 	/* this picks off K vs. K, K vs. K-N, and K vs. K-B */
 
-	if (mpapccapc[cpcWhite][apcNull] == 1 || mpapccapc[cpcBlack][apcNull] == 1)
+	if (mpapccapc[cpcWhite][(int)APC::Null] == 1 || mpapccapc[cpcBlack][(int)APC::Null] == 1)
 		return true;
 
 	/* The other draw case is K-B vs. K-B with bishops on same color */
 
-	assert(mpapccapc[cpcWhite][apcNull] == 2 && mpapccapc[cpcBlack][apcNull] == 2);
-	if ((mpapccapc[cpcWhite][apcBishop] && mpapccapc[cpcBlack][apcBishop]) ||
-			(mpapccapc[cpcWhite][apcBishop2] && mpapccapc[cpcBlack][apcBishop2]))
+	assert(mpapccapc[cpcWhite][(int)APC::Null] == 2 && mpapccapc[cpcBlack][(int)APC::Null] == 2);
+	if ((mpapccapc[cpcWhite][(int)APC::Bishop] && mpapccapc[cpcBlack][(int)APC::Bishop]) ||
+			(mpapccapc[cpcWhite][(int)APC::Bishop2] && mpapccapc[cpcBlack][(int)APC::Bishop2]))
 		return true;
 
 	/*  otherwise forcing checkmate is still possible */

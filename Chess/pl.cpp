@@ -14,9 +14,9 @@
 mt19937 rgen(0);
 
 
-PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName)
+PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName), cYield(0)
 {
-	memcpy(this->rgfAICoeef, rgfAICoeef, sizeof(this->rgfAICoeef));
+	memcpy(this->rgfAICoeff, rgfAICoeef, sizeof(this->rgfAICoeff));
 }
 
 
@@ -44,7 +44,7 @@ MV PL::MvGetNext(void)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, CpcOpposite(bdg.cpcToMove), false);
-	const float cmvSearch = 500000.0f;
+	const float cmvSearch = 1.00e+6f;
 	const float fracAlphaBeta = 3.0f; // cuts moves we analyze by this factor
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
 	int depthMax = (int)round(2.0f*log(cmvSearch) / (log(size2)-log(2.0f*fracAlphaBeta)));
@@ -108,7 +108,13 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 			return 0.0f;
 	}
 
-	/* TODO: check for 3-position repeat draw */
+#ifdef LATER
+	/* checkmates were detected already, so GsTestGameOver can only return draws */
+	GS gs = bdgmvevEval.GsTestGameOver(bdgmvevEval.rgmvReplyAll, *ga.prule);
+	assert(gs != GS::BlackCheckMated && gs != GS::WhiteCheckMated);
+	if (gs != GS::Playing)
+		return 0.0f;
+#endif
 
 	return evalAlpha;
 }
@@ -121,19 +127,17 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
  */
 float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
 {
-	float eval = -bdgmvevEval.eval;
-	
 	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 
 	if (bdgmvevEval.rgmvReplyAll.size() == 0)
-		return eval;
+		return -EvalBdg(bdgmvevEval, true);
 
 	vector<BDGMVEV> rgbdgmvev;
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
 	for (BDGMVEV bdgmvev : rgbdgmvev) {
-		eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
+		float eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
 		if (eval >= evalBeta)
 			return evalBeta;
 		if (eval > evalAlpha)
@@ -149,8 +153,8 @@ void PL::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& 
 	rgbdgmvev.reserve(rgmv.size());
 	for (MV mv : rgmv) {
 		BDGMVEV bdgmvev(bdg, mv);
-		bdgmvev.eval = EvalBdg(bdgmvev);
-		rgbdgmvev.push_back(bdgmvev);
+		bdgmvev.eval = EvalBdg(bdgmvev, false);
+		rgbdgmvev.push_back(move(bdgmvev));
 	}
 }
 
@@ -159,13 +163,14 @@ void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& r
 {
 	/* insertion sort */
 
+	rgbdgmvev.reserve(rgmv.size());
 	for (MV mv : rgmv) {
 		BDGMVEV bdgmvev(bdg, mv);
-		bdgmvev.eval = EvalBdg(bdgmvev);
+		bdgmvev.eval = EvalBdg(bdgmvev, false);
 		unsigned imvFirst, imvLim;
 		for (imvFirst = 0, imvLim = (unsigned)rgbdgmvev.size(); ; ) {
 			if (imvFirst == imvLim) {
-				rgbdgmvev.insert(rgbdgmvev.begin()+imvFirst, bdgmvev);
+				rgbdgmvev.insert(rgbdgmvev.begin()+imvFirst, move(bdgmvev));
 				break;
 			}
 			unsigned imvMid = (imvFirst + imvLim) / 2;
@@ -179,33 +184,11 @@ void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& r
 }
 
 
-void PL::SortRgbdgmvev(vector<BDGMVEV>& rgbdg, vector<BDGMVEV>& rgbdgScratch, unsigned ibdgFirst, unsigned ibdgLim) const
-{
-	if (ibdgLim - ibdgFirst <= 1)
-		return;
-	unsigned ibdgMid = (ibdgLim + ibdgFirst) / 2;
-	SortRgbdgmvev(rgbdg, rgbdgScratch, ibdgFirst, ibdgMid);
-	SortRgbdgmvev(rgbdg, rgbdgScratch, ibdgMid, ibdgLim);
-
-	unsigned ibdgLeft, ibdgRight, ibdgOut;
-	for (ibdgOut = ibdgFirst, ibdgLeft = ibdgFirst, ibdgRight = ibdgMid; ibdgLeft < ibdgMid && ibdgRight < ibdgLim; ) {
-		if (rgbdg[ibdgLeft].eval >= rgbdg[ibdgRight].eval)
-			swap(rgbdgScratch[ibdgOut++], rgbdg[ibdgLeft++]);
-		else
-			swap(rgbdgScratch[ibdgOut++], rgbdg[ibdgRight++]);
-	}
-	while (ibdgLeft < ibdgMid)
-		swap(rgbdgScratch[ibdgOut++], rgbdg[ibdgLeft++]);
-	for (unsigned ibdg = ibdgFirst; ibdg < ibdgOut; ibdg++)
-		swap(rgbdg[ibdg], rgbdgScratch[ibdg]);
-}
-
-
 /*	PL::EvalBdg
  *
  *	Evaluates the board from the point of view of the color that just moved.
  */
-float PL::EvalBdg(const BDGMVEV& bdgmvev) const
+float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull) const
 {
 	float vpcNext = bdgmvev.VpcTotalFromCpc(bdgmvev.cpcToMove);
 	float vpcSelf = bdgmvev.VpcTotalFromCpc(CpcOpposite(bdgmvev.cpcToMove));
@@ -216,7 +199,50 @@ float PL::EvalBdg(const BDGMVEV& bdgmvev) const
 	float evalMob = (float)((int)rgmvSelf.size() - (int)bdgmvev.rgmvReplyAll.size()) /
 		(float)((int)rgmvSelf.size() + (int)bdgmvev.rgmvReplyAll.size());
 
-	return rgfAICoeef[0] * evalMat + rgfAICoeef[1] * evalMob;
+	float evalControl = 0.0f;
+#ifdef LATER
+	if (fFull) {
+		if (rgfAICoeff[2])
+			evalControl = EvalBdgControl(bdgmvev, rgmvSelf);
+	}
+#endif
+
+	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob + rgfAICoeff[2] * evalControl;
 }
 
 
+float PL::EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmvSelf) const
+{
+	int mpsqcmvAttack[128] = { 0 };
+	for (MV mv : rgmvSelf)
+		mpsqcmvAttack[mv.SqTo()]++;
+	for (MV mv : bdgmvev.rgmvReplyAll)
+		mpsqcmvAttack[mv.SqTo()]--;
+	float eval = 0.0;
+	float mpsqcoeffControl[128] = { 0.0f };
+	SQ sqKing = bdgmvev.mptpcsq[cpcWhite][tpcKing];
+	FillKingCoeff(mpsqcoeffControl, sqKing);
+	sqKing = bdgmvev.mptpcsq[cpcBlack][tpcKing];
+	FillKingCoeff(mpsqcoeffControl, sqKing);
+	for (SQ sq = 0; sq < 128; sq++)
+		eval += mpsqcmvAttack[sq] * mpsqcoeffControl[sq];
+	return eval / 15.0f;
+}
+
+void PL::FillKingCoeff(float mpsqcoeffControl[], SQ sq) const
+{
+	mpsqcoeffControl[sq] = 1.0f;
+	int rgdsq1[] = { -17, -16, -15, -1, 1, 15, 16, 17 };
+	int rgdsq2[] = { -34, -33, -32, -31, -30, -18, -2, 2, 18, 30, 31, 32, 33, 34 };
+
+	for (int idsq = 0; idsq < CArray(rgdsq1); idsq++) {
+		int dsq = rgdsq1[idsq];
+		if (((sq + dsq) & 0x88) == 0)
+			mpsqcoeffControl[sq + dsq] = 1.0f;
+	}
+	for (int idsq = 0; idsq < CArray(rgdsq2); idsq++) {
+		int dsq = rgdsq2[idsq];
+		if (((sq + dsq) & 0x88) == 0)
+			mpsqcoeffControl[sq + dsq] = 0.5f;
+	}
+} 

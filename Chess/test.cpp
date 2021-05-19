@@ -67,18 +67,18 @@ void GA::ValidatePieces(const WCHAR*& sz) const
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
 		case L'/': rank--; assert(rank >= 0); sq = SQ(rank, 0); break;
-		case L'r': assert(bdg.ApcFromSq(sq) == apcRook); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'n': assert(bdg.ApcFromSq(sq) == apcKnight); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'b': assert(bdg.ApcFromSq(sq) == apcBishop); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'q': assert(bdg.ApcFromSq(sq) == apcQueen); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'k': assert(bdg.ApcFromSq(sq) == apcKing); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'p': assert(bdg.ApcFromSq(sq) == apcPawn); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'R': assert(bdg.ApcFromSq(sq) == apcRook); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'N': assert(bdg.ApcFromSq(sq) == apcKnight); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'B': assert(bdg.ApcFromSq(sq) == apcBishop); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'Q': assert(bdg.ApcFromSq(sq) == apcQueen); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'K': assert(bdg.ApcFromSq(sq) == apcKing); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'P': assert(bdg.ApcFromSq(sq) == apcPawn); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'r': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
+		case L'n': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
+		case L'b': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
+		case L'q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
+		case L'k': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
+		case L'p': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
+		case L'R': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'N': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'B': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'Q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'K': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'P': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
 		case L'1':
 		case L'2':
 		case L'3':

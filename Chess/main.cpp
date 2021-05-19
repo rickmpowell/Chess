@@ -104,9 +104,10 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
     InitCmdList();
 
     pga = new GA(*this);
-    float rgfAI[] = { 5.0f, 1.0f };
+    float rgfAI[] = { 5.0f, 1.0f, 0.0f};
     pga->SetPl(cpcWhite, new PL(*pga, L"Squub", rgfAI));
     rgfAI[1] = 2.0f;
+    rgfAI[2] = 0.1f;
     pga->SetPl(cpcBlack, new PL(*pga, L"Frapija", rgfAI));
     pga->NewGame(new RULE);
 
@@ -161,13 +162,8 @@ void APP::CreateRsrc(void)
         return;
  
     D3D_FEATURE_LEVEL rgfld3[] = {
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0,
-        D3D_FEATURE_LEVEL_9_3,
-        D3D_FEATURE_LEVEL_9_2,
-        D3D_FEATURE_LEVEL_9_1
+        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0, 
+        D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
     };
     ID3D11Device* pdevd3T;
     ID3D11DeviceContext* pdcd3T;
@@ -675,6 +671,60 @@ public:
 };
 
 
+/*
+ *
+ *  CMDCOPY
+ * 
+ *  The copy to clipboard command. Puts a copy of the PGN representation of the
+ *  board in the clipboard as a text item
+ * 
+ */
+
+class CMDCOPY : public CMD
+{
+public:
+    CMDCOPY(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDPASTE
+ *
+ *  The paste from clipboard command. Pulls a text item from the clipboard. If it's
+ *  a PGN file, it sets up the board with it, along with the move list. If it's a
+ *  FEN string, just sets up the board.
+ *
+ */
+
+class CMDPASTE : public CMD
+{
+public:
+    CMDPASTE(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        return 1;
+    }
+};
+
+
+class CMDSETUPBOARD : public CMD
+{
+public:
+    CMDSETUPBOARD(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        return 1;
+    }
+};
+
 
 /*
  *
@@ -722,6 +772,9 @@ void APP::InitCmdList(void)
     cmdlist.Add(cmdPlay, new CMDPLAY(*this));
     cmdlist.Add(cmdSavePGN, new CMDSAVEPGN(*this));
     cmdlist.Add(cmdOpenPGN, new CMDOPENPGN(*this));
+    cmdlist.Add(cmdCopy, new CMDCOPY(*this));
+    cmdlist.Add(cmdPaste, new CMDPASTE(*this));
+    cmdlist.Add(cmdSetupBoard, new CMDSETUPBOARD(*this));
 }
 
 

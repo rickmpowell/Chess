@@ -37,12 +37,12 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	WCHAR* pch = sz;
 
 	switch (apc) {
-	case apcPawn:
+	case APC::Pawn:
 		if (sqTo == sqEnPassant)
 			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
 		break;
 
-	case apcKing:
+	case APC::King:
 		if (sqFrom.file() == fileKing) {
 			if (sqTo.file() == fileKingKnight)
 				goto FinishCastle;
@@ -57,14 +57,14 @@ FinishCastle:
 			}
 		}
 		break;
-	case apcKnight:
-	case apcBishop:
-	case apcRook:
-	case apcQueen:
+	case APC::Knight:
+	case APC::Bishop:
+	case APC::Rook:
+	case APC::Queen:
 		break;
 	}
 
-	*pch++ = mpapcch[apc];
+	*pch++ = mpapcch[(int)apc];
 	for (MV mvOther : rgmv) {
 		if (sqTo != mvOther.SqTo() || sqFrom == mvOther.SqFrom())
 			continue;
@@ -85,7 +85,7 @@ FinishCastle:
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
-	if (apc == apcPawn && sqTo == sqEnPassant) {
+	if (apc == APC::Pawn && sqTo == sqEnPassant) {
 		if (fPretty)
 			*pch++ = L'\x00a0';
 		*pch++ = L'e';
@@ -95,9 +95,9 @@ FinishCastle:
 	}
 
 	{ APC apcPromote = mv.ApcPromote();
-	if (apcPromote != apcNull) {
+	if (apcPromote != APC::Null) {
 		*pch++ = L'=';
-		*pch++ = mpapcch[apcPromote];
+		*pch++ = mpapcch[(int)apcPromote];
 	} }
 
 FinishMove:
@@ -200,17 +200,17 @@ BuildCastle:
 APC ApcFromTkmv(TKMV tkmv)
 {
 	switch (tkmv) {
-	case TKMV::Pawn: return apcPawn;
-	case TKMV::Knight: return apcKnight;
-	case TKMV::Bishop: return apcBishop;
-	case TKMV::Rook: return apcRook;
-	case TKMV::Queen: return apcQueen;
-	case TKMV::King: return apcKing;
+	case TKMV::Pawn: return APC::Pawn;
+	case TKMV::Knight: return APC::Knight;
+	case TKMV::Bishop: return APC::Bishop;
+	case TKMV::Rook: return APC::Rook;
+	case TKMV::Queen: return APC::Queen;
+	case TKMV::King: return APC::King;
 	default:
 		break;
 	}
 	assert(false);
-	return -1;
+	return APC::Error;
 }
 
 
@@ -310,7 +310,7 @@ int BDG::ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) 
 			return -1;
 	}
 	else { /* e4 pawn move */
-		if (!FMvMatchPieceTo(rgmv, apcPawn, -1, -1, sq, mv))
+		if (!FMvMatchPieceTo(rgmv, APC::Pawn, -1, -1, sq, mv))
 			return -1;
 	}
 	return ParseMvSuffixes(mv, pch);
@@ -333,7 +333,7 @@ int BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 			pch = pchNext;
 			TKMV tkmv = TkmvScan(pchNext, sqT);
 			APC apc = ApcFromTkmv(tkmv);
-			if (apc == apcNull)
+			if (apc == APC::Null)
 				return -1;
 			pch = pchNext;
 			mv.SetApcPromote(apc);
@@ -366,7 +366,7 @@ int BDG::ParseFileMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) co
 	if (tkmv != TKMV::Square)
 		return -1;
 	pch = pchNext;
-	if (!FMvMatchPieceTo(rgmv, apcPawn, -1, sq.file(), sqTo, mv))
+	if (!FMvMatchPieceTo(rgmv, APC::Pawn, -1, sq.file(), sqTo, mv))
 		return -1;
 	return ParseMvSuffixes(mv, pch);
 }
@@ -385,7 +385,7 @@ int BDG::ParseRankMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) co
 	if (tkmv != TKMV::Square)
 		return -1;
 	pch = pchNext;
-	if (!FMvMatchPieceTo(rgmv, apcPawn, sq.rank(), -1, sqTo, mv))
+	if (!FMvMatchPieceTo(rgmv, APC::Pawn, sq.rank(), -1, sqTo, mv))
 		return -1;
 	return ParseMvSuffixes(mv, pch);
 }

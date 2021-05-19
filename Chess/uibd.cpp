@@ -476,7 +476,7 @@ void UIBD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 	D2D1_SIZE_F ptf = pbmpPieces->GetSize();
 	float dxfPiece = ptf.width / 6.0f;
 	float dyfPiece = ptf.height / 2.0f;
-	float xfPiece = mpapcxBitmap[ApcFromTpc(tpc)] * dxfPiece;
+	float xfPiece = mpapcxBitmap[(int)ApcFromTpc(tpc)] * dxfPiece;
 	float yfPiece = CpcFromTpc(tpc) * dyfPiece;
 	DrawBmp(rcf, pbmpPieces, RCF(xfPiece, yfPiece, xfPiece + dxfPiece, yfPiece + dyfPiece), opacity);
 }

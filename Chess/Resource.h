@@ -20,7 +20,10 @@
 #define cmdPlay         10
 #define cmdSavePGN		11
 #define cmdOpenPGN		12
-#define cmdMax			13
+#define cmdCopy			13
+#define cmdPaste		14
+#define cmdSetupBoard	15
+#define cmdMax			16
 
 #define idiApp			1
 #define idiSmall		2
