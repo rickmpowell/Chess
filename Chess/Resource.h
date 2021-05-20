@@ -23,7 +23,8 @@
 #define cmdCopy			13
 #define cmdPaste		14
 #define cmdSetupBoard	15
-#define cmdMax			16
+#define cmdClockOnOff	16
+#define cmdMax			17
 
 #define idiApp			1
 #define idiSmall		2

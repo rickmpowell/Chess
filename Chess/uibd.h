@@ -106,7 +106,7 @@ public:
 
 	void DrawHilites(void);
 	void DrawGameState(void);
-	void DrawPc(RCF rcf, float opacity, TPC tpc);
+	void DrawPc(RCF rcf, float opacity, IPC ipc);
 	void AnimateMv(MV mv);
 	void DrawDragPc(const RCF& rcf);
 	RCF RcfGetDrag(void);

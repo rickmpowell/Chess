@@ -46,6 +46,11 @@ using namespace D2D1;
 using namespace std;
 
 
+#ifndef NDEBUG
+extern bool fValidate;
+#endif
+
+
 /*
  *
  *	PTF class

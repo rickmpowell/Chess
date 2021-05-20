@@ -137,7 +137,7 @@ void UITI::DiscardRsrcClass(void)
 
 
 UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbLogo), uilocale(this), uigt(this), uigtm(this),
-		uiplWhite(this, cpcWhite), uiplBlack(this, cpcBlack), szText(L"")
+		uiplWhite(this, CPC::White), uiplBlack(this, CPC::Black), szText(L"")
 {
 }
 
@@ -197,7 +197,7 @@ void UITI::SetText(const wstring& sz)
 
 void UITI::SetPl(CPC cpc, PL* ppl)
 {
-	if (cpc == cpcWhite)
+	if (cpc == CPC::White)
 		uiplWhite.SetPl(ppl);
 	else
 		uiplBlack.SetPl(ppl);

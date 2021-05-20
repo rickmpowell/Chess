@@ -30,7 +30,7 @@ void UIPL::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(*prcfUpdate, pbrBack);
 	ptxText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	wstring szColor = cpc == cpcWhite ? L"\x26aa  " : L"\x26ab  ";
+	wstring szColor = cpc == CPC::White ? L"\x26aa  " : L"\x26ab  ";
 	if (ppl)
 		szColor += ppl->SzName();
 	RCF rcf = RcfInterior();
@@ -263,32 +263,32 @@ void UIGO::Draw(const RCF* prcfUpdate)
 	rcfResult.Offset(0, 24.0f);
 	RCF rcfScore = rcfResult;
 	rcfScore.Offset(0, 24.0f);
-	CPC cpcWin = cpcNil;
+	CPC cpcWin = CPC::NoColor;
 
 	switch (ga.bdg.gs) {
 	case GS::WhiteCheckMated:
 		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
-		cpcWin = cpcBlack;
+		cpcWin = CPC::Black;
 		break;
 	case GS::BlackCheckMated:
 		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
-		cpcWin = cpcWhite;
+		cpcWin = CPC::White;
 		break;
 	case GS::WhiteResigned:
 		DrawSzCenter(L"White Resigned", ptxText, rcfEndType);
-		cpcWin = cpcBlack;
+		cpcWin = CPC::Black;
 		break;
 	case GS::BlackResigned:
 		DrawSzCenter(L"Black Resigned", ptxText, rcfEndType);
-		cpcWin = cpcWhite;
+		cpcWin = CPC::White;
 		break;
 	case GS::WhiteTimedOut:
 		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
-		cpcWin = cpcBlack;
+		cpcWin = CPC::Black;
 		break;
 	case GS::BlackTimedOut:
 		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
-		cpcWin = cpcWhite;
+		cpcWin = CPC::White;
 		break;
 	case GS::StaleMate:
 		DrawSzCenter(L"Stalemate", ptxText, rcfEndType);
@@ -312,11 +312,11 @@ void UIGO::Draw(const RCF* prcfUpdate)
 
 	const WCHAR* szResult = L"Draw";
 	const WCHAR* szScore = L"\x00bd-\x00bd";
-	if (cpcWin == cpcWhite) {
+	if (cpcWin == CPC::White) {
 		szResult = L"White Wins";
 		szScore = L"1-0";
 	}
-	else if (cpcWin == cpcBlack) {
+	else if (cpcWin == CPC::Black) {
 		szResult = L"Black Wins";
 		szScore = L"0-1";
 	}
@@ -336,10 +336,10 @@ void UIGO::Draw(const RCF* prcfUpdate)
 
 UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this)
 {
-	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
-	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
-	mpcpcpuipl[cpcWhite] = new UIPL(this, cpcWhite);
-	mpcpcpuipl[cpcBlack] = new UIPL(this, cpcBlack);
+	mpcpcpuiclock[CPC::White] = new UICLOCK(this, CPC::White);
+	mpcpcpuiclock[CPC::Black] = new UICLOCK(this, CPC::Black);
+	mpcpcpuipl[CPC::White] = new UIPL(this, CPC::White);
+	mpcpcpuipl[CPC::Black] = new UIPL(this, CPC::Black);
 }
 
 
@@ -571,12 +571,15 @@ void UIML::DrawMoveNumber(RCF rcf, int imv)
 void UIML::NewGame(void)
 {
 	uigo.Show(false);
-	bool fTimed = ga.prule->TmGame() != 0;
-	mpcpcpuiclock[cpcWhite]->Show(fTimed);
-	mpcpcpuiclock[cpcBlack]->Show(fTimed);
-
+	ShowClocks(ga.prule->TmGame() != 0);
 	bdgInit = ga.bdg;
 	UpdateContSize();
+}
+
+void UIML::ShowClocks(bool fTimed)
+{
+	mpcpcpuiclock[CPC::White]->Show(fTimed);
+	mpcpcpuiclock[CPC::Black]->Show(fTimed);
 }
 
 

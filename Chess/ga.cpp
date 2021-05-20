@@ -136,10 +136,6 @@ void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
 }
 
 
-
-
-
-
 /*
  *
  *	GA class
@@ -147,6 +143,7 @@ void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
  *	Chess game implementation
  * 
  */
+
 
 ID2D1SolidColorBrush* GA::pbrDesktop;
 
@@ -180,15 +177,15 @@ GA::GA(APP& app) : UI(NULL), app(app), prule(NULL),
 	uiti(this), uibd(this), uiml(this), uidb(this),
 	puiCapt(NULL), puiHover(NULL)
 {
-	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = NULL;
+	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = NULL;
 	tmLast = 0L;
-	mpcpctmClock[cpcWhite] = mpcpctmClock[cpcBlack] = 0;
+	mpcpctmClock[CPC::White] = mpcpctmClock[CPC::Black] = 0;
 }
 
 
 GA::~GA(void)
 {
-	for (CPC cpc = 0; cpc < cpcMax; cpc++)
+	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
 		if (mpcpcppl[cpc])
 			delete mpcpcppl[cpc];
 	if (prule)
@@ -264,7 +261,7 @@ void GA::PresentSwch(void) const
 }
 
 
-/*	GA;:Layout
+/*	GA::Layout
  *
  *	Lays out the panels on the game board
  */
@@ -274,7 +271,7 @@ void GA::Layout(void)
 	uiti.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
-	rcf.bottom = rcfBounds.bottom - 40.0f;
+	rcf.bottom = rcfBounds.bottom - 60.0f;
 	rcf.right = rcf.left + rcf.DyfHeight();
 	uibd.SetBounds(rcf);
 
@@ -309,8 +306,8 @@ void GA::NewGame(RULE* prule)
 void GA::StartGame(void)
 {
 	tmLast = 0;
-	mpcpctmClock[cpcWhite] = prule->TmGame();
-	mpcpctmClock[cpcBlack] = prule->TmGame();
+	mpcpctmClock[CPC::White] = prule->TmGame();
+	mpcpctmClock[CPC::Black] = prule->TmGame();
 }
 
 
@@ -376,7 +373,7 @@ void GA::Timer(UINT tid, DWORD tmCur)
 	DWORD dtm = tmCur - tmLast;
 	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
 		dtm = mpcpctmClock[bdg.cpcToMove];
-		bdg.SetGs(bdg.cpcToMove == cpcWhite ? GS::WhiteTimedOut : GS::BlackTimedOut);
+		bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
 		EndGame();
 	}
 	mpcpctmClock[bdg.cpcToMove] -= dtm;
@@ -414,7 +411,7 @@ void GA::SwitchClock(DWORD tmCur)
 		app.CreateTimer(tidClock, 10);
 	}
 	tmLast = tmCur;
-	StartClock(bdg.cpcToMove^1, tmCur);
+	StartClock(~bdg.cpcToMove, tmCur);
 }
 
 
@@ -471,7 +468,9 @@ void GA::Play(void)
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
 			MV mv = ppl->MvGetNext();
+			assert(!mv.FIsNil());
 			MakeMv(mv, SPMV::Animate);
+			SavePGNFile(L"current.pgn");
 		} while (bdg.gs == GS::Playing);
 	}
 	catch (int err) {

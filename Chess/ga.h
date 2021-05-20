@@ -61,9 +61,9 @@ public:
 
 public:
 	BDG bdg;	// board
-	PL* mpcpcppl[2];	// players
+	PL* mpcpcppl[CPC::ColorMax];	// players
 	RULE* prule;
-	DWORD mpcpctmClock[2];	// player clocks
+	DWORD mpcpctmClock[CPC::ColorMax];	// player clocks
 	DWORD tmLast;	// time of last move
 
 public:

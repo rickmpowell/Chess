@@ -1,6 +1,17 @@
+  Open PGN files assert if no \n on last line
+  Add canceled game-over state
+  PGN game browser if multiple games in Open...
+  Implement labeled icon buttons
+  Parse errors in PGN file test should display in test progress panel
+  UIGO panel comes up during test runs
+  Scale and clip long player names in UITI and UIML
+  Move test progress into debug panel
   Save PGN is not writing correct game out
   AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
-  Move gen: start converting to bitboards: pawns
+  Move gen: bitboard king
+  Move gen: bitboard bishops, rooks, and queens
+  Move gen: bitboard knights
+  Move gen: bitboard pawns
   AI: need some end-game improvement
   AI: need to discourage early queen development
   During Computer-Computer play, the clock on Move 1 goes to black's time
@@ -30,7 +41,6 @@
   ML: Checkmates should have a # instead of a +
   PL: Add message pump to the PL for getting player moves
   ML: With small windows, need to do something about the move list. Or limit window size?
-  ML: Move list does not redraw on window resize
   ML: Hook up resignation button
   ML: Add a UI for offering draws
   UI for specifying player names
@@ -66,7 +76,8 @@
   UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
-  Should error in MakeMv if we try to make an illegal move
+* ML: Move list does not redraw on window resize
+* Should error in MakeMv if we try to make an illegal move
 * AI: Add message pump while thinking
 * Add command to load PGN files and load specific games for analysis
 * Add ability to open PGN files

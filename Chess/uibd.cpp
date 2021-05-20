@@ -116,7 +116,7 @@ void UIBD::DiscardRsrcClass(void)
  *	Constructor for the board screen panel.
  */
 UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
-		cpcPointOfView(cpcWhite),
+		cpcPointOfView(CPC::White),
 		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
 		angle(0.0f),
 		dyfLabel(18.0f)	// TODO: this is a font attribute
@@ -163,17 +163,24 @@ void UIBD::NewGame(void)
 
 /*	UIBD::MakeMv
  *
- *	Makes a move on the board in the screen panel
+ *	Makes a move on the board and echoes it to the screen 
+ *	board panel. We also do end of game checking here.
  */
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
+	assert(!mv.FIsNil());
+#ifndef NDEBUG
+	for (MV mvDrag : rgmvDrag)
+		if (mvDrag.SqFrom() == mv.SqFrom() && mvDrag.SqTo() == mv.SqTo())
+			goto FoundMove;
+	assert(false);
+FoundMove:
+#endif
 	if (spmv == SPMV::Animate)
 		AnimateMv(mv);
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	ga.bdg.SetGameOver(rgmvDrag, *ga.prule);
-	if (ga.bdg.gs != GS::Playing)
-		rgmvDrag.clear();
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -300,7 +307,7 @@ void UIBD::DrawRankLabels(void)
 {
 	RCF rcf(dxyfMargin / 2, rcfSquares.top, dxyfMargin, 0);
 	TCHAR szLabel[2];
-	szLabel[0] = cpcPointOfView == cpcBlack ? '1' : '8';
+	szLabel[0] = cpcPointOfView == CPC::Black ? '1' : '8';
 	szLabel[1] = 0;
 	for (int rank = 0; rank < rankMax; rank++) {
 		rcf.bottom = rcf.top + dxyfSquare;
@@ -308,7 +315,7 @@ void UIBD::DrawRankLabels(void)
 			RCF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
 			pbrDark);
 		rcf.top = rcf.bottom;
-		if (cpcPointOfView == cpcBlack)
+		if (cpcPointOfView == CPC::Black)
 			szLabel[0]++;
 		else
 			szLabel[0]--;
@@ -345,7 +352,7 @@ RCF UIBD::RcfFromSq(SQ sq) const
 {
 	assert(!sq.FIsOffBoard());
 	int rank = sq.rank(), file = sq.file();
-	if (cpcPointOfView == cpcWhite)
+	if (cpcPointOfView == CPC::White)
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
@@ -364,10 +371,11 @@ RCF UIBD::RcfFromSq(SQ sq) const
  */
 void UIBD::DrawHover(void)
 {
-	if (sqHover == sqNil)
+	if (sqHover == sqNil || ga.bdg.gs != GS::Playing)
 		return;
 	pbrBlack->SetOpacity(0.33f);
 	unsigned long grfDrawn = 0L;
+
 	for (MV mv : rgmvDrag) {
 		if (mv.SqFrom() != sqHover)
 			continue;
@@ -412,13 +420,13 @@ void UIBD::DrawHover(void)
  */
 void UIBD::DrawPieces(void)
 {
-	for (CPC cpc = 0; cpc < cpcMax; cpc++)
-		for (TPC tpc = 0; tpc < tpcPieceMax; tpc++) {
+	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+		for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 			SQ sq = ga.bdg.SqFromTpc(tpc, cpc);
 			if (sq.FIsNil())
 				continue;
 			float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-			DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqtpc[sq]);
+			DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqipc[sq]);
 		}
 	if (!sqDragInit.FIsNil())
 		DrawDragPc(rcfDragPc);
@@ -434,7 +442,7 @@ void UIBD::DrawPieces(void)
 void UIBD::DrawDragPc(const RCF& rcf)
 {
 	assert(!sqDragInit.FIsNil());
-	DrawPc(rcf, 1.0f, ga.bdg.mpsqtpc[sqDragInit]);
+	DrawPc(rcf, 1.0f, ga.bdg.mpsqipc[sqDragInit]);
 }
 
 
@@ -463,9 +471,9 @@ RCF UIBD::RcfGetDrag(void)
  *
  *	Draws the chess piece on the square at rcf.
  */
-void UIBD::DrawPc(RCF rcf, float opacity, BYTE tpc)
+void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
 {
-	if (tpc == tpcEmpty)
+	if (ipc == ipcEmpty)
 		return;
 
 	/* the piece png has the 12 different chess pieces oriented like:
@@ -476,8 +484,8 @@ void UIBD::DrawPc(RCF rcf, float opacity, BYTE tpc)
 	D2D1_SIZE_F ptf = pbmpPieces->GetSize();
 	float dxfPiece = ptf.width / 6.0f;
 	float dyfPiece = ptf.height / 2.0f;
-	float xfPiece = mpapcxBitmap[(int)ApcFromTpc(tpc)] * dxfPiece;
-	float yfPiece = CpcFromTpc(tpc) * dyfPiece;
+	float xfPiece = mpapcxBitmap[ipc.apc()] * dxfPiece;
+	float yfPiece = ipc.cpc() * dyfPiece;
 	DrawBmp(rcf, pbmpPieces, RCF(xfPiece, yfPiece, xfPiece + dxfPiece, yfPiece + dyfPiece), opacity);
 }
 
@@ -562,14 +570,14 @@ HTBD UIBD::HtbdHitTest(PTF ptf, SQ* psq) const
 		return HTBD::Static;
 	int rank = (int)((ptf.y - rcfSquares.top) / dxyfSquare);
 	int file = (int)((ptf.x - rcfSquares.left) / dxyfSquare);
-	if (cpcPointOfView == cpcWhite)
+	if (cpcPointOfView == CPC::White)
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
 	*psq = SQ(rank, file);
-	if (ga.bdg.mpsqtpc[*psq] == tpcEmpty)
+	if (ga.bdg.FIsEmpty(*psq))
 		return HTBD::Empty;
-	if (CpcFromTpc(ga.bdg.mpsqtpc[*psq]) != ga.bdg.cpcToMove)
+	if (ga.bdg.CpcFromSq(*psq) != ga.bdg.cpcToMove)
 		return HTBD::OpponentPc;
 
 	if (FMoveablePc(*psq))
@@ -586,7 +594,7 @@ HTBD UIBD::HtbdHitTest(PTF ptf, SQ* psq) const
  */
 bool UIBD::FMoveablePc(SQ sq) const
 {
-	assert(CpcFromTpc(ga.bdg.mpsqtpc[sq]) == ga.bdg.cpcToMove);
+	assert(ga.bdg.CpcFromSq(sq) == ga.bdg.cpcToMove);
 	for (MV mv : rgmvDrag)
 		if (mv.SqFrom() == sq)
 			return true;

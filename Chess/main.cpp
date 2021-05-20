@@ -82,14 +82,14 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
 
     WNDCLASSEXW wcex;
     wcex.cbSize = sizeof(WNDCLASSEX);
-    wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wcex.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc = APP::WndProc;
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = sizeof(this);
     wcex.hInstance = hinst;
     wcex.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(idiApp));
     wcex.hCursor = NULL;
-    wcex.hbrBackground = NULL; // (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(idmApp);
     wcex.lpszClassName = szWndClassMain;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(idiSmall));
@@ -105,10 +105,10 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
 
     pga = new GA(*this);
     float rgfAI[] = { 5.0f, 1.0f, 0.0f};
-    pga->SetPl(cpcWhite, new PL(*pga, L"Squub", rgfAI));
+    pga->SetPl(CPC::White, new PL(*pga, L"Squub", rgfAI));
     rgfAI[1] = 2.0f;
     rgfAI[2] = 0.1f;
-    pga->SetPl(cpcBlack, new PL(*pga, L"Frapija", rgfAI));
+    pga->SetPl(CPC::Black, new PL(*pga, L"Frapija", rgfAI));
     pga->NewGame(new RULE);
 
     /* create the main window */
@@ -158,33 +158,53 @@ DWORD APP::TmMessage(void)
 
 void APP::CreateRsrc(void)
 {
-    if (pdc)
-        return;
- 
-    D3D_FEATURE_LEVEL rgfld3[] = {
-        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0, 
-        D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
-    };
-    ID3D11Device* pdevd3T;
-    ID3D11DeviceContext* pdcd3T;
-    D3D_FEATURE_LEVEL flRet;
-    D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
+    if (pdc == nullptr) {
+
+        D3D_FEATURE_LEVEL rgfld3[] = {
+            D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
+            D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
+        };
+        ID3D11Device* pdevd3T;
+        ID3D11DeviceContext* pdcd3T;
+        D3D_FEATURE_LEVEL flRet;
+        D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
             rgfld3, CArray(rgfld3), D3D11_SDK_VERSION,
             &pdevd3T, &flRet, &pdcd3T);
-    if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
-        throw 1;
-    pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
+        if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
+            throw 1;
+        pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
+        IDXGIDevice* pdevDxgi;
+        if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
+            throw 1;
+        pfactd2->CreateDevice(pdevDxgi, &pdevd2);
+        pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdc);
+        SafeRelease(&pdevDxgi);
+        SafeRelease(&pdevd3T);
+        SafeRelease(&pdcd3T);
+    }
+
+    CreateRsrcSize();
+    GA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+    pga->CreateRsrc();
+}
+
+
+void APP::CreateRsrcSize(void)
+{
+    if (pswch)
+        return;
+
     IDXGIDevice* pdevDxgi;
     if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
         throw 1;
-    if (pfactd2->CreateDevice(pdevDxgi, &pdevd2) != S_OK)
-        throw 1;
-    pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdc);
+
     IDXGIAdapter* padaptDxgi;
     pdevDxgi->GetAdapter(&padaptDxgi);
     IDXGIFactory2* pfactDxgi;
+
     if (padaptDxgi->GetParent(IID_PPV_ARGS(&pfactDxgi)) != S_OK)
         throw 1;
+
     DXGI_SWAP_CHAIN_DESC1 swchd = { 0 };
     swchd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     swchd.SampleDesc.Count = 1;
@@ -194,24 +214,29 @@ void APP::CreateRsrc(void)
     swchd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
     if (pfactDxgi->CreateSwapChainForHwnd(pdevd3, hwnd, &swchd, NULL, NULL, &pswch) != S_OK)
         throw 1;
+
     IDXGISurface* psurfDxgi;
     if (pswch->GetBuffer(0, IID_PPV_ARGS(&psurfDxgi)) != S_OK)
         throw 1;
+
     float dxyf = (float)GetDpiForWindow(hwnd);
     D2D1_BITMAP_PROPERTIES1 propBmp;
     propBmp = BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
-            PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxyf, dxyf);
+        PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxyf, dxyf);
     pdc->CreateBitmapFromDxgiSurface(psurfDxgi, &propBmp, &pbmpBackBuf);
     pdc->SetTarget(pbmpBackBuf);
+    
     SafeRelease(&psurfDxgi);
     SafeRelease(&pfactDxgi);
     SafeRelease(&padaptDxgi);
     SafeRelease(&pdevDxgi);
-    SafeRelease(&pdevd3T);
-    SafeRelease(&pdcd3T);
+}
 
-    GA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-    pga->CreateRsrc();
+
+void APP::DiscardRsrcSize(void)
+{
+    SafeRelease(&pswch);
+    SafeRelease(&pbmpBackBuf);
 }
 
 
@@ -219,20 +244,10 @@ void APP::DiscardRsrc(void)
 {
     pga->DiscardRsrc();
     GA::DiscardRsrcClass();
+    SafeRelease(&pdc);
     SafeRelease(&pdevd3);
     SafeRelease(&pdcd3);
     SafeRelease(&pdevd2);
-    SafeRelease(&pswch);
-    SafeRelease(&pbmpBackBuf);
-    SafeRelease(&pdc);
-}
-
-
-bool APP::FSizeEnv(int dx, int dy)
-{
-    CreateRsrc();
-    pga->Resize(PTF((float)dx, (float)dy));
-    return true;
 }
 
 
@@ -280,9 +295,10 @@ void APP::DestroyTimer(UINT tid)
  */
 void APP::OnSize(UINT dx, UINT dy)
 {
-    DiscardRsrc();
-    if (!FSizeEnv(dx, dy))
-        return;
+    DiscardRsrcSize();
+    CreateRsrc();
+    pga->Resize(PTF((float)dx, (float)dy));
+//    pga->Redraw();
 }
 
 
@@ -294,19 +310,14 @@ void APP::OnPaint(void)
 {
     PAINTSTRUCT ps;
     BeginPaint(hwnd, &ps);
-    CreateRsrc();
-    pdc->BeginDraw();
 
     if (pga) {
-        RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top, 
+        pga->BeginDraw();
+        RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top,
             (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
         pga->Update(&rcf);
+        pga->EndDraw();
     }
-
-    if (pdc->EndDraw() == D2DERR_RECREATE_TARGET)
-        DiscardRsrc();
-    DXGI_PRESENT_PARAMETERS pp = { 0 };
-    pswch->Present1(1, 0, &pp);
 
     EndPaint(hwnd, &ps);
 }
@@ -551,7 +562,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->uibd.FlipBoard(app.pga->uibd.cpcPointOfView ^ 1);
+        app.pga->uibd.FlipBoard(~app.pga->uibd.cpcPointOfView);
         return 1;
     }
 };
@@ -726,6 +737,23 @@ public:
 };
 
 
+class CMDCLOCKTOGGLE : public CMD
+{
+public:
+    CMDCLOCKTOGGLE(APP& app) : CMD(app) { }
+
+    virtual int Execute(void)
+    {
+        DWORD tmOld = app.pga->prule->TmGame();
+        app.pga->prule->SetTmGame(tmOld ? 0 : 60 * 60 * 1000);
+        app.pga->uiml.ShowClocks(tmOld == 0);
+        app.pga->Layout();
+        app.pga->Redraw();
+        return 1;
+    }
+};
+
+
 /*
  *
  *  CMDEXIT command
@@ -775,6 +803,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(cmdCopy, new CMDCOPY(*this));
     cmdlist.Add(cmdPaste, new CMDPASTE(*this));
     cmdlist.Add(cmdSetupBoard, new CMDSETUPBOARD(*this));
+    cmdlist.Add(cmdClockOnOff, new CMDCLOCKTOGGLE(*this));
 }
 
 

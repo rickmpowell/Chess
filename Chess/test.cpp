@@ -67,18 +67,18 @@ void GA::ValidatePieces(const WCHAR*& sz) const
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
 		case L'/': rank--; assert(rank >= 0); sq = SQ(rank, 0); break;
-		case L'r': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'n': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'b': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'k': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'p': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == cpcBlack); sq++; break;
-		case L'R': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'N': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'B': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'Q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'K': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
-		case L'P': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == cpcWhite); sq++; break;
+		case L'r': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
+		case L'n': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
+		case L'b': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
+		case L'q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
+		case L'k': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
+		case L'p': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
+		case L'R': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
+		case L'N': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
+		case L'B': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
+		case L'Q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
+		case L'K': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
+		case L'P': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
 		case L'1':
 		case L'2':
 		case L'3':
@@ -89,7 +89,7 @@ void GA::ValidatePieces(const WCHAR*& sz) const
 		case L'8':
 		{
 			for (int dsq = *sz - L'0'; dsq > 0; dsq--, sq++) {
-				assert(bdg.mpsqtpc[sq] == tpcEmpty);
+				assert(bdg.FIsEmpty(sq));
 			}
 			break;
 		}
@@ -106,9 +106,9 @@ void GA::ValidateMoveColor(const WCHAR*& sz) const
 	SkipWhiteSpace(sz);
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case L'b': assert(bdg.cpcToMove == cpcBlack); break;
+		case L'b': assert(bdg.cpcToMove == CPC::Black); break;
 		case L'w':
-		case L'-': assert(bdg.cpcToMove == cpcWhite); break;
+		case L'-': assert(bdg.cpcToMove == CPC::White); break;
 		default: assert(false); goto Done;
 		}
 	}
@@ -123,10 +123,10 @@ void GA::ValidateCastle(const WCHAR*& sz) const
 	int cs = 0;
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case L'k': cs |= csKing << cpcWhite; break;
-		case L'q': cs |= csQueen << cpcWhite; break;
-		case L'K': cs |= csKing << cpcBlack; break;
-		case L'Q': cs |= csQueen << cpcBlack; break;
+		case L'k': cs |= csKing << CPC::White; break;
+		case L'q': cs |= csQueen << CPC::White; break;
+		case L'K': cs |= csKing << CPC::Black; break;
+		case L'Q': cs |= csQueen << CPC::Black; break;
 		case L'-': break;
 		default: assert(false); goto Done;
 		}
@@ -370,7 +370,7 @@ void GA::HandleTag(int tkpgn, const string& szVal)
 	case tkpgnBlack:
 	{
 		wstring wszVal(szVal.begin(), szVal.end());
-		mpcpcppl[tkpgn == tkpgnBlack ? cpcBlack : cpcWhite]->SetName(wszVal);
+		mpcpcppl[tkpgn == tkpgnBlack ? CPC::Black : CPC::White]->SetName(wszVal);
 		uiti.Redraw();
 		break;
 	}
@@ -391,7 +391,7 @@ void GA::ProcessMove(const string& szMove)
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
-	MakeMv(mv, SPMV::Fast);
+	MakeMv(mv, SPMV::Hidden);
 }
 
 
@@ -446,7 +446,7 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 void GA::UndoFullGame(void)
 {
 	while (bdg.imvCur >= 0) {
-		UndoMv(SPMV::Fast);
-		uiml.Redraw();
+		UndoMv(SPMV::Hidden);
+//		uiml.Redraw();
 	}
 }

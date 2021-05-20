@@ -274,6 +274,8 @@ void UI::SetBounds(RCF rcfNew)
  */
 void UI::Resize(PTF ptfNew) 
 {
+	if (ptfNew.x == rcfBounds.DxfWidth() || ptfNew.y == rcfBounds.DyfHeight())
+		return;
 	rcfBounds.right = rcfBounds.left + ptfNew.x;
 	rcfBounds.bottom = rcfBounds.top + ptfNew.y;
 	Layout();
@@ -299,6 +301,8 @@ void UI::Move(PTF ptfNew)
 
 void UI::OffsetBounds(float dxf, float dyf)
 {
+	if (dxf == 0 && dyf == 0)
+		return;
 	rcfBounds.Offset(dxf, dyf);
 	for (UI* pui : rgpuiChild)
 		pui->OffsetBounds(dxf, dyf);
@@ -332,7 +336,7 @@ void UI::Show(bool fVisNew)
  */
 UI* UI::PuiFromPtf(PTF ptf)
 {
-	if (!rcfBounds.FContainsPtf(ptf))
+	if (!fVisible || !rcfBounds.FContainsPtf(ptf))
 		return NULL;
 	for (UI* puiChild : rgpuiChild) {
 		UI* pui = puiChild->PuiFromPtf(ptf);

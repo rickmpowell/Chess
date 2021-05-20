@@ -30,7 +30,7 @@ PL::~PL(void)
  *	Returns the next move the player wants to make on the given board. Returns mvNil if
  *	there are no moves.
  * 
- *	This is a compauter AI implementation.
+ *	This is a computer AI implementation.
  */
 MV PL::MvGetNext(void)
 {
@@ -43,7 +43,7 @@ MV PL::MvGetNext(void)
 	if (rgmv.size() == 0)
 		return MV();
 	static vector<MV> rgmvOpp;
-	bdg.GenRgmvColor(rgmvOpp, CpcOpposite(bdg.cpcToMove), false);
+	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
 	const float cmvSearch = 1.00e+6f;
 	const float fracAlphaBeta = 3.0f; // cuts moves we analyze by this factor
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
@@ -67,6 +67,7 @@ MV PL::MvGetNext(void)
 			mvBest = bdgmvev.mv;
 		}
 	}
+	assert(!mvBest.FIsNil());
 	return mvBest;
 }
 
@@ -89,7 +90,7 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 
 	int cmv = 0;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
-		if (bdgmvev.FInCheck(CpcOpposite(bdgmvev.cpcToMove)))
+		if (bdgmvev.FInCheck(~bdgmvev.cpcToMove))
 			continue;
 		cmv++;
 		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
@@ -127,8 +128,8 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
  */
 float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
 {
-	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
+	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 
 	if (bdgmvevEval.rgmvReplyAll.size() == 0)
 		return -EvalBdg(bdgmvevEval, true);
@@ -191,11 +192,11 @@ void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& r
 float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull) const
 {
 	float vpcNext = bdgmvev.VpcTotalFromCpc(bdgmvev.cpcToMove);
-	float vpcSelf = bdgmvev.VpcTotalFromCpc(CpcOpposite(bdgmvev.cpcToMove));
+	float vpcSelf = bdgmvev.VpcTotalFromCpc(~bdgmvev.cpcToMove);
 	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
 
 	static vector<MV> rgmvSelf;
-	bdgmvev.GenRgmvColor(rgmvSelf, CpcOpposite(bdgmvev.cpcToMove), false);
+	bdgmvev.GenRgmvColor(rgmvSelf, ~bdgmvev.cpcToMove, false);
 	float evalMob = (float)((int)rgmvSelf.size() - (int)bdgmvev.rgmvReplyAll.size()) /
 		(float)((int)rgmvSelf.size() + (int)bdgmvev.rgmvReplyAll.size());
 
@@ -220,9 +221,9 @@ float PL::EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmvSelf) con
 		mpsqcmvAttack[mv.SqTo()]--;
 	float eval = 0.0;
 	float mpsqcoeffControl[128] = { 0.0f };
-	SQ sqKing = bdgmvev.mptpcsq[cpcWhite][tpcKing];
+	SQ sqKing = bdgmvev.mptpcsq[CPC::White][tpcKing];
 	FillKingCoeff(mpsqcoeffControl, sqKing);
-	sqKing = bdgmvev.mptpcsq[cpcBlack][tpcKing];
+	sqKing = bdgmvev.mptpcsq[CPC::Black][tpcKing];
 	FillKingCoeff(mpsqcoeffControl, sqKing);
 	for (SQ sq = 0; sq < 128; sq++)
 		eval += mpsqcmvAttack[sq] * mpsqcoeffControl[sq];

@@ -150,11 +150,12 @@ public:
 private:
 	void CreateRsrc(void);
 	void DiscardRsrc(void);
+	void CreateRsrcSize(void);
+	void DiscardRsrcSize(void);
 
 	void InitCmdList(void);
 
 	bool FSizeEnv(int dx, int dy);
-	void ResizeDc(UINT dx, UINT dy);
 	void Redraw(const RCF* prcf);
 
 	void OnPaint(void);

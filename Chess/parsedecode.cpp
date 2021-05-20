@@ -78,7 +78,7 @@ FinishCastle:
 	}
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
-	if (mpsqtpc[sqCapture] != tpcEmpty)
+	if (!FIsEmpty(sqCapture))
 		*pch++ = fPretty ? L'\x00d7' : 'x';
 	else if (fPretty)
 		*pch++ = L'\x2013';
@@ -94,11 +94,13 @@ FinishCastle:
 		*pch++ = L'.';
 	}
 
-	{ APC apcPromote = mv.ApcPromote();
+	{ 
+	APC apcPromote = mv.ApcPromote();
 	if (apcPromote != APC::Null) {
 		*pch++ = L'=';
-		*pch++ = mpapcch[(int)apcPromote];
-	} }
+		*pch++ = mpapcch[apcPromote];
+	} 
+	}
 
 FinishMove:
 	*pch++ = 0;
@@ -140,7 +142,7 @@ wstring BDG::SzMoveAndDecode(MV mv)
 	wstring sz = SzDecodeMv(mv, true);
 	CPC cpc = CpcFromSq(mv.SqFrom());
 	MakeMv(mv);
-	if (FSqAttacked(cpc, mptpcsq[CpcOpposite(cpc)][tpcKing]))
+	if (FSqAttacked(cpc, mptpcsq[~cpc][tpcKing]))
 		sz += L'+';
 	return sz;
 }
@@ -180,7 +182,7 @@ int BDG::ParseMv(const char*& pch, MV& mv) const
 	case TKMV::CastleQueen:
 		file = fileQueenBishop;
 BuildCastle:
-		rank = cpcToMove == cpcWhite ? 0 : 7;
+		rank = RankBackFromCpc(cpcToMove);
 		mv = MV(SQ(rank, fileKing), SQ(rank, file));
 		return 1;
 	case TKMV::WhiteWins:
@@ -462,6 +464,7 @@ NextKeyWord:;
 	case '+': return TKMV::Check;
 	case '#': return TKMV::Mate;
 	case '*': return TKMV::InProgress;
+	case '=': return TKMV::Promote;
 	case 'a':
 	case 'b':
 	case 'c':
