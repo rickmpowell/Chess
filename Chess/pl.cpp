@@ -104,7 +104,7 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 
 	if (cmv == 0) {
 		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
-			return -(float)(100 - depth);
+			return (float)-(100 - depth);
 		else
 			return 0.0f;
 	}
@@ -128,8 +128,15 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
  */
 float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
 {
-	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
+	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
+		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
+			return (float)-(100 - depth);
+		else
+			return 0.0;
+	}
+
+	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 
 	if (bdgmvevEval.rgmvReplyAll.size() == 0)
 		return -EvalBdg(bdgmvevEval, true);

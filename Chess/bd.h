@@ -137,52 +137,52 @@ class IPC
 {
 	unsigned char grf;
 public:
-	IPC(void)
+	inline IPC(void)
 	{
 		grf = 0xf0;
 	}
 
-	IPC(unsigned char grf) : grf(grf)
+	inline IPC(unsigned char grf) : grf(grf)
 	{
 	}
 
-	IPC(TPC tpc, CPC cpc, APC apc)
+	inline IPC(TPC tpc, CPC cpc, APC apc)
 	{
 		grf = tpc | (apc << 4) | (cpc << 7);
 	}
 
-	operator unsigned char() const
+	inline operator unsigned char() const
 	{
 		return grf;
 	}
 
-	CPC cpc(void) const
+	inline CPC cpc(void) const
 	{
 		return (CPC)((grf & 0x80) >> 7);
 	}
 
-	TPC tpc(void) const
+	inline TPC tpc(void) const
 	{
 		return (TPC)(grf & 0x0f);
 	}
 
-	APC apc(void) const
+	inline APC apc(void) const
 	{
 		return (APC)((grf & 0x70) >> 4);
 	}
 
-	IPC& SetApc(APC apc)
+	inline IPC& SetApc(APC apc)
 	{
 		grf = (grf & ~0x70) | (apc << 4);
 		return *this;
 	}
 
-	bool FIsNil(void) const
+	inline bool FIsNil(void) const
 	{
 		return grf == 0xf0;
 	}
 
-	bool FIsEmpty(void) const
+	inline bool FIsEmpty(void) const
 	{
 		return grf == 0x80;
 	}

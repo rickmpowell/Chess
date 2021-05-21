@@ -1,3 +1,5 @@
+  File/Open doesn't redraw board or scroll ML at end of the load
+  Dragging window edges doesn't resize game interior (dragging corners works)
   Open PGN files assert if no \n on last line
   Add canceled game-over state
   PGN game browser if multiple games in Open...
@@ -6,7 +8,6 @@
   UIGO panel comes up during test runs
   Scale and clip long player names in UITI and UIML
   Move test progress into debug panel
-  Save PGN is not writing correct game out
   AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
   Move gen: bitboard king
   Move gen: bitboard bishops, rooks, and queens
@@ -76,6 +77,7 @@
   UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
+* Save PGN is not writing correct game out
 * ML: Move list does not redraw on window resize
 * Should error in MakeMv if we try to make an illegal move
 * AI: Add message pump while thinking
