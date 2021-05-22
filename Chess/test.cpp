@@ -14,12 +14,14 @@
  *
  *	This is the top-level test script.
  */
-void GA::Test(void)
+void GA::Test(SPMV spmv)
 {
+	this->spmv = spmv;
 	NewGame(new RULE(0, 0, 0));
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	UndoTest();
 	PlayPGNFiles(L"..\\Chess\\Test");
+	this->spmv = SPMV::Animate;
 }
 
 
@@ -391,7 +393,7 @@ void GA::ProcessMove(const string& szMove)
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
-	MakeMv(mv, SPMV::Hidden);
+	MakeMv(mv, spmv);
 }
 
 
@@ -445,8 +447,6 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 
 void GA::UndoFullGame(void)
 {
-	while (bdg.imvCur >= 0) {
-		UndoMv(SPMV::Hidden);
-//		uiml.Redraw();
-	}
+	while (bdg.imvCur >= 0)
+		UndoMv();
 }

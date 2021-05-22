@@ -298,7 +298,6 @@ void APP::OnSize(UINT dx, UINT dy)
     DiscardRsrcSize();
     CreateRsrc();
     pga->Resize(PTF((float)dx, (float)dy));
-//    pga->Redraw();
 }
 
 
@@ -519,7 +518,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv(SPMV::Animate);
+        app.pga->UndoMv();
         return 1;
     }
 };
@@ -541,7 +540,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv(SPMV::Animate);
+        app.pga->RedoMv();
         return 1;
     }
 };
@@ -625,7 +624,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->Test();
+        app.pga->Test(SPMV::Hidden);
         return 1;
     }
 };

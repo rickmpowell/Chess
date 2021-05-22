@@ -58,6 +58,7 @@ public:
 	UIDB uidb;
 	UI* puiCapt;
 	UI* puiHover;
+	SPMV spmv;
 
 public:
 	BDG bdg;	// board
@@ -99,11 +100,11 @@ public:
 	void SwitchClock(DWORD tmCur);
 	void StartClock(CPC cpc, DWORD tmCur);
 	void PauseClock(CPC cpc, DWORD tmCur);
-	void UndoMv(SPMV spmv);
-	void RedoMv(SPMV spmv);
+	void UndoMv(void);
+	void RedoMv(void);
 	void GenRgmv(vector<MV>& rgmv);
 
-	void Test(void);
+	void Test(SPMV spmv);
 	void ValidateFEN(const WCHAR* szFEN) const;
 	void ValidatePieces(const WCHAR*& sz) const;
 	void ValidateMoveColor(const WCHAR*& sz) const;

@@ -1,15 +1,14 @@
   Get font metrics to layout multi-line text
-  Re-organize PGN test files to be in sub-directories
-  File/Open doesn't redraw board or scroll ML at end of the load
-  Dragging window edges doesn't resize game interior (dragging corners works)
-  Open PGN files assert if no \n on last line
+  Test: Re-organize PGN test files to be in sub-directories
+  Bug: File/Open doesn't redraw board or scroll ML at end of the load
+  Bug: Dragging window edges doesn't resize game interior (dragging corners works)
+  Bug: Open PGN files assert if no \n on last line
   Add canceled game-over state
-  PGN game browser if multiple games in Open...
-  Implement labeled icon buttons
-  Parse errors in PGN file test should display in test progress panel
-  UIGO panel comes up during no-show test runs
-  Scale and clip long player names in UITI and UIML
-  Move test progress into debug panel
+  Open: PGN game browser if multiple games in Open...
+  UI: Implement labeled icon buttons
+  Test: Parse errors in PGN file test should display in test progress panel
+  ML: Scale and clip long player names in UITI and UIML
+  Test: Move test progress into debug panel
   AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
   Move gen: bitboard king
   Move gen: bitboard bishops, rooks, and queens
@@ -17,27 +16,27 @@
   Move gen: bitboard pawns
   AI: need some end-game improvement
   AI: need to discourage early queen development
-  During Computer-Computer play, the clock on Move 1 goes to black's time
+  Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: Draw candidate best moves on board
-  Make AI interruptible
-  Make AI look deeper on a few of the "best" moves
-  Make AI take clock time into account
-  Copy/paste should do PGN?
-  Add copy/paste commands to export/import FEN game board
+  AI: interruptible
+  AI: look deeper on a few of the "best" moves
+  AI: take clock time into account
+  Feature: Copy/paste should do PGN?
+  Feature: Add copy/paste commands to export/import FEN game board
   Can we hash boards to help with the 3-fold draw detection?
-  Add square control factor to evaluation function
+  Eval: Add square control factor to evaluation function
   Limit UI during message pumps in test and AI
-  Do 3-move repetition draws in the AI lookahead
+  AI: Do 3-move repetition draws in the AI lookahead
   AI: Do a multithreaded lookup
-  Undo doesn't take down game over panel
-  Add option to not draw moves during test run
-  Don't display resign/draw controls during test playback
-  Allow human to play the AI
+  ML: Undo doesn't take down game over panel
+  Test: Add option to not draw moves during test run
+  Test: Don't display resign/draw controls during test playback
+  Feature: Allow human to play the AI
   AI: build lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   AI: Display progress in the debug panel
   UIBD: Hilite last made move on board
-  Add a UI for setting up a board
+  Feature: Add a UI for setting up a board
   AI: Play through until no checks before evaluation
   Test: PGN games should feed moves through a PL
   ML: Merge UIGO and UIGC
@@ -50,19 +49,19 @@
   UI for choosing computer player
   UIBD: There is a weird hit test on the left edge of the board that is hitting squares three squares over
   TI: Hook up UI elements to real information from the GA
-  Implement disabled menu items hooked to the CMD
-  Implement disabled buttons that hook to CMD
+  UI: Implement disabled menu items hooked to the CMD
+  UI: Implement disabled buttons that hook to CMD
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
-  Break the UI out of the GA
+  GA: Break the UI out of the GA
   Official game has slightly different rules for some draw situations
   Playing test PGN files should display result in game over panel
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
-  Change Undo/Redo to be an imvCur operation
+  BDG: Change Undo/Redo to be an imvCur operation
   UIBD: When dragging pieces, highlight square when hovering over a legal move
-  Animate moves when manually going through move list
+  ML: Animate moves when manually going through move list
   UI for picking clock/timing rules 
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
@@ -79,6 +78,8 @@
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
   Add menu item to show/hide debug panel
+* UIGO panel comes up during no-show test runs
+* Need to add a redraw state (fast, hidden, animated) to the GA
 * Add bitboards to the BD, track pieces, and validate them
 * UI: Implement a debug screen panel
 * Save PGN is not writing correct game out
