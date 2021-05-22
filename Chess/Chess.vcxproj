@@ -160,6 +160,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="bb.h" />
     <ClInclude Include="bd.h" />
     <ClInclude Include="Chess.h" />
     <ClInclude Include="debug.h" />

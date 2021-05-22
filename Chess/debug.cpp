@@ -9,7 +9,7 @@
 #include "debug.h"
 #include "Resource.h"
 
-bool fValidate = false;
+bool fValidate = true;
 
 
 UIDBBTNS::UIDBBTNS(UI* puiParent) : UI(puiParent), btnTest(this, cmdTest, RCF(), L'\x2713')

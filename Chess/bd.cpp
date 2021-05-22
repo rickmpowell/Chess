@@ -43,6 +43,8 @@ void BD::SetEmpty(void)
 	for (int cpc = CPC::White; cpc <= CPC::Black; ++cpc) {
 		for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc)
 			mptpcsq[cpc][tpc] = sqNil;
+		for (APC apc = APC::Null; apc < APC::ActMax; ++apc)
+			mpapcbb[cpc][apc] = 0;
 	}
 }
 
@@ -152,6 +154,7 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 
 	mpsqipc[sq] = IPC(tpc, cpc, apc);
 	mptpcsq[cpc][tpc] = sq;
+	SetBB(mpsqipc[sq], sq);
 }
 
 
@@ -199,8 +202,8 @@ void BD::MakeMv(MV mv)
 
 /*	BD::MakeMvSq
  *
- *	Makes a partial move on the board, only updating the square and
- *	tpc arrays.
+ *	Makes a partial move on the board, only updating the square,
+ *	tpc arrays, and bitboards.
  */
 void BD::MakeMvSq(MV mv)
 {
@@ -209,10 +212,11 @@ void BD::MakeMvSq(MV mv)
 	IPC ipcFrom = mpsqipc[sqFrom];
 	IPC ipcTo = mpsqipc[sqTo];
 
-	/* if we're taking a rook, we can't castle to that rook */
+	/* captures. if we're taking a rook, we can't castle to that rook */
 
-	if (ipcTo != ipcEmpty) {
+	if (!ipcTo.FIsEmpty()) {
 		SqFromIpc(ipcTo) = sqNil;
+		ClearBB(ipcTo, sqTo);
 		switch (ipcTo.tpc()) {
 		case tpcKingRook: ClearCastle(ipcTo.cpc(), csKing); break;
 		case tpcQueenRook: ClearCastle(ipcTo.cpc(), csQueen); break;
@@ -223,8 +227,10 @@ void BD::MakeMvSq(MV mv)
 	/* move the pieces */
 
 	mpsqipc[sqFrom] = ipcEmpty;
+	ClearBB(ipcFrom, sqFrom);
 	mpsqipc[sqTo] = ipcFrom;
 	SqFromIpc(ipcFrom) = sqTo;
+	SetBB(ipcFrom, sqTo);
 
 	switch (ipcFrom.apc()) {
 	case APC::Pawn:
@@ -238,12 +244,16 @@ void BD::MakeMvSq(MV mv)
 			/* take en passant */
 			SQ sqTake = SQ(sqTo.rank() ^ 1, sqTo.file());
 			IPC ipcTake = mpsqipc[sqTake];
+			ClearBB(ipcTake, sqTake);
 			mpsqipc[sqTake] = ipcEmpty;
 			SqFromIpc(ipcTake) = sqNil;
 		}
 		else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
 			/* pawn promotion on last rank */
-			mpsqipc[sqTo] = IPC(ipcFrom.tpc(), ipcFrom.cpc(), mv.ApcPromote());
+			IPC ipcPromote = IPC(ipcFrom.tpc(), ipcFrom.cpc(), mv.ApcPromote());
+			mpsqipc[sqTo] = ipcPromote;
+			ClearBB(ipcFrom, sqTo);
+			SetBB(ipcPromote, sqTo);
 		} 
 		break;
 
@@ -264,8 +274,10 @@ void BD::MakeMvSq(MV mv)
 			}
 			IPC ipcRook = mpsqipc[sqRookFrom];
 			mpsqipc[sqRookFrom] = ipcEmpty;
+			ClearBB(ipcRook, sqRookFrom);
 			mpsqipc[sqRookTo] = ipcRook;
 			SqFromIpc(ipcRook) = sqRookTo;
+			SetBB(ipcRook, sqRookTo);
 		}
 		break;
 
@@ -311,9 +323,13 @@ void BD::UndoMv(MV mv)
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
 
-	if (mv.ApcPromote() != APC::Null)
+	if (mv.ApcPromote() != APC::Null) {
+		ClearBB(ipcMove, sqTo);
 		ipcMove = IpcSetApc(ipcMove, APC::Pawn);
+	}
 	mpsqipc[sqFrom] = ipcMove;
+	SetBB(ipcMove, sqFrom);
+	ClearBB(ipcMove, sqTo);
 	SqFromIpc(ipcMove) = sqFrom;
 	APC apcMove = ipcMove.apc();	// get the type of moved piece after we've undone promotion
 
@@ -321,7 +337,7 @@ void BD::UndoMv(MV mv)
 	   the destination square becomes empty */
 
 	APC apcCapt = mv.ApcCapture();
-	if (apcCapt == APC::Null)
+	if (apcCapt == APC::Null) 
 		mpsqipc[sqTo] = ipcEmpty;
 	else {
 		IPC ipcTake = IPC(mv.TpcCapture(), ~cpcMove, apcCapt);
@@ -335,6 +351,7 @@ void BD::UndoMv(MV mv)
 		}
 		mpsqipc[sqTake] = ipcTake;
 		SqFromIpc(ipcTake) = sqTake;
+		SetBB(ipcTake, sqTake);
 	}
 
 	/* undoing a castle means we need to undo the rook, too */
@@ -343,12 +360,16 @@ void BD::UndoMv(MV mv)
 		int dfile = sqTo.file() - sqFrom.file();
 		if (dfile < -1) { /* queen side castle */
 			IPC ipcRook = mpsqipc[sqTo + 1];
+			ClearBB(ipcRook, sqTo + 1);
+			SetBB(ipcRook, sqTo - 2);
 			mpsqipc[sqTo - 2] = ipcRook;
 			mpsqipc[sqTo + 1] = ipcEmpty;
 			SqFromIpc(ipcRook) = sqTo - 2;
 		}
 		else if (dfile > 1) { /* king side castle */
 			IPC ipcRook = mpsqipc[sqTo - 1];
+			ClearBB(ipcRook, sqTo - 1);
+			SetBB(ipcRook, sqTo + 1);
 			mpsqipc[sqTo + 1] = ipcRook;
 			mpsqipc[sqTo - 1] = ipcEmpty;
 			SqFromIpc(ipcRook) = sqTo + 1;
@@ -890,6 +911,7 @@ void BD::Validate(void) const
 				continue;
 
 			assert(SqFromIpc(ipc) == sq);
+			ValidateBB(ipc, sq);
 
 			TPC tpcPc = ipc.tpc();
 			APC apc = ipc.apc();
@@ -926,6 +948,20 @@ void BD::Validate(void) const
 	/* check for valid castle situations */
 	/* check for valid en passant situations */
 }
+
+void BD::ValidateBB(IPC ipc, SQ sq) const
+{
+	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc) 
+		for (APC apc = APC::Null; apc < APC::ActMax; ++apc) {
+			if (cpc == ipc.cpc() && apc == ipc.apc()) {
+				assert(mpapcbb[cpc][apc].fSet(sq));
+			}
+			else {
+				assert(!mpapcbb[cpc][apc].fSet(sq));
+			}
+		}
+}
+
 #endif
 
 

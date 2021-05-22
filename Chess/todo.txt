@@ -1,3 +1,5 @@
+  Get font metrics to layout multi-line text
+  Re-organize PGN test files to be in sub-directories
   File/Open doesn't redraw board or scroll ML at end of the load
   Dragging window edges doesn't resize game interior (dragging corners works)
   Open PGN files assert if no \n on last line
@@ -5,7 +7,7 @@
   PGN game browser if multiple games in Open...
   Implement labeled icon buttons
   Parse errors in PGN file test should display in test progress panel
-  UIGO panel comes up during test runs
+  UIGO panel comes up during no-show test runs
   Scale and clip long player names in UITI and UIML
   Move test progress into debug panel
   AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
@@ -61,7 +63,7 @@
   Change Undo/Redo to be an imvCur operation
   UIBD: When dragging pieces, highlight square when hovering over a legal move
   Animate moves when manually going through move list
-  UI for clock/timing rules 
+  UI for picking clock/timing rules 
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
@@ -74,9 +76,11 @@
   ML: Implement keyboard interface to change selection on UIML
   UIBD: Scale text on labels to size of board
   UI: Add shadows on screen panels
-  UI: Implement a debug screen panel and UI to show/hide it
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
+  Add menu item to show/hide debug panel
+* Add bitboards to the BD, track pieces, and validate them
+* UI: Implement a debug screen panel
 * Save PGN is not writing correct game out
 * ML: Move list does not redraw on window resize
 * Should error in MakeMv if we try to make an illegal move

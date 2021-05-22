@@ -9,6 +9,7 @@
  */
 
 #include "framework.h"
+#include "bb.h"
 
 
 /*
@@ -135,61 +136,68 @@ inline APC& operator+=(APC& apc, int dapc)
 
 class IPC
 {
-	unsigned char grf;
+	unsigned char tpcI : 4,
+		apcI : 3,
+		cpcI : 1;
+
 public:
-	inline IPC(void)
-	{
-		grf = 0xf0;
-	}
-
-	inline IPC(unsigned char grf) : grf(grf)
+	inline IPC(void) : tpcI(tpcPieceMin), cpcI(CPC::Black), apcI(APC::ActMax)
 	{
 	}
 
-	inline IPC(TPC tpc, CPC cpc, APC apc)
+	inline IPC(TPC tpc, CPC cpc, APC apc) : tpcI(tpc), cpcI(cpc), apcI(apc)
 	{
-		grf = tpc | (apc << 4) | (cpc << 7);
-	}
-
-	inline operator unsigned char() const
-	{
-		return grf;
 	}
 
 	inline CPC cpc(void) const
 	{
-		return (CPC)((grf & 0x80) >> 7);
+		return (CPC)cpcI;
 	}
 
 	inline TPC tpc(void) const
 	{
-		return (TPC)(grf & 0x0f);
+		return (TPC)tpcI;
 	}
 
 	inline APC apc(void) const
 	{
-		return (APC)((grf & 0x70) >> 4);
+		return (APC)apcI;
 	}
 
 	inline IPC& SetApc(APC apc)
 	{
-		grf = (grf & ~0x70) | (apc << 4);
+		this->apcI = apc;
 		return *this;
 	}
 
 	inline bool FIsNil(void) const
 	{
-		return grf == 0xf0;
+		return apcI == APC::ActMax;
 	}
 
 	inline bool FIsEmpty(void) const
 	{
-		return grf == 0x80;
+		return apcI == APC::Null;
+	}
+
+	inline bool operator!=(IPC ipc) const
+	{
+		return apcI != ipc.apcI || tpcI != ipc.tpcI || cpcI != ipc.cpcI;
+	}
+
+	inline bool operator==(IPC ipc) const
+	{
+		return apcI == ipc.apcI && tpcI == ipc.tpcI && cpcI == ipc.cpcI;
+	}
+
+	inline operator unsigned char() const
+	{
+		return *(unsigned char*)this;
 	}
 };
 
-static const IPC ipcNil(0xf0);
-static const IPC ipcEmpty(0x80);
+static const IPC ipcNil((TPC)0, CPC::Black, APC::ActMax);
+static const IPC ipcEmpty((TPC)0, CPC::Black, APC::Null);
 
 
 
@@ -199,56 +207,6 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
 	assert(apc >= APC::Pawn && apc <= APC::King);
 	return ipc.SetApc(apc); 
 }
-
-enum {
-	fileQueenRook = 0,
-	fileQueenKnight = 1,
-	fileQueenBishop = 2,
-	fileQueen = 3,
-	fileKing = 4,
-	fileKingBishop = 5,
-	fileKingKnight = 6,
-	fileKingRook = 7,
-	fileMax = 8
-};
-
-const int rankMax = 8;
-
-
-/*	
- *
- *	SQ type
- *
- *	A square is file and rank encoded into a single byte
- *
- */
-
-
-class SQ {
-private:
-	friend class MV;
-	BYTE grf;
-public:
-	inline SQ(void) : grf(0xff) { }
-	inline SQ(BYTE grf) : grf(grf) { }
-	inline SQ(int rank, int file) { grf = (rank << 4) | file; }
-	inline SQ(const SQ& sq) { grf = sq.grf; }
-	inline int file(void) const { return grf & 0x07; }
-	inline int rank(void) const { return (grf >> 4) & 0x07; }
-	inline bool FIsNil(void) const { return grf == 0xff; }
-	inline bool FIsOffBoard(void) const { return grf & 0x88; }
-	inline SQ& operator+=(int dsq) { grf += dsq; return *this; }
-	inline SQ operator+(int dsq) const { return SQ(grf + dsq); }
-	inline operator int() const { return grf; }
-	inline SQ operator++(int) { BYTE grfT = grf++; return SQ(grfT); }
-	inline SQ operator-(int dsq) const { return SQ((BYTE)(grf - dsq)); }
-	inline int operator-(const SQ& sq) const { return (int)grf - (int)sq.grf; }
-	inline SQ SqFlip(void) { return SQ(rankMax - 1 - rank(), file()); }
-	inline int shgrf(void) const { return (grf & 7) | ((grf >> 1) & 0x38); }
-	inline UINT64 fgrf(void) const { return 1LL << shgrf(); }
-};
-
-const SQ sqNil = SQ();
 
 
 /*	
@@ -385,6 +343,7 @@ inline int RankPawnFromCpc(CPC cpc)
 	return RankBackFromCpc(cpc) ^ 1;
 }
 
+
 /*	RankInitPawnFromCpc
  *
  *	Initial rank pawns of the given color occupy. Either 1 or 6.
@@ -404,6 +363,7 @@ inline int DsqPawnFromCpc(CPC cpc)
 	/* white -> 16, black -> -16 */
 	return 16 - ((int)cpc << 5);
 }
+
 
 
 /*
@@ -429,7 +389,8 @@ class BD
 	static const float mpapcvpc[];
 public:
 	IPC mpsqipc[64 * 2];	// the board itself (maps square to piece)
-	SQ mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc (black=1, white=0)
+	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards
+	SQ mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	BYTE cs;	/* castle sides */
@@ -526,6 +487,16 @@ public:
 		this->cs &= ~(csSide << (int)cpc); 
 	}
 
+	inline void SetBB(IPC ipc, SQ sq)
+	{
+		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
+	}
+
+	inline void ClearBB(IPC ipc, SQ sq)
+	{
+		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
+	}
+
 	float VpcTotalFromCpc(CPC cpc) const;
 
 	bool operator==(const BD& bd) const;
@@ -533,8 +504,10 @@ public:
 
 #ifndef NDEBUG
 	void Validate(void) const;
+	void ValidateBB(IPC ipc, SQ sq) const;
 #else
 	inline void Validate(void) const { }
+	inline void ValidateBB(IPC ipc, SQ sq) const { }
 #endif
 };
 
