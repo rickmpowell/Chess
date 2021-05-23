@@ -29,7 +29,7 @@
   AI: Do 3-move repetition draws in the AI lookahead
   AI: Do a multithreaded lookup
   ML: Undo doesn't take down game over panel
-  Test: Add option to not draw moves during test run
+  Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   Feature: Allow human to play the AI
   AI: build lookahead tree 
@@ -55,7 +55,7 @@
   UIBD: Legal move circles disappear when dragging
   GA: Break the UI out of the GA
   Official game has slightly different rules for some draw situations
-  Playing test PGN files should display result in game over panel
+  Playing test PGN files in Fast mode should display result in game over panel
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
@@ -77,7 +77,7 @@
   UI: Add shadows on screen panels
   ML: Modify move list to do real algebraic notation with full optimzations
   UI: Add tooltips for buttons
-  Add menu item to show/hide debug panel
+* Add menu item to show/hide debug panel
 * UIGO panel comes up during no-show test runs
 * Need to add a redraw state (fast, hidden, animated) to the GA
 * Add bitboards to the BD, track pieces, and validate them

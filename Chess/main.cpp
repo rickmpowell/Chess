@@ -251,6 +251,14 @@ void APP::DiscardRsrc(void)
 }
 
 
+wstring APP::SzLoad(int ids) const
+{
+    WCHAR sz[1024];
+    ::LoadString(hinst, ids, sz, CArray(sz));
+    return wstring(sz);
+}
+
+
 /*  APP::Redraw
  *
  *  Force a redraw of the application. Redraws the entire app if prcf is NULL.
@@ -390,36 +398,44 @@ CMDLIST::CMDLIST(APP& app) : app(app)
 
 CMDLIST::~CMDLIST(void)
 {
-    while (mpicmdpcmd.size() > 0) {
-        CMD* pcmd = mpicmdpcmd.back();
-        mpicmdpcmd.pop_back();
+    while (rgpcmd.size() > 0) {
+        CMD* pcmd = rgpcmd.back();
+        rgpcmd.pop_back();
         delete pcmd;
     }
 }
 
 
-void CMDLIST::Add(int icmd, CMD* pcmd)
+void CMDLIST::Add(CMD* pcmd)
 {
-    size_t ccmd = mpicmdpcmd.size();
-    if (icmd >= ccmd) {
-        mpicmdpcmd.resize(icmd + 1);
-        for (size_t icmdT = ccmd; icmdT < icmd+1; icmdT++)
-            mpicmdpcmd[icmdT] = NULL;
+    size_t ccmd = rgpcmd.size();
+    if (pcmd->icmd >= ccmd) {
+        rgpcmd.resize(pcmd->icmd + 1);
+        for (size_t icmdT = ccmd; icmdT < pcmd->icmd+1; icmdT++)
+            rgpcmd[icmdT] = NULL;
     }
-    assert(mpicmdpcmd[icmd] == NULL);
-    mpicmdpcmd[icmd] = pcmd;
+    assert(rgpcmd[pcmd->icmd] == NULL);
+    rgpcmd[pcmd->icmd] = pcmd;
 }
 
 
 int CMDLIST::Execute(int icmd)
 {
-    assert(icmd < mpicmdpcmd.size());
-    assert(mpicmdpcmd[icmd] != NULL);
-    return mpicmdpcmd[icmd]->Execute();
+    assert(icmd < rgpcmd.size());
+    assert(rgpcmd[icmd] != NULL);
+    return rgpcmd[icmd]->Execute();
 }
 
 
-CMD::CMD(APP& app) : app(app)
+void CMDLIST::InitMenu(HMENU hmenu)
+{
+    for (size_t icmd = 0; icmd < rgpcmd.size(); icmd++)
+        if (rgpcmd[icmd])
+            rgpcmd[icmd]->InitMenu(hmenu);
+}
+
+
+CMD::CMD(APP& app, int icmd) : app(app), icmd(icmd)
 {
 }
 
@@ -438,9 +454,23 @@ bool CMD::FCustomSzMenu(void) const
     return false;
 }
 
+int CMD::IdsMenu(void) const
+{
+    return 0;
+}
+
 wstring CMD::SzMenu(void) const
 {
-    return L"";
+    int ids = IdsMenu();
+    return ids ? app.SzLoad(ids) : L"(error)";
+}
+
+void CMD::InitMenu(HMENU hmenu)
+{
+    if (!FCustomSzMenu())
+        return;
+    int mf = MF_UNCHECKED | MF_ENABLED; 
+    ::ModifyMenuW(hmenu, icmd, MF_BYCOMMAND | MF_STRING | mf, icmd, SzMenu().c_str());
 }
 
 
@@ -456,7 +486,7 @@ wstring CMD::SzMenu(void) const
 class CMDABOUT : public CMD
 {
 public:
-    CMDABOUT(APP& app) : CMD(app) { }
+    CMDABOUT(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void) 
     {
@@ -478,7 +508,7 @@ public:
 class CMDNEWGAME : public CMD
 {
 public:
-    CMDNEWGAME(APP& app) : CMD(app) { }
+    CMDNEWGAME(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -492,7 +522,7 @@ public:
 class CMDPLAY : public CMD
 {
 public:
-    CMDPLAY(APP& app) : CMD(app) { }
+    CMDPLAY(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -514,7 +544,7 @@ public:
 class CMDUNDOMOVE : public CMD
 {
 public:
-    CMDUNDOMOVE(APP& app) : CMD(app) { }
+    CMDUNDOMOVE(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -536,7 +566,7 @@ public:
 class CMDREDOMOVE : public CMD
 {
 public:
-    CMDREDOMOVE(APP& app) : CMD(app) { }
+    CMDREDOMOVE(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -557,7 +587,7 @@ public:
 class CMDROTATEBOARD : public CMD
 {
 public:
-    CMDROTATEBOARD(APP& app) : CMD(app) { }
+    CMDROTATEBOARD(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -577,7 +607,7 @@ public:
 class CMDRESIGN : public CMD
 {
 public:
-    CMDRESIGN(APP& app) : CMD(app) { }
+    CMDRESIGN(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -598,7 +628,7 @@ public:
 class CMDOFFERDRAW : public CMD
 {
 public:
-    CMDOFFERDRAW(APP& app) : CMD(app) { }
+    CMDOFFERDRAW(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -620,7 +650,7 @@ public:
 class CMDTEST : public CMD
 {
 public:
-    CMDTEST(APP& app) : CMD(app) { }
+    CMDTEST(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -630,10 +660,20 @@ public:
 };
 
 
+
+/*
+ *
+ *  CMDSAVEPGN
+ * 
+ *  Saves the current board state as a PGN file
+ * 
+ */
+
+
 class CMDSAVEPGN : public CMD
 {
 public:
-    CMDSAVEPGN(APP& app) : CMD(app) {}
+    CMDSAVEPGN(APP& app, int icmd) : CMD(app, icmd) {}
 
     virtual int Execute(void)
     {
@@ -656,10 +696,19 @@ public:
 };
 
 
+/*
+ *
+ *  CMDOPENPGN
+ * 
+ *  Command to open a PGN file to read/analyze an already played agame
+ * 
+ */
+
+
 class CMDOPENPGN : public CMD
 {
 public:
-    CMDOPENPGN(APP& app) : CMD(app) {}
+    CMDOPENPGN(APP& app, int icmd) : CMD(app, icmd) {}
     
     virtual int Execute(void)
     {
@@ -693,7 +742,7 @@ public:
 class CMDCOPY : public CMD
 {
 public:
-    CMDCOPY(APP& app) : CMD(app) { }
+    CMDCOPY(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -715,7 +764,7 @@ public:
 class CMDPASTE : public CMD
 {
 public:
-    CMDPASTE(APP& app) : CMD(app) { }
+    CMDPASTE(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -727,7 +776,7 @@ public:
 class CMDSETUPBOARD : public CMD
 {
 public:
-    CMDSETUPBOARD(APP& app) : CMD(app) { }
+    CMDSETUPBOARD(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -739,7 +788,7 @@ public:
 class CMDCLOCKTOGGLE : public CMD
 {
 public:
-    CMDCLOCKTOGGLE(APP& app) : CMD(app) { }
+    CMDCLOCKTOGGLE(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -750,6 +799,47 @@ public:
         app.pga->Redraw();
         return 1;
     }
+
+    virtual bool FCustomSzMenu(void) const
+    {
+        return true;
+    }
+
+    virtual int IdsMenu(void) const
+    {
+        return app.pga->prule->TmGame() ? idsClocksOff : idsClocksOn;
+    }
+};
+
+
+/*
+ *
+ *  CMDDEBUGPANEL
+ * 
+ */
+
+class CMDDEBUGPANEL : public CMD
+{
+public:
+    CMDDEBUGPANEL(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->uidb.Show(!app.pga->uidb.FVisible());
+        return 1;
+    }
+
+    virtual bool FCustomSzMenu(void) const
+    {
+        return true;
+    }
+
+    virtual int IdsMenu(void) const
+    {
+        return app.pga->uidb.FVisible() ? idsHideDebugPanel : idsShowDebugPanel;
+    }
+
+
 };
 
 
@@ -765,7 +855,7 @@ public:
 class CMDEXIT : public CMD
 {
 public:
-    CMDEXIT(APP& app) : CMD(app) { }
+    CMDEXIT(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
@@ -787,24 +877,37 @@ bool APP::OnCommand(int cmd)
 
 void APP::InitCmdList(void)
 {
-    cmdlist.Add(cmdAbout, new CMDABOUT(*this));
-    cmdlist.Add(cmdNewGame, new CMDNEWGAME(*this));
-    cmdlist.Add(cmdTest, new CMDTEST(*this));
-    cmdlist.Add(cmdExit, new CMDEXIT(*this));
-    cmdlist.Add(cmdUndoMove, new CMDUNDOMOVE(*this));
-    cmdlist.Add(cmdRedoMove, new CMDREDOMOVE(*this));
-    cmdlist.Add(cmdRotateBoard, new CMDROTATEBOARD(*this));
-    cmdlist.Add(cmdOfferDraw, new CMDOFFERDRAW(*this));
-    cmdlist.Add(cmdResign, new CMDRESIGN(*this));
-    cmdlist.Add(cmdPlay, new CMDPLAY(*this));
-    cmdlist.Add(cmdSavePGN, new CMDSAVEPGN(*this));
-    cmdlist.Add(cmdOpenPGN, new CMDOPENPGN(*this));
-    cmdlist.Add(cmdCopy, new CMDCOPY(*this));
-    cmdlist.Add(cmdPaste, new CMDPASTE(*this));
-    cmdlist.Add(cmdSetupBoard, new CMDSETUPBOARD(*this));
-    cmdlist.Add(cmdClockOnOff, new CMDCLOCKTOGGLE(*this));
+    cmdlist.Add(new CMDABOUT(*this, cmdAbout));
+    cmdlist.Add(new CMDNEWGAME(*this, cmdNewGame));
+    cmdlist.Add(new CMDTEST(*this, cmdTest));
+    cmdlist.Add(new CMDEXIT(*this, cmdExit));
+    cmdlist.Add(new CMDUNDOMOVE(*this, cmdUndoMove));
+    cmdlist.Add(new CMDREDOMOVE(*this, cmdRedoMove));
+    cmdlist.Add(new CMDROTATEBOARD(*this, cmdRotateBoard));
+    cmdlist.Add(new CMDOFFERDRAW(*this, cmdOfferDraw));
+    cmdlist.Add(new CMDRESIGN(*this, cmdResign));
+    cmdlist.Add(new CMDPLAY(*this, cmdPlay));
+    cmdlist.Add(new CMDSAVEPGN(*this, cmdSavePGN));
+    cmdlist.Add(new CMDOPENPGN(*this, cmdOpenPGN));
+    cmdlist.Add(new CMDCOPY(*this, cmdCopy));
+    cmdlist.Add(new CMDPASTE(*this, cmdPaste));
+    cmdlist.Add(new CMDSETUPBOARD(*this, cmdSetupBoard));
+    cmdlist.Add(new CMDCLOCKTOGGLE(*this, cmdClockOnOff));
+    cmdlist.Add(new CMDDEBUGPANEL(*this, cmdDebugPanel));
 }
 
+
+/*  APP::OnInitMenu
+ *
+ *  Initializes the dropdown menus, enabling/disabling and filling in toggling
+ *  command texts.
+ */
+bool APP::OnInitMenu(void)
+{
+    HMENU hmenu = ::GetMenu(hwnd);
+    cmdlist.InitMenu(hmenu);
+    return true;
+}
 
 
 /*  APP::WndProc
@@ -837,6 +940,11 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
 
     case WM_COMMAND:
         if (!papp->OnCommand(LOWORD(wparam)))
+            break;
+        return 0;
+    
+    case WM_INITMENU:
+        if (!papp->OnInitMenu())
             break;
         return 0;
 

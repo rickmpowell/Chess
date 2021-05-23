@@ -78,14 +78,18 @@ class APP;
 
 class CMD
 {
+	friend class CMDLIST;
 protected:
 	APP& app;
+	int icmd;
 public:
-	CMD(APP& app);
+	CMD(APP& app, int icmd);
 	virtual int Execute(void);
 	virtual bool FEnabled(void) const;
 	virtual bool FCustomSzMenu(void) const;
 	virtual wstring SzMenu(void) const;
+	virtual void InitMenu(HMENU hmenu);
+	virtual int IdsMenu(void) const;
 };
 
 
@@ -101,12 +105,13 @@ public:
 class CMDLIST {
 private:
 	APP& app;
-	vector<CMD*> mpicmdpcmd;
+	vector<CMD*> rgpcmd;
 public:
 	CMDLIST(APP& app);
 	~CMDLIST(void);
-	void Add(int icmd, CMD* pcmd);
+	void Add(CMD* pcmd);
 	int Execute(int icmd);
+	void InitMenu(HMENU hmenu);
 };
 
 
@@ -146,6 +151,7 @@ public:
 	~APP(void);
 	int MessagePump(void);
 	DWORD TmMessage(void);
+	wstring SzLoad(int ids) const;
 
 private:
 	void CreateRsrc(void);
@@ -155,7 +161,6 @@ private:
 
 	void InitCmdList(void);
 
-	bool FSizeEnv(int dx, int dy);
 	void Redraw(const RCF* prcf);
 
 	void OnPaint(void);
@@ -165,9 +170,7 @@ private:
 	bool OnLeftDown(int x, int y);
 	bool OnLeftUp(int x, int y);
 	bool OnTimer(UINT tid);
-
-	int CmdUndoMove(void);
-	int CmdRedoMove(void);
+	bool OnInitMenu(void);
 
 	void CreateTimer(UINT tid, DWORD dtm);
 	void DestroyTimer(UINT tid);

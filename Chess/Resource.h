@@ -1,5 +1,9 @@
 
 #define idsApp			1
+#define idsShowDebugPanel 2
+#define idsHideDebugPanel 3
+#define idsClocksOn		4
+#define idsClocksOff	5
 
 #define IDR_MAINFRAME	128
 #define iddAbout		1
@@ -24,7 +28,8 @@
 #define cmdPaste		14
 #define cmdSetupBoard	15
 #define cmdClockOnOff	16
-#define cmdMax			17
+#define cmdDebugPanel	17
+#define cmdMax			18
 
 #define idiApp			1
 #define idiSmall		2
