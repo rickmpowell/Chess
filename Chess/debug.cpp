@@ -18,7 +18,7 @@ UIDBBTNS::UIDBBTNS(UI* puiParent) : UI(puiParent), btnTest(this, cmdTest, RCF(),
 
 void UIDBBTNS::Layout(void)
 {
-	btnTest.SetBounds(RCF(4.0f, 4.0f, 30.0f, 30.0f));
+	btnTest.SetBounds(RCF(12.0f, 4.0f, 38.0f, 30.0f));
 }
 
 void UIDBBTNS::Draw(const RCF* prcfUpdate)

@@ -76,7 +76,8 @@
   UIBD: Scale text on labels to size of board
   UI: Add shadows on screen panels
   ML: Modify move list to do real algebraic notation with full optimzations
-  UI: Add tooltips for buttons
+* Size tooltips to the size of the text 
+* UI: Add tooltips for buttons
 * Add menu item to show/hide debug panel
 * UIGO panel comes up during no-show test runs
 * Need to add a redraw state (fast, hidden, animated) to the GA

@@ -41,7 +41,7 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
 	pdc->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
 	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
-	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.75f), &pbrTip);
+	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.85f), &pbrTip);
 
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
@@ -624,8 +624,19 @@ void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) cons
 	DWRITE_TEXT_ALIGNMENT taSav = ptx->GetTextAlignment();
 	ptx->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	DrawSz(sz, ptx, rcf, pbr);
-	ptx->SetTextAlignment(taSav);
 }
+
+
+SIZF UI::SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const
+{
+	IDWriteTextLayout* ptxl;
+	AppGet().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptx, dxf, dyf, &ptxl);
+	DWRITE_TEXT_METRICS dtm;
+	ptxl->GetMetrics(&dtm);
+	SafeRelease(&ptxl);
+	return SIZF(dtm.width, dtm.height);
+}
+
 
 
 /*	UI::DrawRgch
@@ -830,19 +841,23 @@ void UITIP::Draw(const RCF* prcfUpdate)
 void UITIP::AttachOwner(UI* pui)
 {
 	puiOwner = pui;
+	if (!puiOwner)
+		return;
 	RCF rcfOwner = puiOwner->RcfInterior();
 	rcfOwner = puiOwner->RcfGlobalFromLocal(rcfOwner);
-	float dxfTip = 150.0f;
-	float dyfTip = 24.0f;
-	RCF rcfTip = RCF(PTF(rcfOwner.XCenter(), rcfOwner.top - dyfTip - 1.0f), SIZF(dxfTip, dyfTip));
+	wstring szTip = puiOwner->SzTip();
+	SIZF sizfTip = SizfSz(szTip, ptxTip, 1000.0f, 1000.0f);
+	sizfTip.height += 8.0f;
+	sizfTip.width += 12.0f;
+	RCF rcfTip = RCF(PTF(rcfOwner.XCenter(), rcfOwner.top - sizfTip.height - 1.0f), sizfTip);
 	RCF rcfDesk = puiParent->RcfInterior();
 	if (rcfTip.top < rcfDesk.top)
-		rcfTip.Offset(PTF(0.0f, dyfTip + rcfOwner.DyfHeight() + 1.0f));
+		rcfTip.Offset(PTF(0.0f, sizfTip.height + rcfOwner.DyfHeight() + 1.0f));
 	if (rcfTip.left < rcfDesk.left)
-		rcfTip.Offset(PTF(dxfTip + rcfOwner.DxfWidth() + 1.0f, 0.0f));
+		rcfTip.Offset(PTF(sizfTip.width + rcfOwner.DxfWidth() + 1.0f, 0.0f));
 	if (rcfTip.bottom > rcfDesk.bottom)
-		rcfTip.Offset(PTF(0.0f, -(dyfTip + rcfOwner.DyfHeight() + 1.0f)));
+		rcfTip.Offset(PTF(0.0f, -(sizfTip.height + rcfOwner.DyfHeight() + 1.0f)));
 	if (rcfTip.right > rcfDesk.right)
-		rcfTip.Offset(PTF(-(dxfTip + rcfOwner.DxfWidth() + 1.0f), 0.0f));
+		rcfTip.Offset(PTF(-(sizfTip.width + rcfOwner.DxfWidth() + 1.0f), 0.0f));
 	SetBounds(rcfTip);
 }

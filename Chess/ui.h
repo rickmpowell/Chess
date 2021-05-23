@@ -118,6 +118,7 @@ public:
 	void DrawSz(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
+	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const;
 	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };
 
