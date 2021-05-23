@@ -42,8 +42,11 @@ protected:
 	static BRS* pbrAltBack;
 	static BRS* pbrGridLine;
 	static BRS* pbrText;
+	static BRS* pbrTip;
 	static TX* ptxText;
 	static TX* ptxList;
+	static TX* ptxTip;
+
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
@@ -63,6 +66,7 @@ public:
 
 	void AddChild(UI* puiChild);
 	void RemoveChild(UI* puiChild);
+	UI* PuiParent(void) const;
 	UI* PuiPrevSib(void) const;
 	UI* PuiNextSib(void) const;
 	
@@ -84,7 +88,10 @@ public:
 	virtual void LeftDrag(PTF ptf);
 	virtual void MouseHover(PTF ptf, MHT mht);
 	virtual void DispatchCmd(int cmd);
-
+	
+	virtual void ShowTip(UI* puiAttach, bool fShow);
+	virtual wstring SzTip(void) const;
+	virtual wstring SzTipFromCmd(int cmd) const;
 
 	RCF RcfParentFromLocal(RCF rcf) const; // local to parent coordinates
 	RCF RcfGlobalFromLocal(RCF rcf) const; // local to app global coordinates
@@ -251,6 +258,27 @@ public:
 
 /*
  *
+ *	UITIP class
+ * 
+ *	Tooltip user interface item
+ * 
+ */
+
+
+class UITIP : public UI
+{
+	UI* puiOwner;
+public:
+
+public:
+	UITIP(UI* puiParent); 
+	virtual void Draw(const RCF* prcfUpdate);
+	void AttachOwner(UI* pui);
+};
+
+
+/*
+ *
  *	BTN class
  * 
  *	A simple button UI element
@@ -273,6 +301,7 @@ public:
 	virtual void EndLeftDrag(PTF ptf);
 	virtual void LeftDrag(PTF ptf);
 	virtual void MouseHover(PTF ptf, MHT mht);
+	virtual wstring SzTip(void) const;
 };
 
 

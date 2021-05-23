@@ -4,6 +4,12 @@
 #define idsHideDebugPanel 3
 #define idsClocksOn		4
 #define idsClocksOff	5
+#define idsTipRotateBoard  6
+#define idsTipResign    7
+#define idsTipOfferDraw 8
+#define idsTipTest      9
+#define idsTipUndoMove  10
+#define idsTipRedoMove  11
 
 #define IDR_MAINFRAME	128
 #define iddAbout		1

@@ -8,7 +8,7 @@
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
+#include <CommCtrl.h>
 
 #include <d2d1_1.h>
 #include <d2d1_1helper.h>
@@ -203,6 +203,19 @@ public:
 
 	inline float DyfHeight(void) const {
 		return bottom - top;
+	}
+
+	inline float XCenter(void) const {
+		return (left + right) / 2.0f;
+	}
+
+	inline float YCenter(void) const {
+		return (top + bottom) / 2.0f;
+	}
+
+	inline PTF PtfCenter(void) const
+	{
+		return PTF(XCenter(), YCenter());
 	}
 
 	inline SIZF Sizf(void) const {

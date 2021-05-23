@@ -435,6 +435,12 @@ void CMDLIST::InitMenu(HMENU hmenu)
 }
 
 
+wstring CMDLIST::SzTip(int icmd)
+{
+    return rgpcmd[icmd]->SzTip();
+}
+
+
 CMD::CMD(APP& app, int icmd) : app(app), icmd(icmd)
 {
 }
@@ -471,6 +477,11 @@ void CMD::InitMenu(HMENU hmenu)
         return;
     int mf = MF_UNCHECKED | MF_ENABLED; 
     ::ModifyMenuW(hmenu, icmd, MF_BYCOMMAND | MF_STRING | mf, icmd, SzMenu().c_str());
+}
+
+wstring CMD::SzTip(void) const
+{
+    return L"";
 }
 
 
@@ -551,6 +562,11 @@ public:
         app.pga->UndoMv();
         return 1;
     }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipUndoMove);
+    }
 };
 
 
@@ -573,6 +589,11 @@ public:
         app.pga->RedoMv();
         return 1;
     }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipRedoMove);
+    }
 };
 
 
@@ -594,6 +615,11 @@ public:
         app.pga->uibd.FlipBoard(~app.pga->uibd.cpcPointOfView);
         return 1;
     }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipRotateBoard);
+    }
 };
 
 
@@ -612,6 +638,11 @@ public:
     virtual int Execute(void)
     {
         return 1;
+    }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipResign);
     }
 };
 
@@ -634,8 +665,12 @@ public:
     {
         return 1;
     }
-};
 
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipOfferDraw);
+    }
+};
 
 
 /*
@@ -656,6 +691,11 @@ public:
     {
         app.pga->Test(SPMV::Hidden);
         return 1;
+    }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipTest);
     }
 };
 
@@ -838,8 +878,6 @@ public:
     {
         return app.pga->uidb.FVisible() ? idsHideDebugPanel : idsShowDebugPanel;
     }
-
-
 };
 
 

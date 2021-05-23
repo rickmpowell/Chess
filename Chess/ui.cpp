@@ -27,8 +27,10 @@ BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
 BRS* UI::pbrText;
+BRS* UI::pbrTip;
 TX* UI::ptxText;
 TX* UI::ptxList;
+TX* UI::ptxTip;
 
 
 void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
@@ -39,6 +41,8 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
 	pdc->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
 	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
+	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.75f), &pbrTip);
+
 	pfactdwr->CreateTextFormat(L"Arial", NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
@@ -47,6 +51,11 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxList);
+	pfactdwr->CreateTextFormat(L"Arial", NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		13.0f, L"",
+		&ptxTip);
+
 	BTNCH::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 }
 
@@ -57,8 +66,10 @@ void UI::DiscardRsrcClass(void)
 	SafeRelease(&pbrAltBack);
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
+	SafeRelease(&pbrTip);
 	SafeRelease(&ptxList);
 	SafeRelease(&ptxText);
+	SafeRelease(&ptxTip);
 }
 
 
@@ -233,6 +244,10 @@ RCF UI::RcfInterior(void) const
 }
 
 
+/*	UI::RcfBounds
+ *
+ *	Returns the bounds of the item, in parent coorrdinates.
+ */
 RCF UI::RcfBounds(void) const
 {
 	RCF rcf = rcfBounds;
@@ -387,6 +402,27 @@ void UI::DispatchCmd(int cmd)
 {
 	if (puiParent)
 		puiParent->DispatchCmd(cmd);;
+}
+
+
+void UI::ShowTip(UI* puiAttach, bool fShow)
+{
+	if (puiParent)
+		puiParent->ShowTip(puiAttach, fShow);
+}
+
+wstring UI::SzTip(void) const
+{
+	return L"";
+}
+
+
+wstring UI::SzTipFromCmd(int cmd) const
+{
+	if (puiParent)
+		return puiParent->SzTipFromCmd(cmd);
+	else
+		return L"";
 }
 
 
@@ -666,10 +702,20 @@ void BTN::LeftDrag(PTF ptf)
 
 void BTN::MouseHover(PTF ptf, MHT mht)
 {
-	if (mht == MHT::Enter)
+	if (mht == MHT::Enter) {
 		Hilite(true);
-	else if (mht == MHT::Exit)
+		ShowTip(this, true);
+	}
+	else if (mht == MHT::Exit) {
 		Hilite(false);
+		ShowTip(this, false);
+	}
+}
+
+
+wstring BTN::SzTip(void) const
+{
+	return SzTipFromCmd(cmd);
 }
 
 
@@ -751,4 +797,52 @@ void BTNIMG::DiscardRsrc(void)
 SIZF BTNIMG::SizfImg(void) const
 {
 	return pbmp == NULL ? SIZF(0, 0) : pbmp->GetSize();
+}
+
+
+
+/*
+ *
+ *	UITIP class implementation
+ *
+ *	Tooltip user interface item
+ *
+ */
+
+
+UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(NULL)
+{
+}
+
+void UITIP::Draw(const RCF* prcfUpdate)
+{
+	RCF rcf = RcfInterior();
+	FillRcf(rcf, pbrText);
+	rcf.Inflate(PTF(-1.0, -1.0));
+	FillRcf(rcf, pbrTip);
+	if (puiOwner) {
+		wstring sz = puiOwner->SzTip();
+		if (!sz.empty())
+			DrawSz(sz, ptxTip, rcf.Inflate(PTF(-5.0f, -3.0f)), pbrText);
+	}
+}
+
+void UITIP::AttachOwner(UI* pui)
+{
+	puiOwner = pui;
+	RCF rcfOwner = puiOwner->RcfInterior();
+	rcfOwner = puiOwner->RcfGlobalFromLocal(rcfOwner);
+	float dxfTip = 150.0f;
+	float dyfTip = 24.0f;
+	RCF rcfTip = RCF(PTF(rcfOwner.XCenter(), rcfOwner.top - dyfTip - 1.0f), SIZF(dxfTip, dyfTip));
+	RCF rcfDesk = puiParent->RcfInterior();
+	if (rcfTip.top < rcfDesk.top)
+		rcfTip.Offset(PTF(0.0f, dyfTip + rcfOwner.DyfHeight() + 1.0f));
+	if (rcfTip.left < rcfDesk.left)
+		rcfTip.Offset(PTF(dxfTip + rcfOwner.DxfWidth() + 1.0f, 0.0f));
+	if (rcfTip.bottom > rcfDesk.bottom)
+		rcfTip.Offset(PTF(0.0f, -(dyfTip + rcfOwner.DyfHeight() + 1.0f)));
+	if (rcfTip.right > rcfDesk.right)
+		rcfTip.Offset(PTF(-(dxfTip + rcfOwner.DxfWidth() + 1.0f), 0.0f));
+	SetBounds(rcfTip);
 }

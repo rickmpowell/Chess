@@ -90,6 +90,7 @@ public:
 	virtual wstring SzMenu(void) const;
 	virtual void InitMenu(HMENU hmenu);
 	virtual int IdsMenu(void) const;
+	virtual wstring SzTip(void) const;
 };
 
 
@@ -112,6 +113,7 @@ public:
 	void Add(CMD* pcmd);
 	int Execute(int icmd);
 	void InitMenu(HMENU hmenu);
+	wstring SzTip(int cmd);
 };
 
 

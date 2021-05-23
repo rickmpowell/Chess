@@ -174,7 +174,7 @@ void GA::DiscardRsrcClass(void)
 
 
 GA::GA(APP& app) : UI(NULL), app(app), prule(NULL), 
-	spmv(SPMV::Animate), uiti(this), uibd(this), uiml(this), uidb(this),
+	spmv(SPMV::Animate), uiti(this), uibd(this), uiml(this), uidb(this), uitip(this),
 	puiCapt(NULL), puiHover(NULL)
 {
 	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = NULL;
@@ -358,6 +358,21 @@ void GA::SetHover(UI* pui)
 	if (pui == puiHover)
 		return;
 	puiHover = pui;
+}
+
+void GA::ShowTip(UI* puiAttach, bool fShow)
+{
+	uitip.AttachOwner(puiAttach);
+	uitip.Show(fShow);
+	if (fShow)
+		uitip.Redraw();
+	else
+		Redraw();
+}
+
+wstring GA::SzTipFromCmd(int cmd) const
+{
+	return app.cmdlist.SzTip(cmd);
 }
 
 

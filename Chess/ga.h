@@ -56,6 +56,8 @@ public:
 	UIBD uibd;
 	UIML uiml;
 	UIDB uidb;
+	UITIP uitip;
+
 	UI* puiCapt;
 	UI* puiHover;
 	SPMV spmv;
@@ -80,6 +82,8 @@ public:
 	virtual void Layout(void);
 
 	virtual void DispatchCmd(int cmd);
+	virtual void ShowTip(UI* puiAttach, bool fShow);
+	virtual wstring SzTipFromCmd(int cmd) const;
 
 	UI* PuiHitTest(PTF* pptf, int x, int y);
 	virtual void SetCapt(UI* pui);
