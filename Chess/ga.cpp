@@ -37,7 +37,7 @@ void UIP::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 	if (pbrTextSel)
 		return;
 	pdc->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxTextSm);

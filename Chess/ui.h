@@ -46,6 +46,7 @@ protected:
 	static TX* ptxText;
 	static TX* ptxList;
 	static TX* ptxTip;
+	static wchar_t szFontFamily[];
 
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);

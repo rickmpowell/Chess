@@ -23,6 +23,7 @@ WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
  *	UI static drawing objects
  */
 
+wchar_t UI::szFontFamily[] = L"FreeSerif";
 BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
@@ -43,15 +44,15 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
 	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.85f), &pbrTip);
 
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
 		&ptxText);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxList);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		13.0f, L"",
 		&ptxTip);
@@ -511,8 +512,10 @@ void UI::Update(const RCF* prcfUpdate)
 	RCF rcf = *prcfUpdate & rcfBounds;
 	if (!rcf)
 		return;
+	AppGet().pdc->PushAxisAlignedClip(rcf, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	RCF rcfDraw = RcfLocalFromGlobal(rcf);
 	Draw(&rcfDraw);
+	AppGet().pdc->PopAxisAlignedClip();
 	for (UI* pui : rgpuiChild)
 		pui->Update(&rcf);
 }
@@ -630,7 +633,7 @@ void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) cons
 SIZF UI::SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const
 {
 	IDWriteTextLayout* ptxl;
-	AppGet().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptx, dxf, dyf, &ptxl);
+	AppGet().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, dxf, dyf, &ptxl);
 	DWRITE_TEXT_METRICS dtm;
 	ptxl->GetMetrics(&dtm);
 	SafeRelease(&ptxl);
@@ -739,7 +742,7 @@ void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 		return;
 
 	pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsButton);
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		24.0f, L"",
 		&ptxButton);

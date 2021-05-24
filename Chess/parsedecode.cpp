@@ -14,13 +14,17 @@
 
 /*	BDG::SzDecodeMv
  *
- *	Decodes a move into algebraic notation. Does not include postfix marks
- *	for check or checkmate (+ or #).
- *
- *	TODO: make this optionally produce output for PGN files.
+ *	Decodes a move into algebraic notation. Algebraic concise notation requires board 
+ *	context to do correctly, so the move must be a legal move on the board. Does not 
+ *	include postfix marks for check or checkmate (+ or #). 
  */
 
-WCHAR mpapcch[] = { L' ', L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
+const wchar_t mpapcch[] = { L' ', L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
+const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] = 
+{
+	{ L' ', L'\x2659', L'\x2658', L'\x2657', L'\x2656', L'\x2655', L'\x2654' },
+	{ L' ', L'\x265f', L'\x265e', L'\x265d', L'\x265c', L'\x265b', L'\x265a' }
+};
 
 wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 {
@@ -64,7 +68,12 @@ FinishCastle:
 		break;
 	}
 
-	*pch++ = mpapcch[(int)apc];
+	if (!fPretty)
+		*pch++ = mpapcch[apc];
+	else 
+		*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
+
+
 	for (MV mvOther : rgmv) {
 		if (sqTo != mvOther.SqTo() || sqFrom == mvOther.SqFrom())
 			continue;
@@ -81,7 +90,7 @@ FinishCastle:
 	if (!FIsEmpty(sqCapture))
 		*pch++ = fPretty ? L'\x00d7' : 'x';
 	else if (fPretty)
-		*pch++ = L'\x2013';
+		/* *pch++ = L'\x2013' */;
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 

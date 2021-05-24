@@ -116,7 +116,7 @@ class UIML : public UIPS
 
 	static TX* ptxList;
 	static float mpcoldxf[4];
-	static float dyfList;
+	float dyfList;
 
 	float XfFromCol(int col) const;
 	float DxfFromCol(int col) const;

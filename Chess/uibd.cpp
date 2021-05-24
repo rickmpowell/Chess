@@ -74,7 +74,7 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 
 	/* fonts */
 
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
 		&ptxLabel);

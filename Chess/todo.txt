@@ -1,3 +1,11 @@
+  Resize ML and TI based on font metrics
+  Test with alternate fonts
+  Tooltips don't resize for shorter text
+  Dragging pieces outside board clips the dragged piece
+  Saving PGN files doesn't break lines at 80 columns as spec'ed.
+  The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
+  Use bit fields to layout MV
+  Verify IPC is layed out in the byte in the smart way
   Get font metrics to layout multi-line text
   Test: Re-organize PGN test files to be in sub-directories
   Bug: File/Open doesn't redraw board or scroll ML at end of the load
@@ -76,6 +84,7 @@
   UIBD: Scale text on labels to size of board
   UI: Add shadows on screen panels
   ML: Modify move list to do real algebraic notation with full optimzations
+* Use unicode figures in move list
 * Size tooltips to the size of the text 
 * UI: Add tooltips for buttons
 * Add menu item to show/hide debug panel
@@ -104,7 +113,7 @@
 * BDG eval: checkmates should be adjusted by number of moves
 * AI: Not taking checkmates when they are available
 * Have File/Play play the game on screen instead of creating new game
-* Do Alpha-Beta prunming in AI
+* Do Alpha-Beta pruning in AI
 * Implement dumb AI for computer play
 * Bug: e.p. gets put on non-pawn moves sometimes during the full test. 
 * Move list isn't wide enough for Pxd6 e.p.+

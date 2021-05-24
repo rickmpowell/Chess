@@ -29,14 +29,20 @@ UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), cpc(cpc), ppl(NULL)
 void UIPL::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(*prcfUpdate, pbrBack);
-	ptxText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	wstring szColor = cpc == CPC::White ? L"\x26aa  " : L"\x26ab  ";
-	if (ppl)
-		szColor += ppl->SzName();
+
 	RCF rcf = RcfInterior();
 	rcf.left += 12.0f;
 	rcf.top += 6.0f;
+
+	ptxText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	wstring szColor = cpc == CPC::White ? L"\x26aa" : L"\x26ab";
+	SIZF sizf = SizfSz(szColor, ptxText, rcf.DxfWidth(), rcf.DyfHeight());
 	DrawSz(szColor, ptxText, rcf);
+	if (ppl) {
+		wstring szName = ppl->SzName();
+		rcf.left += sizf.width + 12.0f;
+		DrawSz(szName, ptxText, rcf);
+	}
 }
 
 
@@ -113,7 +119,7 @@ void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxClock)
 		return;
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 50.0f, L"",
 		&ptxClock);
 }
@@ -236,7 +242,7 @@ void UIGO::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxScore)
 		return;
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
 		&ptxScore);
 }
@@ -364,8 +370,8 @@ void UIML::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 
 	/* fonts */
 
-	pfactdwr->CreateTextFormat(L"Arial", NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"",
+	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20.0f, L"",
 		&ptxList);
 
 	UIGC::CreateRsrcClass(pdc, pfactdwr, pfactwic);
@@ -389,7 +395,6 @@ void UIML::DiscardRsrcClass(void)
 
 
 float UIML::mpcoldxf[] = { 40.0f, 80.0f, 80.0f, 20.0f };
-float UIML::dyfList = 20.0f;
 
 
 float UIML::XfFromCol(int col) const
@@ -433,6 +438,8 @@ RCF UIML::RcfFromCol(float yf, int col) const
  */
 void UIML::Layout(void)
 {
+	dyfList = SizfSz(L"0", ptxList, 1000.0f, 1000.0f).height;
+
 	/*	position the top clocks and player names */
 
 	RCF rcf = RcfInterior();
