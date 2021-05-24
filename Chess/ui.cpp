@@ -23,7 +23,7 @@ WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
  *	UI static drawing objects
  */
 
-wchar_t UI::szFontFamily[] = L"FreeSerif";
+wchar_t UI::szFontFamily[] = L"Segoe UI Symbol";
 BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
@@ -231,6 +231,12 @@ void UI::DiscardRsrc(void)
 
 void UI::Layout(void)
 {
+}
+
+
+SIZF UI::SizfLayoutPreferred(void)
+{
+	return SIZF(-1.0f, -1.0f);
 }
 
 

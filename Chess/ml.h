@@ -38,6 +38,7 @@ public:
 
 public:
 	UICLOCK(UIML* puiml, CPC cpc);
+	virtual SIZF SizfLayoutPreferred(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void DrawColon(RCF& rcf, unsigned frac) const;
 	bool FTimeOutWarning(DWORD tm) const;
@@ -68,6 +69,7 @@ public:
 	UIGC(UIML* puiml);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void Layout(void);
+	virtual SIZF SizfLayoutPreferred(void);
 };
 
 
@@ -92,6 +94,7 @@ public:
 
 public:
 	UIGO(UIML* puiml, bool fVisible);
+	virtual SIZF SizfLayoutPreferred(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 };
 
@@ -115,7 +118,7 @@ class UIML : public UIPS
 	friend class GA;
 
 	static TX* ptxList;
-	static float mpcoldxf[4];
+	float mpcoldxf[4];
 	float dyfList;
 
 	float XfFromCol(int col) const;
@@ -143,7 +146,9 @@ public:
 	void EndGame(void);
 
 	virtual void Layout(void);
+	virtual SIZF SizfLayoutPreferred(void);
 	void ShowClocks(bool fTimed);
+	
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);
 

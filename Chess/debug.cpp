@@ -21,6 +21,11 @@ void UIDBBTNS::Layout(void)
 	btnTest.SetBounds(RCF(12.0f, 4.0f, 38.0f, 30.0f));
 }
 
+SIZF UIDBBTNS::SizfLayoutPreferred(void)
+{
+	return SIZF(-1.0f, 40.0f);
+}
+
 void UIDBBTNS::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(*prcfUpdate, pbrBack);
@@ -38,7 +43,7 @@ void UIDB::Layout(void)
 	RCF rcf = RcfInterior();
 	RCF rcfCont = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(&uidbbtns, rcf, true, 40.0f);
+	AdjustUIRcfBounds(&uidbbtns, rcf, true);
 	rcfCont.top = rcf.bottom;
 
 	/* positon bottom items */

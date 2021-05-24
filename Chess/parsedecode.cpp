@@ -52,10 +52,10 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 				goto FinishCastle;
 			if (sqTo.file() == fileQueenBishop) {
 				*pch++ = L'O';
-				*pch++ = fPretty ? L'-' : L'\x2013';
+				*pch++ = L'-';
 FinishCastle:
 				*pch++ = L'O';
-				*pch++ = fPretty ? L'-' : L'\x2013';
+				*pch++ = L'-';
 				*pch++ = L'O';
 				goto FinishMove;
 			}
@@ -73,18 +73,19 @@ FinishCastle:
 	else 
 		*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
 
+	/* for ambiguous moves, we need to add various from square qualifiers depending
+	 * on where the ambiguity is */
 
-	for (MV mvOther : rgmv) {
-		if (sqTo != mvOther.SqTo() || sqFrom == mvOther.SqFrom())
-			continue;
-		if (ApcFromSq(mvOther.SqFrom()) == apc) {
-			/* there are two matching pieces that can move to the
-			   destination square */
+	if (FMvApcAmbiguous(rgmv, mv)) {
+		if (!FMvApcFileAmbiguous(rgmv, mv))
 			*pch++ = L'a' + sqFrom.file();
+		else {
+			if (FMvApcRankAmbiguous(rgmv, mv))
+				*pch++ = L'a' + sqFrom.file();
 			*pch++ = L'1' + sqFrom.rank();
-			break;
 		}
 	}
+ 
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
 	if (!FIsEmpty(sqCapture))
@@ -96,7 +97,7 @@ FinishCastle:
 
 	if (apc == APC::Pawn && sqTo == sqEnPassant) {
 		if (fPretty)
-			*pch++ = L'\x00a0';
+			*pch++ = L' ';
 		*pch++ = L'e';
 		*pch++ = L'.';
 		*pch++ = L'p';
@@ -114,6 +115,48 @@ FinishCastle:
 FinishMove:
 	*pch++ = 0;
 	return wstring(sz);
+}
+
+
+bool BDG::FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const
+{
+	SQ sqFrom = mv.SqFrom();
+	SQ sqTo = mv.SqTo();
+	for (MV mvOther : rgmv) {
+		if (mvOther.SqTo() != sqTo || mvOther.SqFrom() == sqFrom)
+			continue;
+		if (ApcFromSq(mvOther.SqFrom()) == ApcFromSq(sqFrom))
+			return true;
+	}
+	return false;
+}
+
+
+bool BDG::FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const
+{
+	SQ sqFrom = mv.SqFrom();
+	SQ sqTo = mv.SqTo();
+	for (MV mvOther : rgmv) {
+		if (mvOther.SqTo() != sqTo || mvOther.SqFrom() == sqFrom)
+			continue;
+		if (ApcFromSq(mvOther.SqFrom()) == ApcFromSq(sqFrom) && mvOther.SqFrom().rank() == sqFrom.rank())
+			return true;
+	}
+	return false;
+}
+
+
+bool BDG::FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const
+{
+	SQ sqFrom = mv.SqFrom();
+	SQ sqTo = mv.SqTo();
+	for (MV mvOther : rgmv) {
+		if (mvOther.SqTo() != sqTo || mvOther.SqFrom() == sqFrom)
+			continue;
+		if (ApcFromSq(mvOther.SqFrom()) == ApcFromSq(sqFrom) && mvOther.SqFrom().file() == sqFrom.file())
+			return true;
+	}
+	return false;
 }
 
 

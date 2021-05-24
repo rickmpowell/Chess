@@ -598,6 +598,9 @@ public:
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv, bool fPretty) const;
+	bool FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const;
+	bool FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const;
+	bool FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
 	int ParseMv(const char*& pch, MV& mv) const;
 	int ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const;

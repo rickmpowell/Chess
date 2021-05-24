@@ -26,6 +26,13 @@ UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), cpc(cpc), ppl(NULL)
 }
 
 
+SIZF UIPL::SizfLayoutPreferred(void)
+{
+	SIZF sizf = SizfSz(L"A", ptxText);
+	return SIZF(-1.0f, sizf.height + 8);
+}
+
+
 void UIPL::Draw(const RCF* prcfUpdate)
 {
 	FillRcf(*prcfUpdate, pbrBack);
@@ -92,6 +99,13 @@ void UIGC::Layout(void)
 }
 
 
+SIZF UIGC::SizfLayoutPreferred(void)
+{
+	SIZF sizf = SizfSz(L"0", ptxText);
+	return SIZF(-1.0f, sizf.height + 8);
+}
+
+
 UIGC::UIGC(UIML* puiml) : UI(puiml)
 {
 	pbtnResign = new BTNIMG(this, cmdResign, RCF(0,0,0,0), idbWhiteFlag);
@@ -134,6 +148,13 @@ void UICLOCK::DiscardRsrcClass(void)
 
 UICLOCK::UICLOCK(UIML* puiml, CPC cpc) : UI(puiml), ga(puiml->ga), cpc(cpc)
 {
+}
+
+
+SIZF UICLOCK::SizfLayoutPreferred(void)
+{
+	SIZF sizf = SizfSz(L"0", ptxClock);
+	return SIZF(-1.0, sizf.height * 4.0f / 3.0f);
 }
 
 
@@ -260,16 +281,28 @@ UIGO::UIGO(UIML* puiml, bool fVisible) : UI(puiml, fVisible), ga(puiml->ga)
 }
 
 
+SIZF UIGO::SizfLayoutPreferred(void)
+{
+	SIZF sizf = SizfSz(L"A", ptxText);
+	return SIZF(-1.0f, sizf.height * 5.0f);
+}
+
+
 void UIGO::Draw(const RCF* prcfUpdate)
 {
-	RCF rcfEndType = RcfInterior();
-	FillRcf(rcfEndType, pbrBack);
-	rcfEndType.bottom = rcfEndType.top + 36.0f;
-	rcfEndType.Offset(0, 24.0f);
+	float dyfLine = SizfSz(L"A", ptxText).height + 3.0f;
+
+	RCF rcf = RcfInterior();
+	FillRcf(rcf, pbrBack);
+
+	RCF rcfEndType = rcf;
+	rcfEndType.top = rcf.YCenter() - (3.0f * dyfLine) / 2;
+	rcfEndType.bottom = rcfEndType.top + dyfLine;
 	RCF rcfResult = rcfEndType;
-	rcfResult.Offset(0, 24.0f);
+	rcfResult.Offset(0, dyfLine);
 	RCF rcfScore = rcfResult;
-	rcfScore.Offset(0, 24.0f);
+	rcfScore.Offset(0, dyfLine);
+
 	CPC cpcWin = CPC::NoColor;
 
 	switch (ga.bdg.gs) {
@@ -341,8 +374,10 @@ void UIGO::Draw(const RCF* prcfUpdate)
  */
 
 
-UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this)
+UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this), dyfList(0)
 {
+	for (int col = 0; col < CArray(mpcoldxf); col++)
+		mpcoldxf[col] = 0.0f;
 	mpcpcpuiclock[CPC::White] = new UICLOCK(this, CPC::White);
 	mpcpcpuiclock[CPC::Black] = new UICLOCK(this, CPC::Black);
 	mpcpcpuipl[CPC::White] = new UIPL(this, CPC::White);
@@ -395,9 +430,6 @@ void UIML::DiscardRsrcClass(void)
 }
 
 
-float UIML::mpcoldxf[] = { 40.0f, 80.0f, 80.0f, 20.0f };
-
-
 float UIML::XfFromCol(int col) const
 {
 	assert(col >= 0 && col < CArray(mpcoldxf) + 1);
@@ -439,25 +471,24 @@ RCF UIML::RcfFromCol(float yf, int col) const
  */
 void UIML::Layout(void)
 {
-	dyfList = SizfSz(L"0", ptxList, 1000.0f, 1000.0f).height;
 
 	/*	position the top clocks and player names */
 
 	RCF rcf = RcfInterior();
 	RCF rcfCont = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true, 1.75f * dyfList);
-	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView ^ 1], rcf, true, 4.0f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true);
+	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView ^ 1], rcf, true);
 	rcfCont.top = rcf.bottom;
 
 	/* position the bottom clocks, player names, and game controls */
 
 	rcf = RcfInterior();
 	rcf.top = rcf.bottom;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false, 1.75f * dyfList);
-	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false, 4.0f * dyfList);
-	AdjustUIRcfBounds(&uigc, rcf, false, 1.5f * dyfList); 
-	AdjustUIRcfBounds(&uigo, rcf, false, 6.0f * dyfList);
+	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false);
+	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false);
+	AdjustUIRcfBounds(&uigc, rcf, false); 
+	AdjustUIRcfBounds(&uigo, rcf, false);
 	rcfCont.bottom = rcf.top;
 
 	/* move list content is whatever is left */
@@ -465,6 +496,19 @@ void UIML::Layout(void)
 	SetView(rcfCont);
 	SetContent(rcfCont);
 }
+
+
+SIZF UIML::SizfLayoutPreferred(void)
+{
+	dyfList = SizfSz(L"0", ptxList).height;
+
+	mpcoldxf[0] = SizfSz(L"200.", ptxList).width + 4.0f;
+	mpcoldxf[1] = mpcoldxf[2] = SizfSz(L"\x2659" "e" "\x00d7" "d6 e.p.+", ptxList).width;
+	mpcoldxf[3] = dxyfScrollBarWidth;
+
+	return SIZF(XfFromCol(4), -1.0f);
+}
+
 
 
 /*	UIML::Draw
@@ -510,8 +554,10 @@ void UIML::DrawContent(const RCF& rcfCont)
 	float yfCont = RcfContent().top;
 	for (unsigned imv = 0; imv < ga.bdg.rgmvGame.size(); imv++) {
 		MV mv = ga.bdg.rgmvGame[imv];
-		if (imv % 2 == 0)
-			DrawMoveNumber(RcfFromCol(yfCont + (imv / 2) * dyfList, 0), imv / 2 + 1);
+		if (imv % 2 == 0) {
+			RCF rcf = RcfFromCol(yfCont + (imv / 2) * dyfList, 0);
+			DrawMoveNumber(rcf, imv / 2 + 1);
+		}
 		if (!mv.FIsNil())
 			DrawAndMakeMv(RcfFromImv(imv), bdgT, mv);
 	}
@@ -548,8 +594,7 @@ void UIML::DrawSel(int imv)
  */
 void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 {
-	rcf.left += 4.0f;
-	rcf.top += 4.0f;
+	rcf.top += 3.0f;
 	rcf.bottom -= 2.0f;
 	wstring sz = bdg.SzMoveAndDecode(mv);
 	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);

@@ -18,6 +18,7 @@ public:
 	UIDBBTNS(UI* puiParent);
 	void Draw(const RCF* prcfUpdate = NULL);
 	virtual void Layout(void);
+	virtual SIZF SizfLayoutPreferred(void);
 };
 
 

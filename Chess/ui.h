@@ -78,8 +78,9 @@ public:
 	void Resize(PTF ptfNew);
 	void Move(PTF ptfNew);
 	void OffsetBounds(float dxf, float dyf);
-	virtual void Layout(void);
 	void Show(bool fShow);
+	virtual void Layout(void);
+	virtual SIZF SizfLayoutPreferred(void);
 
 	UI* PuiFromPtf(PTF ptf);
 	virtual void SetCapt(UI* pui);
@@ -119,7 +120,7 @@ public:
 	void DrawSz(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
-	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const;
+	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf=1.0e6f, float dyf=1.0e6f) const;
 	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };
 
@@ -149,7 +150,7 @@ public:
 	~UIP(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void SetShadow(void);
-	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight);
+	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop);
 };
 
 

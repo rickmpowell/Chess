@@ -114,19 +114,22 @@ void UIP::Draw(const RCF* prcfUpdate)
  *
  *	Helper layout function for creating top/bottom strip UIs in screen panels. If the
  *	child UI in pui is visible, it moves it just below (or above) the rcf rectangle
- *	supplied, depending on fTop. The height of the child will be dyfHeight.
+ *	supplied, depending on fTop. We ask the child for its preferred height by calling
+ *	SizfLayoutPreferred.
  */
-void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop, float dyfHeight)
+void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop)
 {
 	if (pui == NULL || !pui->FVisible())
 		return;
+	SIZF sizf = pui->SizfLayoutPreferred();
+	assert(sizf.height > 0.0f);
 	if (fTop) {
 		rcf.top = rcf.bottom;
-		rcf.bottom = rcf.top + dyfHeight;
+		rcf.bottom = rcf.top + sizf.height;
 	}
 	else {
 		rcf.bottom = rcf.top;
-		rcf.top = rcf.bottom - dyfHeight;
+		rcf.top = rcf.bottom - sizf.height;
 	}
 	pui->SetBounds(rcf);
 	if (fTop)
@@ -276,7 +279,8 @@ void GA::Layout(void)
 	uibd.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
-	rcf.right = rcf.left + 220.0f;
+	SIZF sizf = uiml.SizfLayoutPreferred();
+	rcf.right = rcf.left + sizf.width;
 	uiml.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
