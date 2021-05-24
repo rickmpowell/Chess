@@ -32,15 +32,16 @@ void UIPL::Draw(const RCF* prcfUpdate)
 
 	RCF rcf = RcfInterior();
 	rcf.left += 12.0f;
-	rcf.top += 6.0f;
 
 	ptxText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	wstring szColor = cpc == CPC::White ? L"\x26aa" : L"\x26ab";
 	SIZF sizf = SizfSz(szColor, ptxText, rcf.DxfWidth(), rcf.DyfHeight());
+	rcf.bottom = rcf.top + sizf.height;
+	rcf.Offset(PTF(0, RcfInterior().YCenter() - rcf.YCenter()));
 	DrawSz(szColor, ptxText, rcf);
 	if (ppl) {
 		wstring szName = ppl->SzName();
-		rcf.left += sizf.width + 12.0f;
+		rcf.left += sizf.width + sizf.width;
 		DrawSz(szName, ptxText, rcf);
 	}
 }
@@ -148,7 +149,6 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 		pbrAltBack->SetColor(ColorF(1.0f, 0.9f, 0.9f));
 	FillRcf(rcf, pbrAltBack);
 	pbrAltBack->SetColor(coSav);
-	rcf.top += 12.0f;
 
 	/* break down time into parts */
 
@@ -178,32 +178,34 @@ void UICLOCK::Draw(const RCF* prcfUpdate)
 	/* print out the text piece at a time */
 
 	ptxClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	const float dxfDigit = 30.0f;
-	const float dxfPunc = 18.0f;
+	SIZF sizfDigit = SizfSz(L"0", ptxClock, 1000.0f, 1000.0f);
+	SIZF sizfPunc = SizfSz(L":", ptxClock, 1000.0f, 1000.0f);
+	rcf.bottom = rcf.top + sizfDigit.height;
+	rcf.Offset(0, RcfInterior().YCenter() - rcf.YCenter());
 	if (hr > 0) {
-		float dxfClock = dxfDigit + dxfPunc + 2.0f * dxfDigit + dxfPunc + 2.0f * dxfDigit;
-		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
+		float dxfClock = sizfDigit.width + sizfPunc.width + 2*sizfDigit.width + sizfPunc.width + 2*sizfDigit.width;
+		rcf.left = rcf.XCenter() - dxfClock/2;
 		DrawRgch(sz, 1, ptxClock, rcf);	// hours
-		rcf.left += dxfDigit;
+		rcf.left += sizfDigit.width;
 		DrawColon(rcf, frac);
 		DrawRgch(sz + 2, 2, ptxClock, rcf); // minutes
-		rcf.left += 2 * dxfDigit;
+		rcf.left += 2*sizfDigit.width;
 		DrawColon(rcf, frac);
 		DrawRgch(sz + 5, 2, ptxClock, rcf); // seconds
 	}
 	else if (min > 0) {
-		float dxfClock = 2.0f * dxfDigit + dxfPunc + 2.0f * dxfDigit;
+		float dxfClock = 2*sizfDigit.width + sizfPunc.width + 2*sizfDigit.width;
 		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
 		DrawRgch(sz + 2, 2, ptxClock, rcf);	// minutes
-		rcf.left += 2 * dxfDigit;
+		rcf.left += 2*sizfDigit.width;
 		DrawColon(rcf, frac);
 		DrawRgch(sz + 5, 2, ptxClock, rcf);	// seconds 
 	}
 	else {
-		float dxfClock = dxfDigit + dxfPunc + 2.0f * dxfDigit + dxfPunc + dxfDigit;
-		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
+		float dxfClock = sizfDigit.width + sizfPunc.width + 2*sizfDigit.width + sizfPunc.width + sizfDigit.width;
+		rcf.left = rcf.XCenter() - dxfClock / 2;;
 		DrawRgch(sz + 3, 1, ptxClock, rcf);	// minutes (=0)
-		rcf.left += dxfDigit;
+		rcf.left += sizfDigit.width;
 		DrawColon(rcf, frac);
 		DrawRgch(sz + 5, 4, ptxClock, rcf);	// seconds and tenths
 	}
@@ -220,11 +222,10 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 {
 	if (frac < 500 && cpc == ga.bdg.cpcToMove)
 		pbrText->SetOpacity(0.33f);
-	rcf.top -= 3.0f;
+	SIZF sizfPunc = SizfSz(L":", ptxClock, rcf.DxfWidth(), rcf.DyfHeight());
 	DrawSz(L":", ptxClock, rcf, pbrText);
 	pbrText->SetOpacity(1.0f);
-	rcf.top += 3.0f;
-	rcf.left += 18.0f;
+	rcf.left += sizfPunc.width;
 }
 
 
