@@ -8,7 +8,7 @@
 
 #include "uibd.h"
 #include "ga.h"
-#include "Chess.h"
+#include "Resources/Resource.h"
 
 
 /*
@@ -126,7 +126,7 @@ UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
 		cpcPointOfView(CPC::White),
 		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
 		angle(0.0f),
-		dyfLabel(0)
+		ptxLabel(NULL), dyfLabel(0)
 {
 	pbtnRotateBoard = new BTNCH(this, cmdRotateBoard, RCF(0, 0, 0, 0), L'\x2b6f');
 }
@@ -151,7 +151,7 @@ void UIBD::Layout(void)
 {
 	rcfSquares = RcfInterior();
 	pbtnRotateBoard->SetBounds(RCF(rcfSquares.left+3.0f, rcfSquares.bottom - 30.0f, rcfSquares.left + 33.0f, rcfSquares.bottom));
-	dxyfMargin = rcfBounds.DyfHeight() / 12.0f;
+	dxyfMargin = rcfBounds.DyfHeight() / 16.0f;
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
 	rcfSquares.Inflate(-dxyf, -dxyf);
 	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
@@ -642,19 +642,23 @@ void UIBD::EndLeftDrag(PTF ptf)
 	ReleaseCapt();
 	if (sqDragInit.FIsNil())
 		return;
-	SQ sq;
-	HTBD htbd = HtbdHitTest(ptf, &sq);
-	if (!sq.FIsNil()) {
+	SQ sqFrom = sqDragInit;
+	sqDragInit = sqNil;
+	SQ sqTo;
+	HTBD htbd = HtbdHitTest(ptf, &sqTo);
+	if (!sqTo.FIsNil()) {
 		for (MV mv : rgmvDrag) {
-			if (mv.SqFrom() == sqDragInit && mv.SqTo() == sq) {
+			if (mv.SqFrom() == sqFrom && mv.SqTo() == sqTo) {
 				ga.MakeMv(mv, SPMV::Fast);
-				break;
+				goto Done;
 			}
 		}
 	}
-
+	/* need to force redraw if it wasn't a legal  move to remove vestiges of the
+	   screen dragging */
+	Redraw();
+Done:
 	InvalOutsideRcf(rcfDragPc);
-	sqDragInit = sqNil;
 }
 
 

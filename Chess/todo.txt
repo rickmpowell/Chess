@@ -1,11 +1,14 @@
-  When writing PGN files, don't use P (no P for regular moves, column for captures)
-  Not redrawing board after dragging to an illegal move
-  Resize ML and TI based on font metrics
+  Build: Move non-code resources into a subdirectory
+  UIPL: scale long player names in UITI and UIML
+  UITI: Put name of our program with the logo
+  UITI Layout using font metrics
+  Save: Save our game PGN log file in the directory of the .exe 
+  Save: When writing PGN files, don't use P (no P for regular moves, column for captures)
   Test with alternate fonts
-  Tooltips don't resize for shorter text
-  Dragging pieces outside board clips the dragged piece
-  Saving PGN files doesn't break lines at 80 columns as spec'ed.
-  The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
+  Tooltips don't resize for shorter text (only with FreeSerif?)
+  UIBD: Dragging pieces outside board clips the dragged piece
+  Save: Saving PGN files doesn't break lines at 80 columns as spec'ed.
+  UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
   Use bit fields to layout MV
   Verify IPC is layed out in the byte in the smart way
   Test: Re-organize PGN test files to be in sub-directories
@@ -16,7 +19,6 @@
   Open: PGN game browser if multiple games in Open...
   UI: Implement labeled icon buttons
   Test: Parse errors in PGN file test should display in test progress panel
-  ML: Scale and clip long player names in UITI and UIML
   Test: Move test progress into debug panel
   AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
   Move gen: bitboard king
@@ -24,6 +26,8 @@
   Move gen: bitboard knights
   Move gen: bitboard pawns
   AI: need some end-game improvement
+  Move PGN decoding code into save
+  Move PGN parsing code into open
   AI: need to discourage early queen development
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: Draw candidate best moves on board
@@ -60,6 +64,7 @@
   TI: Hook up UI elements to real information from the GA
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
+  UIBD: clips when rotating on flip board
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
   GA: Break the UI out of the GA
@@ -82,6 +87,9 @@
   ML: Implement selection in UIML
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* ML: clip long player names in UITI and UIML
+* Resize ML and TI based on font metrics
+* Not redrawing board after dragging to an illegal move
 * UIBD: Scale text on labels to size of board
 * Get font metrics to layout multi-line text
 * ML: Modify move list to do real algebraic notation with full optimzations

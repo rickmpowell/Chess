@@ -8,7 +8,7 @@
 
 #include "ml.h"
 #include "ga.h"
-#include "Resource.h"
+#include "resources/Resource.h"
 
 
 /*

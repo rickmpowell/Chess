@@ -136,58 +136,58 @@ inline APC& operator+=(APC& apc, int dapc)
 
 class IPC
 {
-	unsigned char tpcI : 4,
-		apcI : 3,
-		cpcI : 1;
+	unsigned char tpcGrf : 4,
+		apcGrf : 3,
+		cpcGrf : 1;
 
 public:
-	inline IPC(void) : tpcI(tpcPieceMin), cpcI(CPC::Black), apcI(APC::ActMax)
+	inline IPC(void) : tpcGrf(tpcPieceMin), cpcGrf(CPC::Black), apcGrf(APC::ActMax)
 	{
 	}
 
-	inline IPC(TPC tpc, CPC cpc, APC apc) : tpcI(tpc), cpcI(cpc), apcI(apc)
+	inline IPC(TPC tpc, CPC cpc, APC apc) : tpcGrf(tpc), cpcGrf(cpc), apcGrf(apc)
 	{
 	}
 
 	inline CPC cpc(void) const
 	{
-		return (CPC)cpcI;
+		return (CPC)cpcGrf;
 	}
 
 	inline TPC tpc(void) const
 	{
-		return (TPC)tpcI;
+		return (TPC)tpcGrf;
 	}
 
 	inline APC apc(void) const
 	{
-		return (APC)apcI;
+		return (APC)apcGrf;
 	}
 
 	inline IPC& SetApc(APC apc)
 	{
-		this->apcI = apc;
+		this->apcGrf = apc;
 		return *this;
 	}
 
 	inline bool FIsNil(void) const
 	{
-		return apcI == APC::ActMax;
+		return apcGrf == APC::ActMax;
 	}
 
 	inline bool FIsEmpty(void) const
 	{
-		return apcI == APC::Null;
+		return apcGrf == APC::Null;
 	}
 
 	inline bool operator!=(IPC ipc) const
 	{
-		return apcI != ipc.apcI || tpcI != ipc.tpcI || cpcI != ipc.cpcI;
+		return apcGrf != ipc.apcGrf || tpcGrf != ipc.tpcGrf || cpcGrf != ipc.cpcGrf;
 	}
 
 	inline bool operator==(IPC ipc) const
 	{
-		return apcI == ipc.apcI && tpcI == ipc.tpcI && cpcI == ipc.cpcI;
+		return apcGrf == ipc.apcGrf && tpcGrf == ipc.tpcGrf && cpcGrf == ipc.cpcGrf;
 	}
 
 	inline operator unsigned char() const
@@ -200,10 +200,8 @@ static const IPC ipcNil((TPC)0, CPC::Black, APC::ActMax);
 static const IPC ipcEmpty((TPC)0, CPC::Black, APC::Null);
 
 
-
 inline IPC IpcSetApc(IPC ipc, APC apc) 
 {
-	assert(!ipc.FIsEmpty());
 	assert(apc >= APC::Pawn && apc <= APC::King);
 	return ipc.SetApc(apc); 
 }
@@ -298,7 +296,8 @@ enum class GS {
 	DrawDead,
 	DrawAgree,
 	Draw3Repeat,
-	Draw50Move
+	Draw50Move,
+	Canceled
 };
 
 enum {
@@ -309,13 +308,24 @@ enum {
 	csBlackQueen = 0x08
 };
 
-/* pack the castle state of a one side into 2 bits for storing in the MV */
+
+/*	CsPackColor
+ *
+ *	Packs castle state (king- and queen- side) for the given color into 2 bits for 
+ *	saving in the MV undo 
+ */
 inline int CsPackColor(int csUnpack, CPC cpc)
 {
 	int csPack = csUnpack >> (BYTE)cpc;
 	return ((csPack>>1)&2) | (csPack&1);
 }
 
+
+/*	CsUnpackColor
+ *
+ *	Unpack castle state packed by CsPackColor. When undoing, this can be or-ed into 
+ *	board's regular castle state, because undoing can never remove castle rights 
+ */
 inline int CsUnpackColor(int csPack, CPC cpc)
 {
 	int csUnpack = (csPack&1) | ((csPack&2)<<1);
@@ -323,13 +333,22 @@ inline int CsUnpackColor(int csPack, CPC cpc)
 }
 
 
+/*	RankPromoteFromCpc
+ *
+ *	Returns the rank that pawns promote on for the given color; i.e., Rank 7 for
+ *	white, rank 0 for black.
+ */
 inline int RankPromoteFromCpc(CPC cpc)
 {
-	/* white -> 7, black -> 0 */
 	return ~-(int)cpc & 7;
 }
 
 
+/*	RankBackFromCpc
+ *
+ *	Returns the back rank for the given color, i.e., Rank 0 for white, rank
+ *	7 for black.
+ */
 inline int RankBackFromCpc(CPC cpc)
 {
 	/* white -> 0, black -> 7 */
@@ -337,20 +356,13 @@ inline int RankBackFromCpc(CPC cpc)
 }
 
 
-inline int RankPawnFromCpc(CPC cpc)
-{
-	/* white -> 1, black -> 6 */
-	return RankBackFromCpc(cpc) ^ 1;
-}
-
-
 /*	RankInitPawnFromCpc
  *
- *	Initial rank pawns of the given color occupy. Either 1 or 6.
+ *	Initial rank of pawns for the given color. Either 1 or 6.
  */
 inline int RankInitPawnFromCpc(CPC cpc)
 {
-	return (-(int)cpc ^ 1) & 7;
+	return RankBackFromCpc(cpc) ^ 1;
 }
 
 
@@ -363,7 +375,6 @@ inline int DsqPawnFromCpc(CPC cpc)
 	/* white -> 16, black -> -16 */
 	return 16 - ((int)cpc << 5);
 }
-
 
 
 /*
@@ -512,6 +523,14 @@ public:
 };
 
 
+/*
+ *
+ *	TKMV enumeration
+ * 
+ *	Move tokens for parsing move text
+ *
+ */
+
 
 enum class TKMV {
 	Error,
@@ -547,8 +566,6 @@ enum class TKMV {
 };
 
 
-
-
 /*
  *
  *	BDG class
@@ -562,7 +579,7 @@ enum class TKMV {
 class BDG : public BD
 {
 public:
-	GS gs;	// game state
+	GS gs;
 	CPC cpcToMove;
 	vector<MV> rgmvGame;	// the game moves that resulted in bd board state
 	int imvCur;
@@ -576,21 +593,15 @@ public:
 
 	void NewGame(void);
 
-	void InitFEN(const WCHAR* szFen);
-	void InitFENSideToMove(const WCHAR*& sz);
-	void InitFENCastle(const WCHAR*& sz);
-	void InitFENEnPassant(const WCHAR*& sz);
-	void InitFENHalfmoveClock(const WCHAR*& sz);
-	void InitFENFullmoveCounter(const WCHAR*& sz);
-
 	void GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const;
 	void GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const;
+	
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);
+	
 	GS GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const;
 	void SetGameOver(const vector<MV>& rgmv, const RULE& rule);
-
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int cmvDraw) const;
@@ -602,6 +613,14 @@ public:
 	bool FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const;
 	bool FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
+
+	void InitFEN(const WCHAR* szFen);
+	void InitFENSideToMove(const WCHAR*& sz);
+	void InitFENCastle(const WCHAR*& sz);
+	void InitFENEnPassant(const WCHAR*& sz);
+	void InitFENHalfmoveClock(const WCHAR*& sz);
+	void InitFENFullmoveCounter(const WCHAR*& sz);
+
 	int ParseMv(const char*& pch, MV& mv) const;
 	int ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const;
 	int ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
@@ -637,7 +656,6 @@ public:
 };
 
 
-
 /*
  *
  *	TK class
@@ -647,61 +665,39 @@ public:
  * 
  */
 
-static const string szNull("");
+
 class TK
 {
 	int tk;
 public:
-	operator int() const { return tk; }
-	TK(int tk) : tk(tk) { }
-	virtual ~TK(void) { }
-
-	virtual bool FIsString(void) const {
-		return false;
-	}
-
-	virtual bool FIsInteger(void) const {
-		return false;
-	}
-
-	virtual const string& sz(void) const {
-		return szNull;
-	}
+	TK(int tk);
+	virtual ~TK(void);
+	operator int() const;
+	virtual bool FIsString(void) const;
+	virtual bool FIsInteger(void) const;
+	virtual const string& sz(void) const;
 };
+
 
 class TKSZ : public TK
 {
 	string szToken;
 public:
-	TKSZ(int tk, const string& sz) : TK(tk), szToken(sz) { }
-	TKSZ(int tk, const char* sz) : TK(tk) {
-		szToken = string(sz);
-	}
-
-	virtual ~TKSZ(void) { }
-
-	virtual bool FIsString(void) const {
-		return true;
-	}
-
-	virtual const string& sz(void) const {
-		return szToken;
-	}
+	TKSZ(int tk, const string& sz);
+	TKSZ(int tk, const char* sz);
+	virtual ~TKSZ(void);
+	virtual bool FIsString(void) const;
+	virtual const string& sz(void) const;
 };
+
 
 class TKW : public TK
 {
 	int wToken;
 public:
-	TKW(int tk, int w) : TK(tk), wToken(w) { }
-
-	virtual bool FIsInteger(void) const {
-		return true;
-	}
-
-	virtual int w(void) const {
-		return wToken;
-	}
+	TKW(int tk, int w);
+	virtual bool FIsInteger(void) const;
+	virtual int w(void) const;
 };
 
 
@@ -722,76 +718,20 @@ protected:
 	istream& is;
 	TK* ptkPrev;
 
-	/*	ISTK::ChNext
-	 *
-	 *	Reads the next character from the input stream. Returns null character at
-	 *	EOF, and coallesces end of line characters into \n for all platforms.
-	 */
-	char ChNext(void)
-	{
-		if (is.eof())
-			return '\0';
-		char ch;
-		if (!is.get(ch))
-			return '\0';
-		if (ch == '\r') {
-			if (is.peek() == '\n')
-				is.get(ch);
-			li++;
-			return '\n';
-		}
-		else if (ch == '\n')
-			li++;
-		return ch;
-	}
-
-	void UngetCh(char ch)
-	{
-		assert(ch != '\0');
-		if (ch == '\n')
-			li--;
-		is.unget();
-	}
-
-
-	inline bool FIsWhite(char ch) const
-	{
-		return ch == ' ' || ch == '\t';
-	}
-
-	inline bool FIsEnd(char ch) const
-	{
-		return ch == '\0';
-	}
-
-	bool FIsDigit(char ch) const
-	{
-		return ch >= '0' && ch <= '9';
-	}
-
-	virtual bool FIsSymbol(char ch, bool fFirst) const
-	{
-		if (ch >= 'a' && ch <= 'z')
-			return true;
-		if (ch >= 'A' && ch <= 'Z')
-			return true;
-		if (ch == '_')
-			return true;
-		if (fFirst)
-			return false;
-		if (ch >= '0' && ch <= '9')
-			return true;
-		return false;
-	}
-
+	char ChNext(void);
+	void UngetCh(char ch);
+	bool FIsWhite(char ch) const;
+	bool FIsEnd(char ch) const;
+	bool FIsDigit(char ch) const;
+	virtual bool FIsSymbol(char ch, bool fFirst) const;
 
 public:
-	ISTK(istream& is) : is(is), li(1), ptkPrev(NULL) { }
-	~ISTK(void) { }
-	operator bool() { return (bool)is; }
+	ISTK(istream& is);
+	virtual ~ISTK(void);
+	operator bool();
 	virtual TK* PtkNext(void) = 0;
-	void UngetTk(TK* ptk) { ptkPrev = ptk;  }
-	int line(void) const { return li; }
+	void UngetTk(TK* ptk);
+	int line(void) const;
 };
 
 
@@ -842,23 +782,11 @@ class ISTKPGN : public ISTK
 protected:
 	bool fWhiteSpace;
 
-	virtual bool FIsSymbol(char ch, bool fFirst) const
-	{
-		if (ch >= 'a' && ch <= 'z')
-			return true;
-		if (ch >= 'A' && ch <= 'Z')
-			return true;
-		if (ch >= '0' && ch <= '9')
-			return true;
-		if (fFirst)
-			return false;
-		return ch == '_' || ch == '+' || ch == '#' || ch == '=' || ch == ':' || ch == '-' || ch == '/';
-	}
-
+	virtual bool FIsSymbol(char ch, bool fFirst) const;
 	char ChSkipWhite(void);
 
 public:
-	ISTKPGN(istream& is) : ISTK(is), fWhiteSpace(false) { }
-	void WhiteSpace(bool fReturn) { fWhiteSpace = fReturn; }
+	ISTKPGN(istream& is);
+	void WhiteSpace(bool fReturn);
 	virtual TK* PtkNext(void);
 };

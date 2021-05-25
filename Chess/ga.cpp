@@ -8,7 +8,6 @@
  * 
  */
 
-#include "Chess.h"
 #include "ga.h"
 
 
@@ -274,7 +273,7 @@ void GA::Layout(void)
 	uiti.SetBounds(rcf);
 
 	rcf.left = rcf.right + 10.0f;
-	rcf.bottom = rcfBounds.bottom - 60.0f;
+	rcf.bottom = rcfBounds.bottom - 100.0f;
 	rcf.right = rcf.left + rcf.DyfHeight();
 	uibd.SetBounds(rcf);
 

@@ -6,8 +6,9 @@
  * 
  */
 
-#include "chess.h"
-#include <commdlg.h>
+#include "app.h"
+#include "ga.h"
+#include "Resources/Resource.h"
 
 
 /*  AboutDlgProc

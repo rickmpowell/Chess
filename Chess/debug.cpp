@@ -7,7 +7,7 @@
  */
 
 #include "debug.h"
-#include "Resource.h"
+#include "resources/Resource.h"
 
 bool fValidate = true;
 

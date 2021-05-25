@@ -349,7 +349,7 @@ public:
 		return popcount(grf);
 	}
 
-	inline SQ SqLow(void) const
+	inline SQ sqLow(void) const
 	{
 		int bit = bitscan(grf);
 		return SQ(bit >> 3, bit & 7);

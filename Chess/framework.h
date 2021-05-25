@@ -9,6 +9,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <CommCtrl.h>
+#include <commdlg.h>
 
 #include <d2d1_1.h>
 #include <d2d1_1helper.h>
