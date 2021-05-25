@@ -117,7 +117,7 @@ void BD::InitFENPieces(const WCHAR*& szFEN)
 			sq += *pch - L'0'; 
 			break;
 		default:
-			/* TODO: illegal character in the string */
+			/* TODO: illegal character in the string - report error */
 			assert(false);
 			return;
 		}
@@ -784,47 +784,31 @@ void BD::GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 
 /*	BD::GenRgmvCastle
  *
- *	Generates the legal castle moves for the king at sq.
- *
- *	Note that this function only adds moves that are fully legal, and it
- *	does not require a separate check test afterwards.
+ *	Generates the legal castle moves for the king at sq. Checks that the king is in
+ *	check and intermediate squares are not under attack, but does not check the final 
+ *	king destination.
  */
 void BD::GenRgmvCastle(vector<MV>& rgmv, SQ sqKing) const
 {
-	IPC ipcKing = mpsqipc[sqKing];
-	if (FCanCastle(ipcKing.cpc(), csKing))
-		GenRgmvCastleSide(rgmv, sqKing, fileKingRook, 1);
-	if (FCanCastle(ipcKing.cpc(), csQueen))
-		GenRgmvCastleSide(rgmv, sqKing, fileQueenRook, -1);
-}
+	/* this code is a little contorted in order to avoid calling FSqAttacked (which 
+	   is an expensive test) as much as possible. */
 
-
-/*	GenRgmvCastleSide
- *
- *	Checks for valid castle move on the given side. Move stored in rgmv.
- *	sqKing is the square the king is on, and we assume the caller checked
- *	that the king has not already moved. This routine checks that the rook
- *	has not already moved.
- * 
- *	Caller is responsible for verifying the king is not in check, or that
- *	the intermediate squares do not pass through check.
- */
-void BD::GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) const
-{
-	/* all spaces between king and rook must be empty */
-	int sq = sqKing;
-	int sqRook = SQ(sqKing.rank(), fileRook);
-	for (sq += dsq; sq != sqRook; sq += dsq) {
-		if (!FIsEmpty(sq))
+	CPC cpcKing = mpsqipc[sqKing].cpc();
+	CPC cpcOpp = ~cpcKing;
+	bool fMaybeInCheck = true;	
+	if (FCanCastle(cpcKing, csKing) && FIsEmpty(sqKing+1) && FIsEmpty(sqKing+2)) {
+		if (FSqAttacked(cpcOpp, sqKing))
 			return;
+		fMaybeInCheck = false;
+		if (!FSqAttacked(cpcOpp, sqKing+1))
+			AddRgmvMv(rgmv, MV(sqKing, sqKing+2));
 	}
-	CPC cpcOpp = ~CpcFromSq(sqKing);
-	/* TODO: it's probably possible to do a faster range test to see if some pieces
-	 * attack this full range, rather than go through each piece 4 times */
-	if (FSqAttacked(cpcOpp, sqKing) || FSqAttacked(cpcOpp, sqKing + dsq))
-		return;
-	assert(ApcFromSq(sq) == APC::Rook);
-	AddRgmvMv(rgmv, MV(sqKing, sqKing + 2 * dsq));
+	if (FCanCastle(cpcKing, csQueen) && FIsEmpty(sqKing-1) && FIsEmpty(sqKing-2) && FIsEmpty(sqKing-3)) {
+		if (fMaybeInCheck && FSqAttacked(cpcOpp, sqKing)) 
+			return;
+		if (!FSqAttacked(cpcOpp, sqKing-1))
+			AddRgmvMv(rgmv, MV(sqKing, sqKing-2));
+	}
 }
 
 

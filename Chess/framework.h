@@ -1,11 +1,14 @@
-// header.h : include file for standard system include files,
-// or project specific include files
-//
-
+/*
+ *
+ *	framework.h
+ * 
+ *	Standard windows includes, some simple utility classes
+ * 
+ */
 
 #pragma once
 
-#include "targetver.h"
+#include <sdkddkver.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <CommCtrl.h>
@@ -60,6 +63,7 @@ extern bool fValidate;
  * 
  */
 
+
 class PTF : public D2D1_POINT_2F {
 public:
 	inline PTF() { }
@@ -95,6 +99,7 @@ public:
  * 
  */
 
+
 class SIZF : public D2D1_SIZE_F
 {
 public:
@@ -108,6 +113,7 @@ public:
 	}
 };
 
+
 /*
  *
  *	RCF class
@@ -115,6 +121,7 @@ public:
  *	D2D1 floating point rectangle object, with a few convenience features built in.
  *
  */
+
 
 class RCF : public D2D1_RECT_F {
 public:
@@ -281,6 +288,7 @@ public:
 	}
 };
 
+
 /*
  *
  *	ELLF convenience class
@@ -288,6 +296,7 @@ public:
  *	D2D1 ellipse class with some convenience features
  * 
  */
+
 
 class ELLF : public D2D1_ELLIPSE
 {
@@ -314,6 +323,14 @@ public:
 	}
 };
 
+
+/*
+ *
+ *	Hungarianize some commonly used system types
+ * 
+ */
+
+
 typedef ID2D1DeviceContext DC;
 typedef ID2D1Factory1 FACTD2;
 typedef IDWriteFactory1 FACTDWR;
@@ -326,8 +343,13 @@ typedef ID2D1PathGeometry GEOM;
 typedef IDXGISwapChain1 SWCH;
 
 
-#define CArray(rg) (sizeof(rg) / sizeof((rg)[0]))
+/*
+ *
+ *	Useful C/C++ extensions
+ * 
+ */
 
+#define CArray(rg) (sizeof(rg) / sizeof((rg)[0]))
 
 template<class Interface>
 inline void SafeRelease(Interface** ppi)

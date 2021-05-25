@@ -44,7 +44,7 @@ MV PL::MvGetNext(void)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 1.00e+6f;
+	const float cmvSearch = 10.00e+6f;
 	const float fracAlphaBeta = 3.0f; // cuts moves we analyze by this factor
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
 	int depthMax = (int)round(2.0f*log(cmvSearch) / (log(size2)-log(2.0f*fracAlphaBeta)));

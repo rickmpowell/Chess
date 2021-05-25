@@ -169,7 +169,6 @@
     <ClInclude Include="ml.h" />
     <ClInclude Include="pl.h" />
     <ClInclude Include="Resources\Resource.h" />
-    <ClInclude Include="targetver.h" />
     <ClInclude Include="ti.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="uibd.h" />
