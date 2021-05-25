@@ -281,6 +281,11 @@ UIGO::UIGO(UIML* puiml, bool fVisible) : UI(puiml, fVisible), ga(puiml->ga)
 }
 
 
+/*	UIGO::SizfLayoutPreferred
+ *
+ *	Returns the preferred height of the UI element. Used by our parent
+ *	to layout the UIML. 
+ */
 SIZF UIGO::SizfLayoutPreferred(void)
 {
 	SIZF sizf = SizfSz(L"A", ptxText);
@@ -351,7 +356,7 @@ void UIGO::Draw(const RCF* prcfUpdate)
 	}
 
 	const WCHAR* szResult = L"Draw";
-	const WCHAR* szScore = L"\x00bd-\x00bd";
+	const WCHAR* szScore = L"\x00bd-\x00bd";	/* 1/2-1/2 */
 	if (cpcWin == CPC::White) {
 		szResult = L"White Wins";
 		szScore = L"1-0";
@@ -503,7 +508,7 @@ SIZF UIML::SizfLayoutPreferred(void)
 	dyfList = SizfSz(L"0", ptxList).height;
 
 	mpcoldxf[0] = SizfSz(L"200.", ptxList).width + 4.0f;
-	mpcoldxf[1] = mpcoldxf[2] = SizfSz(L"\x2659" "e" "\x00d7" "d6 e.p.+", ptxList).width;
+	mpcoldxf[1] = mpcoldxf[2] = SizfSz(L"\x2659" L"e" L"\x00d7" L"d6" L"\x202f" L"e.p.+", ptxList).width;
 	mpcoldxf[3] = dxyfScrollBarWidth;
 
 	return SIZF(XfFromCol(4), -1.0f);

@@ -57,10 +57,10 @@ public:
 	static BRS* pbrBlack;
 	static BRS* pbrAnnotation;
 	static BRS* pbrHilite;
-	static TX* ptxLabel;
 	static BMP* pbmpPieces;
 	static GEOM* pgeomCross;
 	static GEOM* pgeomArrowHead;
+	TX* ptxLabel;
 
 	CPC cpcPointOfView;
 	RCF rcfSquares;
@@ -84,6 +84,8 @@ public:
 	~UIBD(void);
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
 
 	void NewGame(void);
 	void MakeMv(MV mv, SPMV spmv);

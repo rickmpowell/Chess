@@ -90,14 +90,12 @@ FinishCastle:
 	   destination square */
 	if (!FIsEmpty(sqCapture))
 		*pch++ = fPretty ? L'\x00d7' : 'x';
-	else if (fPretty)
-		/* *pch++ = L'\x2013' */;
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
 	if (apc == APC::Pawn && sqTo == sqEnPassant) {
 		if (fPretty)
-			*pch++ = L' ';
+			*pch++ = L'\x202f';
 		*pch++ = L'e';
 		*pch++ = L'.';
 		*pch++ = L'p';
@@ -113,7 +111,7 @@ FinishCastle:
 	}
 
 FinishMove:
-	*pch++ = 0;
+	*pch = 0;
 	return wstring(sz);
 }
 

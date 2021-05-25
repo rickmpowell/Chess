@@ -1,3 +1,5 @@
+  When writing PGN files, don't use P (no P for regular moves, column for captures)
+  Not redrawing board after dragging to an illegal move
   Resize ML and TI based on font metrics
   Test with alternate fonts
   Tooltips don't resize for shorter text
@@ -6,7 +8,6 @@
   The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
   Use bit fields to layout MV
   Verify IPC is layed out in the byte in the smart way
-  Get font metrics to layout multi-line text
   Test: Re-organize PGN test files to be in sub-directories
   Bug: File/Open doesn't redraw board or scroll ML at end of the load
   Bug: Dragging window edges doesn't resize game interior (dragging corners works)
@@ -81,9 +82,9 @@
   ML: Implement selection in UIML
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
-  UIBD: Scale text on labels to size of board
-  UI: Add shadows on screen panels
-  ML: Modify move list to do real algebraic notation with full optimzations
+* UIBD: Scale text on labels to size of board
+* Get font metrics to layout multi-line text
+* ML: Modify move list to do real algebraic notation with full optimzations
 * Use unicode figures in move list
 * Size tooltips to the size of the text 
 * UI: Add tooltips for buttons

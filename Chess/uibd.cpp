@@ -25,7 +25,6 @@ BRS* UIBD::pbrDark;
 BRS* UIBD::pbrBlack;
 BRS* UIBD::pbrAnnotation;
 BRS* UIBD::pbrHilite;
-TX* UIBD::ptxLabel;
 BMP* UIBD::pbmpPieces;
 GEOM* UIBD::pgeomCross;
 GEOM* UIBD::pgeomArrowHead;
@@ -72,13 +71,6 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
 	pdc->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
 
-	/* fonts */
-
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		16.0f, L"",
-		&ptxLabel);
-
 	/* bitmaps */
 
 	pbmpPieces = PbmpFromPngRes(idbPieces, pdc, pfactwic);
@@ -104,10 +96,25 @@ void UIBD::DiscardRsrcClass(void)
 	SafeRelease(&pbrBlack);
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
-	SafeRelease(&ptxLabel);
 	SafeRelease(&pbmpPieces);
 	SafeRelease(&pgeomCross);
 	SafeRelease(&pgeomArrowHead);
+}
+
+void UIBD::CreateRsrc(void)
+{
+	if (ptxLabel)
+		return;
+
+	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		dxyfSquare/4.0f, L"",
+		&ptxLabel);
+}
+
+void UIBD::DiscardRsrc(void)
+{
+	SafeRelease(&ptxLabel);
 }
 
 
@@ -119,7 +126,7 @@ UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
 		cpcPointOfView(CPC::White),
 		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
 		angle(0.0f),
-		dyfLabel(18.0f)	// TODO: this is a font attribute
+		dyfLabel(0)
 {
 	pbtnRotateBoard = new BTNCH(this, cmdRotateBoard, RCF(0, 0, 0, 0), L'\x2b6f');
 }
@@ -148,6 +155,10 @@ void UIBD::Layout(void)
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
 	rcfSquares.Inflate(-dxyf, -dxyf);
 	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
+	
+	DiscardRsrc();
+	CreateRsrc();
+	dyfLabel = SizfSz(L"8", ptxLabel).height;
 }
 
 
