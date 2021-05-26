@@ -1,4 +1,6 @@
-  Debug: Minimizing window asserts
+  UIBD: Scale outline on resize
+  UIBD: When board gets small, stop displaying borders
+  Scale buttons to size of window
   UIDB: rotating board clips to board rectangle
   UIPL: scale long player names in UITI and UIML
   UITI: Put name of our program with the logo
@@ -88,6 +90,7 @@
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* Bug: Minimizing window asserts
 * ML: Implement selection in UIML
 * Build: Move non-code resources into a subdirectory
 * ML: clip long player names in UITI and UIML

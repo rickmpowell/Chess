@@ -269,21 +269,25 @@ void GA::PresentSwch(void) const
  */
 void GA::Layout(void)
 {
-	RCF rcf(10.0f, 10.0f, 220.0f, 240.0f);
+	float dxyfMargin = 10.0f;
+
+	RCF rcf(dxyfMargin, dxyfMargin, dxyfMargin+210.0f, dxyfMargin+240.0f);
 	uiti.SetBounds(rcf);
 
-	rcf.left = rcf.right + 10.0f;
+	rcf.left = rcf.right + dxyfMargin;
 	rcf.bottom = rcfBounds.bottom - 100.0f;
+	if (rcf.DyfHeight() < 200.0f)
+		rcf.bottom = rcf.top + 200.0f;
 	rcf.right = rcf.left + rcf.DyfHeight();
 	uibd.SetBounds(rcf);
 
-	rcf.left = rcf.right + 10.0f;
+	rcf.left = rcf.right + dxyfMargin;
 	SIZF sizf = uiml.SizfLayoutPreferred();
 	rcf.right = rcf.left + sizf.width;
 	uiml.SetBounds(rcf);
 
-	rcf.left = rcf.right + 10.0f;
-	rcf.right = rcf.left + 220.0f;
+	rcf.left = rcf.right + dxyfMargin;
+	rcf.right = rcf.left + 240.0f;
 	uidb.SetBounds(rcf);
 }
 

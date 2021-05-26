@@ -150,7 +150,13 @@ UIBD::~UIBD(void)
 void UIBD::Layout(void)
 {
 	rcfSquares = RcfInterior();
-	pbtnRotateBoard->SetBounds(RCF(rcfSquares.left+3.0f, rcfSquares.bottom - 30.0f, rcfSquares.left + 33.0f, rcfSquares.bottom));
+	RCF rcf;
+	float dxyfBtn = dxyfSquare * 0.3f;
+	rcf.left = rcfSquares.left + 1;
+	rcf.bottom = rcfSquares.bottom - 1;
+	rcf.right = rcf.left + dxyfBtn;
+	rcf.top = rcf.bottom - dxyfBtn;
+	pbtnRotateBoard->SetBounds(rcf);
 	dxyfMargin = rcfBounds.DyfHeight() / 16.0f;
 	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
 	rcfSquares.Inflate(-dxyf, -dxyf);
