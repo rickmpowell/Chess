@@ -178,10 +178,12 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 		break;
 	}
 
-	if (!fPretty)
-		*pch++ = mpapcch[apc];
-	else
-		*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
+	if (apc != APC::Pawn) {
+		if (!fPretty)
+			*pch++ = mpapcch[apc];
+		else
+			*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
+	}
 
 	/* for ambiguous moves, we need to add various from square qualifiers depending
 	 * on where the ambiguity is */
@@ -195,6 +197,8 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 			*pch++ = L'1' + sqFrom.rank();
 		}
 	}
+	else if (apc == APC::Pawn && !FIsEmpty(sqCapture))
+		*pch++ = L'a' + sqFrom.file();
 
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
