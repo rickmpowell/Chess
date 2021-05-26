@@ -6,70 +6,68 @@
  * 
  */
 #include "ga.h"
-#include <fileapi.h>
 
 
 
 void GA::SavePGNFile(const WCHAR szFile[])
 {
-	HANDLE hf = CreateFileW(szFile, 
-		GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hf == INVALID_HANDLE_VALUE)
+	ofstream os(szFile, ios_base::out);
+	if (os.fail())
 		return;
 
-	SavePGNHeaders(hf);
-	WriteSz(hf, "\n");
-	SavePGNMoveList(hf);
+	SavePGNHeaders(os);
+	os << endl;
+	SavePGNMoveList(os);
 
-	CloseHandle(hf);
+	os.close();
 }
 
 
-void GA::SavePGNHeaders(HANDLE hf)
+void GA::SavePGNHeaders(ofstream& os)
 {
-	SavePGNHeader(hf, "Event", "Casual Game");
-	SavePGNHeader(hf, "Site", "Local Computer");
-	SavePGNHeader(hf, "Round", "1");
+	SavePGNHeader(os, "Event", "Casual Game");
+	SavePGNHeader(os, "Site", "Local Computer");
+	SavePGNHeader(os, "Round", "1");
 
 	/* TODO: real date */
-	SavePGNHeader(hf, "Date", "2021.??.??");
+	SavePGNHeader(os, "Date", "2021.??.??");
 
 	/* TODO: real player names */
-	SavePGNHeader(hf, "White", "White");
-	SavePGNHeader(hf, "Black", "Black");
+	SavePGNHeader(os, "White", "White");
+	SavePGNHeader(os, "Black", "Black");
 
 	switch (bdg.gs) {
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		SavePGNHeader(hf, "Result", "0-1");
+		SavePGNHeader(os, "Result", "0-1");
 		break;
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		SavePGNHeader(hf, "Result", "1-0");
+		SavePGNHeader(os, "Result", "1-0");
 		break;
 	case GS::Playing:
 		break;
 	default:
-		SavePGNHeader(hf, "Result", "1/2-1/2");
+		SavePGNHeader(os, "Result", "1/2-1/2");
 		break;
 	}
 }
 
 
-void GA::SavePGNHeader(HANDLE hf, const string& szTag, const string& szVal)
+void GA::SavePGNHeader(ofstream& os, const string& szTag, const string& szVal)
 {
-	WriteSz(hf, "[");
-	WriteSz(hf, szTag);
-	WriteSz(hf, " ");
+	WriteSz(os, "[");
+	WriteSz(os, szTag);
+	WriteSz(os, " ");
 	/* TODO: escape quote marks? */
-	WriteSz(hf, string("\"") + szVal + "\"");
-	WriteSz(hf, "]\n");
+	WriteSz(os, string("\"") + szVal + "\"");
+	WriteSz(os, "]\n");
 }
 
 
-void GA::SavePGNMoveList(HANDLE hf)
+void GA::SavePGNMoveList(ofstream& os)
 {
 	BDG bdgSave;
 	bdgSave.NewGame();
@@ -78,10 +76,10 @@ void GA::SavePGNMoveList(HANDLE hf)
 		if (imv % 2 == 0) {
 			string sz = to_string(imv / 2 + 1);
 			sz += ". ";
-			WriteSz(hf, sz);
+			WriteSz(os, sz);
 		}
 		wstring wsz = bdgSave.SzDecodeMv(mv, false);
-		WriteSz(hf, bdgSave.SzFlattenMvSz(wsz) + " ");
+		WriteSz(os, bdgSave.SzFlattenMvSz(wsz) + " ");
 		bdgSave.MakeMv(mv);
 	}
 
@@ -91,26 +89,25 @@ void GA::SavePGNMoveList(HANDLE hf)
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		WriteSz(hf, "0-1");
+		WriteSz(os, "0-1");
 		break;
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		WriteSz(hf, "1-0");
+		WriteSz(os, "1-0");
 		break;
 	case GS::Playing:
 		break;
 	default:
-		WriteSz(hf, "1/2-1/2");
+		WriteSz(os, "1/2-1/2");
 		break;
 	}
 }
 
 
-void GA::WriteSz(HANDLE hf, const string& sz)
+void GA::WriteSz(ofstream& os, const string& sz)
 {
-	DWORD cb;
-	::WriteFile(hf, sz.c_str(), (DWORD)sz.size(), &cb, NULL);
+	os << sz;
 }
 
 

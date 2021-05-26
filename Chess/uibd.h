@@ -53,7 +53,7 @@ public:
 
 	CPC cpcPointOfView;
 	RCF rcfSquares;
-	float dxyfSquare, dxyfBorder, dxyfMargin;
+	float dxyfSquare, dxyfBorder, dxyfMargin, dxyfOutline;
 	float dyfLabel;
 
 	BTN* pbtnRotateBoard;

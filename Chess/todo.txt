@@ -1,4 +1,6 @@
-  UIBD: Scale outline on resize
+  Is there a C++ way to enumerate files in a directory for Test?
+  Need to add small cell margins in move list
+  UIBD: Scale outline width on resize
   UIBD: When board gets small, stop displaying borders
   Scale buttons to size of window
   UIDB: rotating board clips to board rectangle
@@ -6,7 +8,6 @@
   UITI: Put name of our program with the logo
   UITI Layout using font metrics
   Save: Save our game PGN log file in the directory of the .exe 
-  Save: When writing PGN files, don't use P (no P for regular moves, column for captures)
   Test with alternate fonts
   Tooltips don't resize for shorter text (only with FreeSerif?)
   UIBD: Dragging pieces outside board clips the dragged piece
@@ -90,6 +91,8 @@
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* Convert save code to use streams
+* Save: When writing PGN files, don't use P (no P for regular moves, column for captures)
 * Bug: Minimizing window asserts
 * ML: Implement selection in UIML
 * Build: Move non-code resources into a subdirectory

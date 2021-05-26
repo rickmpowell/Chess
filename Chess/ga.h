@@ -131,10 +131,10 @@ public:
 
 	void OpenPGNFile(const WCHAR szFile[]);
 	void SavePGNFile(const WCHAR szFile[]);
-	void SavePGNHeaders(HANDLE hf);
-	void SavePGNHeader(HANDLE hf, const string& szTag, const string& szVal);
-	void SavePGNMoveList(HANDLE hf);
-	void WriteSz(HANDLE hf, const string& sz);
+	void SavePGNHeaders(ofstream& os);
+	void SavePGNHeader(ofstream& os, const string& szTag, const string& szVal);
+	void SavePGNMoveList(ofstream& os);
+	void WriteSz(ofstream& os, const string& sz);
 
 	void UndoTest(void);
 	int PlayUndoPGNFile(const WCHAR* szFile);

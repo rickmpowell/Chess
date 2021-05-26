@@ -412,7 +412,7 @@ void UIML::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 	/* fonts */
 
 	pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20.0f, L"",
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
 		&ptxList);
 
 	UIGC::CreateRsrcClass(pdc, pfactdwr, pfactwic);

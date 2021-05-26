@@ -124,7 +124,7 @@ void UIBD::DiscardRsrc(void)
  */
 UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
 		cpcPointOfView(CPC::White),
-		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f),
+		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f), dxyfOutline(4.0f),
 		angle(0.0f),
 		ptxLabel(NULL), dyfLabel(0)
 {
@@ -149,22 +149,34 @@ UIBD::~UIBD(void)
  */
 void UIBD::Layout(void)
 {
+	DiscardRsrc();
+	CreateRsrc();
+
 	rcfSquares = RcfInterior();
-	RCF rcf;
-	float dxyfBtn = dxyfSquare * 0.3f;
-	rcf.left = rcfSquares.left + 1;
-	rcf.bottom = rcfSquares.bottom - 1;
-	rcf.right = rcf.left + dxyfBtn;
-	rcf.top = rcf.bottom - dxyfBtn;
-	pbtnRotateBoard->SetBounds(rcf);
+
 	dxyfMargin = rcfBounds.DyfHeight() / 16.0f;
-	float dxyf = dxyfMargin + 3.0f * dxyfBorder;
+	if (dxyfMargin > 15.0f)
+		dxyfBorder = dxyfMargin / 30.0f;
+	else
+		dxyfMargin = dxyfBorder = 0;
+
+	/* these thin lines need to be integer values or they look like shit */
+	dxyfOutline = roundf(2.0f * dxyfBorder);
+	dxyfBorder = roundf(dxyfBorder);
+
+	float dxyf = dxyfMargin + dxyfOutline + dxyfBorder;
 	rcfSquares.Inflate(-dxyf, -dxyf);
 	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
 	
-	DiscardRsrc();
-	CreateRsrc();
 	dyfLabel = SizfSz(L"8", ptxLabel).height;
+
+	/* position the rotation button */
+
+	RCF rcf = RcfInterior().Inflate(-dxyfBorder, -dxyfBorder);
+	float dxyfBtn = dxyfSquare * 0.33f;
+	rcf.top = rcf.bottom - dxyfBtn;
+	rcf.right = rcf.left + dxyfBtn;
+	pbtnRotateBoard->SetBounds(rcf);
 }
 
 
@@ -257,10 +269,12 @@ void UIBD::DrawMargins(void)
 {
 	RCF rcf = RcfInterior();
 	FillRcf(rcf, pbrLight);
-	rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
-	FillRcf(rcf, pbrDark);
-	rcf.Inflate(PTF(-2.0f * dxyfBorder, -2.0f * dxyfBorder));
-	FillRcf(rcf, pbrLight);
+	if (dxyfMargin > 0.0f) {
+		rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
+		FillRcf(rcf, pbrDark);
+		rcf.Inflate(PTF(-dxyfOutline, -dxyfOutline));
+		FillRcf(rcf, pbrLight);
+	}
 }
 
 
@@ -288,6 +302,8 @@ void UIBD::DrawSquares(void)
  */
 void UIBD::DrawLabels(void)
 {
+	if (dxyfMargin <= 0.0f)
+		return;
 	DrawFileLabels();
 	DrawRankLabels();
 }
@@ -303,7 +319,7 @@ void UIBD::DrawFileLabels(void)
 	szLabel[0] = L'a';
 	szLabel[1] = 0;
 	RCF rcf;
-	rcf.top = rcfSquares.bottom + 3.0f * dxyfBorder + dxyfBorder;
+	rcf.top = rcfSquares.bottom + dxyfBorder+dxyfOutline + dxyfBorder;
 	rcf.bottom = rcf.top + dyfLabel;
 	ptxLabel->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	for (int file = 0; file < fileMax; file++) {
@@ -322,13 +338,13 @@ void UIBD::DrawFileLabels(void)
  */
 void UIBD::DrawRankLabels(void)
 {
-	RCF rcf(dxyfMargin / 2, rcfSquares.top, dxyfMargin, 0);
+	RCF rcf(dxyfMargin/2, rcfSquares.top, dxyfMargin, 0);
 	TCHAR szLabel[2];
 	szLabel[0] = cpcPointOfView == CPC::Black ? '1' : '8';
 	szLabel[1] = 0;
 	for (int rank = 0; rank < rankMax; rank++) {
 		rcf.bottom = rcf.top + dxyfSquare;
-		DrawSz(wstring(szLabel), ptxLabel,
+		DrawSzCenter(wstring(szLabel), ptxLabel,
 			RCF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
 			pbrDark);
 		rcf.top = rcf.bottom;
