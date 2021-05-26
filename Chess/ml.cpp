@@ -379,7 +379,8 @@ void UIGO::Draw(const RCF* prcfUpdate)
  */
 
 
-UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this), dyfList(0)
+UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this),
+		dyfList(0), dxfCellMarg(4.0f), dyfCellMarg(1.0f)
 {
 	for (int col = 0; col < CArray(mpcoldxf); col++)
 		mpcoldxf[col] = 0.0f;
@@ -505,10 +506,10 @@ void UIML::Layout(void)
 
 SIZF UIML::SizfLayoutPreferred(void)
 {
-	dyfList = SizfSz(L"0", ptxList).height;
+	dyfList = SizfSz(L"0", ptxList).height + 2*dyfCellMarg;
 
-	mpcoldxf[0] = SizfSz(L"200.", ptxList).width + 4.0f;
-	mpcoldxf[1] = mpcoldxf[2] = SizfSz(L"\x2659" L"e" L"\x00d7" L"d6" L"\x202f" L"e.p.+", ptxList).width;
+	mpcoldxf[0] = dxfCellMarg+SizfSz(L"200.", ptxList).width;
+	mpcoldxf[1] = mpcoldxf[2] = dxfCellMarg + SizfSz(L"\x2659" L"e" L"\x00d7" L"d6" L"\x202f" L"e.p.+", ptxList).width;
 	mpcoldxf[3] = dxyfScrollBarWidth;
 
 	return SIZF(XfFromCol(4), -1.0f);
@@ -605,6 +606,9 @@ void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 {
 	wstring sz = bdg.SzMoveAndDecode(mv);
 	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	rcf.top += dyfCellMarg;
+	rcf.bottom -= dyfCellMarg;
+	rcf.left += dxfCellMarg;
 	DrawSz(sz, ptxList, rcf);
 }
 
@@ -616,9 +620,9 @@ void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
  */
 void UIML::DrawMoveNumber(RCF rcf, int imv)
 {
-	rcf.top += 4.0f;
-	rcf.bottom -= 2.0f;
-	rcf.right -= 4.0f;
+	rcf.top += 4.0f + dyfCellMarg;
+	rcf.bottom -= dyfCellMarg;
+	rcf.right -= dxfCellMarg;
 	WCHAR sz[8];
 	WCHAR* pch = PchDecodeInt(imv, sz);
 	*pch++ = L'.';

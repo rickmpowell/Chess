@@ -119,6 +119,7 @@ class UIML : public UIPS
 
 	static TX* ptxList;
 	float mpcoldxf[4];
+	float dxfCellMarg, dyfCellMarg;
 	float dyfList;
 
 	float XfFromCol(int col) const;

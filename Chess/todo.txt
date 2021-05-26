@@ -1,7 +1,5 @@
   Is there a C++ way to enumerate files in a directory for Test?
   Need to add small cell margins in move list
-  UIBD: Scale outline width on resize
-  UIBD: When board gets small, stop displaying borders
   Scale buttons to size of window
   UIDB: rotating board clips to board rectangle
   UIPL: scale long player names in UITI and UIML
@@ -91,6 +89,8 @@
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* UIBD: Scale outline width on resize
+* UIBD: When board gets small, stop displaying borders
 * Convert save code to use streams
 * Save: When writing PGN files, don't use P (no P for regular moves, column for captures)
 * Bug: Minimizing window asserts
