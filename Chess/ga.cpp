@@ -443,8 +443,7 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
 		EndGame();
 	if (spmvMove != SPMV::Hidden) {
 		uiml.UpdateContSize();
-		if (!uiml.FMakeVis((int)bdg.rgmvGame.size()-1))
-			Redraw();
+		uiml.SetSel(bdg.imvCur, spmvMove);
 	}
 }
 
@@ -457,8 +456,7 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
 void GA::UndoMv(void)
 {
 	uibd.UndoMv(spmv);
-	if (spmv != SPMV::Hidden)
-		uiml.Redraw();
+	uiml.SetSel(bdg.imvCur, spmv);
 }
 
 
@@ -470,8 +468,7 @@ void GA::UndoMv(void)
 void GA::RedoMv(void)
 {
 	uibd.RedoMv(spmv);
-	if (spmv != SPMV::Hidden)
-		uiml.Redraw();
+	uiml.SetSel(bdg.imvCur, spmv);
 }
 
 

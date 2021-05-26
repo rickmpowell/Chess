@@ -38,17 +38,6 @@ enum class HTBD
 
 
 
-/*
- *	Move speeds
- */
-enum class SPMV
-{
-	Hidden,
-	Fast,
-	Animate
-};
-
-
 class UIBD : public UIP
 {
 public:

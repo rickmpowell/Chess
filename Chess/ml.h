@@ -155,7 +155,7 @@ public:
 	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
 	void DrawMoveNumber(RCF rcf, int imv);
 	void DrawSel(int imv);
-	void SetSel(int imv);
+	void SetSel(int imv, SPMV spmv);
 
 	bool FMakeVis(int imv);
 	void UpdateContSize(void);

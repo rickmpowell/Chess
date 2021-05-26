@@ -68,9 +68,6 @@
     <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parsedecode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

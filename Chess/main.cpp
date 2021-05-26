@@ -412,8 +412,8 @@ void CMDLIST::Add(CMD* pcmd)
     size_t ccmd = rgpcmd.size();
     if (pcmd->icmd >= ccmd) {
         rgpcmd.resize(pcmd->icmd + 1);
-        for (size_t icmdT = ccmd; icmdT < pcmd->icmd+1; icmdT++)
-            rgpcmd[icmdT] = NULL;
+        for (size_t icmd = ccmd; icmd < pcmd->icmd+1; icmd++)
+            rgpcmd[icmd] = NULL;
     }
     assert(rgpcmd[pcmd->icmd] == NULL);
     rgpcmd[pcmd->icmd] = pcmd;
@@ -446,31 +446,37 @@ CMD::CMD(APP& app, int icmd) : app(app), icmd(icmd)
 {
 }
 
+
 int CMD::Execute(void)
 {
     return 0;
 }
+
 
 bool CMD::FEnabled(void) const
 {
     return true;
 }
 
+
 bool CMD::FCustomSzMenu(void) const
 {
     return false;
 }
+
 
 int CMD::IdsMenu(void) const
 {
     return 0;
 }
 
+
 wstring CMD::SzMenu(void) const
 {
     int ids = IdsMenu();
     return ids ? app.SzLoad(ids) : L"(error)";
 }
+
 
 void CMD::InitMenu(HMENU hmenu)
 {
@@ -479,6 +485,7 @@ void CMD::InitMenu(HMENU hmenu)
     int mf = MF_UNCHECKED | MF_ENABLED; 
     ::ModifyMenuW(hmenu, icmd, MF_BYCOMMAND | MF_STRING | mf, icmd, SzMenu().c_str());
 }
+
 
 wstring CMD::SzTip(void) const
 {
@@ -701,7 +708,6 @@ public:
 };
 
 
-
 /*
  *
  *  CMDSAVEPGN
@@ -780,6 +786,7 @@ public:
  * 
  */
 
+
 class CMDCOPY : public CMD
 {
 public:
@@ -801,6 +808,7 @@ public:
  *  FEN string, just sets up the board.
  *
  */
+
 
 class CMDPASTE : public CMD
 {
@@ -857,7 +865,10 @@ public:
  *
  *  CMDDEBUGPANEL
  * 
+ *  Command to toggle the debug panel on and off
+ * 
  */
+
 
 class CMDDEBUGPANEL : public CMD
 {

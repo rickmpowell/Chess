@@ -543,7 +543,7 @@ void UIML::SetPl(CPC cpc, PL* ppl)
 RCF UIML::RcfFromImv(int imv) const
 {
 	int rw = imv / 2;
-	float yf = RcfContent().top + rw * dyfList;
+	float yf = RcfContent().top + 4.0f + rw * dyfList;
 	return RcfFromCol(yf, 1 + (imv % 2));
 }
 
@@ -563,10 +563,13 @@ void UIML::DrawContent(const RCF& rcfCont)
 			RCF rcf = RcfFromCol(yfCont + (imv / 2) * dyfList, 0);
 			DrawMoveNumber(rcf, imv / 2 + 1);
 		}
-		if (!mv.FIsNil())
-			DrawAndMakeMv(RcfFromImv(imv), bdgT, mv);
+		if (!mv.FIsNil()) {
+			RCF rcf = RcfFromImv(imv);
+			if (imv == imvSel)
+				FillRcf(rcf, pbrHilite);
+			DrawAndMakeMv(rcf, bdgT, mv);
+		}
 	}
-	DrawSel(imvSel);
 }
 
 
@@ -574,10 +577,11 @@ void UIML::DrawContent(const RCF& rcfCont)
  *
  *	Sets the selection
  */
-void UIML::SetSel(int imv)
+void UIML::SetSel(int imv, SPMV spmv)
 {
 	imvSel = imv;
-	Redraw();
+	if (spmv != SPMV::Hidden)
+		Redraw();
 }
 
 
@@ -599,8 +603,6 @@ void UIML::DrawSel(int imv)
  */
 void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 {
-	rcf.top += 3.0f;
-	rcf.bottom -= 2.0f;
 	wstring sz = bdg.SzMoveAndDecode(mv);
 	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
 	DrawSz(sz, ptxList, rcf);

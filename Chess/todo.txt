@@ -1,4 +1,5 @@
-  Build: Move non-code resources into a subdirectory
+  Debug: Minimizing window asserts
+  UIDB: rotating board clips to board rectangle
   UIPL: scale long player names in UITI and UIML
   UITI: Put name of our program with the logo
   UITI Layout using font metrics
@@ -30,7 +31,7 @@
   Move PGN parsing code into open
   AI: need to discourage early queen development
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
-  AI: Draw candidate best moves on board
+  AI: annotate candidate best moves on board
   AI: interruptible
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
@@ -61,7 +62,7 @@
   UI for specifying player names
   UI for choosing computer player
   UIBD: There is a weird hit test on the left edge of the board that is hitting squares three squares over
-  TI: Hook up UI elements to real information from the GA
+  UITI: Hook up UI elements to real information from the GA
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
   UIBD: clips when rotating on flip board
@@ -73,6 +74,7 @@
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
+  Keyboard entry of moves
   BDG: Change Undo/Redo to be an imvCur operation
   UIBD: When dragging pieces, highlight square when hovering over a legal move
   ML: Animate moves when manually going through move list
@@ -84,9 +86,10 @@
   ML: Implement move list scrolling 
   ML: Optimize redraw
   UIBD: Optimize redraw
-  ML: Implement selection in UIML
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* ML: Implement selection in UIML
+* Build: Move non-code resources into a subdirectory
 * ML: clip long player names in UITI and UIML
 * Resize ML and TI based on font metrics
 * Not redrawing board after dragging to an illegal move

@@ -1131,6 +1131,24 @@ void BDG::MakeMv(MV mv)
 }
 
 
+/*	BDG::SzMoveAndDecode
+ *
+ *	Makes a move and returns the decoded text of the move. This is the only
+ *	way to get postfix marks on the move text, like '+' for check, or '#' for
+ *	checkmate.
+ */
+wstring BDG::SzMoveAndDecode(MV mv)
+{
+	wstring sz = SzDecodeMv(mv, true);
+	CPC cpc = CpcFromSq(mv.SqFrom());
+	MakeMv(mv);
+	if (FSqAttacked(cpc, mptpcsq[~cpc][tpcKing])) {
+		sz += L'+';
+	}
+	return sz;
+}
+
+
 void BDG::UndoMv(void)
 {
 	/* TODO: I think this loses imvPawnOrTakeLast if we undo past it */

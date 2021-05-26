@@ -29,6 +29,7 @@ BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
 BRS* UI::pbrText;
 BRS* UI::pbrTip;
+BRS* UI::pbrHilite;
 TX* UI::ptxText;
 TX* UI::ptxList;
 TX* UI::ptxTip;
@@ -43,6 +44,7 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
 	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
 	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.85f), &pbrTip);
+	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.5f), &pbrHilite);
 
 	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
@@ -68,6 +70,7 @@ void UI::DiscardRsrcClass(void)
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
 	SafeRelease(&pbrTip);
+	SafeRelease(&pbrHilite);
 	SafeRelease(&ptxList);
 	SafeRelease(&ptxText);
 	SafeRelease(&ptxTip);

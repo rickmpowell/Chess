@@ -180,7 +180,6 @@
     <ClCompile Include="ga.cpp" />
     <ClCompile Include="ml.cpp" />
     <ClCompile Include="open.cpp" />
-    <ClCompile Include="parsedecode.cpp" />
     <ClCompile Include="pl.cpp" />
     <ClCompile Include="save.cpp" />
     <ClCompile Include="test.cpp" />

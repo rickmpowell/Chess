@@ -17,6 +17,17 @@
 WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
 
 
+/*
+ *	Move speeds
+ */
+enum class SPMV
+{
+	Hidden,
+	Fast,
+	Animate
+};
+
+
 enum class MHT
 {
 	Nil,
@@ -43,6 +54,7 @@ protected:
 	static BRS* pbrGridLine;
 	static BRS* pbrText;
 	static BRS* pbrTip;
+	static BRS* pbrHilite;
 	static TX* ptxText;
 	static TX* ptxList;
 	static TX* ptxTip;
