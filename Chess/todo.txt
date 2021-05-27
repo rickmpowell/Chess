@@ -1,5 +1,6 @@
+  Move list isn't scrolling selection into view
+  If text in move list gets too small, replace icons with letters
   Is there a C++ way to enumerate files in a directory for Test?
-  Need to add small cell margins in move list
   Scale buttons to size of window
   UIDB: rotating board clips to board rectangle
   UIPL: scale long player names in UITI and UIML
@@ -89,6 +90,7 @@
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* Need to add small cell margins in move list
 * UIBD: Scale outline width on resize
 * UIBD: When board gets small, stop displaying borders
 * Convert save code to use streams
