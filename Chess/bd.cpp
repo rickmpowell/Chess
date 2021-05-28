@@ -430,12 +430,17 @@ void BD::RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const
 	int imvTo = 0;
 	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
 		MV mv = rgmv[imv];
-		if (!FIsEmpty(mv.SqTo()) && 
-				VpcFromSq(mv.SqFrom()) + 0.5 < VpcFromSq(mv.SqTo()))
+		if (!FMvIsQuiescent(mv, cpcMove))
 			rgmv[imvTo++] = mv;
 		/* TODO: need to test for checks */
 	}
 	rgmv.resize(imvTo);
+}
+
+bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
+{
+	return FIsEmpty(mv.SqTo()) ||
+		VpcFromSq(mv.SqFrom()) + 0.5 >= VpcFromSq(mv.SqTo());
 }
 
 
@@ -1086,6 +1091,11 @@ void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
 void BDG::GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const
 {
 	BD::GenRgmvQuiescent(rgmv, cpcToMove, rmchk);
+}
+
+bool BDG::FMvIsQuiescent(MV mv) const
+{
+	return BD::FMvIsQuiescent(mv, cpcToMove);
 }
 
 

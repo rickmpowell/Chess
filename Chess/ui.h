@@ -39,6 +39,22 @@ enum class MHT
 
 /*
  *
+ *	Logging types 
+ * 
+ */
+
+
+enum class LGT
+{
+	SearchStartAI,
+	SearchDepthAI,
+	SearchMoveAI,
+	SearchNodesAI
+};
+
+
+/*
+ *
  *	UI class
  * 
  *	The base user interface item class.
@@ -134,6 +150,8 @@ public:
 	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf=1.0e6f, float dyf=1.0e6f) const;
 	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
+
+	virtual void Log(LGT lgt, const wstring& sz) const;
 };
 
 

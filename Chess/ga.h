@@ -108,6 +108,8 @@ public:
 	void RedoMv(void);
 	void GenRgmv(vector<MV>& rgmv);
 
+	virtual void Log(LGT lgt, const wstring& sz);
+
 	void Test(SPMV spmv);
 	void ValidateFEN(const WCHAR* szFEN) const;
 	void ValidatePieces(const WCHAR*& sz) const;

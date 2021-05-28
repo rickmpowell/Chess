@@ -14,7 +14,7 @@
 mt19937 rgen(0);
 
 
-PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName), cYield(0)
+PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName), cYield(0), cbdgmvevEval(0)
 {
 	memcpy(this->rgfAICoeff, rgfAICoeef, sizeof(this->rgfAICoeff));
 }
@@ -22,6 +22,34 @@ PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName)
 
 PL::~PL(void)
 {
+}
+
+
+wstring SzFromEval(float eval)
+{
+
+	wchar_t sz[10], *pch = sz;
+	if (eval < 0) {
+		*pch++ = L'-';
+		eval = -eval;
+	}
+	eval = round(eval * 1000.0f) / 1000.0f;
+	float w = floor(eval);
+	eval -= w;
+	pch = PchDecodeInt((int)w, pch);
+	*pch++ = L'.';
+	for (int ich = 0; ich < 2; ich++) {
+		eval *= 10.0f;
+		w = floor(eval);
+		eval -= w;
+		*pch++ = L'0' + (int)w;
+	}
+	eval *= 10.0f;
+	w = floor(eval);
+	eval -= w;
+	*pch++ = L'0' + (int)w;
+	*pch = 0;
+	return wstring(sz);
 }
 
 
@@ -34,9 +62,12 @@ PL::~PL(void)
  */
 MV PL::MvGetNext(void)
 {
+	cbdgmvevEval = 0L;
+
 	/* generate all moves without removing checks. we'll use this as a heuristic for the amount of
 	 * mobillity on the board, which we can use to estimate the depth we can search */
 
+	ga.Log(LGT::SearchStartAI, L"");
 	BDG bdg = ga.bdg;
 	static vector <MV> rgmv;
 	bdg.GenRgmv(rgmv, RMCHK::NoRemove);
@@ -44,12 +75,11 @@ MV PL::MvGetNext(void)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 30.00e+6f;
-	const float fracAlphaBeta = 3.0f; // cuts moves we analyze by this factor
+	const float cmvSearch = 20.00e+6f;	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
-	int depthMax = (int)round(2.0f*log(cmvSearch) / (log(size2)-log(2.0f*fracAlphaBeta)));
-	if (depthMax < 4)
-		depthMax = 4;
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2*fracAlphaBeta*fracAlphaBeta));
+	ga.Log(LGT::SearchDepthAI, wstring(L"Search depth: ") + to_wstring(depthMax));
 
 	/* and find the best move */
 
@@ -62,11 +92,14 @@ MV PL::MvGetNext(void)
 	float evalAlpha = -1000.0f, evalBeta = 1000.0f;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
 		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
+		ga.Log(LGT::SearchMoveAI, bdg.SzDecodeMvPost(bdgmvev.mv) + L" " + SzFromEval(bdgmvev.eval) + L" " + SzFromEval(eval));
 		if (eval > evalAlpha) {
 			evalAlpha = eval;
 			mvBest = bdgmvev.mv;
 		}
 	}
+
+	ga.Log(LGT::SearchNodesAI, wstring(L"Searched ") + to_wstring(cbdgmvevEval) + L" nodes");
 	assert(!mvBest.FIsNil());
 	return mvBest;
 }
@@ -89,15 +122,19 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 	PreSortMoves(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
 	int cmv = 0;
+	float evalBest = -1000.0f;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
 		if (bdgmvev.FInCheck(~bdgmvev.cpcToMove))
 			continue;
 		cmv++;
 		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		if (eval >= evalBeta)
-			return evalBeta;
-		if (eval > evalAlpha)
-			evalAlpha = eval;
+			return eval;
+		if (eval > evalBest) {
+			evalBest = eval;
+			if (eval > evalAlpha)
+				evalAlpha = eval;
+		}
 	}
 
 	/* if we could find no legal moves, we either have checkmate or stalemate */
@@ -109,15 +146,13 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 			return 0.0f;
 	}
 
-#ifdef LATER
 	/* checkmates were detected already, so GsTestGameOver can only return draws */
 	GS gs = bdgmvevEval.GsTestGameOver(bdgmvevEval.rgmvReplyAll, *ga.prule);
 	assert(gs != GS::BlackCheckMated && gs != GS::WhiteCheckMated);
 	if (gs != GS::Playing)
 		return 0.0f;
-#endif
 
-	return evalAlpha;
+	return evalBest;
 }
 
 
@@ -128,6 +163,9 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
  */
 float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
 {
+	/* we need to evaluate the board before we remove moves from the move list */
+	float eval = EvalBdg(bdgmvevEval, true);
+	
 	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
 		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
@@ -137,26 +175,33 @@ float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, flo
 	}
 
 	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
-
 	if (bdgmvevEval.rgmvReplyAll.size() == 0)
-		return -EvalBdg(bdgmvevEval, true);
+		return -eval;
+
+	if (++cYield % 1000 == 0)
+		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
+	float evalBest = -1000.0f;
 	for (BDGMVEV bdgmvev : rgbdgmvev) {
-		float eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
+		float eval;
+		eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
 		if (eval >= evalBeta)
-			return evalBeta;
-		if (eval > evalAlpha)
-			evalAlpha = eval;
+			return eval;
+		if (eval > evalBest) {
+			evalBest = eval;
+			if (eval > evalAlpha)
+				evalAlpha = eval;
+		}
 	}
 
-	return evalAlpha;
+	return evalBest;
 }
 
 
-void PL::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev) const
+void PL::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
 {
 	rgbdgmvev.reserve(rgmv.size());
 	for (MV mv : rgmv) {
@@ -167,7 +212,7 @@ void PL::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& 
 }
 
 
-void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev) const
+void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
 {
 	/* insertion sort */
 
@@ -196,8 +241,10 @@ void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& r
  *
  *	Evaluates the board from the point of view of the color that just moved.
  */
-float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull) const
+float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 {
+	cbdgmvevEval++;
+
 	float vpcNext = bdgmvev.VpcTotalFromCpc(bdgmvev.cpcToMove);
 	float vpcSelf = bdgmvev.VpcTotalFromCpc(~bdgmvev.cpcToMove);
 	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
@@ -219,7 +266,7 @@ float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull) const
 }
 
 
-float PL::EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmvSelf) const
+float PL::EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmvSelf)
 {
 	int mpsqcmvAttack[128] = { 0 };
 	for (MV mv : rgmvSelf)
@@ -237,7 +284,7 @@ float PL::EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmvSelf) con
 	return eval / 15.0f;
 }
 
-void PL::FillKingCoeff(float mpsqcoeffControl[], SQ sq) const
+void PL::FillKingCoeff(float mpsqcoeffControl[], SQ sq)
 {
 	mpsqcoeffControl[sq] = 1.0f;
 	int rgdsq1[] = { -17, -16, -15, -1, 1, 15, 16, 17 };

@@ -25,9 +25,15 @@ public:
 class UIDB : public UIPS
 {
 	UIDBBTNS uidbbtns;
+	vector<wstring> rgszLog;
+	TX* ptxLog;
 public:
 	UIDB(GA* pga);
 	virtual void Layout(void);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
-	void AddEval(const BDG& bdg, MV mv, float eval);
+	virtual void DrawContent(const RCF& rcfCont);
+	void ShowLog(LGT lgt, const wstring& sz);
+	void ClearLog(void);
 };

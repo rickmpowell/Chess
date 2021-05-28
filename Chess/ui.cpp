@@ -675,6 +675,17 @@ void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 }
 
 
+/*	UI::Log
+ *
+ *	Logging
+ */
+void UI::Log(LGT lgt, const wstring& sz) const
+{
+	if (puiParent)
+		puiParent->Log(lgt, sz);
+}
+
+
 /*
  *
  *	BTN classes

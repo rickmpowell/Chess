@@ -440,6 +440,7 @@ public:
 
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
 	void RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const;
+	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
 	bool FSqAttacked(CPC cpc, SQ sqKing) const;
 	inline bool FDsqAttack(SQ sqKing, SQ sq, int dsq) const;
@@ -595,6 +596,7 @@ public:
 
 	void GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const;
 	void GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const;
+	bool FMvIsQuiescent(MV mv) const;
 	
 	void MakeMv(MV mv);
 	void UndoMv(void);
@@ -613,6 +615,7 @@ public:
 	bool FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const;
 	bool FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
+	wstring SzDecodeMvPost(MV mv) const;
 
 	void InitFEN(const WCHAR* szFen);
 	void InitFENSideToMove(const WCHAR*& sz);

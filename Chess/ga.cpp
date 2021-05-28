@@ -523,3 +523,14 @@ void GA::PumpMsg(void)
 		}
 	}
 }
+
+
+/*	GA::Log
+ *
+ *	Log the given log type/string
+ */
+void GA::Log(LGT lgt, const wstring& sz)
+{
+	if (uidb.FVisible())
+		uidb.ShowLog(lgt, sz);
+}

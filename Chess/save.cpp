@@ -290,3 +290,28 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
 	}
 	return sz;
 }
+
+
+/*	BDG::SzDecodeMvPost
+ *
+ *	Does a pseudo-decode of a move after it's been made on the board. Not to be used
+ *	for official decoding, because ambiguities are not removed and stuff like promotion
+ *	and en passant are not available, but useful for logging and debuggingn
+ */
+wstring BDG::SzDecodeMvPost(MV mv) const
+{
+	SQ sqFrom = mv.SqFrom();
+	SQ sqTo = mv.SqTo();
+	wstring sz;
+	sz += L'a' + sqFrom.file();
+	sz += to_wstring(sqFrom.rank() + 1);
+	if (mv.ApcCapture() != APC::Null)
+		sz += L'x';
+	sz += L'a' + sqTo.file();
+	sz += to_wstring(sqTo.rank() + 1);
+	if (mv.ApcPromote() != APC::Null) {
+		sz += L'=';
+		sz += mpapcch[mv.ApcPromote()];
+	}
+	return sz;
+}

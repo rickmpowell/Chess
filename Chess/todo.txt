@@ -1,3 +1,4 @@
+  Change content and view rectangles in scrolling panels to be owner relative instead of global
   Move list isn't scrolling selection into view
   If text in move list gets too small, replace icons with letters
   Is there a C++ way to enumerate files in a directory for Test?

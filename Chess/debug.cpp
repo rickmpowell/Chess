@@ -36,6 +36,23 @@ UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this)
 {
 }
 
+void UIDB::CreateRsrc(void)
+{
+	if (ptxLog)
+		return;
+	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptxLog);
+
+}
+
+void UIDB::DiscardRsrc(void)
+{
+	SafeRelease(&ptxLog);
+}
+
+
 
 void UIDB::Layout(void)
 {
@@ -67,6 +84,31 @@ void UIDB::Draw(const RCF* prcfUpdate)
 }
 
 
-void UIDB::AddEval(const BDG& bdg, MV mv, float eval)
+void UIDB::DrawContent(const RCF& rcfCont)
 {
+	RCF rcf = RcfContent();
+	rcf.left += 4.0f;
+	for (wstring sz : rgszLog) {
+		SIZF sizf = SizfSz(sz, ptxLog, rcf.DxfWidth(), 1000.0f);
+		rcf.bottom = rcf.top + sizf.height;
+		DrawSz(sz, ptxLog, rcf, pbrText);
+		rcf.top += sizf.height;
+	}
+}
+
+
+void UIDB::ShowLog(LGT lgt, const wstring& sz)
+{
+	if (sz.size() == 0) {
+		ClearLog();
+		return;
+	}
+	rgszLog.push_back(sz);
+	Redraw();
+}
+
+void UIDB::ClearLog(void)
+{
+	rgszLog.clear();
+	Redraw();
 }

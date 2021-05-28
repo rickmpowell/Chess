@@ -582,7 +582,8 @@ void UIML::SetSel(int imv, SPMV spmv)
 {
 	imvSel = imv;
 	if (spmv != SPMV::Hidden)
-		Redraw();
+		if (!FMakeVis(imvSel))
+			Redraw();
 }
 
 
@@ -640,6 +641,7 @@ void UIML::NewGame(void)
 	UpdateContSize();
 }
 
+
 void UIML::ShowClocks(bool fTimed)
 {
 	mpcpcpuiclock[CPC::White]->Show(fTimed);
@@ -665,11 +667,11 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	UIPS::UpdateContSize(PTF(RcfContent().DxfWidth(), ga.bdg.rgmvGame.size() / 2 * dyfList + dyfList));
+	UIPS::UpdateContSize(PTF(RcfContent().DxfWidth(), 4.0f + ga.bdg.rgmvGame.size() / 2 * dyfList + dyfList));
 }
 
 
 bool UIML::FMakeVis(int imv)
 {
-	return UIPS::FMakeVis(RcfContent().top + (imv / 2) * dyfList, dyfList);
+	return UIPS::FMakeVis(RcfContent().top + 4.0f + (imv / 2) * dyfList, dyfList);
 }
