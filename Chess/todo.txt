@@ -1,7 +1,12 @@
+  Make debug log scroll
+  Alpha-beta pruning does not work well in end game.
+  Consider a different board evaluation for pre-sorting alpha-beta pruning
+  Can we search for already evaluated board positions? Could save a lot of time in end game.
+  Rescale piece valuations to be 100 for a pawn.
+  Should make board evaluations relative to pawn value
   Change content and view rectangles in scrolling panels to be owner relative instead of global
-  Move list isn't scrolling selection into view
   If text in move list gets too small, replace icons with letters
-  Is there a C++ way to enumerate files in a directory for Test?
+  Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Scale buttons to size of window
   UIDB: rotating board clips to board rectangle
   UIPL: scale long player names in UITI and UIML
@@ -30,20 +35,16 @@
   Move gen: bitboard knights
   Move gen: bitboard pawns
   AI: need some end-game improvement
-  Move PGN decoding code into save
-  Move PGN parsing code into open
   AI: need to discourage early queen development
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: annotate candidate best moves on board
   AI: interruptible
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
-  Feature: Copy/paste should do PGN?
-  Feature: Add copy/paste commands to export/import FEN game board
+  Feature: Add copy/paste commands to export/import PGN game board
   Can we hash boards to help with the 3-fold draw detection?
   Eval: Add square control factor to evaluation function
   Limit UI during message pumps in test and AI
-  AI: Do 3-move repetition draws in the AI lookahead
   AI: Do a multithreaded lookup
   ML: Undo doesn't take down game over panel
   Test: Add option to draw or not draw moves during test run
@@ -51,7 +52,6 @@
   Feature: Allow human to play the AI
   AI: build lookahead tree 
   AI: Add debug ability to pause and step through eval tree
-  AI: Display progress in the debug panel
   UIBD: Hilite last made move on board
   Feature: Add a UI for setting up a board
   AI: Play through until no checks before evaluation
@@ -91,6 +91,11 @@
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* AI: Do 3-move repetition draws in the AI lookahead
+* AI: Display progress in the debug panel
+* Move PGN decoding code into save
+* Move PGN parsing code into open
+* Move list isn't scrolling selection into view
 * Need to add small cell margins in move list
 * UIBD: Scale outline width on resize
 * UIBD: When board gets small, stop displaying borders

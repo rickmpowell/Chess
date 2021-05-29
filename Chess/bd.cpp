@@ -21,7 +21,7 @@
  *
  */
 
-const float BD::mpapcvpc[] = { 0.0f, 1.0f, 2.75f, 3.0f, 5.0f, 8.5f, 0.0f, -1.0f };
+const float BD::mpapcvpc[] = { 0.0f, 100.0f, 275.0f, 300.0f, 500.0f, 850.0f, 200.0f, -1.0f };
 
 BD::BD(void)
 {
@@ -848,16 +848,6 @@ float BD::VpcFromSq(SQ sq) const
 	assert(!sq.FIsOffBoard());
 	APC apc = ApcFromSq(sq);
 	float vpc = mpapcvpc[apc];
-	if (apc == APC::Pawn) {
-		if (CpcFromSq(sq) == CPC::White) {
-			if (sq.rank() >= 5)
-				vpc += 0.1f * (sq.rank() - 4);
-		}
-		else {
-			if (sq.rank() <= 2)
-				vpc += 0.1f * (3 - sq.rank());
-		}
-	}
 	return vpc;
 }
 
