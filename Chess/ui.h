@@ -196,7 +196,7 @@ public:
 class UIPS : public UIP
 {
 private:
-	RCF rcfView;
+	RCF rcfView;	/* relative to the UI */
 	RCF rcfCont;
 protected:
 	const float dxyfScrollBarWidth = 10.0f;
@@ -208,21 +208,18 @@ public:
 	{
 		this->rcfView = rcfView;
 		this->rcfView.right -= dxyfScrollBarWidth;
-		this->rcfView.Offset(rcfBounds.left, rcfBounds.top);
 	}
 
 
 	void SetContent(const RCF& rcfCont)
 	{
 		this->rcfCont = rcfCont;
-		this->rcfCont.Offset(rcfBounds.left, rcfBounds.top);
 	}
 
 
 	virtual RCF RcfView(void) const
 	{
 		RCF rcf = rcfView;
-		rcf.Offset(-rcfBounds.left, -rcfBounds.top);
 		return rcf;
 	}
 
@@ -237,7 +234,6 @@ public:
 	virtual RCF RcfContent(void) const
 	{
 		RCF rcf = rcfCont;
-		rcf.Offset(-rcfBounds.left, -rcfBounds.top);
 		return rcf;
 	}
 
@@ -251,7 +247,6 @@ public:
 
 	bool FMakeVis(float yf, float dyf)
 	{
-		yf += rcfBounds.top;
 		if (yf < rcfView.top)
 			rcfCont.Offset(0, rcfView.top - yf);
 		else if (yf + dyf > rcfView.bottom)
@@ -266,8 +261,8 @@ public:
 	{
 		/* just redraw the entire content area clipped to the view */
 		APP& app = AppGet();
-		app.pdc->PushAxisAlignedClip(rcfView, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		FillRcf(RcfLocalFromGlobal(rcfView), pbrBack);
+		app.pdc->PushAxisAlignedClip(RcfGlobalFromLocal(rcfView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		FillRcf(rcfView, pbrBack);
 		DrawContent(rcfCont);
 		app.pdc->PopAxisAlignedClip();
 		DrawScrollBar();
@@ -281,10 +276,22 @@ public:
 
 	void DrawScrollBar(void)
 	{
-		RCF rcf = rcfView;
-		rcf.left = rcf.right;
-		rcf.right = rcf.left + dxyfScrollBarWidth;
-		AppGet().pdc->FillRectangle(rcf, pbrAltBack);
+		RCF rcfScroll = rcfView;
+		rcfScroll.left = rcfView.right;
+		rcfScroll.right = rcfScroll.left + dxyfScrollBarWidth;
+		FillRcf(rcfScroll, pbrAltBack);
+		RCF rcfThumb = rcfScroll;
+		if (rcfCont.DyfHeight() > 0) {
+			rcfThumb.top = rcfScroll.top + rcfScroll.DyfHeight() * (rcfView.top - rcfCont.top) / rcfCont.DyfHeight();
+			rcfThumb.bottom = rcfScroll.top + rcfScroll.DyfHeight() * (rcfView.bottom - rcfCont.top) / rcfCont.DyfHeight();
+		}
+		if (rcfThumb.top < rcfScroll.top)
+			rcfThumb.top = rcfScroll.top;
+		if (rcfThumb.bottom > rcfScroll.bottom)
+			rcfThumb.bottom = rcfScroll.bottom;
+		FillRcf(RCF(rcfScroll.left, rcfThumb.top - 1, rcfScroll.right, rcfThumb.top), pbrGridLine);
+		FillRcf(RCF(rcfScroll.left, rcfScroll.bottom, rcfScroll.right, rcfScroll.bottom + 1), pbrGridLine);
+		FillRcf(rcfThumb, pbrBack);
 	}
 };
 

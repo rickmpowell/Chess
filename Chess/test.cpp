@@ -20,7 +20,7 @@ void GA::Test(SPMV spmv)
 	NewGame(new RULE(0, 0, 0));
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	UndoTest();
-	PlayPGNFiles(L"..\\Chess\\Test");
+	PlayPGNFiles(L"..\\Chess\\Test\\Players");
 	this->spmv = SPMV::Animate;
 }
 
@@ -400,14 +400,14 @@ void GA::ProcessMove(const string& szMove)
 void GA::UndoTest(void)
 {
 	WIN32_FIND_DATA ffd;
-	wstring szSpec(L"..\\Chess\\Test\\*.pgn");
+	wstring szSpec(L"..\\Chess\\Test\\Players\\*.pgn");
 	HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
 	if (hfind == INVALID_HANDLE_VALUE)
 		throw 1;
 	do {
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
-		wstring szSpec = wstring(L"..\\Chess\\Test\\") + ffd.cFileName;
+		wstring szSpec = wstring(L"..\\Chess\\Test\\Players\\") + ffd.cFileName;
 		if (PlayUndoPGNFile(szSpec.c_str()) < 0)
 			break;
 		break;

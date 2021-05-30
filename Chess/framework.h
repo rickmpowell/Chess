@@ -43,6 +43,7 @@ using namespace D2D1;
 #include <vector>
 #include <iomanip>
 #include <fstream>
+//#include <filesystem>
 #include <shlwapi.h>
 #include <d2d1_3.h>
 #include <libloaderapi.h>

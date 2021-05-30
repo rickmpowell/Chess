@@ -1,14 +1,18 @@
+  Implement keyboard focus for UI
+  Test: add option to choose which PGN files to run
+  Test: add options for which tests to run
+  Add an option in logging to replace last log entry
+  Can we compile using C++ 17?
+  Test: if no pgn files in a directory, file enumeration crashes
+  Size icons in move list slightly larger than text
   Make debug log scroll
   Alpha-beta pruning does not work well in end game.
   Consider a different board evaluation for pre-sorting alpha-beta pruning
   Can we search for already evaluated board positions? Could save a lot of time in end game.
-  Rescale piece valuations to be 100 for a pawn.
   Should make board evaluations relative to pawn value
-  Change content and view rectangles in scrolling panels to be owner relative instead of global
   If text in move list gets too small, replace icons with letters
   Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Scale buttons to size of window
-  UIDB: rotating board clips to board rectangle
   UIPL: scale long player names in UITI and UIML
   UITI: Put name of our program with the logo
   UITI Layout using font metrics
@@ -20,7 +24,6 @@
   UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
   Use bit fields to layout MV
   Verify IPC is layed out in the byte in the smart way
-  Test: Re-organize PGN test files to be in sub-directories
   Bug: File/Open doesn't redraw board or scroll ML at end of the load
   Bug: Dragging window edges doesn't resize game interior (dragging corners works)
   Bug: Open PGN files assert if no \n on last line
@@ -86,11 +89,15 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-  ML: Implement move list scrolling 
+  ML: Implement scrollbar interface
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* Change content and view rectangles in scrolling panels to be owner relative instead of global
+* Make scrollbar show current scroll location in UIPS
+* Test: Re-organize PGN test files to be in sub-directories
+* Rescale piece valuations to be 100 for a pawn.
 * AI: Do 3-move repetition draws in the AI lookahead
 * AI: Display progress in the debug panel
 * Move PGN decoding code into save
