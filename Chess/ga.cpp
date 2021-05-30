@@ -482,7 +482,7 @@ void GA::GenRgmv(vector<MV>& rgmv)
 }
 
 
-void GA::Play(void)
+int GA::Play(void)
 {
 	try {
 		do {
@@ -495,7 +495,9 @@ void GA::Play(void)
 	}
 	catch (int err) {
 		MessageBoxW(app.hwnd, L"Game play has been aborted.", NULL, MB_OK);
+		return err;
 	}
+	return 0;
 }
 
 

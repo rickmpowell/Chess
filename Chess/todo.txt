@@ -2,7 +2,6 @@
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
   Add an option in logging to replace last log entry
-  Can we compile using C++ 17?
   Test: if no pgn files in a directory, file enumeration crashes
   Size icons in move list slightly larger than text
   Make debug log scroll
@@ -94,6 +93,7 @@
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
   ML: Implement keyboard interface to change selection on UIML
+* Can we compile using C++ 17?
 * Change content and view rectangles in scrolling panels to be owner relative instead of global
 * Make scrollbar show current scroll location in UIPS
 * Test: Re-organize PGN test files to be in sub-directories

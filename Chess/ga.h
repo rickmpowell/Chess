@@ -96,7 +96,7 @@ public:
 	void Timer(UINT tid, DWORD tm);
 	void PumpMsg(void);
 
-	void Play(void);
+	int Play(void);
 	void NewGame(RULE* prule);
 	void StartGame(void);
 	void EndGame(void);

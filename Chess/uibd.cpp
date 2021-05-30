@@ -518,7 +518,7 @@ void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
 	float dxfPiece = ptf.width / 6.0f;
 	float dyfPiece = ptf.height / 2.0f;
 	float xfPiece = mpapcxBitmap[ipc.apc()] * dxfPiece;
-	float yfPiece = ipc.cpc() * dyfPiece;
+	float yfPiece = (int)ipc.cpc() * dyfPiece;
 	DrawBmp(rcf, pbmpPieces, RCF(xfPiece, yfPiece, xfPiece + dxfPiece, yfPiece + dyfPiece), opacity);
 }
 
