@@ -15,71 +15,70 @@ void GA::SavePGNFile(const WCHAR szFile[])
 	if (os.fail())
 		return;
 
-	SavePGNHeaders(os);
-	os << endl;
-	SavePGNMoveList(os);
+	Serialize(os);
 
 	os.close();
 }
 
 
-void GA::SavePGNHeaders(ofstream& os)
+void GA::Serialize(ostream& os)
 {
-	SavePGNHeader(os, "Event", "Casual Game");
-	SavePGNHeader(os, "Site", "Local Computer");
-	SavePGNHeader(os, "Round", "1");
+	SerializeHeaders(os);
+	os << endl;
+	SerializeMoveList(os);
+}
+
+
+void GA::SerializeHeaders(ostream& os)
+{
+	SerializeHeader(os, "Event", "Casual Game");
+	SerializeHeader(os, "Site", "Local Computer");
+	SerializeHeader(os, "Round", "1");
 
 	/* TODO: real date */
-	SavePGNHeader(os, "Date", "2021.??.??");
+	SerializeHeader(os, "Date", "2021.??.??");
 
 	/* TODO: real player names */
-	SavePGNHeader(os, "White", "White");
-	SavePGNHeader(os, "Black", "Black");
+	SerializeHeader(os, "White", "White");
+	SerializeHeader(os, "Black", "Black");
 
 	switch (bdg.gs) {
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		SavePGNHeader(os, "Result", "0-1");
+		SerializeHeader(os, "Result", "0-1");
 		break;
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		SavePGNHeader(os, "Result", "1-0");
+		SerializeHeader(os, "Result", "1-0");
 		break;
 	case GS::Playing:
 		break;
 	default:
-		SavePGNHeader(os, "Result", "1/2-1/2");
+		SerializeHeader(os, "Result", "1/2-1/2");
 		break;
 	}
 }
 
 
-void GA::SavePGNHeader(ofstream& os, const string& szTag, const string& szVal)
+void GA::SerializeHeader(ostream& os, const string& szTag, const string& szVal)
 {
-	WriteSz(os, "[");
-	WriteSz(os, szTag);
-	WriteSz(os, " ");
 	/* TODO: escape quote marks? */
-	WriteSz(os, string("\"") + szVal + "\"");
-	WriteSz(os, "]\n");
+	os << string("[") + szTag + " \"" + szVal + "\"]\n";
 }
 
 
-void GA::SavePGNMoveList(ofstream& os)
+void GA::SerializeMoveList(ostream& os)
 {
 	BDG bdgSave;
 	bdgSave.NewGame();
 	for (unsigned imv = 0; imv < (unsigned)bdg.rgmvGame.size(); imv++) {
 		MV mv = bdg.rgmvGame[imv];
-		if (imv % 2 == 0) {
-			string sz = to_string(imv / 2 + 1);
-			sz += ". ";
-			WriteSz(os, sz);
-		}
+		if (imv % 2 == 0)
+			os << to_string(imv/2 + 1) + ". ";
 		wstring wsz = bdgSave.SzDecodeMv(mv, false);
-		WriteSz(os, bdgSave.SzFlattenMvSz(wsz) + " ");
+		os << bdgSave.SzFlattenMvSz(wsz) + " ";
 		bdgSave.MakeMv(mv);
 	}
 
@@ -89,25 +88,19 @@ void GA::SavePGNMoveList(ofstream& os)
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		WriteSz(os, "0-1");
+		os << "0-1";
 		break;
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		WriteSz(os, "1-0");
+		os << "1-0";
 		break;
 	case GS::Playing:
 		break;
 	default:
-		WriteSz(os, "1/2-1/2");
+		os << "1/2-1/2";
 		break;
 	}
-}
-
-
-void GA::WriteSz(ofstream& os, const string& sz)
-{
-	os << sz;
 }
 
 

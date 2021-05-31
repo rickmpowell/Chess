@@ -59,6 +59,7 @@ public:
 	UITIP uitip;
 
 	UI* puiCapt;
+	UI* puiFocus;
 	UI* puiHover;
 	SPMV spmv;
 
@@ -89,6 +90,9 @@ public:
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);
 	virtual void SetHover(UI* pui);
+
+	virtual void SetFocus(UI* pui);
+
 	inline PL*& PlFromCpc(CPC cpc) { return mpcpcppl[cpc]; }
 	inline PL* PplFromCpc(CPC cpc) { return PlFromCpc(cpc); }
 	void SetPl(CPC cpc, PL* ppl);
@@ -119,24 +123,25 @@ public:
 	void SkipWhiteSpace(const WCHAR*& sz) const;
 	void SkipToWhiteSpace(const WCHAR*& sz) const;
 
+	void OpenPGNFile(const WCHAR szFile[]);
 	void PlayPGNFiles(const WCHAR szPath[]);
 	int PlayPGNFile(const WCHAR szFile[]);
-	int PlayPGNGame(ISTKPGN& istkpgn);
-	int ReadPGNHeaders(ISTKPGN& istkpgn);
-	int ReadPGNMoveList(ISTKPGN& istkpgn);
-	int ReadPGNTag(ISTKPGN& istkpgn);
-	int ReadPGNMove(ISTKPGN& istkpgn);
+	void Deserialize(istream& is);
+	int DeserializeGame(ISTKPGN& istkpgn);
+	int DeserializeHeaders(ISTKPGN& istkpgn);
+	int DeserializeMoveList(ISTKPGN& istkpgn);
+	int DeserializeTag(ISTKPGN& istkpgn);
+	int DeserializeMove(ISTKPGN& istkpgn);
 	bool FIsMoveNumber(TK* ptk, int& w) const;
 	void ProcessTag(const string& szTag, const string& szVal);
-	void HandleTag(int tkpgn, const string& szVal);
+	void ProcessTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
 
-	void OpenPGNFile(const WCHAR szFile[]);
 	void SavePGNFile(const WCHAR szFile[]);
-	void SavePGNHeaders(ofstream& os);
-	void SavePGNHeader(ofstream& os, const string& szTag, const string& szVal);
-	void SavePGNMoveList(ofstream& os);
-	void WriteSz(ofstream& os, const string& sz);
+	void Serialize(ostream& os);
+	void SerializeHeaders(ostream& os);
+	void SerializeHeader(ostream& os, const string& szTag, const string& szVal);
+	void SerializeMoveList(ostream& os);
 
 	void UndoTest(void);
 	int PlayUndoPGNFile(const WCHAR* szFile);

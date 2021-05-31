@@ -794,6 +794,20 @@ public:
 
     virtual int Execute(void)
     {
+        ostringstream os;
+        app.pga->Serialize(os);
+        string sz = os.str();
+        if (!::OpenClipboard(app.hwnd))
+            return 0;
+        ::EmptyClipboard();
+        HGLOBAL htext = ::GlobalAlloc(GMEM_MOVEABLE, sz.size() + 1);
+        if (!htext)
+            return 0;
+        void* ptext = ::GlobalLock(htext);
+        memcpy(ptext, sz.c_str(), sz.size() + 1);
+        ::GlobalUnlock(htext);
+        ::SetClipboardData(CF_TEXT, htext);
+        ::CloseClipboard();
         return 1;
     }
 };
@@ -817,6 +831,17 @@ public:
 
     virtual int Execute(void)
     {
+        if (!::IsClipboardFormatAvailable(CF_TEXT))
+            return 0;
+        if (!::OpenClipboard(app.hwnd))
+            return 0;
+        HGLOBAL htext = ::GetClipboardData(CF_TEXT);
+        char* ptext = (char*)::GlobalLock(htext);
+        istringstream is;
+        is.str(ptext);
+        app.pga->Deserialize(is);
+        ::GlobalUnlock(htext);
+        ::CloseClipboard();
         return 1;
     }
 };

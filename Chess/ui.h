@@ -119,6 +119,8 @@ public:
 	virtual void MouseHover(PTF ptf, MHT mht);
 	virtual void DispatchCmd(int cmd);
 	
+	virtual void SetFocus(UI* pui);
+
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTip(void) const;
 	virtual wstring SzTipFromCmd(int cmd) const;

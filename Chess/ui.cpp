@@ -408,6 +408,13 @@ void UI::ReleaseCapt(void)
 }
 
 
+void UI::SetFocus(UI* pui)
+{
+	if (puiParent)
+		puiParent->ReleaseCapt();
+}
+
+
 void UI::DispatchCmd(int cmd)
 {
 	if (puiParent)
@@ -420,6 +427,7 @@ void UI::ShowTip(UI* puiAttach, bool fShow)
 	if (puiParent)
 		puiParent->ShowTip(puiAttach, fShow);
 }
+
 
 wstring UI::SzTip(void) const
 {

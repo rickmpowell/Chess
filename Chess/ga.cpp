@@ -177,7 +177,7 @@ void GA::DiscardRsrcClass(void)
 
 GA::GA(APP& app) : UI(NULL), app(app), prule(NULL), 
 	spmv(SPMV::Animate), uiti(this), uibd(this), uiml(this), uidb(this), uitip(this),
-	puiCapt(NULL), puiHover(NULL)
+	puiCapt(NULL), puiHover(NULL), puiFocus(NULL)
 {
 	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = NULL;
 	tmLast = 0L;
@@ -324,6 +324,12 @@ void GA::EndGame(void)
 		app.DestroyTimer(tidClock);
 	if (spmv != SPMV::Hidden)
 		uiml.EndGame();	
+}
+
+
+void GA::SetFocus(UI* pui)
+{
+	puiFocus = pui;
 }
 
 

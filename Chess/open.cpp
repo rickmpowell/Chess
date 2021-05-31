@@ -14,13 +14,205 @@ void GA::OpenPGNFile(const WCHAR szFile[])
 {
 	this->spmv = SPMV::Hidden;
 	ifstream is(szFile, ifstream::in);
-	ISTKPGN istkpgn(is);
-	NewGame(new RULE(0, 0, 0));
-	if (!ReadPGNHeaders(istkpgn))
-		return;
-	ReadPGNMoveList(istkpgn);
+	Deserialize(is);
 	this->spmv = SPMV::Animate;
 	Redraw();
+}
+
+
+void GA::Deserialize(istream& is)
+{
+	ISTKPGN istkpgn(is);
+	NewGame(new RULE(0, 0, 0));
+	if (!DeserializeHeaders(istkpgn))
+		return;
+	DeserializeMoveList(istkpgn);
+}
+
+
+int GA::DeserializeGame(ISTKPGN& istkpgn)
+{
+	NewGame(new RULE(0, 0, 0));
+	if (!DeserializeHeaders(istkpgn))
+		return 0;
+	DeserializeMoveList(istkpgn);
+	return 1;
+}
+
+
+int GA::DeserializeHeaders(ISTKPGN& istkpgn)
+{
+	if (!DeserializeTag(istkpgn))
+		return 0;
+	while (DeserializeTag(istkpgn))
+		;
+	return 1;
+}
+
+
+int GA::DeserializeTag(ISTKPGN& istkpgn)
+{
+	class TKS {
+	public:
+		TK* ptkStart, * ptkEnd;
+		TK* ptkSym, * ptkVal;
+		TKS(void) : ptkStart(NULL), ptkSym(NULL), ptkVal(NULL), ptkEnd(NULL) { }
+		~TKS(void) {
+			if (ptkStart) delete ptkStart;
+			if (ptkSym) delete ptkSym;
+			if (ptkVal) delete ptkVal;
+			if (ptkEnd) delete ptkEnd;
+		}
+	} tks;
+
+	istkpgn.WhiteSpace(false);
+	for ( ; ; ) {
+		tks.ptkStart = istkpgn.PtkNext();
+		switch ((int)*tks.ptkStart) {
+		case tkpgnBlankLine:
+		case tkpgnEnd:
+			return 0;	// blank line signifies end of tags
+		case tkpgnLBracket:
+			goto GotTag;
+		default:
+			throw istkpgn.line();
+		}
+	}
+GotTag:
+	/* read symbol, value, and end tag */
+	tks.ptkSym = istkpgn.PtkNext();
+	if ((int)*tks.ptkSym != tkpgnSymbol)
+		throw istkpgn.line();
+	tks.ptkVal = istkpgn.PtkNext();
+	if ((int)*tks.ptkVal != tkpgnString)
+		throw istkpgn.line();
+	tks.ptkEnd = istkpgn.PtkNext();
+	if ((int)*tks.ptkEnd != tkpgnRBracket)
+		throw istkpgn.line();
+
+	/* we have a well-formed tag */
+	ProcessTag(tks.ptkSym->sz(), tks.ptkVal->sz());
+
+	return 1;
+}
+
+
+/*	GA::DeserializeMoveList
+ *
+ *	Reads the move list part of a single game from a PGN file. Yields control to
+ *	other apps and lets the UI run. Returns 0 if the user pressed Esc to abort
+ *	the PGN processing. Returns 1 if the move list was successfully processed.
+ *	Can throw an exception on syntax errors in the PGN file
+ */
+int GA::DeserializeMoveList(ISTKPGN& istkpgn)
+{
+	while (DeserializeMove(istkpgn))
+		PumpMsg();
+	return 1;
+}
+
+
+int GA::DeserializeMove(ISTKPGN& istkpgn)
+{
+	TK* ptk;
+	for (ptk = istkpgn.PtkNext(); ; ) {
+		switch ((int)*ptk) {
+		case tkpgnSymbol:
+			int w;
+			if (!FIsMoveNumber(ptk, w)) {
+				ProcessMove(ptk->sz());
+				delete ptk;
+				return 1;
+			}
+			/* eat trailing periods */
+			/* TODO: should communicate the move number back to the caller,
+			 * and three dots signifies black is next to move
+			 */
+			do {
+				delete ptk;
+				ptk = istkpgn.PtkNext();
+			} while ((int)*ptk == tkpgnPeriod);
+			break;
+		case tkpgnStar:
+		case tkpgnBlankLine:
+		case tkpgnEnd:
+			delete ptk;
+			return 0;
+		default:
+			istkpgn.UngetTk(ptk);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+
+void GA::ProcessTag(const string& szTag, const string& szVal)
+{
+	struct {
+		const char* sz;
+		int tkpgn;
+	} mpsztkpgn[] = {
+		{"Event", tkpgnEvent},
+		{"Site", tkpgnSite},
+		{"Date", tkpgnDate},
+		{"Round", tkpgnRound},
+		{"White", tkpgnWhite},
+		{"Black", tkpgnBlack},
+		{"Result", tkpgnResult}
+	};
+
+	for (int isz = 0; isz < CArray(mpsztkpgn); isz++) {
+		if (szTag == mpsztkpgn[isz].sz) {
+			ProcessTag(mpsztkpgn[isz].tkpgn, szVal);
+			break;
+		}
+	}
+}
+
+
+void GA::ProcessTag(int tkpgn, const string& szVal)
+{
+	switch (tkpgn) {
+	case tkpgnWhite:
+	case tkpgnBlack:
+	{
+		wstring wszVal(szVal.begin(), szVal.end());
+		mpcpcppl[tkpgn == tkpgnBlack ? CPC::Black : CPC::White]->SetName(wszVal);
+		uiti.Redraw();
+		break;
+	}
+	case tkpgnEvent:
+	case tkpgnSite:
+	case tkpgnDate:
+	case tkpgnRound:
+	case tkpgnResult:
+	default:
+		break;
+	}
+}
+
+
+void GA::ProcessMove(const string& szMove)
+{
+	MV mv;
+	const char* pch = szMove.c_str();
+	if (bdg.ParseMv(pch, mv) != 1)
+		return;
+	MakeMv(mv, spmv);
+}
+
+
+bool GA::FIsMoveNumber(TK* ptk, int& w) const
+{
+	w = 0;
+	const string& sz = ptk->sz();
+	for (int ich = 0; sz[ich]; ich++) {
+		if (!isdigit(sz[ich]))
+			return false;
+		w = w * 10 + sz[ich] - '0';
+	}
+	return true;
 }
 
 
