@@ -1,3 +1,8 @@
+  Add support for multi-line log entries in db panel
+  Add ability to load FEN files
+  Add ability to paste FEN format
+  Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
+  Beef up error handling in deserialize
   Implement keyboard focus for UI
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
@@ -51,7 +56,7 @@
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   Feature: Allow human to play the AI
-  AI: build lookahead tree 
+  AI: build and keep lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   UIBD: Hilite last made move on board
   Feature: Add a UI for setting up a board

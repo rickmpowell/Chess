@@ -27,6 +27,7 @@ class UIDB : public UIPS
 	UIDBBTNS uidbbtns;
 	vector<wstring> rgszLog;
 	TX* ptxLog;
+	float dyfLine;
 public:
 	UIDB(GA* pga);
 	virtual void Layout(void);

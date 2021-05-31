@@ -32,7 +32,7 @@ void UIDBBTNS::Draw(const RCF* prcfUpdate)
 }
 
 
-UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this)
+UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f)
 {
 }
 
@@ -58,21 +58,22 @@ void UIDB::Layout(void)
 {
 	/* position top items */
 	RCF rcf = RcfInterior();
-	RCF rcfCont = rcf;
+	RCF rcfView = rcf;
 	rcf.bottom = rcf.top;
 	AdjustUIRcfBounds(&uidbbtns, rcf, true);
-	rcfCont.top = rcf.bottom;
+	rcfView.top = rcf.bottom;
 
 	/* positon bottom items */
 	rcf = RcfInterior();
 	rcf.top = rcf.bottom;
 	// no items yet
-	rcfCont.bottom = rcf.top;
+	rcfView.bottom = rcf.top;
 
 	/* move list content is whatever is left */
 
-	SetView(rcfCont);
-	SetContent(rcfCont);
+	dyfLine = SizfSz(L"0", ptxLog).height;
+	SetView(rcfView);
+	SetContent(rcfView);
 }
 
 
@@ -89,21 +90,23 @@ void UIDB::DrawContent(const RCF& rcfCont)
 	RCF rcf = RcfContent();
 	rcf.left += 4.0f;
 	for (wstring sz : rgszLog) {
-		SIZF sizf = SizfSz(sz, ptxLog, rcf.DxfWidth(), 1000.0f);
-		rcf.bottom = rcf.top + sizf.height;
+		SIZF sizf = SizfSz(sz, ptxLog, rcf.DxfWidth());
+		rcf.bottom = rcf.top + dyfLine;
 		DrawSz(sz, ptxLog, rcf, pbrText);
-		rcf.top += sizf.height;
+		rcf.top = rcf.bottom;
 	}
 }
 
 
 void UIDB::ShowLog(LGT lgt, const wstring& sz)
 {
-	if (sz.size() == 0) {
-		ClearLog();
+#ifdef NOPE
+	if (sz.size() == 0)
 		return;
-	}
+#endif
 	rgszLog.push_back(sz);
+	UpdateContSize(PTF(RcfContent().DxfWidth(), (rgszLog.size() + 1) * dyfLine));
+	FMakeVis(RcfContent().top + rgszLog.size() * dyfLine, dyfLine);
 	Redraw();
 }
 

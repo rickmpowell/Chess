@@ -60,6 +60,11 @@ wstring SzFromEval(float eval)
  * 
  *	This is a computer AI implementation.
  */
+
+const float evalInf = 100000.0f;
+const float evalMate = 99000.0f;
+const float evalMateMin = evalMate - 100.0f;
+
 MV PL::MvGetNext(void)
 {
 	cbdgmvevEval = 0L;
@@ -89,13 +94,18 @@ MV PL::MvGetNext(void)
 
 	cYield = 0;
 	MV mvBest;
-	float evalAlpha = -1000.0f, evalBeta = 1000.0f;
+	float evalAlpha = -evalInf, evalBeta = evalInf;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
 		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
 		ga.Log(LGT::SearchMoveAI, bdg.SzDecodeMvPost(bdgmvev.mv) + L" " + SzFromEval(bdgmvev.eval) + L" " + SzFromEval(eval));
 		if (eval > evalAlpha) {
 			evalAlpha = eval;
 			mvBest = bdgmvev.mv;
+			if (eval > evalMateMin) {
+				int depthMate = (int)roundf(evalMate - eval);
+				if (depthMate < depthMax)
+					depthMax = depthMate;
+			}
 		}
 	}
 
@@ -122,7 +132,7 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 	PreSortMoves(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
 	int cmv = 0;
-	float evalBest = -1000.0f;
+	float evalBest = -evalInf;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
 		if (bdgmvev.FInCheck(~bdgmvev.cpcToMove))
 			continue;
@@ -141,7 +151,7 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 
 	if (cmv == 0) {
 		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
-			return (float)-(100 - depth);
+			return -(evalMate - (float)depth);
 		else
 			return 0.0f;
 	}
@@ -169,7 +179,7 @@ float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, flo
 	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
 		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
-			return (float)-(100 - depth);
+			return -(evalMate - (float)depth);
 		else
 			return 0.0;
 	}
@@ -184,7 +194,7 @@ float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, flo
 	vector<BDGMVEV> rgbdgmvev;
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
-	float evalBest = -1000.0f;
+	float evalBest = -evalInf;
 	for (BDGMVEV bdgmvev : rgbdgmvev) {
 		float eval;
 		eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
