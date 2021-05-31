@@ -171,11 +171,124 @@ private:
 	bool OnMouseMove(int x, int y);
 	bool OnLeftDown(int x, int y);
 	bool OnLeftUp(int x, int y);
+	bool OnMouseWheel(int x, int y, int dwheel);
 	bool OnTimer(UINT tid);
 	bool OnInitMenu(void);
+	bool OnKeyDown(int vk);
+	bool OnKeyUp(int vk);
 
 	void CreateTimer(UINT tid, DWORD dtm);
 	void DestroyTimer(UINT tid);
 
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam);
+};
+
+
+/*
+ *
+ *	CLIPB
+ * 
+ *	A little clipboard class to make sure we open/close the clipboard right with
+ *	error handling
+ *
+ */
+
+class CLIPB
+{
+	APP& app;
+	bool fClipOpen;
+	HGLOBAL hdata;
+	HGLOBAL hdataGet;
+	void* pdata;
+
+public:
+	CLIPB(APP& app) : app(app), fClipOpen(false), hdata(NULL), hdataGet(NULL), pdata(NULL)
+	{
+		Open();
+	}
+
+	~CLIPB(void)
+	{
+		Unlock();
+		Free();
+		Close();
+	}
+
+	void Open(void)
+	{
+		if (!::OpenClipboard(app.hwnd))
+			throw 1;
+		fClipOpen = true;
+	}
+
+	void Close(void)
+	{
+		if (!fClipOpen)
+			return;
+		::CloseClipboard();
+		fClipOpen = false;
+	}
+
+	void* PLock(void)
+	{
+		assert(pdata == NULL);
+		assert(hdata != NULL);
+		pdata = ::GlobalLock(hdata);
+		if (pdata == NULL)
+			throw 1;
+		return pdata;
+	}
+
+	void Unlock(void)
+	{
+		if (!pdata)
+			return;
+		::GlobalUnlock(hdata);
+		pdata = NULL;
+	}
+
+	void Empty(void)
+	{
+		::EmptyClipboard();
+	}
+
+	void* PAlloc(int cb)
+	{
+		hdata = ::GlobalAlloc(GMEM_MOVEABLE, cb);
+		if (hdata == NULL)
+			throw 1;
+		return PLock();
+	}
+
+	void SetData(int cf, void* pv, int cb)
+	{
+		assert(pdata != NULL);
+		memcpy(pdata, pv, cb);
+		Unlock();
+		::SetClipboardData(cf, hdata);
+		Free();
+	}
+
+	void Free(void)
+	{
+		if (hdata == NULL)
+			return;
+		if (hdataGet) {
+			assert(hdata == hdataGet);
+		}
+		else {
+			::GlobalFree(hdata);
+			hdata = NULL;
+		}
+	}
+
+	void* PGetData(int cf)
+	{
+		hdataGet = ::GetClipboardData(cf);
+		if (hdataGet == NULL)
+			throw 1;
+		hdata = hdataGet;
+		return PLock();
+	}
+		
 };

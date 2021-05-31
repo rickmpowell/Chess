@@ -217,6 +217,10 @@ FoundMove:
 
 void UIBD::UndoMv(SPMV spmv)
 {
+	if (spmv == SPMV::Animate && ga.bdg.imvCur >= 0) {
+		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur];
+		AnimateSqToSq(mv.SqTo(), mv.SqFrom());
+	}
 	ga.bdg.UndoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	if (spmv != SPMV::Hidden)
@@ -226,6 +230,10 @@ void UIBD::UndoMv(SPMV spmv)
 
 void UIBD::RedoMv(SPMV spmv)
 {
+	if (spmv == SPMV::Animate && ga.bdg.imvCur < (int)ga.bdg.rgmvGame.size()) {
+		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur+1];
+		AnimateMv(mv);
+	}
 	ga.bdg.RedoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	if (spmv != SPMV::Hidden)
@@ -525,15 +533,22 @@ void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
 
 void UIBD::AnimateMv(MV mv)
 {
-	int frameMax = 40;
-	sqDragInit = mv.SqFrom();
+	AnimateSqToSq(mv.SqFrom(), mv.SqTo());
+}
+
+
+void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo)
+{
+	float framefMax = 40.0f;
+	sqDragInit = sqFrom;
 	RCF rcfFrom = RcfFromSq(sqDragInit);
 	ptfDragInit = rcfFrom.PtfTopLeft();
-	RCF rcfTo = RcfFromSq(mv.SqTo());
-	for (int frame = 0; frame < frameMax; frame++) {
+	RCF rcfTo = RcfFromSq(sqTo);
+	for (float framef = 0.0f; framef < framefMax; framef++) {
 		rcfDragPc = rcfFrom;
-		rcfDragPc.Offset((rcfFrom.left * (float)(frameMax - frame) + rcfTo.left * (float)frame) / (float)frameMax - rcfFrom.left,
-			(rcfFrom.top * (float)(frameMax - frame) + rcfTo.top * (float)frame) / (float)frameMax - rcfFrom.top);
+		float framefRem = framefMax - framef;
+		rcfDragPc.Offset((rcfFrom.left*framefRem + rcfTo.left*framef) / framefMax - rcfFrom.left,
+			(rcfFrom.top*framefRem + rcfTo.top*framef) / framefMax - rcfFrom.top);
 		Redraw();
 	}
 	sqDragInit = sqNil;

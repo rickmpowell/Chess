@@ -678,3 +678,32 @@ bool UIML::FMakeVis(int imv)
 {
 	return UIPS::FMakeVis(RcfContent().top + 4.0f + (imv / 2) * dyfList, dyfList);
 }
+
+
+void UIML::KeyDown(int vk)
+{
+	switch (vk) {
+	case VK_UP:
+	case VK_LEFT:
+		ga.MoveToImv(ga.bdg.imvCur - 1);
+		break;
+	case VK_DOWN:
+	case VK_RIGHT:
+		ga.MoveToImv(ga.bdg.imvCur + 1);
+		break;
+	case VK_HOME:
+		ga.MoveToImv(0);
+		break;
+	case VK_END:
+		ga.MoveToImv((int)ga.bdg.rgmvGame.size() - 1);
+		break;
+	case VK_PRIOR:
+		ga.MoveToImv(ga.bdg.imvCur - 5*2);
+		break;
+	case VK_NEXT:
+		ga.MoveToImv(ga.bdg.imvCur + 5*2);
+		break;
+	default:
+		break;
+	}
+}

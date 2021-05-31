@@ -92,6 +92,7 @@ public:
 	virtual void SetHover(UI* pui);
 
 	virtual void SetFocus(UI* pui);
+	UI* PuiFocus(void) const;
 
 	inline PL*& PlFromCpc(CPC cpc) { return mpcpcppl[cpc]; }
 	inline PL* PplFromCpc(CPC cpc) { return PlFromCpc(cpc); }
@@ -110,6 +111,7 @@ public:
 	void PauseClock(CPC cpc, DWORD tmCur);
 	void UndoMv(void);
 	void RedoMv(void);
+	void MoveToImv(int imv);
 	void GenRgmv(vector<MV>& rgmv);
 
 	virtual void Log(LGT lgt, const wstring& sz);

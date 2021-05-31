@@ -415,6 +415,16 @@ void UI::SetFocus(UI* pui)
 }
 
 
+void UI::KeyDown(int vk)
+{
+}
+
+
+void UI::KeyUp(int vk)
+{
+}
+
+
 void UI::DispatchCmd(int cmd)
 {
 	if (puiParent)

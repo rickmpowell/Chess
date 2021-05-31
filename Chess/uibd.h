@@ -99,6 +99,7 @@ public:
 	void DrawGameState(void);
 	void DrawPc(RCF rcf, float opacity, IPC ipc);
 	void AnimateMv(MV mv);
+	void AnimateSqToSq(SQ sqFrom, SQ sqTo);
 	void DrawDragPc(const RCF& rcf);
 	RCF RcfGetDrag(void);
 	void InvalOutsideRcf(RCF rcf) const;

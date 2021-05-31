@@ -373,6 +373,31 @@ bool APP::OnLeftUp(int x, int y)
 }
 
 
+bool APP::OnMouseWheel(int x, int y, int dwheel)
+{
+    return true;
+}
+
+
+bool APP::OnKeyDown(int vk)
+{
+    UI* pui = pga->PuiFocus();
+    if (pui)
+        pui->KeyDown(vk);
+    return true;
+}
+
+
+bool APP::OnKeyUp(int vk)
+{
+    UI* pui = pga->PuiFocus();
+    if (pui)
+        pui->KeyUp(vk);
+    return true;
+}
+
+
+
 /*  APP::OnTimer
  *
  *  Handles the WM_TIMER message from the wndproc. Returns false if
@@ -797,17 +822,15 @@ public:
         ostringstream os;
         app.pga->Serialize(os);
         string sz = os.str();
-        if (!::OpenClipboard(app.hwnd))
-            return 0;
-        ::EmptyClipboard();
-        HGLOBAL htext = ::GlobalAlloc(GMEM_MOVEABLE, sz.size() + 1);
-        if (!htext)
-            return 0;
-        void* ptext = ::GlobalLock(htext);
-        memcpy(ptext, sz.c_str(), sz.size() + 1);
-        ::GlobalUnlock(htext);
-        ::SetClipboardData(CF_TEXT, htext);
-        ::CloseClipboard();
+        try {
+            CLIPB clipb(app);
+            clipb.Empty();
+            clipb.SetData(CF_TEXT, (void*)sz.c_str(), (int)sz.size() + 1);
+        }
+        catch (int err) {
+            ::MessageBox(app.hwnd, L"Rendering clipboard failed.", L"Clipboard Error", MB_OK);
+            return err;
+        }
         return 1;
     }
 };
@@ -833,15 +856,10 @@ public:
     {
         if (!::IsClipboardFormatAvailable(CF_TEXT))
             return 0;
-        if (!::OpenClipboard(app.hwnd))
-            return 0;
-        HGLOBAL htext = ::GetClipboardData(CF_TEXT);
-        char* ptext = (char*)::GlobalLock(htext);
+        CLIPB clipb(app);
         istringstream is;
-        is.str(ptext);
+        is.str((char*)clipb.PGetData(CF_TEXT));
         app.pga->Deserialize(is);
-        ::GlobalUnlock(htext);
-        ::CloseClipboard();
         return 1;
     }
 };
@@ -1002,7 +1020,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         break;
 
     case WM_SIZE:
-        papp->OnSize(LOWORD(lparam), HIWORD(lparam));
+        papp->OnSize(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
         return 0;
 
     case WM_DISPLAYCHANGE:
@@ -1024,17 +1042,32 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         return 0;
 
     case WM_MOUSEMOVE:
-        if (!papp->OnMouseMove(LOWORD(lparam), HIWORD(lparam)))
+        if (!papp->OnMouseMove(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
             break;
         return 0;
 
     case WM_LBUTTONDOWN:
-        if (!papp->OnLeftDown(LOWORD(lparam), HIWORD(lparam)))
+        if (!papp->OnLeftDown(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
             break;
         return 0;
 
     case WM_LBUTTONUP:
-        if (!papp->OnLeftUp(LOWORD(lparam), HIWORD(lparam)))
+        if (!papp->OnLeftUp(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
+            break;
+        return 0;
+
+    case WM_KEYDOWN:
+        if (!papp->OnKeyDown((int)wparam))
+            break;
+        return 0;
+        
+    case WM_KEYUP:
+        if (!papp->OnKeyUp((int)wparam))
+            break;
+        return 0;
+
+    case WM_MOUSEWHEEL:
+        if (!papp->OnMouseWheel(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam), GET_WHEEL_DELTA_WPARAM(wparam)))
             break;
         return 0;
 

@@ -1,15 +1,19 @@
+  Need an indication of where focus is
+  Improve visuals for scrollbar
+  Peg scrollbar thumb at minimum size
+  Add mouse scroll wheel support for scrolling UIs
+  Add mouse support for clicking scrollbar pages
+  Add mouse support for dragging scrollbar thumb
   Add support for multi-line log entries in db panel
   Add ability to load FEN files
   Add ability to paste FEN format
   Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
   Beef up error handling in deserialize
-  Implement keyboard focus for UI
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
   Add an option in logging to replace last log entry
   Test: if no pgn files in a directory, file enumeration crashes
   Size icons in move list slightly larger than text
-  Make debug log scroll
   Alpha-beta pruning does not work well in end game.
   Consider a different board evaluation for pre-sorting alpha-beta pruning
   Can we search for already evaluated board positions? Could save a lot of time in end game.
@@ -36,7 +40,6 @@
   UI: Implement labeled icon buttons
   Test: Parse errors in PGN file test should display in test progress panel
   Test: Move test progress into debug panel
-  AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
   Move gen: bitboard king
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
@@ -84,19 +87,21 @@
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
   Keyboard entry of moves
-  BDG: Change Undo/Redo to be an imvCur operation
   UIBD: When dragging pieces, highlight square when hovering over a legal move
-  ML: Animate moves when manually going through move list
   UI for picking clock/timing rules 
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-  ML: Implement scrollbar interface
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
-  ML: Implement keyboard interface to change selection on UIML
+* ML: Animate moves when manually going through move list
+* AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
+* BDG: Change Undo/Redo to be an imvCur operation
+* ML: Implement keyboard interface to change selection on UIML (arrow, home, end, pgup, pgdn?)
+* Implement keyboard focus for UI
+* Make debug log scroll
 * Feature: Add copy/paste commands to export/import PGN game board
 * Can we compile using C++ 17?
 * Change content and view rectangles in scrolling panels to be owner relative instead of global

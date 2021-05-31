@@ -120,6 +120,8 @@ public:
 	virtual void DispatchCmd(int cmd);
 	
 	virtual void SetFocus(UI* pui);
+	virtual void KeyUp(int vk);
+	virtual void KeyDown(int vk);
 
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTip(void) const;

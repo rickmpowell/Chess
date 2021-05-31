@@ -1155,6 +1155,7 @@ void BDG::UndoMv(void)
 	if (imvCur < 0)
 		return;
 	BD::UndoMv(rgmvGame[imvCur--]);
+	assert(imvCur >= -1);
 	cpcToMove = ~cpcToMove;
 }
 

@@ -161,5 +161,7 @@ public:
 	bool FMakeVis(int imv);
 	void UpdateContSize(void);
 
+	virtual void KeyDown(int vk);
+
 	void DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const;
 };

@@ -315,6 +315,7 @@ void GA::StartGame(void)
 	tmLast = 0;
 	mpcpctmClock[CPC::White] = prule->TmGame();
 	mpcpctmClock[CPC::Black] = prule->TmGame();
+	SetFocus(&uiml);
 }
 
 
@@ -332,6 +333,10 @@ void GA::SetFocus(UI* pui)
 	puiFocus = pui;
 }
 
+UI* GA::PuiFocus(void) const
+{
+	return puiFocus;
+}
 
 UI* GA::PuiHitTest(PTF* pptf, int x, int y)
 {
@@ -465,8 +470,7 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
  */
 void GA::UndoMv(void)
 {
-	uibd.UndoMv(spmv);
-	uiml.SetSel(bdg.imvCur, spmv);
+	MoveToImv(bdg.imvCur - 1);
 }
 
 
@@ -477,7 +481,28 @@ void GA::UndoMv(void)
  */
 void GA::RedoMv(void)
 {
-	uibd.RedoMv(spmv);
+	MoveToImv(bdg.imvCur + 1);
+}
+
+
+
+/*	GA::MoveToImv
+ *
+ *	Move to the given move number in the move list, animating the board as in the
+ *	current game speed mode. imv can be -1 to go to the start of the game, up to
+ *	the last move the game.
+ */
+void GA::MoveToImv(int imv)
+{
+	/* peg imv to legal sizes */
+	if (imv < -1)
+		imv = -1;
+	if (imv > (int)bdg.rgmvGame.size() - 1)
+		imv = (int)bdg.rgmvGame.size() - 1;
+	while (bdg.imvCur > imv)
+		uibd.UndoMv(spmv);
+	while (bdg.imvCur < imv)
+		uibd.RedoMv(spmv);
 	uiml.SetSel(bdg.imvCur, spmv);
 }
 
