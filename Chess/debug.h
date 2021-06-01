@@ -5,8 +5,9 @@
  *	Definitions for the debug panel
  * 
  */
+
 #pragma once
-#include "ui.h"
+#include "panel.h"
 #include "bd.h"
 
 

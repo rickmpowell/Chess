@@ -5,6 +5,7 @@
  *	Saving various formats of games/board positions
  * 
  */
+
 #include "ga.h"
 
 

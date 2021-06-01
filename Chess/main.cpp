@@ -73,9 +73,11 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
     hcurArrow = LoadCursor(NULL, IDC_ARROW);
     hcurMove = LoadCursor(NULL, IDC_SIZEALL);
     hcurNo = LoadCursor(NULL, IDC_NO);
+    hcurUpDown = LoadCursor(NULL, IDC_SIZENS);
     assert(hcurArrow != NULL);  /* these cursors are system cursors and loading them can't fail */
     assert(hcurMove != NULL);
     assert(hcurNo != NULL);
+    assert(hcurUpDown != NULL);
 
     const TCHAR szWndClassMain[] = L"ChessMain";
 
@@ -375,6 +377,10 @@ bool APP::OnLeftUp(int x, int y)
 
 bool APP::OnMouseWheel(int x, int y, int dwheel)
 {
+    PTF ptf;
+    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    if (pui)
+        pui->ScrollWheel(ptf, dwheel);
     return true;
 }
 

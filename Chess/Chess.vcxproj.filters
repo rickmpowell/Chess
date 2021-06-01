@@ -51,6 +51,9 @@
     <ClInclude Include="bb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="panel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ga.cpp">
@@ -87,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="open.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="panel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

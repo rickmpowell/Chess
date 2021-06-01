@@ -32,7 +32,7 @@ void UIDBBTNS::Draw(const RCF* prcfUpdate)
 }
 
 
-UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f)
+UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f), ptxLog(nullptr)
 {
 }
 

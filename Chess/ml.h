@@ -1,4 +1,3 @@
-#pragma once
 /*
  *
  *	ml.h
@@ -8,8 +7,8 @@
  * 
  */
 
-#include "framework.h"
-#include "ui.h"
+#pragma once
+#include "panel.h"
 #include "bd.h"
 
 

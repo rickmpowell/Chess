@@ -1,8 +1,10 @@
-  ML: baseline of numbers, white moves, and black moves are not the same
+  Resizing UIPS screws up bounds on scroll wheel scrolling
+  Make scroll wheel scrolling do multiples of line height
+  Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
+  Do a couple different AIs and have them play one another
   Need a visual indication of where focus is
   Improve visuals for scrollbar
   Peg scrollbar thumb at minimum size
-  Add mouse scroll wheel support for scrolling UIs
   Add mouse support for clicking scrollbar pages
   Add mouse support for dragging scrollbar thumb
   Add support for multi-line log entries in db panel
@@ -95,6 +97,9 @@
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
+  Add mouse scroll wheel support for scrolling UIs
+* ML: baseline of numbers, white moves, and black moves are not the same
+* Change cursor over wheel-able areas to double arrow
 * Alpha-beta pruning does not work well in end game.
 * AI: need some end-game improvement
 * ML: Animate moves when manually going through move list

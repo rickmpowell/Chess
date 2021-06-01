@@ -145,6 +145,7 @@ public:
 	HCURSOR hcurArrow;
 	HCURSOR hcurMove;
 	HCURSOR hcurNo;
+	HCURSOR hcurUpDown;
 	class GA* pga;
 	CMDLIST cmdlist;
 

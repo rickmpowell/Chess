@@ -394,6 +394,11 @@ void UI::MouseHover(PTF ptf, MHT mht)
 }
 
 
+void UI::ScrollWheel(PTF ptf, int dwheel)
+{
+}
+
+
 void UI::SetCapt(UI* pui)
 {
 	if (puiParent)
@@ -853,52 +858,3 @@ SIZF BTNIMG::SizfImg(void) const
 
 
 
-/*
- *
- *	UITIP class implementation
- *
- *	Tooltip user interface item
- *
- */
-
-
-UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(NULL)
-{
-}
-
-void UITIP::Draw(const RCF* prcfUpdate)
-{
-	RCF rcf = RcfInterior();
-	FillRcf(rcf, pbrText);
-	rcf.Inflate(PTF(-1.0, -1.0));
-	FillRcf(rcf, pbrTip);
-	if (puiOwner) {
-		wstring sz = puiOwner->SzTip();
-		if (!sz.empty())
-			DrawSz(sz, ptxTip, rcf.Inflate(PTF(-5.0f, -3.0f)), pbrText);
-	}
-}
-
-void UITIP::AttachOwner(UI* pui)
-{
-	puiOwner = pui;
-	if (!puiOwner)
-		return;
-	RCF rcfOwner = puiOwner->RcfInterior();
-	rcfOwner = puiOwner->RcfGlobalFromLocal(rcfOwner);
-	wstring szTip = puiOwner->SzTip();
-	SIZF sizfTip = SizfSz(szTip, ptxTip, 1000.0f, 1000.0f);
-	sizfTip.height += 8.0f;
-	sizfTip.width += 12.0f;
-	RCF rcfTip = RCF(PTF(rcfOwner.XCenter(), rcfOwner.top - sizfTip.height - 1.0f), sizfTip);
-	RCF rcfDesk = puiParent->RcfInterior();
-	if (rcfTip.top < rcfDesk.top)
-		rcfTip.Offset(PTF(0.0f, sizfTip.height + rcfOwner.DyfHeight() + 1.0f));
-	if (rcfTip.left < rcfDesk.left)
-		rcfTip.Offset(PTF(sizfTip.width + rcfOwner.DxfWidth() + 1.0f, 0.0f));
-	if (rcfTip.bottom > rcfDesk.bottom)
-		rcfTip.Offset(PTF(0.0f, -(sizfTip.height + rcfOwner.DyfHeight() + 1.0f)));
-	if (rcfTip.right > rcfDesk.right)
-		rcfTip.Offset(PTF(-(sizfTip.width + rcfOwner.DxfWidth() + 1.0f), 0.0f));
-	SetBounds(rcfTip);
-}

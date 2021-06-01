@@ -3,9 +3,10 @@
  *	ti.h
  *
  */
+
 #pragma once
 
-#include "ui.h"
+#include "panel.h"
 #include "pl.h"
 
 

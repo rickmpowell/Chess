@@ -1,5 +1,3 @@
-#pragma once
-
 /*
  *
  *	ga.h
@@ -8,13 +6,12 @@
  *
  */
 
-#include "framework.h"
-#include "pl.h"
-#include "ui.h"
-#include "ml.h"
-#include "uibd.h"
+#pragma once
+
 #include "ti.h"
-#include "bd.h"
+#include "uibd.h"
+#include "ml.h"
+#include "pl.h"
 #include "debug.h"
 
 

@@ -7,8 +7,7 @@
  */
 
 #pragma once
-#include "framework.h"
-#include "ui.h"
+#include "panel.h"
 #include "bd.h"
 
 
