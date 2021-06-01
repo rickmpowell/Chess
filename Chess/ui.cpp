@@ -23,7 +23,7 @@ WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
  *	UI static drawing objects
  */
 
-wchar_t UI::szFontFamily[] = L"Segoe UI Symbol";
+wchar_t UI::szFontFamily[] = L"Arial"; // L"Segoe UI Symbol";
 BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;

@@ -561,7 +561,7 @@ void UIML::DrawContent(const RCF& rcfCont)
 	for (unsigned imv = 0; imv < ga.bdg.rgmvGame.size(); imv++) {
 		MV mv = ga.bdg.rgmvGame[imv];
 		if (imv % 2 == 0) {
-			RCF rcf = RcfFromCol(yfCont + (imv / 2) * dyfList, 0);
+			RCF rcf = RcfFromCol(yfCont + 4.0f + (imv / 2) * dyfList, 0);
 			DrawMoveNumber(rcf, imv / 2 + 1);
 		}
 		if (!mv.FIsNil()) {
@@ -621,7 +621,7 @@ void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
  */
 void UIML::DrawMoveNumber(RCF rcf, int imv)
 {
-	rcf.top += 4.0f + dyfCellMarg;
+	rcf.top += dyfCellMarg;
 	rcf.bottom -= dyfCellMarg;
 	rcf.right -= dxfCellMarg;
 	WCHAR sz[8];

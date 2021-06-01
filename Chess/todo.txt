@@ -1,4 +1,5 @@
-  Need an indication of where focus is
+  ML: baseline of numbers, white moves, and black moves are not the same
+  Need a visual indication of where focus is
   Improve visuals for scrollbar
   Peg scrollbar thumb at minimum size
   Add mouse scroll wheel support for scrolling UIs
@@ -14,7 +15,6 @@
   Add an option in logging to replace last log entry
   Test: if no pgn files in a directory, file enumeration crashes
   Size icons in move list slightly larger than text
-  Alpha-beta pruning does not work well in end game.
   Consider a different board evaluation for pre-sorting alpha-beta pruning
   Can we search for already evaluated board positions? Could save a lot of time in end game.
   Should make board evaluations relative to pawn value
@@ -95,6 +95,7 @@
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
+* Alpha-beta pruning does not work well in end game.
 * AI: need some end-game improvement
 * ML: Animate moves when manually going through move list
 * AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
