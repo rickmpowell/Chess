@@ -64,9 +64,12 @@ public:
 	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg);
 	void FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev);
 	float EvalBdg(const BDGMVEV& bdgmvev, bool fFull);
-	float EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmv);
-	void FillKingCoeff(float mpsqcoeffControl[], SQ sq);
 
+	float VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const;
+	float VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const;
+	float VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const;
+	float VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const;
+	float VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const;
 };
 
 

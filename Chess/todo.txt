@@ -44,7 +44,6 @@
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
   Move gen: bitboard pawns
-  AI: need some end-game improvement
   AI: need to discourage early queen development
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: annotate candidate best moves on board
@@ -96,6 +95,7 @@
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
+* AI: need some end-game improvement
 * ML: Animate moves when manually going through move list
 * AI: not taking mate in one in certain situations (see game-2021-05-18-1.pgn)
 * BDG: Change Undo/Redo to be an imvCur operation

@@ -262,9 +262,11 @@ public:
 
 	void SetData(int cf, void* pv, int cb)
 	{
+		PAlloc(cb);
 		assert(pdata != NULL);
 		memcpy(pdata, pv, cb);
 		Unlock();
+		assert(hdata);
 		::SetClipboardData(cf, hdata);
 		Free();
 	}

@@ -61,9 +61,9 @@ wstring SzFromEval(float eval)
  *	This is a computer AI implementation.
  */
 
-const float evalInf = 100000.0f;
-const float evalMate = 99000.0f;
-const float evalMateMin = evalMate - 100.0f;
+const float evalInf = 10000.0f;
+const float evalMate = 9999.0f;
+const float evalMateMin = evalMate - 80.0f;
 
 MV PL::MvGetNext(void)
 {
@@ -142,8 +142,14 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 			return eval;
 		if (eval > evalBest) {
 			evalBest = eval;
-			if (eval > evalAlpha)
+			if (eval > evalAlpha) {
 				evalAlpha = eval;
+				if (eval > evalMateMin) {
+					int depthMate = (int)roundf(evalMate - eval);
+					if (depthMate < depthMax)
+						depthMax = depthMate;
+				}
+			}
 		}
 	}
 
@@ -255,8 +261,8 @@ float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 {
 	cbdgmvevEval++;
 
-	float vpcNext = bdgmvev.VpcTotalFromCpc(bdgmvev.cpcToMove);
-	float vpcSelf = bdgmvev.VpcTotalFromCpc(~bdgmvev.cpcToMove);
+	float vpcNext = VpcFromCpc(bdgmvev, bdgmvev.cpcToMove);
+	float vpcSelf = VpcFromCpc(bdgmvev, ~bdgmvev.cpcToMove);
 	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
 
 	static vector<MV> rgmvSelf;
@@ -265,49 +271,110 @@ float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 		(float)((int)rgmvSelf.size() + (int)bdgmvev.rgmvReplyAll.size());
 
 	float evalControl = 0.0f;
-#ifdef LATER
-	if (fFull) {
-		if (rgfAICoeff[2])
-			evalControl = EvalBdgControl(bdgmvev, rgmvSelf);
-	}
-#endif
+	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob;
+}
 
-	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob + rgfAICoeff[2] * evalControl;
+float PL::VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const
+{
+	if (bdgmvev.rgmvGame.size() < 20)
+		return VpcOpening(bdgmvev, cpcMove);
+
+	float vpcMove = bdgmvev.VpcTotalFromCpc(cpcMove);
+	float vpcOpp = bdgmvev.VpcTotalFromCpc(~cpcMove);
+	if (vpcMove < 2000.0f || vpcOpp < 2000.0f)
+		return VpcEndGame(bdgmvev, cpcMove);
+
+	return VpcMiddleGame(bdgmvev, cpcMove);
+}
+
+float PL::VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const
+{
+	return bdgmvev.VpcTotalFromCpc(cpcMove);
+}
+
+float PL::VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
+{
+	return bdgmvev.VpcTotalFromCpc(cpcMove);
 }
 
 
-float PL::EvalBdgControl(const BDGMVEV& bdgmvev, const vector<MV>& rgmvSelf)
+const float mpapcsqevalEndGame[APC::ActMax][64] = {
+	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
+	 0, 0, 0, 0, 0, 0, 0, 0,
+	 0, 0, 0, 0, 0, 0, 0, 0,
+	 0, 0, 0, 0, 0, 0, 0, 0,
+	 0, 0, 0, 0, 0, 0, 0, 0,
+	 0, 0, 0, 0, 0, 0, 0, 0,
+	 0, 0, 0, 0, 0, 0, 0, 0,
+	 0, 0, 0, 0, 0, 0, 0, 0},
+	{9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f,	// APC::Pawn
+	 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f,
+	 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f,
+	 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f,
+	 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f,
+	 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Knight
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Bishop
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Rook
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Queen
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+	{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,	// APC::King
+	 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.5f,
+	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
+	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
+	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
+	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
+	 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.5f,
+	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f}
+};
+
+float PL::VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
 {
-	int mpsqcmvAttack[128] = { 0 };
-	for (MV mv : rgmvSelf)
-		mpsqcmvAttack[mv.SqTo()]++;
-	for (MV mv : bdgmvev.rgmvReplyAll)
-		mpsqcmvAttack[mv.SqTo()]--;
-	float eval = 0.0;
-	float mpsqcoeffControl[128] = { 0.0f };
-	SQ sqKing = bdgmvev.mptpcsq[CPC::White][tpcKing];
-	FillKingCoeff(mpsqcoeffControl, sqKing);
-	sqKing = bdgmvev.mptpcsq[CPC::Black][tpcKing];
-	FillKingCoeff(mpsqcoeffControl, sqKing);
-	for (SQ sq = 0; sq < 128; sq++)
-		eval += mpsqcmvAttack[sq] * mpsqcoeffControl[sq];
-	return eval / 15.0f;
+	return VpcWeightTable(bdgmvev, cpcMove, mpapcsqevalEndGame);
 }
 
-void PL::FillKingCoeff(float mpsqcoeffControl[], SQ sq)
+float PL::VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
 {
-	mpsqcoeffControl[sq] = 1.0f;
-	int rgdsq1[] = { -17, -16, -15, -1, 1, 15, 16, 17 };
-	int rgdsq2[] = { -34, -33, -32, -31, -30, -18, -2, 2, 18, 30, 31, 32, 33, 34 };
-
-	for (int idsq = 0; idsq < CArray(rgdsq1); idsq++) {
-		int dsq = rgdsq1[idsq];
-		if (((sq + dsq) & 0x88) == 0)
-			mpsqcoeffControl[sq + dsq] = 1.0f;
+	float vpc = 0.0f;
+	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
+		SQ sq = bdgmvev.mptpcsq[cpcMove][tpc];
+		if (sq.FIsNil())
+			continue;
+		APC apc = bdgmvev.ApcFromSq(sq);
+		int rank = sq.rank();
+		int file = sq.file();
+		if (cpcMove == CPC::White)
+			rank = rankMax - rank - 1;
+		vpc += bdgmvev.VpcFromSq(sq) * mpapcsqeval[apc][rank * 8 + file];
 	}
-	for (int idsq = 0; idsq < CArray(rgdsq2); idsq++) {
-		int dsq = rgdsq2[idsq];
-		if (((sq + dsq) & 0x88) == 0)
-			mpsqcoeffControl[sq + dsq] = 0.5f;
-	}
-} 
+	return vpc;
+}
