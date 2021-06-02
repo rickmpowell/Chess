@@ -36,6 +36,7 @@ public:
 	virtual void DiscardRsrc(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);
+	virtual float DyfLine(void) const;
 	void ShowLog(LGT lgt, const wstring& sz);
 	void ClearLog(void);
 };

@@ -159,6 +159,7 @@ public:
 
 	bool FMakeVis(int imv);
 	void UpdateContSize(void);
+	virtual float DyfLine(void) const;
 
 	virtual void KeyDown(int vk);
 

@@ -1,4 +1,4 @@
-  Resizing UIPS screws up bounds on scroll wheel scrolling
+  When resizing scrolling panels, if bottom of content is visible before, make sure it's visible after
   Make scroll wheel scrolling do multiples of line height
   Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
   Do a couple different AIs and have them play one another
@@ -97,7 +97,8 @@
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
-  Add mouse scroll wheel support for scrolling UIs
+* Resizing UIPS screws up bounds on scroll wheel scrolling
+* Add mouse scroll wheel support for scrolling UIs
 * ML: baseline of numbers, white moves, and black moves are not the same
 * Change cursor over wheel-able areas to double arrow
 * Alpha-beta pruning does not work well in end game.

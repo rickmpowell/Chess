@@ -476,15 +476,14 @@ RCF UIML::RcfFromCol(float yf, int col) const
  */
 void UIML::Layout(void)
 {
-
 	/*	position the top clocks and player names */
 
 	RCF rcf = RcfInterior();
-	RCF rcfCont = rcf;
+	RCF rcfView = rcf;
 	rcf.bottom = rcf.top;
 	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true);
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView ^ 1], rcf, true);
-	rcfCont.top = rcf.bottom;
+	rcfView.top = rcf.bottom;
 
 	/* position the bottom clocks, player names, and game controls */
 
@@ -494,12 +493,11 @@ void UIML::Layout(void)
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false);
 	AdjustUIRcfBounds(&uigc, rcf, false); 
 	AdjustUIRcfBounds(&uigo, rcf, false);
-	rcfCont.bottom = rcf.top;
+	rcfView.bottom = rcf.top;
 
 	/* move list content is whatever is left */
-
-	SetView(rcfCont);
-	SetContent(rcfCont);
+	
+	AdjustRcfView(rcfView);
 }
 
 
@@ -512,6 +510,12 @@ SIZF UIML::SizfLayoutPreferred(void)
 	mpcoldxf[3] = dxyfScrollBarWidth;
 
 	return SIZF(XfFromCol(4), -1.0f);
+}
+
+
+float UIML::DyfLine(void) const
+{
+	return dyfList;
 }
 
 
@@ -666,7 +670,7 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dyf = ga.bdg.rgmvGame.size() / 2 * dyfList;
+	float dyf = (ga.bdg.rgmvGame.size()+1) / 2 * dyfList;
 	if (dyf == 0)
 		dyf = dyfList;
 	UIPS::UpdateContSize(PTF(RcfContent().DxfWidth(), 4.0f + dyf));

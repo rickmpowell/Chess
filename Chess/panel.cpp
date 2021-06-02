@@ -145,7 +145,7 @@ void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop)
  */
 
 
-UIPS::UIPS(GA* pga) : UIP(pga) 
+UIPS::UIPS(GA* pga) : UIP(pga), rcfView(0, 0, 0, 0), rcfCont(0, 0, 0, 0)
 {
 }
 
@@ -165,15 +165,7 @@ void UIPS::SetContent(const RCF& rcfCont)
 
 RCF UIPS::RcfView(void) const
 {
-	RCF rcf = rcfView;
-	return rcf;
-}
-
-
-void UIPS::UpdateContSize(const PTF& ptf)
-{
-	rcfCont.bottom = rcfCont.top + ptf.y;
-	rcfCont.right = rcfCont.left + ptf.x;
+	return rcfView;
 }
 
 
@@ -182,6 +174,47 @@ RCF UIPS::RcfContent(void) const
 	RCF rcf = rcfCont;
 	return rcf;
 }
+
+
+/*	UpdateContSize
+ *
+ *	Updates the size of the content area. Call this when you add content to
+ *	the content area.
+ */
+void UIPS::UpdateContSize(const PTF& ptf)
+{
+	rcfCont.bottom = rcfCont.top + ptf.y;
+	rcfCont.right = rcfCont.left + ptf.x;
+}
+
+
+/*	UIPS::AdjustRcfView
+ *
+ *	Adjust the view and content rectangle based on a new view rectangle. The
+ *	content rectangle is adjusted so that the width matches the view width,
+ *	the content height doesn't change, and the scroll position remains the 
+ *	same.
+ * 
+ *	Note that this is not a general purpose adjuster. It only works because
+ *	all of our scrollers are full-width vertical scrolling areas, and fonts
+ *	currently aren't scaling. 
+ */
+void UIPS::AdjustRcfView(RCF rcfViewNew)
+{
+	float dyf = rcfCont.top - rcfView.top;
+	RCF rcfContNew = rcfViewNew;
+	rcfContNew.bottom = rcfContNew.top + rcfCont.DyfHeight();
+	rcfContNew.Offset(0, dyf);
+	SetView(rcfViewNew);
+	SetContent(rcfContNew);
+}
+
+
+float UIPS::DyfLine(void) const
+{
+	return 5.0f;
+}
+
 
 
 /*	UIPS::ScrollTo
@@ -193,8 +226,10 @@ void UIPS::ScrollTo(float dyf)
 	float yfTopNew = rcfCont.top + dyf;
 	if (yfTopNew > rcfView.top)
 		yfTopNew = rcfView.top;
-	if (yfTopNew + rcfCont.DyfHeight() <= rcfView.top + 10.0f)
-		yfTopNew = rcfView.top + 10.0f - rcfCont.DyfHeight();
+	float dyfCont = rcfCont.DyfHeight();
+	float dyfLine = DyfLine();
+	if (yfTopNew + dyfCont < rcfView.top + dyfLine)
+		yfTopNew = rcfView.top + dyfLine - dyfCont;
 	dyf = yfTopNew - rcfCont.top;
 	rcfCont.Offset(0, dyf);
 	Redraw();
@@ -264,7 +299,7 @@ void UIPS::MouseHover(PTF ptf, MHT mht)
 void UIPS::ScrollWheel(PTF ptf, int dwheel)
 {
 	float dlifScroll = (float)dwheel / (float)WHEEL_DELTA;
-	ScrollTo(20.0f * dlifScroll);
+	ScrollTo(DyfLine() * dlifScroll);
 }
 
 

@@ -72,8 +72,7 @@ void UIDB::Layout(void)
 	/* move list content is whatever is left */
 
 	dyfLine = SizfSz(L"0", ptxLog).height;
-	SetView(rcfView);
-	SetContent(rcfView);
+	AdjustRcfView(rcfView);
 }
 
 
@@ -95,6 +94,12 @@ void UIDB::DrawContent(const RCF& rcfCont)
 		DrawSz(sz, ptxLog, rcf, pbrText);
 		rcf.top = rcf.bottom;
 	}
+}
+
+
+float UIDB::DyfLine(void) const
+{
+	return dyfLine;
 }
 
 

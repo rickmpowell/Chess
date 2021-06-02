@@ -56,20 +56,26 @@ private:
 	RCF rcfCont;
 protected:
 	const float dxyfScrollBarWidth = 10.0f;
+	void DrawScrollBar(void);
 public:
 	UIPS(GA* pga);
+	
 	void SetView(const RCF& rcfView);
 	void SetContent(const RCF& rcfCont);
-	virtual RCF RcfView(void) const;
+	RCF RcfView(void) const;
+	RCF RcfContent(void) const;
 	void UpdateContSize(const PTF& ptf);
-	virtual RCF RcfContent(void) const;
-	void ScrollTo(float yfTop);
-	bool FMakeVis(float yf, float dyf);
+	void AdjustRcfView(RCF rcf);
+	virtual float DyfLine(void) const;
+		
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcf);
-	void DrawScrollBar(void);
+
 	virtual void MouseHover(PTF ptf, MHT mht);
 	virtual void ScrollWheel(PTF ptf, int dwheel);
+
+	void ScrollTo(float yfTop);
+	bool FMakeVis(float yf, float dyf);
 };
 
 
