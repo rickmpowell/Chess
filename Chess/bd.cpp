@@ -144,7 +144,7 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 			/* try piece on other side; otherwise it's a promoted pawn */
 			if (mptpcsq[cpc][tpc = TpcOpposite(tpc)] == sqNil)
 				break;
-			/* fall through */
+			[[fallthrough]];
 		case APC::Pawn:
 		case APC::Queen:
 			tpc = TpcUnusedPawn(cpc);
@@ -577,7 +577,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 				if (FFileAttack(sqKing, sq))
 					return true;
 			}
-			/* fall through */
+			[[fallthrough]];
 		case APC::Bishop:
 			dsq = sq - sqKing;
 			if (dsq % 17 == 0) {
@@ -1089,6 +1089,8 @@ bool BDG::FMvIsQuiescent(MV mv) const
 }
 
 
+
+
 /*	BDG::MakeMv
  *
  *	Make a move on the board, and keeps the move list for the game.
@@ -1151,22 +1153,34 @@ wstring BDG::SzMoveAndDecode(MV mv)
 
 void BDG::UndoMv(void)
 {
-	/* TODO: I think this loses imvPawnOrTakeLast if we undo past it */
 	if (imvCur < 0)
 		return;
+	if (imvCur == imvPawnOrTakeLast) {
+		/* scan backwards looking for pawn moves or captures */
+		for (imvPawnOrTakeLast = imvCur-1; imvPawnOrTakeLast >= 0; imvPawnOrTakeLast--)
+			if (ApcFromSq(rgmvGame[imvPawnOrTakeLast].SqFrom()) == APC::Pawn || 
+					rgmvGame[imvPawnOrTakeLast].ApcCapture() != APC::Null)
+				break;
+	}
 	BD::UndoMv(rgmvGame[imvCur--]);
 	assert(imvCur >= -1);
 	cpcToMove = ~cpcToMove;
 }
 
 
+/*	BDG::RedoMv
+ *
+ *	Redoes that last undone move, which will be at imvCur+1.
+ */
 void BDG::RedoMv(void)
 {
 	if (imvCur+1 >= rgmvGame.size() || rgmvGame[imvCur+1].FIsNil())
 		return;
-	/* TODO: I think this loses imvPawnOrTakeLast */
 	imvCur++;
-	BD::MakeMv(rgmvGame[imvCur]);
+	MV mv = rgmvGame[imvCur];
+	if (ApcFromSq(mv.SqFrom()) == APC::Pawn || mv.ApcCapture() != APC::Null)
+		imvPawnOrTakeLast = imvCur;
+	BD::MakeMv(mv);
 	cpcToMove = ~cpcToMove;
 }
 
@@ -1281,7 +1295,8 @@ bool BDG::FDraw3Repeat(int cbdDraw) const
 			if (++cbdSame >= cbdDraw)
 				return true;
 			imv -= 2;
-			/* let's go ahead and back up two more moves here, since we can't possibly match */
+			/* let's go ahead and back up two more moves here, since we can't possibly 
+			   match the next position */
 			if (imv < imvPawnOrTakeLast + 2)
 				break;
 			bd.UndoMv(rgmvGame[imv]);

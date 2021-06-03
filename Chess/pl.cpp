@@ -68,6 +68,7 @@ const float evalMateMin = evalMate - 80.0f;
 MV PL::MvGetNext(void)
 {
 	cbdgmvevEval = 0L;
+	cbdgmvevPrune = 0L;
 
 	/* generate all moves without removing checks. we'll use this as a heuristic for the amount of
 	 * mobillity on the board, which we can use to estimate the depth we can search */
@@ -80,7 +81,7 @@ MV PL::MvGetNext(void)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 5.00e+6f;	// approximate number of moves to analyze
+	const float cmvSearch = 1.00e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2*fracAlphaBeta*fracAlphaBeta));
@@ -110,6 +111,8 @@ MV PL::MvGetNext(void)
 	}
 
 	ga.Log(LGT::SearchNodesAI, wstring(L"Searched ") + to_wstring(cbdgmvevEval) + L" nodes");
+	ga.Log(LGT::SearchNodesAI, wstring(L"Pruned: ") + 
+			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevEval)) + L"%");
 	assert(!mvBest.FIsNil());
 	return mvBest;
 }
@@ -136,10 +139,12 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
 		if (bdgmvev.FInCheck(~bdgmvev.cpcToMove))
 			continue;
-		cmv++;
 		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
-		if (eval >= evalBeta)
+		cmv++;
+		if (eval >= evalBeta) {
+			cbdgmvevPrune += (int)rgbdgmvev.size() - cmv;
 			return eval;
+		}
 		if (eval > evalBest) {
 			evalBest = eval;
 			if (eval > evalAlpha) {
@@ -201,11 +206,15 @@ float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, flo
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
 	float evalBest = -evalInf;
+	int cmv = 0;
 	for (BDGMVEV bdgmvev : rgbdgmvev) {
 		float eval;
 		eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
-		if (eval >= evalBeta)
+		cmv++;
+		if (eval >= evalBeta) {
+			cbdgmvevPrune += (int)rgbdgmvev.size() - cmv;
 			return eval;
+		}
 		if (eval > evalBest) {
 			evalBest = eval;
 			if (eval > evalAlpha)

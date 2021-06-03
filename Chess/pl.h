@@ -47,6 +47,7 @@ class PL
 	float rgfAICoeff[3];
 	long cYield;
 	long cbdgmvevEval;
+	long cbdgmvevPrune;
 public:
 	PL(GA& ga, wstring szName, const float rgfAICoeff[]);
 	~PL(void);

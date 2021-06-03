@@ -281,9 +281,11 @@ void UIPS::DrawScrollBar(void)
 		rcfThumb.top = rcfScroll.top;
 	if (rcfThumb.bottom > rcfScroll.bottom)
 		rcfThumb.bottom = rcfScroll.bottom;
-	FillRcf(RCF(rcfScroll.left, rcfThumb.top - 1, rcfScroll.right, rcfThumb.top), pbrGridLine);
-	FillRcf(RCF(rcfScroll.left, rcfScroll.bottom, rcfScroll.right, rcfScroll.bottom + 1), pbrGridLine);
 	FillRcf(rcfThumb, pbrBack);
+	FillRcf(RCF(rcfThumb.left, rcfThumb.top - 1, rcfThumb.right, rcfThumb.top), pbrGridLine);
+	FillRcf(RCF(rcfThumb.left, rcfThumb.bottom, rcfThumb.right, rcfThumb.bottom + 1), pbrGridLine);
+	FillRcf(RCF(rcfThumb.left, rcfThumb.top, rcfThumb.left + 1, rcfThumb.bottom), pbrGridLine);
+
 }
 
 
