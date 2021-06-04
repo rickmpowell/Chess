@@ -299,7 +299,7 @@ void UI::SetBounds(RCF rcfNew)
  */
 void UI::Resize(PTF ptfNew) 
 {
-	if (ptfNew.x == rcfBounds.DxfWidth() || ptfNew.y == rcfBounds.DyfHeight())
+	if (ptfNew.x == rcfBounds.DxfWidth() && ptfNew.y == rcfBounds.DyfHeight())
 		return;
 	rcfBounds.right = rcfBounds.left + ptfNew.x;
 	rcfBounds.bottom = rcfBounds.top + ptfNew.y;
