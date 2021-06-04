@@ -141,6 +141,7 @@ public:
 	void SerializeHeaders(ostream& os);
 	void SerializeHeader(ostream& os, const string& szTag, const string& szVal);
 	void SerializeMoveList(ostream& os);
+	void WriteSzLine80(ostream& os, string& szLine, const string& szAdd);
 
 	void UndoTest(void);
 	int PlayUndoPGNFile(const WCHAR* szFile);

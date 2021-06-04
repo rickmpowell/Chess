@@ -392,7 +392,7 @@ int GA::Play(void)
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
 			MV mv = ppl->MvGetNext();
-			assert(!mv.FIsNil());
+			assert(!mv.fIsNil());
 			MakeMv(mv, spmv);
 			SavePGNFile(L"current.pgn");
 		} while (bdg.gs == GS::Playing);

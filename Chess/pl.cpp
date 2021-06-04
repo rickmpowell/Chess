@@ -113,7 +113,7 @@ MV PL::MvGetNext(void)
 	ga.Log(LGT::SearchNodesAI, wstring(L"Searched ") + to_wstring(cbdgmvevEval) + L" nodes");
 	ga.Log(LGT::SearchNodesAI, wstring(L"Pruned: ") + 
 			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevEval)) + L"%");
-	assert(!mvBest.FIsNil());
+	assert(!mvBest.fIsNil());
 	return mvBest;
 }
 
@@ -434,7 +434,7 @@ float PL::VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcs
 	float vpc = 0.0f;
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 		SQ sq = bdgmvev.mptpcsq[cpcMove][tpc];
-		if (sq.FIsNil())
+		if (sq.fIsNil())
 			continue;
 		APC apc = bdgmvev.ApcFromSq(sq);
 		int rank = sq.rank();

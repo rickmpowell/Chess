@@ -567,7 +567,7 @@ void UIML::DrawContent(const RCF& rcfCont)
 			RCF rcf = RcfFromCol(yfCont + 4.0f + (imv / 2) * dyfList, 0);
 			DrawMoveNumber(rcf, imv / 2 + 1);
 		}
-		if (!mv.FIsNil()) {
+		if (!mv.fIsNil()) {
 			RCF rcf = RcfFromImv(imv);
 			if (imv == imvSel)
 				FillRcf(rcf, pbrHilite);

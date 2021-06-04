@@ -207,14 +207,14 @@ void BD::MakeMv(MV mv)
  */
 void BD::MakeMvSq(MV mv)
 {
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	IPC ipcFrom = mpsqipc[sqFrom];
 	IPC ipcTo = mpsqipc[sqTo];
 
 	/* captures. if we're taking a rook, we can't castle to that rook */
 
-	if (!ipcTo.FIsEmpty()) {
+	if (!ipcTo.fIsEmpty()) {
 		SqFromIpc(ipcTo) = sqNil;
 		ClearBB(ipcTo, sqTo);
 		switch (ipcTo.tpc()) {
@@ -250,7 +250,7 @@ void BD::MakeMvSq(MV mv)
 		}
 		else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
 			/* pawn promotion on last rank */
-			IPC ipcPromote = IPC(ipcFrom.tpc(), ipcFrom.cpc(), mv.ApcPromote());
+			IPC ipcPromote = IPC(ipcFrom.tpc(), ipcFrom.cpc(), mv.apcPromote());
 			mpsqipc[sqTo] = ipcPromote;
 			ClearBB(ipcFrom, sqTo);
 			SetBB(ipcPromote, sqTo);
@@ -303,8 +303,8 @@ void BD::UndoMv(MV mv)
 
 	/* unpack some useful information out of the move */
 
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	assert(FIsEmpty(sqFrom));
 	IPC ipcMove = mpsqipc[sqTo];
 	CPC cpcMove = ipcMove.cpc();
@@ -314,16 +314,16 @@ void BD::UndoMv(MV mv)
 	   passant state only saves the file of the en passant captureable pawn 
 	   (due to lack of available bits in the MV). */
 
-	cs |= CsUnpackColor(mv.CsPrev(), cpcMove);
-	if (mv.FEpPrev())
-		sqEnPassant = SQ(cpcMove == CPC::White ? 5 : 2, mv.FileEpPrev());
+	cs |= CsUnpackColor(mv.csPrev(), cpcMove);
+	if (mv.fEpPrev())
+		sqEnPassant = SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev());
 	else
 		sqEnPassant = sqNil;
 
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
 
-	if (mv.ApcPromote() != APC::Null) {
+	if (mv.apcPromote() != APC::Null) {
 		ClearBB(ipcMove, sqTo);
 		ipcMove = IpcSetApc(ipcMove, APC::Pawn);
 	}
@@ -336,11 +336,11 @@ void BD::UndoMv(MV mv)
 	/* if move was a capture, put the captured piece back on the board; otherwise
 	   the destination square becomes empty */
 
-	APC apcCapt = mv.ApcCapture();
+	APC apcCapt = mv.apcCapture();
 	if (apcCapt == APC::Null) 
 		mpsqipc[sqTo] = ipcEmpty;
 	else {
-		IPC ipcTake = IPC(mv.TpcCapture(), ~cpcMove, apcCapt);
+		IPC ipcTake = IPC(mv.tpcCapture(), ~cpcMove, apcCapt);
 		SQ sqTake = sqTo;
 		if (sqTake == sqEnPassant) {
 			/* capture into the en passant square must be en passant capture
@@ -439,8 +439,8 @@ void BD::RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const
 
 bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
 {
-	return FIsEmpty(mv.SqTo()) ||
-		VpcFromSq(mv.SqFrom()) + 0.5 >= VpcFromSq(mv.SqTo());
+	return FIsEmpty(mv.sqTo()) ||
+		VpcFromSq(mv.sqFrom()) + 0.5 >= VpcFromSq(mv.sqTo());
 }
 
 
@@ -550,7 +550,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqKing) const
 {
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 		SQ sq = mptpcsq[cpcBy][tpc];
-		if (sq.FIsNil())
+		if (sq.fIsNil())
 			continue;
 		int dsq;
 		switch (ApcFromSq(sq)) {
@@ -670,7 +670,7 @@ void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Pawn);
 	SQ sqTo = sqFrom + dsq;
-	if (sqTo.FIsOffBoard())
+	if (sqTo.fIsOffBoard())
 		return;
 	IPC ipcFrom = mpsqipc[sqFrom];
 	CPC cpcFrom = ipcFrom.cpc();
@@ -695,7 +695,7 @@ void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
 bool BD::FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
 {
 	SQ sqTo = sq + dsq;
-	if (sqTo.FIsOffBoard())
+	if (sqTo.fIsOffBoard())
 		return false;
 
 	/* have we run into one of our own pieces? */
@@ -845,7 +845,7 @@ void BD::GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const
 
 float BD::VpcFromSq(SQ sq) const
 {
-	assert(!sq.FIsOffBoard());
+	assert(!sq.fIsOffBoard());
 	APC apc = ApcFromSq(sq);
 	float vpc = mpapcvpc[apc];
 	return vpc;
@@ -861,7 +861,7 @@ float BD::VpcTotalFromCpc(CPC cpc) const
 	float vpc = 0;
 	for (int tpc = 0; tpc < tpcPieceMax; tpc++) {
 		SQ sq = mptpcsq[cpc][tpc];
-		if (!sq.FIsNil())
+		if (!sq.fIsNil())
 			vpc += VpcFromSq(sq);
 	}
 	return vpc;
@@ -1097,14 +1097,14 @@ bool BDG::FMvIsQuiescent(MV mv) const
  */
 void BDG::MakeMv(MV mv)
 {
-	assert(!mv.FIsNil());
+	assert(!mv.fIsNil());
 
 	/* store undo information in the mv, and keep track of last pawn move or
 	   capture move */
 	
 	mv.SetCsEp(CsPackColor(cs, cpcToMove), sqEnPassant);
-	APC apcFrom = ApcFromSq(mv.SqFrom());
-	SQ sqTake = mv.SqTo();
+	APC apcFrom = ApcFromSq(mv.sqFrom());
+	SQ sqTake = mv.sqTo();
 	if (apcFrom == APC::Pawn) {
 		imvPawnOrTakeLast = imvCur + 1;
 		if (sqTake == sqEnPassant)
@@ -1142,7 +1142,7 @@ void BDG::MakeMv(MV mv)
 wstring BDG::SzMoveAndDecode(MV mv)
 {
 	wstring sz = SzDecodeMv(mv, true);
-	CPC cpc = CpcFromSq(mv.SqFrom());
+	CPC cpc = CpcFromSq(mv.sqFrom());
 	MakeMv(mv);
 	if (FSqAttacked(cpc, mptpcsq[~cpc][tpcKing])) {
 		sz += L'+';
@@ -1158,8 +1158,8 @@ void BDG::UndoMv(void)
 	if (imvCur == imvPawnOrTakeLast) {
 		/* scan backwards looking for pawn moves or captures */
 		for (imvPawnOrTakeLast = imvCur-1; imvPawnOrTakeLast >= 0; imvPawnOrTakeLast--)
-			if (ApcFromSq(rgmvGame[imvPawnOrTakeLast].SqFrom()) == APC::Pawn || 
-					rgmvGame[imvPawnOrTakeLast].ApcCapture() != APC::Null)
+			if (ApcFromSq(rgmvGame[imvPawnOrTakeLast].sqFrom()) == APC::Pawn || 
+					rgmvGame[imvPawnOrTakeLast].apcCapture() != APC::Null)
 				break;
 	}
 	BD::UndoMv(rgmvGame[imvCur--]);
@@ -1174,11 +1174,11 @@ void BDG::UndoMv(void)
  */
 void BDG::RedoMv(void)
 {
-	if (imvCur+1 >= rgmvGame.size() || rgmvGame[imvCur+1].FIsNil())
+	if (imvCur+1 >= rgmvGame.size() || rgmvGame[imvCur+1].fIsNil())
 		return;
 	imvCur++;
 	MV mv = rgmvGame[imvCur];
-	if (ApcFromSq(mv.SqFrom()) == APC::Pawn || mv.ApcCapture() != APC::Null)
+	if (ApcFromSq(mv.sqFrom()) == APC::Pawn || mv.apcCapture() != APC::Null)
 		imvPawnOrTakeLast = imvCur;
 	BD::MakeMv(mv);
 	cpcToMove = ~cpcToMove;

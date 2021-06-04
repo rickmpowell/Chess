@@ -28,10 +28,7 @@
   Test with alternate fonts
   Tooltips don't resize for shorter text (only with FreeSerif?)
   UIBD: Dragging pieces outside board clips the dragged piece
-  Save: Saving PGN files doesn't break lines at 80 columns as spec'ed.
   UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
-  Use bit fields to layout MV
-  Verify IPC is layed out in the byte in the smart way
   Bug: File/Open doesn't redraw board or scroll ML at end of the load
   Bug: Dragging window edges doesn't resize game interior (dragging corners works)
   Bug: Open PGN files assert if no \n on last line
@@ -95,6 +92,9 @@
   ML: Optimize redraw
   UIBD: Optimize redraw
   ML: Implement mouse interface to change selection on UIML
+* Use bit fields to layout MV
+* Save: Saving PGN files doesn't break lines at 80 columns as spec'ed.
+* Verify IPC is layed out in the byte in the smart way
 * Make scroll wheel scrolling do multiples of line height
 * Resizing UIPS screws up bounds on scroll wheel scroll
 * Add mouse scroll wheel support for scrolling UIs

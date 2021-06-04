@@ -471,10 +471,10 @@ int BDG::ParseRankMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) co
 bool BDG::FMvMatchPieceTo(const vector<MV>& rgmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const
 {
 	for (MV mvSearch : rgmv) {
-		if (mvSearch.SqTo() == sqTo && ApcFromSq(mvSearch.SqFrom()) == apc) {
-			if (fileFrom != -1 && fileFrom != mvSearch.SqFrom().file())
+		if (mvSearch.sqTo() == sqTo && ApcFromSq(mvSearch.sqFrom()) == apc) {
+			if (fileFrom != -1 && fileFrom != mvSearch.sqFrom().file())
 				continue;
-			if (rankFrom != -1 && rankFrom != mvSearch.SqFrom().rank())
+			if (rankFrom != -1 && rankFrom != mvSearch.sqFrom().rank())
 				continue;
 			mv = mvSearch;
 			return true;
@@ -486,7 +486,7 @@ bool BDG::FMvMatchPieceTo(const vector<MV>& rgmv, APC apc, int rankFrom, int fil
 bool BDG::FMvMatchFromTo(const vector<MV>& rgmv, SQ sqFrom, SQ sqTo, MV& mv) const
 {
 	for (MV mvSearch : rgmv) {
-		if (mvSearch.SqFrom() == sqFrom && mvSearch.SqTo() == sqTo) {
+		if (mvSearch.sqFrom() == sqFrom && mvSearch.sqTo() == sqTo) {
 			mv = mvSearch;
 			return true;
 		}
@@ -752,7 +752,8 @@ Retry:
 				*pchSym++ = ch;
 				ch = ChNext();
 			} while (FIsSymbol(ch, false));
-			UngetCh(ch);
+			if (ch)
+				UngetCh(ch);
 			*pchSym = 0;
 			return new TKSZ(tkpgnSymbol, szSym);
 		}

@@ -170,12 +170,12 @@ public:
 		return *this;
 	}
 
-	inline bool FIsNil(void) const
+	inline bool fIsNil(void) const
 	{
 		return apcGrf == APC::ActMax;
 	}
 
-	inline bool FIsEmpty(void) const
+	inline bool fIsEmpty(void) const
 	{
 		return apcGrf == APC::Null;
 	}
@@ -241,36 +241,124 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
 
 class MV {
 private:
-	static const unsigned long grfNil = 0xffffffffL;
-	unsigned long grf;
+	unsigned long sqFromGrf : 8,
+		sqToGrf : 8,
+		tpcCaptGrf : 4,
+		apcCaptGrf : 3,
+		fEnPassantGrf : 1,
+		fileEnPassantGrf : 3,
+		csGrf : 2,
+		apcPromoteGrf : 3;
+
 public:
-	MV(void) { grf = grfNil; }
-	MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
-		grf = (unsigned long)sqFrom.grf | ((unsigned long)sqTo.grf << 8) | 
-			((unsigned long)apcPromote << 29);
+	inline MV(void) 
+	{
+		sqFromGrf = sqToGrf = 15; 
+		tpcCaptGrf = 15; 
+		apcCaptGrf = APC::ActMax;
+		fEnPassantGrf = true;
+		fileEnPassantGrf = 7;
+		csGrf = 3;
+		apcPromoteGrf = APC::ActMax;
+	}
+
+	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
+		sqFromGrf = sqFrom;
+		sqToGrf = sqTo;
+		tpcCaptGrf = 0;
+		apcCaptGrf = APC::Null;
+		fEnPassantGrf = false;
+		csGrf = 0;
+		apcPromoteGrf = apcPromote;
 	}
 	
-	SQ SqFrom(void) const { return grf & 0xff; }
-	SQ SqTo(void) const { return (grf >> 8) & 0xff; }
-	APC ApcPromote(void) const { return (APC)((grf >> 29) & 0x07); }
-	bool FIsNil(void) const { return grf == grfNil; }
-	MV& SetApcPromote(APC apc) { grf = (grf & 0x1fffffffL) | ((unsigned long)apc << 29); return *this;  }
-	MV& SetCapture(APC apc, TPC tpc) { grf = (grf & 0xff80ffffL) | ((unsigned long)apc << 20) | ((unsigned long)tpc << 16); return *this;  }
-	MV& SetCsEp(int cs, const SQ& sqEnPassant) {
-		grf = (grf & 0xe07fffffL) | 
-			((unsigned long)cs << 27) |
-			((unsigned long)sqEnPassant.file() << 24) | 
-			((unsigned long)!sqEnPassant.FIsNil() << 23); 
+	inline SQ sqFrom(void) const 
+	{
+		return (SQ)sqFromGrf; 
+	}
+
+	inline SQ sqTo(void) const 
+	{
+		return (SQ)sqToGrf;
+	}
+	
+	inline APC apcPromote(void) const 
+	{
+		return (APC)apcPromoteGrf;
+	}
+
+	inline bool fIsNil(void) const 
+	{
+		return sqFromGrf == 15 && sqToGrf == 15 && apcPromoteGrf == APC::ActMax;
+	}
+
+	inline MV& SetApcPromote(APC apc)
+	{
+		apcPromoteGrf = apc;
 		return *this;
 	}
-	int CsPrev(void) const { return (grf >> 27) & 0x03; }
-	int FileEpPrev(void) const { return (grf >> 24) & 0x07; }
-	bool FEpPrev(void) const { return (grf >> 23) & 0x01; }
-	APC ApcCapture(void) const { return (APC)((grf >> 20) & 0x07); }
-	bool FIsCapture(void) const { return  ApcCapture() != APC::Null; }
-	TPC TpcCapture(void) const { return (TPC)((grf >> 16) & 0x0f); }
-	bool operator==(const MV& mv) const { return grf == mv.grf; }
-	bool operator!=(const MV& mv) const { return grf != mv.grf; }
+
+	inline MV& SetCapture(APC apc, TPC tpc) 
+	{
+		apcCaptGrf = apc;
+		tpcCaptGrf = tpc;
+		return *this;  
+	}
+
+	inline MV& SetCsEp(int cs, const SQ& sqEnPassant)
+	{
+		csGrf = cs;
+		fileEnPassantGrf = sqEnPassant.file();
+		fEnPassantGrf = !sqEnPassant.fIsNil();
+		return *this;
+	}
+
+	inline int csPrev(void) const 
+	{
+		return csGrf;
+	}
+
+	inline int fileEpPrev(void) const 
+	{
+		return fileEnPassantGrf;
+	}
+
+	inline bool fEpPrev(void) const 
+	{
+		return fEnPassantGrf;
+	}
+
+	inline APC apcCapture(void) const 
+	{
+		return (APC)apcCaptGrf;
+	}
+
+	inline bool fIsCapture(void) const 
+	{
+		return apcCapture() != APC::Null; 
+	}
+
+	inline TPC tpcCapture(void) const 
+	{ 
+		return (TPC)tpcCaptGrf; 
+	}
+
+	inline bool operator==(const MV& mv) const 
+	{
+		return sqFromGrf == mv.sqFromGrf &&
+			   sqToGrf == mv.sqToGrf &&
+			   tpcCaptGrf == mv.tpcCaptGrf &&
+			   apcCaptGrf == mv.apcCaptGrf &&
+			   fEnPassantGrf == mv.fEnPassantGrf &&
+			   fileEnPassantGrf == mv.fileEnPassantGrf &&
+			   csGrf == mv.csGrf &&
+			   apcPromoteGrf == mv.apcPromoteGrf;
+	}
+
+	inline bool operator!=(const MV& mv) const 
+	{
+		return !(*this == mv);
+	}
 };
 
 
@@ -450,12 +538,12 @@ public:
 
 	inline bool FMvEnPassant(MV mv) const
 	{
-		return mv.SqTo() == sqEnPassant && ApcFromSq(mv.SqFrom()) == APC::Pawn;
+		return mv.sqTo() == sqEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const
 	{
-		return !FIsEmpty(mv.SqTo()) || FMvEnPassant(mv);
+		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
 	inline IPC& operator()(int rank, int file) { return mpsqipc[rank*16+file]; }
@@ -481,7 +569,7 @@ public:
 	
 	inline bool FIsEmpty(SQ sq) const 
 	{
-		return mpsqipc[sq].FIsEmpty();
+		return mpsqipc[sq].fIsEmpty();
 	}
 
 	inline bool FCanCastle(CPC cpc, int csSide) const 

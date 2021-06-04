@@ -10,6 +10,10 @@
 
 
 
+/*	GA::SavePGNFile
+ *
+ *	Saves the game state as a PGN file
+ */
 void GA::SavePGNFile(const WCHAR szFile[])
 {
 	ofstream os(szFile, ios_base::out);
@@ -22,6 +26,11 @@ void GA::SavePGNFile(const WCHAR szFile[])
 }
 
 
+/*	GA::Serialize
+ *
+ *	Serializes the current game state to a stream, which can be
+ *	a file, or a memory buffer (which is used for clipboard)
+ */
 void GA::Serialize(ostream& os)
 {
 	SerializeHeaders(os);
@@ -66,7 +75,8 @@ void GA::SerializeHeaders(ostream& os)
 void GA::SerializeHeader(ostream& os, const string& szTag, const string& szVal)
 {
 	/* TODO: escape quote marks? */
-	os << string("[") + szTag + " \"" + szVal + "\"]\n";
+	os << string("[") + szTag + " \"" + szVal + "\"]";
+	os << endl;
 }
 
 
@@ -74,12 +84,13 @@ void GA::SerializeMoveList(ostream& os)
 {
 	BDG bdgSave;
 	bdgSave.NewGame();
+	string szLine;
 	for (unsigned imv = 0; imv < (unsigned)bdg.rgmvGame.size(); imv++) {
 		MV mv = bdg.rgmvGame[imv];
 		if (imv % 2 == 0)
-			os << to_string(imv/2 + 1) + ". ";
+			WriteSzLine80(os, szLine, to_string(imv/2 + 1) + ". ");
 		wstring wsz = bdgSave.SzDecodeMv(mv, false);
-		os << bdgSave.SzFlattenMvSz(wsz) + " ";
+		WriteSzLine80(os, szLine, bdgSave.SzFlattenMvSz(wsz) + " ");
 		bdgSave.MakeMv(mv);
 	}
 
@@ -89,21 +100,40 @@ void GA::SerializeMoveList(ostream& os)
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		os << "0-1";
+		WriteSzLine80(os, szLine, "0-1");
 		break;
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		os << "1-0";
+		WriteSzLine80(os, szLine, "1-0");
 		break;
 	case GS::Playing:
 		break;
 	default:
-		os << "1/2-1/2";
+		WriteSzLine80(os, szLine, "1/2-1/2");
 		break;
 	}
+
+	assert(szLine.size() > 0);
+	os << szLine;
+	os << endl;
 }
 
+
+/*	GA::WriteSzLine80
+ *
+ *	Writes szAdd to the output stream os, using szLine as a line buffer
+ *	which gets flushed at 80 character column 
+ */
+void GA::WriteSzLine80(ostream& os, string& szLine, const string& szAdd)
+{
+	if (szLine.size() + szAdd.size() > 80) {
+		os << szLine;
+		os << endl;
+		szLine.clear();
+	}
+	szLine += szAdd;
+}
 
 /*
  *
@@ -133,9 +163,9 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	GenRgmv(rgmv, RMCHK::NoRemove);
 
 	/* if destination square is unique, just include the destination square */
-	SQ sqFrom = mv.SqFrom();
+	SQ sqFrom = mv.sqFrom();
 	APC apc = ApcFromSq(sqFrom);
-	SQ sqTo = mv.SqTo();
+	SQ sqTo = mv.sqTo();
 	SQ sqCapture = sqTo;
 
 	WCHAR sz[16];
@@ -208,7 +238,7 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	}
 
 	{
-		APC apcPromote = mv.ApcPromote();
+		APC apcPromote = mv.apcPromote();
 		if (apcPromote != APC::Null) {
 			*pch++ = L'=';
 			*pch++ = mpapcch[apcPromote];
@@ -223,12 +253,12 @@ FinishMove:
 
 bool BDG::FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const
 {
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	for (MV mvOther : rgmv) {
-		if (mvOther.SqTo() != sqTo || mvOther.SqFrom() == sqFrom)
+		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromSq(mvOther.SqFrom()) == ApcFromSq(sqFrom))
+		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom))
 			return true;
 	}
 	return false;
@@ -237,12 +267,12 @@ bool BDG::FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const
 
 bool BDG::FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const
 {
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	for (MV mvOther : rgmv) {
-		if (mvOther.SqTo() != sqTo || mvOther.SqFrom() == sqFrom)
+		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromSq(mvOther.SqFrom()) == ApcFromSq(sqFrom) && mvOther.SqFrom().rank() == sqFrom.rank())
+		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
@@ -251,12 +281,12 @@ bool BDG::FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const
 
 bool BDG::FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const
 {
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	for (MV mvOther : rgmv) {
-		if (mvOther.SqTo() != sqTo || mvOther.SqFrom() == sqFrom)
+		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromSq(mvOther.SqFrom()) == ApcFromSq(sqFrom) && mvOther.SqFrom().file() == sqFrom.file())
+		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;
@@ -294,18 +324,18 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
  */
 wstring BDG::SzDecodeMvPost(MV mv) const
 {
-	SQ sqFrom = mv.SqFrom();
-	SQ sqTo = mv.SqTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	wstring sz;
 	sz += L'a' + sqFrom.file();
 	sz += to_wstring(sqFrom.rank() + 1);
-	if (mv.ApcCapture() != APC::Null)
+	if (mv.apcCapture() != APC::Null)
 		sz += L'x';
 	sz += L'a' + sqTo.file();
 	sz += to_wstring(sqTo.rank() + 1);
-	if (mv.ApcPromote() != APC::Null) {
+	if (mv.apcPromote() != APC::Null) {
 		sz += L'=';
-		sz += mpapcch[mv.ApcPromote()];
+		sz += mpapcch[mv.apcPromote()];
 	}
 	return sz;
 }

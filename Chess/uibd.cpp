@@ -197,10 +197,10 @@ void UIBD::NewGame(void)
  */
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
-	assert(!mv.FIsNil());
+	assert(!mv.fIsNil());
 #ifndef NDEBUG
 	for (MV mvDrag : rgmvDrag)
-		if (mvDrag.SqFrom() == mv.SqFrom() && mvDrag.SqTo() == mv.SqTo())
+		if (mvDrag.sqFrom() == mv.sqFrom() && mvDrag.sqTo() == mv.sqTo())
 			goto FoundMove;
 	assert(false);
 FoundMove:
@@ -219,7 +219,7 @@ void UIBD::UndoMv(SPMV spmv)
 {
 	if (spmv == SPMV::Animate && ga.bdg.imvCur >= 0) {
 		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur];
-		AnimateSqToSq(mv.SqTo(), mv.SqFrom());
+		AnimateSqToSq(mv.sqTo(), mv.sqFrom());
 	}
 	ga.bdg.UndoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
@@ -391,7 +391,7 @@ void UIBD::DrawGameState(void)
  */
 RCF UIBD::RcfFromSq(SQ sq) const
 {
-	assert(!sq.FIsOffBoard());
+	assert(!sq.fIsOffBoard());
 	int rank = sq.rank(), file = sq.file();
 	if (cpcPointOfView == CPC::White)
 		rank = rankMax - 1 - rank;
@@ -418,11 +418,11 @@ void UIBD::DrawHover(void)
 	unsigned long grfDrawn = 0L;
 
 	for (MV mv : rgmvDrag) {
-		if (mv.SqFrom() != sqHover)
+		if (mv.sqFrom() != sqHover)
 			continue;
 		/* don't draw percentage fill markers multiple times on the 
 		 * same square (which can only happens during pawn promotions) */
-		SQ sqTo = mv.SqTo();
+		SQ sqTo = mv.sqTo();
 		if (grfDrawn & sqTo.fgrf())
 			continue;
 		grfDrawn |= sqTo.fgrf();
@@ -464,12 +464,12 @@ void UIBD::DrawPieces(void)
 	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
 		for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 			SQ sq = ga.bdg.SqFromTpc(tpc, cpc);
-			if (sq.FIsNil())
+			if (sq.fIsNil())
 				continue;
 			float opacity = sqDragInit == sq ? 0.2f : 1.0f;
 			DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqipc[sq]);
 		}
-	if (!sqDragInit.FIsNil())
+	if (!sqDragInit.fIsNil())
 		DrawDragPc(rcfDragPc);
 }
 
@@ -482,7 +482,7 @@ void UIBD::DrawPieces(void)
  */
 void UIBD::DrawDragPc(const RCF& rcf)
 {
-	assert(!sqDragInit.FIsNil());
+	assert(!sqDragInit.fIsNil());
 	DrawPc(rcf, 1.0f, ga.bdg.mpsqipc[sqDragInit]);
 }
 
@@ -533,7 +533,7 @@ void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
 
 void UIBD::AnimateMv(MV mv)
 {
-	AnimateSqToSq(mv.SqFrom(), mv.SqTo());
+	AnimateSqToSq(mv.sqFrom(), mv.sqTo());
 }
 
 
@@ -564,7 +564,7 @@ void UIBD::DrawAnnotations(void)
 {
 	pbrAnnotation->SetOpacity(0.5f);
 	for (ANO ano : rgano) {
-		if (ano.sqTo.FIsNil())
+		if (ano.sqTo.fIsNil())
 			DrawSquareAnnotation(ano.sqFrom);
 		else
 			DrawArrowAnnotation(ano.sqFrom, ano.sqTo);
@@ -644,7 +644,7 @@ bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(ga.bdg.CpcFromSq(sq) == ga.bdg.cpcToMove);
 	for (MV mv : rgmvDrag)
-		if (mv.SqFrom() == sq)
+		if (mv.sqFrom() == sq)
 			return true;
 	return false;
 }
@@ -677,15 +677,15 @@ void UIBD::StartLeftDrag(PTF ptf)
 void UIBD::EndLeftDrag(PTF ptf)
 {
 	ReleaseCapt();
-	if (sqDragInit.FIsNil())
+	if (sqDragInit.fIsNil())
 		return;
 	SQ sqFrom = sqDragInit;
 	sqDragInit = sqNil;
 	SQ sqTo;
 	HTBD htbd = HtbdHitTest(ptf, &sqTo);
-	if (!sqTo.FIsNil()) {
+	if (!sqTo.fIsNil()) {
 		for (MV mv : rgmvDrag) {
-			if (mv.SqFrom() == sqFrom && mv.SqTo() == sqTo) {
+			if (mv.sqFrom() == sqFrom && mv.sqTo() == sqTo) {
 				ga.MakeMv(mv, SPMV::Fast);
 				goto Done;
 			}
@@ -711,7 +711,7 @@ void UIBD::LeftDrag(PTF ptf)
 {
 	SQ sq;
 	HTBD htbd = HtbdHitTest(ptf, &sq);
-	if (sqDragInit.FIsNil()) {
+	if (sqDragInit.fIsNil()) {
 		EndLeftDrag(ptf);
 		return;
 	}

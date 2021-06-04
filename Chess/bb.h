@@ -84,12 +84,12 @@ public:
 		return (grf >> 4) & 0x07; 
 	}
 	
-	inline bool FIsNil(void) const 
+	inline bool fIsNil(void) const 
 	{
 		return grf == 0xff; 
 	}
 	
-	inline bool FIsOffBoard(void) const 
+	inline bool fIsOffBoard(void) const 
 	{
 		return grf & 0x88; 
 	}
@@ -126,7 +126,7 @@ public:
 		return (int)grf - (int)sq.grf; 
 	}
 	
-	inline SQ SqFlip(void) 
+	inline SQ sqFlip(void) 
 	{
 		return SQ(rankMax - 1 - rank(), file()); 
 	}

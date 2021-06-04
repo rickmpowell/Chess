@@ -143,7 +143,7 @@ void GA::ValidateEnPassant(const WCHAR*& sz) const
 {
 	SkipWhiteSpace(sz);
 	if (*sz == L'-') {
-		assert(bdg.sqEnPassant == sqNil);
+		assert(bdg.sqEnPassant.fIsNil());
 	}
 	else if (*sz >= L'a' && *sz <= L'h') {
 		int file = *sz - L'a';
