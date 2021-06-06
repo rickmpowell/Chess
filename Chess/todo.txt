@@ -1,3 +1,5 @@
+  AI: spin off AI into its own thread
+  AI: Report boards/second evaluation speed in debug window
   With Arial font, player name UI elements has a very wide gap between name and color circle
   Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
   Do a couple different AIs and have them play one another
@@ -30,7 +32,6 @@
   Tooltips don't resize for shorter text (only with FreeSerif?)
   UIBD: Dragging pieces outside board clips the dragged piece
   UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
-  Bug: File/Open doesn't redraw board or scroll ML at end of the load
   Add canceled game-over state
   Open: PGN game browser if multiple games in Open...
   UI: Implement labeled icon buttons
@@ -90,7 +91,8 @@
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
   UIBD: Optimize redraw
-  ML: Implement mouse interface to change selection on UIML
+* Bug: File/Open doesn't redraw board or scroll ML at end of the load
+* ML: Implement mouse interface to change selection on UIML
 * Bug: Dragging window edges doesn't resize game interior (dragging corners works)
 * Bug: Open PGN files assert if no \n on last line
 * Use bit fields to layout MV

@@ -15,7 +15,10 @@ void GA::OpenPGNFile(const WCHAR szFile[])
 	this->spmv = SPMV::Hidden;
 	ifstream is(szFile, ifstream::in);
 	Deserialize(is);
+	uiml.UpdateContSize();
+	uiml.SetSel((int)bdg.rgmvGame.size() - 1, spmv);
 	this->spmv = SPMV::Animate;
+	uiml.FMakeVis(bdg.imvCur);
 	Redraw();
 }
 

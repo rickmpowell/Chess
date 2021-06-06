@@ -106,6 +106,16 @@ public:
  * 
  */
 
+enum class HTML {
+	Miss,
+	PageUp,
+	PageDown,
+	Thumb,
+	MoveNumber,
+	List,
+	EmptyBefore,
+	EmptyAfter
+};
 
 class PL;
 
@@ -160,6 +170,11 @@ public:
 	bool FMakeVis(int imv);
 	void UpdateContSize(void);
 	virtual float DyfLine(void) const;
+
+	HTML HtmlHitTest(PTF ptf, int* pimv);
+	virtual void StartLeftDrag(PTF ptf);
+	virtual void EndLeftDrag(PTF ptf);
+	virtual void LeftDrag(PTF ptf);
 
 	virtual void KeyDown(int vk);
 

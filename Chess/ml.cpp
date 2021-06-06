@@ -682,6 +682,48 @@ bool UIML::FMakeVis(int imv)
 	return UIPS::FMakeVis(RcfContent().top + 4.0f + (imv / 2) * dyfList, dyfList);
 }
 
+HTML UIML::HtmlHitTest(PTF ptf, int* pimv)
+{
+	if (ptf.x < 0 || ptf.x >= RcfContent().right)
+		return HTML::Miss;
+	if (ptf.x > RcfView().right) {
+		/* TODO: move this into UIPS */
+		return HTML::Thumb;
+	}
+
+	int li = (int)floor((ptf.y - RcfContent().top) / DyfLine());
+	if (ptf.x < mpcoldxf[0])
+		return HTML::MoveNumber;
+	int imv = -1;
+	if (ptf.x < mpcoldxf[0] + mpcoldxf[1])
+		imv = li * 2;
+	else if (ptf.x < mpcoldxf[0] + mpcoldxf[1] + mpcoldxf[2])
+		imv = li * 2 + 1;
+	if (imv < 0)
+		return HTML::EmptyBefore;
+	if (imv >= ga.bdg.rgmvGame.size())
+		return HTML::EmptyAfter;
+	*pimv = imv;
+	return HTML::List;
+}
+
+void UIML::StartLeftDrag(PTF ptf)
+{
+	int imv;
+	HTML html = HtmlHitTest(ptf, &imv);
+	if (html != HTML::List)
+		return;
+	ga.MoveToImv(imv);
+}
+
+void UIML::EndLeftDrag(PTF ptf)
+{
+}
+
+void UIML::LeftDrag(PTF ptf)
+{
+}
+
 
 void UIML::KeyDown(int vk)
 {

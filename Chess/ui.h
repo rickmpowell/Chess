@@ -24,9 +24,30 @@ enum class SPMV
 {
 	Hidden,
 	Fast,
+	AnimateVeryFast,
+	AnimateFast,
 	Animate
 };
 
+inline bool FSpmvAnimate(SPMV spmv)
+{
+	return spmv == SPMV::Animate || spmv == SPMV::AnimateFast || spmv == SPMV::AnimateVeryFast;
+}
+
+inline unsigned DframeFromSpmv(SPMV spmv)
+{
+	switch (spmv) {
+	case SPMV::AnimateVeryFast:
+		return 5;
+	case SPMV::AnimateFast:
+		return 10;
+	case SPMV::Animate:
+		return 30;
+	default:
+		break;
+	}
+	return 0;
+}
 
 enum class MHT
 {

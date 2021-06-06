@@ -205,8 +205,8 @@ void UIBD::MakeMv(MV mv, SPMV spmv)
 	assert(false);
 FoundMove:
 #endif
-	if (spmv == SPMV::Animate)
-		AnimateMv(mv);
+	if (FSpmvAnimate(spmv))
+		AnimateMv(mv, DframeFromSpmv(spmv));
 	ga.bdg.MakeMv(mv);
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
 	ga.bdg.SetGameOver(rgmvDrag, *ga.prule);
@@ -217,9 +217,9 @@ FoundMove:
 
 void UIBD::UndoMv(SPMV spmv)
 {
-	if (spmv == SPMV::Animate && ga.bdg.imvCur >= 0) {
+	if (FSpmvAnimate(spmv) && ga.bdg.imvCur >= 0) {
 		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur];
-		AnimateSqToSq(mv.sqTo(), mv.sqFrom());
+		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	ga.bdg.UndoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
@@ -230,9 +230,9 @@ void UIBD::UndoMv(SPMV spmv)
 
 void UIBD::RedoMv(SPMV spmv)
 {
-	if (spmv == SPMV::Animate && ga.bdg.imvCur < (int)ga.bdg.rgmvGame.size()) {
+	if (FSpmvAnimate(spmv) && ga.bdg.imvCur < (int)ga.bdg.rgmvGame.size()) {
 		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur+1];
-		AnimateMv(mv);
+		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	ga.bdg.RedoMv();
 	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
@@ -531,15 +531,15 @@ void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
 }
 
 
-void UIBD::AnimateMv(MV mv)
+void UIBD::AnimateMv(MV mv, unsigned dframe)
 {
-	AnimateSqToSq(mv.sqFrom(), mv.sqTo());
+	AnimateSqToSq(mv.sqFrom(), mv.sqTo(), dframe);
 }
 
 
-void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo)
+void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe)
 {
-	float framefMax = 40.0f;
+	float framefMax = (float)dframe;
 	sqDragInit = sqFrom;
 	RCF rcfFrom = RcfFromSq(sqDragInit);
 	ptfDragInit = rcfFrom.PtfTopLeft();

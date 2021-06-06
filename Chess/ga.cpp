@@ -372,10 +372,17 @@ void GA::MoveToImv(int imv)
 		imv = -1;
 	if (imv > (int)bdg.rgmvGame.size() - 1)
 		imv = (int)bdg.rgmvGame.size() - 1;
+	SPMV spmvSav = spmv;
+	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
+		spmv = SPMV::AnimateFast;
+		if (abs(bdg.imvCur - imv) > 5)
+			spmv = SPMV::AnimateVeryFast;
+	}
 	while (bdg.imvCur > imv)
 		uibd.UndoMv(spmv);
 	while (bdg.imvCur < imv)
 		uibd.RedoMv(spmv);
+	spmv = spmvSav;
 	uiml.SetSel(bdg.imvCur, spmv);
 }
 

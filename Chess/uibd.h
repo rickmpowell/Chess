@@ -97,8 +97,8 @@ public:
 	void DrawHilites(void);
 	void DrawGameState(void);
 	void DrawPc(RCF rcf, float opacity, IPC ipc);
-	void AnimateMv(MV mv);
-	void AnimateSqToSq(SQ sqFrom, SQ sqTo);
+	void AnimateMv(MV mv, unsigned dframe);
+	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	void DrawDragPc(const RCF& rcf);
 	RCF RcfGetDrag(void);
 	void InvalOutsideRcf(RCF rcf) const;
