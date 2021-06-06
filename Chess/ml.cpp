@@ -713,6 +713,7 @@ void UIML::StartLeftDrag(PTF ptf)
 	HTML html = HtmlHitTest(ptf, &imv);
 	if (html != HTML::List)
 		return;
+	SetSel(imv, SPMV::Fast);
 	ga.MoveToImv(imv);
 }
 
