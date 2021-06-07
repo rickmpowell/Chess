@@ -467,7 +467,7 @@ void UIBD::DrawPieces(void)
 			if (sq.fIsNil())
 				continue;
 			float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-			DrawPc(RcfFromSq(sq), opacity, ga.bdg.mpsqipc[sq]);
+			DrawPc(RcfFromSq(sq), opacity, ga.bdg(sq));
 		}
 	if (!sqDragInit.fIsNil())
 		DrawDragPc(rcfDragPc);
@@ -483,7 +483,7 @@ void UIBD::DrawPieces(void)
 void UIBD::DrawDragPc(const RCF& rcf)
 {
 	assert(!sqDragInit.fIsNil());
-	DrawPc(rcf, 1.0f, ga.bdg.mpsqipc[sqDragInit]);
+	DrawPc(rcf, 1.0f, ga.bdg(sqDragInit));
 }
 
 

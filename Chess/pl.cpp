@@ -14,9 +14,8 @@
 mt19937 rgen(0);
 
 
-PL::PL(GA& ga, wstring szName, const float* rgfAICoeef) : ga(ga), szName(szName), cYield(0), cbdgmvevEval(0)
+PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName)
 {
-	memcpy(this->rgfAICoeff, rgfAICoeef, sizeof(this->rgfAICoeff));
 }
 
 
@@ -52,8 +51,19 @@ wstring SzFromEval(float eval)
 	return wstring(sz);
 }
 
+/*
+ *
+ * 
+ */
 
-/*	PL::MvGetNext
+PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvevEval(0), cbdgmvevPrune(0)
+{
+	rgfAICoeff[0] = 5.0f;
+	rgfAICoeff[1] = 2.0f;
+}
+
+
+/*	PLAI::MvGetNext
  *
  *	Returns the next move the player wants to make on the given board. Returns mvNil if
  *	there are no moves.
@@ -65,7 +75,7 @@ const float evalInf = 10000.0f;
 const float evalMate = 9999.0f;
 const float evalMateMin = evalMate - 80.0f;
 
-MV PL::MvGetNext(void)
+MV PLAI::MvGetNext(void)
 {
 	cbdgmvevEval = 0L;
 	cbdgmvevPrune = 0L;
@@ -93,6 +103,8 @@ MV PL::MvGetNext(void)
 	vector<BDGMVEV> rgbdgmvev;
 	PreSortMoves(bdg, rgmv, rgbdgmvev);
 
+	time_point tpStart = high_resolution_clock::now();
+
 	cYield = 0;
 	MV mvBest;
 	float evalAlpha = -evalInf, evalBeta = evalInf;
@@ -110,20 +122,27 @@ MV PL::MvGetNext(void)
 		}
 	}
 
-	ga.Log(LGT::SearchNodesAI, wstring(L"Searched ") + to_wstring(cbdgmvevEval) + L" nodes");
+	chrono::time_point tpEnd = chrono::high_resolution_clock::now();
+
+	ga.Log(LGT::SearchNodesAI, wstring(L"Evaluated ") + to_wstring(cbdgmvevEval) + L" positions");
 	ga.Log(LGT::SearchNodesAI, wstring(L"Pruned: ") + 
 			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevEval)) + L"%");
+	duration dtp = tpEnd - tpStart;
+	milliseconds ms = duration_cast<milliseconds>(dtp);
+	ga.Log(LGT::SearchNodesAI, wstring(L"Time: ") + to_wstring(ms.count()) + L"ms");
+	float sp = (float)cbdgmvevEval / (float)ms.count();
+	ga.Log(LGT::SearchNodesAI, wstring(L"Speed: ") + to_wstring((int)round(sp)) + L" nodes/ms");
 	assert(!mvBest.fIsNil());
 	return mvBest;
 }
 
 
-/*	PL::EvalBdgDepth
+/*	PLAI::EvalBdgDepth
  *
  *	Evaluates the board from the point of view of the person who last moved,
  *	i.e., the previous move.
  */
-float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule)
+float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule)
 {
 	if (depth >= depthMax)
 		return EvalBdgQuiescent(bdgmvevEval, depth, evalAlpha, evalBeta);
@@ -177,12 +196,12 @@ float PL::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float eval
 }
 
 
-/*	PL::EvalBdgQuiescent
+/*	PLAI::EvalBdgQuiescent
  *
  *	Returns the quiescent evaluation of the board from the point of view of the 
  *	previous move player, i.e., it evaluates the previous move.
  */
-float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
+float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
 {
 	/* we need to evaluate the board before we remove moves from the move list */
 	float eval = EvalBdg(bdgmvevEval, true);
@@ -226,7 +245,7 @@ float PL::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, flo
 }
 
 
-void PL::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
+void PLAI::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
 {
 	rgbdgmvev.reserve(rgmv.size());
 	for (MV mv : rgmv) {
@@ -237,7 +256,7 @@ void PL::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& 
 }
 
 
-void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
+void PLAI::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
 {
 	/* insertion sort */
 
@@ -262,11 +281,13 @@ void PL::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& r
 }
 
 
-/*	PL::EvalBdg
+/*	PLAI::EvalBdg
  *
  *	Evaluates the board from the point of view of the color that just moved.
+ * 
+ *	fFull is true for full, potentially slow, evaluation. 
  */
-float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
+float PLAI::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 {
 	cbdgmvevEval++;
 
@@ -283,7 +304,14 @@ float PL::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob;
 }
 
-float PL::VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const
+
+/*	PLAI:VpcFromCpc
+ *
+ *	Returns the board evaluation for the given color. Basically determines what
+ *	stage of the game we're in and dispatches to the appropriate evaluation
+ *	function (opening, middle game, endgame
+ */
+float PLAI::VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const
 {
 	if (bdgmvev.rgmvGame.size() < 2*15)
 		return VpcOpening(bdgmvev, cpcMove);
@@ -354,12 +382,17 @@ const float mpapcsqevalOpening[APC::ActMax][64] = {
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 	 1.5f, 1.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.5f, 1.5f}
 };
-float PL::VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const
+float PLAI::VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const
 {
 	return VpcWeightTable(bdgmvev, cpcMove, mpapcsqevalOpening);
 }
 
-float PL::VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
+
+/*	PLAI::VpcMiddleGame
+ *
+ *	Returns the board evaluation for middle game stage of the game
+ */
+float PLAI::VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
 {
 	return bdgmvev.VpcTotalFromCpc(cpcMove);
 }
@@ -424,12 +457,12 @@ const float mpapcsqevalEndGame[APC::ActMax][64] = {
 	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f}
 };
 
-float PL::VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
+float PLAI::VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
 {
 	return VpcWeightTable(bdgmvev, cpcMove, mpapcsqevalEndGame);
 }
 
-float PL::VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
+float PLAI::VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
 {
 	float vpc = 0.0f;
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {

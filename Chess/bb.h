@@ -53,13 +53,13 @@ const int rankMax = 8;
 class SQ {
 private:
 	friend class MV;
-	BYTE grf;
+	uint8_t grf;
 public:
-	
+
 	inline SQ(void) : grf(0xff) 
 	{ 
 	}
-	
+
 	inline SQ(BYTE grf) : grf(grf) 
 	{ 
 	}
@@ -105,7 +105,7 @@ public:
 		return SQ(grf + dsq); 
 	}
 	
-	inline operator int() const 
+	inline operator uint8_t() const 
 	{
 		return grf; 
 	}
@@ -142,7 +142,7 @@ public:
 	}
 };
 
-const SQ sqNil = SQ();
+const SQ sqNil = SQ(0xff);
 
 
 

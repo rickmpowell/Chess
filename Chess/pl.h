@@ -42,14 +42,12 @@ class GA;
 
 class PL
 {
+protected:
 	GA& ga;
 	wstring szName;
-	float rgfAICoeff[3];
-	long cYield;
-	long cbdgmvevEval;
-	long cbdgmvevPrune;
+
 public:
-	PL(GA& ga, wstring szName, const float rgfAICoeff[]);
+	PL(GA& ga, wstring szName);
 	~PL(void);
 	wstring& SzName(void) {
 		return szName;
@@ -59,7 +57,33 @@ public:
 		szName = szNew;
 	}
 
+	virtual MV MvGetNext(void) = 0;
+};
+
+
+/*
+ *
+ *	PLAI class
+ * 
+ *	Player using an AI (with alpha-beta pruning and static board evaluiation) 
+ *	to compute moves
+ * 
+ */
+
+
+class PLAI : public PL
+{
+protected:
+	float rgfAICoeff[3];
+	long cYield;
+	long cbdgmvevEval;
+	long cbdgmvevPrune;
+
+public:
+	PLAI(GA& ga);
 	virtual MV MvGetNext(void);
+
+protected:
 	float EvalBdgDepth(BDGMVEV& bdg, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
 	float EvalBdgQuiescent(BDGMVEV& bdg, int depth, float evalAlpha, float evalBeta);
 	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg);

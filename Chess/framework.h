@@ -50,6 +50,7 @@ using namespace D2D1;
 #include <libloaderapi.h>
 
 using namespace std;
+using namespace chrono;
 
 
 #ifndef NDEBUG

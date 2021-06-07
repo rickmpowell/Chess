@@ -136,7 +136,7 @@ inline APC& operator+=(APC& apc, int dapc)
 
 class IPC
 {
-	unsigned char tpcGrf : 4,
+	uint8_t tpcGrf : 4,
 		apcGrf : 3,
 		cpcGrf : 1;
 
@@ -190,9 +190,9 @@ public:
 		return apcGrf == ipc.apcGrf && tpcGrf == ipc.tpcGrf && cpcGrf == ipc.cpcGrf;
 	}
 
-	inline operator unsigned char() const
+	inline operator uint8_t() const
 	{
-		return *(unsigned char*)this;
+		return *(uint8_t*)this;
 	}
 };
 
@@ -241,7 +241,7 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
 
 class MV {
 private:
-	unsigned long sqFromGrf : 8,
+	uint32_t sqFromGrf : 8,
 		sqToGrf : 8,
 		tpcCaptGrf : 4,
 		apcCaptGrf : 3,
@@ -253,13 +253,12 @@ private:
 public:
 	inline MV(void) 
 	{
-		sqFromGrf = sqToGrf = 15; 
-		tpcCaptGrf = 15; 
-		apcCaptGrf = APC::ActMax;
-		fEnPassantGrf = true;
-		fileEnPassantGrf = 7;
-		csGrf = 3;
-		apcPromoteGrf = APC::ActMax;
+		*(uint32_t*)this = 0xffffffff;
+	}
+
+	inline MV(const MV& mv)
+	{
+		*(uint32_t*)this = *(uint32_t*)&mv;
 	}
 
 	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
@@ -358,6 +357,11 @@ public:
 	inline bool operator!=(const MV& mv) const 
 	{
 		return !(*this == mv);
+	}
+
+	inline operator uint32_t() const
+	{
+		return *(uint32_t*)this;
 	}
 };
 
@@ -487,15 +491,23 @@ class BD
 {
 	static const float mpapcvpc[];
 public:
-	IPC mpsqipc[64 * 2];	// the board itself (maps square to piece)
+	uint8_t mpsqipc[64 * 2];	// the board itself (maps square to piece)
 	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards
-	SQ mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
+	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	BYTE cs;	/* castle sides */
 
 public:
 	BD(void);
+
+	BD(const BD& bd) : sqEnPassant(bd.sqEnPassant), cs(bd.cs)
+	{
+		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
+		memcpy(mpapcbb, bd.mpapcbb, sizeof(mpapcbb));
+		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
+	}
+
 	void SetEmpty(void);
 
 	void InitFENPieces(const WCHAR*& szFEN);
@@ -504,9 +516,8 @@ public:
 	void SkipToSpace(const WCHAR*& sz);
 	TPC TpcUnusedPawn(CPC cpc) const;
 
-	void MakeMv(MV mv);
-	void UndoMv(MV mv);
-	void MakeMvSq(MV mv);
+	void MakeMvSq(MV& mv);
+	void UndoMvSq(MV mv);
 
 	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
@@ -517,24 +528,98 @@ public:
 	void GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvCastle(vector<MV>& rgmv, SQ sqFrom) const; 
+	void GenRgmvCastle(vector<MV>& rgmv, SQ sqFrom) const;
 	void GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) const;
 	void GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
 	void AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const;
 	void GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const;
-	inline void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
-	inline bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const;
-	inline void AddRgmvMv(vector<MV>& rgmv, MV mv) const;
+
+
+	/*	BD::AddRgmvMv
+	 *
+	 *	Adds the move to the move vector
+	 */
+	inline void AddRgmvMv(vector<MV>& rgmv, MV mv) const
+	{
+		rgmv.push_back(mv);
+	}
+
+
+	/*	BD::FGenRgmvDsq
+	 *
+	 *	Checks the square in the direction given by dsq for a valid
+	 *	destination square. Adds the move to rgmv if it is valid.
+	 *	Returns true if the destination square was empty; returns
+	 *	false if it's not a legal square or there is a piece in the
+	 *	square.
+	 */
+	inline bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
+	{
+		SQ sqTo = sq + dsq;
+		if (sqTo.fIsOffBoard())
+			return false;
+
+		/* have we run into one of our own pieces? */
+		if (!FIsEmpty(sqTo) && CpcFromSq(sqTo) == ipcFrom.cpc())
+			return false;
+
+		/* add the move to the list */
+		AddRgmvMv(rgmv, MV(sqFrom, sqTo));
+
+		/* return false if we've reached an enemy piece - this capture
+		   is the end of a potential slide move */
+		return FIsEmpty(sqTo);
+	}
+
+
+	/*	BD::GenRgmvSlide
+	 *
+	 *	Generates all straight-line moves in the direction dsq starting at sqFrom.
+	 *	Stops when the piece runs into a piece of its own color, or a capture of
+	 *	an enemy piece, or it reaches the end of the board.
+	 */
+	inline void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const
+	{
+		IPC ipcFrom = (*this)(sqFrom);
+		for (int sq = sqFrom; FGenRgmvDsq(rgmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
+			;
+	}
+	
 
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
 	void RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
 	bool FSqAttacked(CPC cpc, SQ sqKing) const;
-	inline bool FDsqAttack(SQ sqKing, SQ sq, int dsq) const;
-	inline bool FDiagAttack(SQ sqKing, SQ sq, int dsq) const;
-	inline bool FRankAttack(SQ sqKing, SQ sq) const;
-	inline bool FFileAttack(SQ sqKing, SQ sq) const;
+	
+	inline bool FDsqAttack(SQ sqKing, SQ sq, int dsq) const
+	{
+		SQ sqScan = sq;
+		do {
+			sqScan += dsq;
+			if (sqScan == sqKing)
+				return true;
+		} while (FIsEmpty(sqScan));
+		return false;
+	}
+
+
+	inline bool FDiagAttack(SQ sqKing, SQ sq, int dsq) const
+	{
+		return FDsqAttack(sqKing, sq, sqKing > sq ? dsq : -dsq);
+	}
+
+
+	inline bool FRankAttack(SQ sqKing, SQ sq) const
+	{
+		return FDsqAttack(sqKing, sq, sqKing > sq ? 1 : -1);
+	}
+
+
+	inline bool FFileAttack(SQ sqKing, SQ sq) const
+	{
+		return FDsqAttack(sqKing, sq, sqKing > sq ? 16 : -16);
+	}
 
 	inline bool FMvEnPassant(MV mv) const
 	{
@@ -546,30 +631,47 @@ public:
 		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
-	inline IPC& operator()(int rank, int file) { return mpsqipc[rank*16+file]; }
-	inline IPC& operator()(SQ sq) { return mpsqipc[sq]; }
+	inline IPC& operator()(int rank, int file) { return *(IPC*)&mpsqipc[rank * 16 + file]; }
+	inline IPC& operator()(SQ sq) { return *(IPC*)&mpsqipc[sq]; }
 
-	inline SQ& SqFromTpc(TPC tpc, CPC cpc) { return mptpcsq[cpc][tpc]; }
+	inline const IPC& operator()(SQ sq) const {
+		return *(IPC*)&mpsqipc[sq];
+	}
+
+	inline SQ& SqFromTpc(TPC tpc, CPC cpc) { return *(SQ*)&mptpcsq[cpc][tpc]; }
 	inline SQ& SqFromIpc(IPC ipc) { return SqFromTpc(ipc.tpc(), ipc.cpc()); }
-	inline SQ SqFromTpc(TPC tpc, CPC cpc) const { return mptpcsq[cpc][tpc]; }
+	inline SQ SqFromTpc(TPC tpc, CPC cpc) const { return *(SQ*)&mptpcsq[cpc][tpc]; }
 	inline SQ SqFromIpc(IPC ipc) const { return SqFromTpc(ipc.tpc(), ipc.cpc()); }
-	
+
+	inline SQ& operator()(TPC tpc, CPC cpc) {
+		return SqFromTpc(tpc, cpc);
+	}
+	inline SQ operator()(TPC tpc, CPC cpc) const {
+		return SqFromTpc(tpc, cpc);
+	}
+	inline SQ& operator()(IPC ipc) {
+		return SqFromIpc(ipc);
+	}
+	inline const SQ operator()(IPC ipc) const {
+		return SqFromIpc(ipc);
+	}
+
 	inline APC ApcFromSq(SQ sq) const 
 	{
-		return mpsqipc[sq].apc();
+		return (*this)(sq).apc();
 	}
 	
 	inline TPC TpcFromSq(SQ sq) const 
 	{
-		return mpsqipc[sq].tpc();
+		return (*this)(sq).tpc();
 	}
 	
-	inline CPC CpcFromSq(SQ sq) const { return mpsqipc[sq].cpc(); }
+	inline CPC CpcFromSq(SQ sq) const { return (*this)(sq).cpc(); }
 	inline float VpcFromSq(SQ sq) const;
 	
 	inline bool FIsEmpty(SQ sq) const 
 	{
-		return mpsqipc[sq].fIsEmpty();
+		return (*this)(sq).fIsEmpty();
 	}
 
 	inline bool FCanCastle(CPC cpc, int csSide) const 
