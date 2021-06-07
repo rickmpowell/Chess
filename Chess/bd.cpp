@@ -197,7 +197,6 @@ TPC BD::TpcUnusedPawn(CPC cpc) const
  */
 void BD::MakeMvSq(MV& mv)
 {
-	Validate();
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	IPC ipcFrom = (*this)(sqFrom);
@@ -306,8 +305,6 @@ Done:
  */
 void BD::UndoMvSq(MV mv)
 {
-	Validate();
-
 	/* unpack some useful information out of the move */
 
 	SQ sqFrom = mv.sqFrom();
@@ -446,10 +443,87 @@ void BD::RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const
 	rgmv.resize(imvTo);
 }
 
+
 bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
 {
 	return FIsEmpty(mv.sqTo()) ||
 		VpcFromSq(mv.sqFrom()) + 0.5 >= VpcFromSq(mv.sqTo());
+}
+
+
+/*	BD::FInCheck
+ *
+ *	Returns true if the given color's king is in check. Does not require ComputeAttacked,
+ *	and does a complete scan of the opponent pieces to find checks.
+ */
+bool BD::FInCheck(CPC cpc) const
+{
+	return FSqAttacked(~cpc, (*this)(tpcKing, cpc));
+}
+
+
+bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
+{
+	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
+		SQ sq = (*this)(tpc, cpcBy);
+		if (sq.fIsNil())
+			continue;
+		int dsq = sq - sqAttacked;
+		APC apc = ApcFromSq(sq);
+		switch (apc) {
+		case APC::Pawn:
+			if (cpcBy == CPC::White)
+				dsq = -dsq;
+			if (dsq == 17 || dsq == 15)
+				return true;
+			break;
+		case APC::Knight:
+			if (dsq < 0)
+				dsq = -dsq;
+			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14)
+				return true;
+			break;
+		case APC::Queen:
+			if (sq.rank() == sqAttacked.rank()) {
+				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 1 : -1))
+					return true;
+			}
+			else if (sq.file() == sqAttacked.file()) {
+				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 16 : -16))
+					return true;
+			}
+			[[fallthrough]];
+		case APC::Bishop:
+			if (dsq % 17 == 0) {
+				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 17 : -17))
+					return true;
+			}
+			else if (dsq % 15 == 0) {
+				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 15 : -15))
+					return true;
+			}
+			break;
+		case APC::Rook:
+			if (sq.rank() == sqAttacked.rank()) {
+				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 1 : -1))
+					return true;
+			}
+			else if (sq.file() == sqAttacked.file()) {
+				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 16 : -16))
+					return true;
+			}
+			break;
+		case APC::King:
+			if (dsq < 0)
+				dsq = -dsq;
+			if (dsq == 17 || dsq == 16 || dsq == 15 || dsq == 1)
+				return true;
+			break;
+		default:
+			break;
+		}
+	}
+	return false;
 }
 
 
@@ -502,80 +576,6 @@ void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const
 }
 
 
-/*	BD::FInCheck
- *
- *	Returns true if the given color's king is in check. Does not require ComputeAttacked,
- *	and does a complete scan of the opponent pieces to find checks.
- */
-
-bool BD::FInCheck(CPC cpc) const
-{
-	return FSqAttacked(~cpc, (*this)(tpcKing, cpc));
-}
-
-
-bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
-{
-	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SQ sq = (*this)(tpc, cpcBy);
-		if (sq.fIsNil())
-			continue;
-		int dsq = sq - sqAttacked;
-		switch (ApcFromSq(sq)) {
-		case APC::Pawn:
-			if (cpcBy == CPC::White)
-				dsq = -dsq;
-			if (dsq == 17 || dsq == 15)
-				return true;
-			break;
-		case APC::Knight:
-			if (dsq < 0)
-				dsq = -dsq;
-			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14)
-				return true;
-			break;
-		case APC::Queen:
-			if (sq.rank() == sqAttacked.rank()) {
-				if (FRankAttack(sqAttacked, sq))
-					return true;
-			}
-			else if (sq.file() == sqAttacked.file()) {
-				if (FFileAttack(sqAttacked, sq))
-					return true;
-			}
-			[[fallthrough]];
-		case APC::Bishop:
-			if (dsq % 17 == 0) {
-				if (FDiagAttack(sqAttacked, sq, 17))
-					return true;
-			}
-			else if (dsq % 15 == 0) {
-				if (FDiagAttack(sqAttacked, sq, 15))
-					return true;
-			}
-			break;
-		case APC::Rook:
-			if (sq.rank() == sqAttacked.rank()) {
-				if (FRankAttack(sqAttacked, sq))
-					return true;
-			}
-			else if (sq.file() == sqAttacked.file()) {
-				if (FFileAttack(sqAttacked, sq))
-					return true;
-			}
-			break;
-		case APC::King:
-			if (dsq < 0)
-				dsq = -dsq;
-			if (dsq == 17 || dsq == 16 || dsq == 15 || dsq == 1)
-				return true;
-			break;
-		default:
-			break;
-		}
-	}
-	return false;
-}
 
 
 /*	BD::GenRgmvPawn
@@ -1015,12 +1015,11 @@ void BDG::GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const
 	BD::GenRgmvQuiescent(rgmv, cpcToMove, rmchk);
 }
 
+
 bool BDG::FMvIsQuiescent(MV mv) const
 {
 	return BD::FMvIsQuiescent(mv, cpcToMove);
 }
-
-
 
 
 /*	BDG::MakeMv
@@ -1080,7 +1079,7 @@ void BDG::UndoMv(void)
 		/* scan backwards looking for pawn moves or captures */
 		for (imvPawnOrTakeLast = imvCur-1; imvPawnOrTakeLast >= 0; imvPawnOrTakeLast--)
 			if (ApcFromSq(rgmvGame[imvPawnOrTakeLast].sqFrom()) == APC::Pawn || 
-					rgmvGame[imvPawnOrTakeLast].apcCapture() != APC::Null)
+					rgmvGame[imvPawnOrTakeLast].fIsCapture())
 				break;
 	}
 	UndoMvSq(rgmvGame[imvCur--]);
@@ -1099,7 +1098,7 @@ void BDG::RedoMv(void)
 		return;
 	imvCur++;
 	MV mv = rgmvGame[imvCur];
-	if (ApcFromSq(mv.sqFrom()) == APC::Pawn || mv.apcCapture() != APC::Null)
+	if (ApcFromSq(mv.sqFrom()) == APC::Pawn || mv.fIsCapture())
 		imvPawnOrTakeLast = imvCur;
 	MakeMvSq(mv);
 	cpcToMove = ~cpcToMove;

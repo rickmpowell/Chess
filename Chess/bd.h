@@ -585,40 +585,27 @@ public:
 			;
 	}
 	
-
 	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
 	void RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
-	bool FSqAttacked(CPC cpc, SQ sqKing) const;
+	bool FSqAttacked(CPC cpc, SQ sqAttacked) const;
 	
-	inline bool FDsqAttack(SQ sqKing, SQ sq, int dsq) const
+	/*	BD::FDsqAttack
+	 *
+	 *	Checks that sqAttacked is being attacked from sq, with dsq being the increment
+	 *	between the two squares. Assumes the two squares are reachable using the dsq
+	 *	increment.
+	 */
+	inline bool FDsqAttack(SQ sqAttacked, SQ sq, int dsq) const
 	{
-		SQ sqScan = sq;
 		do {
-			sqScan += dsq;
-			if (sqScan == sqKing)
+			sq += dsq;
+			assert(!sq.fIsOffBoard());
+			if (sq == sqAttacked)
 				return true;
-		} while (FIsEmpty(sqScan));
+		} while (FIsEmpty(sq));
 		return false;
-	}
-
-
-	inline bool FDiagAttack(SQ sqKing, SQ sq, int dsq) const
-	{
-		return FDsqAttack(sqKing, sq, sqKing > sq ? dsq : -dsq);
-	}
-
-
-	inline bool FRankAttack(SQ sqKing, SQ sq) const
-	{
-		return FDsqAttack(sqKing, sq, sqKing > sq ? 1 : -1);
-	}
-
-
-	inline bool FFileAttack(SQ sqKing, SQ sq) const
-	{
-		return FDsqAttack(sqKing, sq, sqKing > sq ? 16 : -16);
 	}
 
 	inline bool FMvEnPassant(MV mv) const
