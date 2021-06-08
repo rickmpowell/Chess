@@ -89,7 +89,9 @@ protected:
 	float EvalBdgQuiescent(BDGMVEV& bdg, int depth, float evalAlpha, float evalBeta);
 	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg);
 	void FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev);
-	float EvalBdg(const BDGMVEV& bdgmvev, bool fFull);
+
+	virtual int DepthMax(const BDG& bdg, const vector<MV>& rgmv) const;
+	virtual float EvalBdg(const BDGMVEV& bdgmvev, bool fFull);
 
 	float VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const;
 	float VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const;
@@ -103,6 +105,8 @@ class PLAI2 : public PLAI
 {
 public:
 	PLAI2(GA& ga);
+	virtual int DepthMax(const BDG& bdg, const vector<MV>& rgmv) const;
+	virtual float EvalBdg(const BDGMVEV& bdgmvev, bool fFull);
 };
 
 

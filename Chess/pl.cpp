@@ -69,6 +69,27 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	SetName(L"Mathilda");
 }
 
+float PLAI2::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
+{
+	float eval = PLAI::EvalBdg(bdgmvev, fFull);
+	if (fFull) {
+		normal_distribution<float> flDist(0.0, 0.1f);
+		eval += flDist(rgen);
+	}
+	return eval;
+}
+
+int PLAI2::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
+{
+	static vector<MV> rgmvOpp;
+	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = 0.10e+6f;	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
+	float size2 = (float)(rgmv.size() * rgmvOpp.size());
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return depthMax;
+}
+
 
 /*	PLAI::MvGetNext
  *
@@ -84,6 +105,8 @@ const float evalMateMin = evalMate - 80.0f;
 
 MV PLAI::MvGetNext(void)
 {
+	time_point tpStart = high_resolution_clock::now();
+
 	cbdgmvevEval = 0L;
 	cbdgmvevPrune = 0L;
 
@@ -97,21 +120,14 @@ MV PLAI::MvGetNext(void)
 	bdg.GenRgmv(rgmv, RMCHK::NoRemove);
 	if (rgmv.size() == 0)
 		return MV();
-	static vector<MV> rgmvOpp;
-	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 2.00e+6f;	// approximate number of moves to analyze
-	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(rgmv.size() * rgmvOpp.size());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2*fracAlphaBeta*fracAlphaBeta));
-//	depthMax = 3;
+	int depthMax = DepthMax(bdg, rgmv);
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Search depth:"), to_wstring(depthMax));
+	
 	/* and find the best move */
 
 	bdg.GenRgmv(rgmv, RMCHK::Remove);
 	vector<BDGMVEV> rgbdgmvev;
 	PreSortMoves(bdg, rgmv, rgbdgmvev);
-
-	time_point tpStart = high_resolution_clock::now();
 
 	cYield = 0;
 	MV mvBest;
@@ -136,6 +152,8 @@ MV PLAI::MvGetNext(void)
 
 	chrono::time_point tpEnd = chrono::high_resolution_clock::now();
 
+	/* log some stats */
+
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Evaluated"), to_wstring(cbdgmvevEval) + L" positions");
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Pruned:"),
 			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevGen)) + L"%");
@@ -145,8 +163,23 @@ MV PLAI::MvGetNext(void)
 	float sp = (float)cbdgmvevEval / (float)ms.count();
 	ga.Log(LGT::Data, LGF::Normal, L"Speed:", to_wstring((int)round(sp)) + L" nodes/ms");
 	ga.Log(LGT::Close, LGF::Normal, L"", L"");
+
+	/* and return the best move */
+
 	assert(!mvBest.fIsNil());
 	return mvBest;
+}
+
+
+int PLAI::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
+{
+	static vector<MV> rgmvOpp;
+	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = 0.50e+6f;	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
+	float size2 = (float)(rgmv.size() * rgmvOpp.size());
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return depthMax;
 }
 
 
@@ -160,7 +193,7 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
 	if (depth >= depthMax)
 		return EvalBdgQuiescent(bdgmvevEval, depth, evalAlpha, evalBeta);
 
-	if (++cYield % 10 == 0)
+	if (++cYield % 1000 == 0)
 		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
@@ -184,13 +217,13 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
 		if (eval > evalBest) {
 			evalBest = eval;
 			if (eval > evalAlpha) {
-				lgf = LGF::Bold;
 				evalAlpha = eval;
 				if (eval > evalMateMin) {
 					int depthMate = (int)roundf(evalMate - eval);
 					if (depthMate < depthMax)
 						depthMax = depthMate;
 				}
+				lgf = LGF::Bold;
 			}
 		}
 		ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
@@ -259,10 +292,11 @@ float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, f
 			return eval;
 		}
 		if (eval > evalBest) {
-			lgf = LGF::Bold;
 			evalBest = eval;
-			if (eval > evalAlpha)
+			if (eval > evalAlpha) {
 				evalAlpha = eval;
+				lgf = LGF::Bold;
+			}
 		}
 		ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
 	}

@@ -404,7 +404,7 @@ void GA::GenRgmv(vector<MV>& rgmv)
 int GA::Play(void)
 {
 	ClearLog();
-	SetLogDepth(2);
+	SetLogDepth(3);
 	Log(LGT::Open, LGF::Normal, L"Game", L"");
 	try {
 		do {

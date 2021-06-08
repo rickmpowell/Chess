@@ -4,26 +4,5 @@
 [Date "2021.??.??"]
 [White "White"]
 [Black "Black"]
-[Result "1/2-1/2"]
 
-1. e4 e6 2. Nc3 Nc6 3. d4 Nge7 4. d5 exd5 5. exd5 Nb8 6. d6 cxd6 7. Nb5 Nf5 8. 
-Qd5 g6 9. g4 a6 10. Nc3 Ng7 11. Bg5 Be7 12. Qe4 Nc6 13. Nd5 f5 14. gxf5 gxf5 
-15. Bxe7 fxe4 16. Bxd8 Kxd8 17. Ne2 Ne5 18. Bg2 Nf3 19. Bxf3 exf3 20. Rg1 Nf5 
-21. Nef4 Re8 22. Kd2 Rf8 23. Nb6 Rb8 24. Rae1 Nd4 25. Re4 Ne6 26. Nfd5 Nc7 27. 
-Rh4 Nxd5 28. Nxd5 b5 29. Rf4 Re8 30. Re1 Rxe1 31. Kxe1 Ke8 32. Nc7 Ke7 33. Re4 
-Kd8 34. Ne8 d5 35. Re3 d4 36. Re5 Rb6 37. Kd2 Re6 38. Rxe6 dxe6 39. Nf6 e5 40. 
-Nxh7 Ke7 41. Ng5 Bb7 42. Kd3 Bd5 43. b3 Kf6 44. Ne4 Ke6 45. h4 Kf5 46. Nd6 Kg4 
-47. Ne8 Kxh4 48. Nc7 Bb7 49. Ne6 Bc8 50. Ng7 Kg5 51. Ke4 Kf6 52. Ne8 Ke7 53. 
-Ng7 Kf7 54. Nf5 Ke6 55. Ng7 Kf6 56. Ne8 Ke7 57. Ng7 Kf7 58. Nf5 Kf6 59. Nd6 Bd7 
-60. Kd5 a5 61. Ne4 Kf5 62. Nd6 Kf6 63. Ne4 Kf5 64. Nd6 Kf4 65. Nf7 e4 66. Kxd4 
-b4 67. Nd6 Bc6 68. Nc4 a4 69. Kc5 axb3 70. cxb3 Bd7 71. Kxb4 Be6 72. Ne3 Ke5 
-73. Kc5 Bf7 74. b4 Bxa2 75. b5 Be6 76. b6 Bc8 77. Kc6 Kd4 78. b7 Bxb7 79. Kxb7 
-Kd3 80. Kc6 Ke2 81. Ng4 e3 82. Nxe3 Kxf2 83. Nf5 Kg2 84. Ne3 Kg3 85. Nc4 f2 86. 
-Ne3 Kf4 87. Nf1 Ke4 88. Kd6 Kf5 89. Kc6 Ke4 90. Kd6 Kf5 91. Kc6 Kf6 92. Kd5 Kf5 
-93. Kd6 Kf6 94. Kd5 Kf5 95. Kd6 Kf6 96. Kc5 Ke6 97. Kd4 Kf6 98. Ke4 Ke6 99. Kd4 
-Kf6 100. Ke4 Ke6 101. Kf4 Kf6 102. Kf3 Ke6 103. Ke4 Kf6 104. Kf4 Ke6 105. Ke4 
-Kf6 106. Kf4 Ke6 107. Kf3 Kf6 108. Ke3 Ke6 109. Kf4 Kf6 110. Kf3 Ke6 111. Ke3 
-Kf6 112. Kd4 Ke6 113. Kc4 Kf6 114. Kd4 Ke6 115. Kc4 Kf6 116. Kd3 Ke6 117. Kc3 
-Kf6 118. Kc4 Ke6 119. Kd3 Kf6 120. Kc4 Ke6 121. Kd3 Kf6 122. Kc3 Ke6 123. Kb4 
-Kf6 124. Kc3 Ke6 125. Kb3 Kf6 126. Kb4 Ke6 127. Kc3 Kf6 128. Kd3 Ke6 129. Ke3 
-Kf6 130. Kxf2 
+1. e4 
