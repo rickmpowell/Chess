@@ -76,8 +76,9 @@ class PLAI : public PL
 protected:
 	float rgfAICoeff[3];
 	long cYield;
-	long cbdgmvevEval;
-	long cbdgmvevPrune;
+	size_t cbdgmvevEval;
+	size_t cbdgmvevGen;
+	size_t cbdgmvevPrune;
 
 public:
 	PLAI(GA& ga);
@@ -95,6 +96,30 @@ protected:
 	float VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const;
 	float VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const;
 	float VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const;
+};
+
+
+class PLAI2 : public PLAI
+{
+public:
+	PLAI2(GA& ga);
+};
+
+
+/*
+ *
+ *	PLHUMAN player class
+ * 
+ *	Prompts the user for moves.
+ * 
+ */
+
+
+class PLHUMAN : public PL
+{
+public:
+	PLHUMAN(GA& ga, wstring szName);
+	virtual MV MvGetNext(void);
 };
 
 

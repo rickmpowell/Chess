@@ -256,11 +256,6 @@ public:
 		*(uint32_t*)this = 0xffffffff;
 	}
 
-	inline MV(const MV& mv)
-	{
-		*(uint32_t*)this = *(uint32_t*)&mv;
-	}
-
 	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
 		sqFromGrf = sqFrom;
 		sqToGrf = sqTo;
@@ -271,7 +266,12 @@ public:
 		apcPromoteGrf = apcPromote;
 	}
 	
-	inline SQ sqFrom(void) const 
+	inline operator uint32_t() const
+	{
+		return *(uint32_t*)this;
+	}
+
+	inline SQ sqFrom(void) const
 	{
 		return (SQ)sqFromGrf; 
 	}
@@ -288,7 +288,7 @@ public:
 
 	inline bool fIsNil(void) const 
 	{
-		return sqFromGrf == 15 && sqToGrf == 15 && apcPromoteGrf == APC::ActMax;
+		return sqFromGrf == 255 && sqToGrf == 255 && apcPromoteGrf == APC::ActMax;
 	}
 
 	inline MV& SetApcPromote(APC apc)
@@ -344,24 +344,12 @@ public:
 
 	inline bool operator==(const MV& mv) const 
 	{
-		return sqFromGrf == mv.sqFromGrf &&
-			   sqToGrf == mv.sqToGrf &&
-			   tpcCaptGrf == mv.tpcCaptGrf &&
-			   apcCaptGrf == mv.apcCaptGrf &&
-			   fEnPassantGrf == mv.fEnPassantGrf &&
-			   fileEnPassantGrf == mv.fileEnPassantGrf &&
-			   csGrf == mv.csGrf &&
-			   apcPromoteGrf == mv.apcPromoteGrf;
+		return *(uint32_t*)this == (uint32_t)mv;
 	}
 
 	inline bool operator!=(const MV& mv) const 
 	{
-		return !(*this == mv);
-	}
-
-	inline operator uint32_t() const
-	{
-		return *(uint32_t*)this;
+		return *(uint32_t*)this != (uint32_t)mv;
 	}
 };
 
@@ -491,7 +479,7 @@ class BD
 {
 	static const float mpapcvpc[];
 public:
-	uint8_t mpsqipc[64 * 2];	// the board itself (maps square to piece)
+	uint8_t mpsqipc[64+64];	// the board itself (maps square to piece)
 	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards
 	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination

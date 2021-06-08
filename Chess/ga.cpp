@@ -175,7 +175,8 @@ void GA::NewGame(RULE* prule)
 	if (this->prule)
 		delete this->prule;
 	this->prule = prule;
-
+	
+	InitClocks();
 	bdg.NewGame();
 	uibd.NewGame();
 	uiml.NewGame();
@@ -185,10 +186,15 @@ void GA::NewGame(RULE* prule)
 
 void GA::StartGame(void)
 {
+	SetFocus(&uiml);
+}
+
+
+void GA::InitClocks(void)
+{
 	tmLast = 0;
 	mpcpctmClock[CPC::White] = prule->TmGame();
 	mpcpctmClock[CPC::Black] = prule->TmGame();
-	SetFocus(&uiml);
 }
 
 
@@ -206,10 +212,12 @@ void GA::SetFocus(UI* pui)
 	puiFocus = pui;
 }
 
+
 UI* GA::PuiFocus(void) const
 {
 	return puiFocus;
 }
+
 
 UI* GA::PuiHitTest(PTF* pptf, int x, int y)
 {
@@ -395,6 +403,9 @@ void GA::GenRgmv(vector<MV>& rgmv)
 
 int GA::Play(void)
 {
+	ClearLog();
+	SetLogDepth(2);
+	Log(LGT::Open, LGF::Normal, L"Game", L"");
 	try {
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
@@ -408,6 +419,7 @@ int GA::Play(void)
 		MessageBoxW(app.hwnd, L"Game play has been aborted.", NULL, MB_OK);
 		return err;
 	}
+	Log(LGT::Close, LGF::Normal, L"Game", L"");
 	return 0;
 }
 
@@ -442,8 +454,22 @@ void GA::PumpMsg(void)
  *
  *	Log the given log type/string
  */
-void GA::Log(LGT lgt, const wstring& sz)
+void GA::Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
 {
 	if (uidb.FVisible())
-		uidb.ShowLog(lgt, sz);
+		uidb.ShowLog(lgt, lgf, szTag, szData);
+}
+
+
+void GA::ClearLog(void)
+{
+	if (uidb.FVisible())
+		uidb.ClearLog();
+}
+
+
+void GA::SetLogDepth(int depth)
+{
+	if (uidb.FVisible())
+		uidb.SetLogDepth(depth);
 }

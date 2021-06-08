@@ -16,12 +16,22 @@
  */
 void GA::Test(SPMV spmv)
 {
+	ClearLog();
+	SetLogDepth(3);
+	Log(LGT::Open, LGF::Normal, L"Test", L"Start");
 	this->spmv = spmv;
+	Log(LGT::Open, LGF::Normal, L"New Game", L"");
 	NewGame(new RULE(0, 0, 0));
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	Log(LGT::Close, LGF::Normal, L"New Game", L"Passed");
+	Log(LGT::Open, LGF::Normal, L"Undo", L"");
 	UndoTest();
+	Log(LGT::Close, LGF::Normal, L"Undo", L"Passed");
+	Log(LGT::Open, LGF::Normal, L"Play", L"Players");
 	PlayPGNFiles(L"..\\Chess\\Test\\Players");
+	Log(LGT::Close, LGF::Normal, L"Play", L"Players");
 	this->spmv = SPMV::Animate;
+	Log(LGT::Close, LGF::Normal, L"Test", L"Passed");
 }
 
 
@@ -188,30 +198,29 @@ int GA::PlayPGNFile(const WCHAR szFile[])
 {
 	ifstream is(szFile, ifstream::in);
 
+	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
+	Log(LGT::Open, LGF::Normal, szFileBase, L"");
 	try {
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
-			wstring szVal(wcsrchr(szFile, L'\\')+1);
-			szVal += L"\nGame ";
-			szVal += to_wstring(igame + 1);
-			uiti.SetText(szVal);
+			Log(LGT::Temp, LGF::Normal, szFileBase, wstring(L"Game ") + to_wstring(igame+1));
 			if (DeserializeGame(istkpgn) != 1)
 				break;
 		}
+		Log(LGT::Close, LGF::Normal, szFileBase, L"Passed");
 	}
 	catch (int err)
 	{
 		if (err == 1) {
-			WCHAR sz[58];
+			WCHAR sz[100];
 			::wsprintf(sz, L"Error Line %d", err);
 			::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
 		}
+		Log(LGT::Close, LGF::Normal, szFileBase, L"Failed");
 		return err;
 	}
 	return 0;
 }
-
-
 
 
 void GA::UndoTest(void)
@@ -237,18 +246,18 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 {
 	ifstream is(szFile, ifstream::in);
 
+	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
+	Log(LGT::Open, LGF::Normal, szFileBase, L"");
 	try {
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
-			wstring szVal(wcsrchr(szFile, L'\\') + 1);
-			szVal += L"\nGame ";
-			szVal += to_wstring(igame + 1);
-			uiti.SetText(szVal);
+			Log(LGT::Temp, LGF::Normal, szFileBase, wstring(L"Game ") + to_wstring(igame + 1));
 			if (DeserializeGame(istkpgn) != 1)
 				break;
 			UndoFullGame();
 			ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 		}
+		Log(LGT::Close, LGF::Normal, szFileBase, L"Passed");
 	}
 	catch (int err) {
 		if (err == 1) {
@@ -256,6 +265,7 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 			::wsprintf(sz, L"Error Line %d", err);
 			::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
 		}
+		Log(LGT::Close, LGF::Normal, szFileBase, L"Failed");
 		return err;
 	}
 	return 0;

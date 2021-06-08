@@ -67,10 +67,15 @@ enum class MHT
 
 enum class LGT
 {
-	SearchStartAI,
-	SearchDepthAI,
-	SearchMoveAI,
-	SearchNodesAI
+	Open,
+	Close,
+	Data,
+	Temp
+};
+
+enum class LGF {
+	Normal,
+	Bold
 };
 
 

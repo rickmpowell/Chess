@@ -108,7 +108,8 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
 
     pga = new GA(*this);
     pga->SetPl(CPC::White, new PLAI(*pga));
-    pga->SetPl(CPC::Black, new PLAI(*pga));
+    pga->SetPl(CPC::Black, new PLAI2(*pga));
+ //   pga->SetPl(CPC::White, new PLHUMAN(*pga, L"Rick Powell"));
     pga->NewGame(new RULE);
 
     /* create the main window */

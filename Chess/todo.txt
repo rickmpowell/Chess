@@ -1,8 +1,8 @@
+  Don't show player names in UITI during test runs
+  logging to file
   AI: spin off AI into its own thread
-  AI: Report boards/second evaluation speed in debug window
   With Arial font, player name UI elements has a very wide gap between name and color circle
   Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
-  Do a couple different AIs and have them play one another
   Need a visual indication of where focus is
   Improve visuals for scrollbar
   Peg scrollbar thumb at minimum size
@@ -15,7 +15,6 @@
   Beef up error handling in deserialize
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
-  Add an option in logging to replace last log entry
   Test: if no pgn files in a directory, file enumeration crashes
   Size icons in move list slightly larger than text
   Consider a different board evaluation for pre-sorting alpha-beta pruning
@@ -36,7 +35,6 @@
   Open: PGN game browser if multiple games in Open...
   UI: Implement labeled icon buttons
   Test: Parse errors in PGN file test should display in test progress panel
-  Test: Move test progress into debug panel
   Move gen: bitboard king
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
@@ -91,6 +89,12 @@
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
   UIBD: Optimize redraw
+* Logging options: heirarchy depth
+* Test: Move test progress into debug panel
+* Add an option in logging to replace last log entry
+* Heirarchical logging
+* Do a couple different AIs and have them play one another
+* AI: Report boards/second evaluation speed in debug window
 * Bug: File/Open doesn't redraw board or scroll ML at end of the load
 * ML: Implement mouse interface to change selection on UIML
 * Bug: Dragging window edges doesn't resize game interior (dragging corners works)

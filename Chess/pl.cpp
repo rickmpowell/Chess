@@ -56,10 +56,17 @@ wstring SzFromEval(float eval)
  * 
  */
 
-PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvevEval(0), cbdgmvevPrune(0)
+PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvevEval(0), cbdgmvevPrune(0), cbdgmvevGen(0)
 {
 	rgfAICoeff[0] = 5.0f;
 	rgfAICoeff[1] = 2.0f;
+}
+
+
+PLAI2::PLAI2(GA& ga) : PLAI(ga)
+{
+	rgfAICoeff[1] = 0.1f;
+	SetName(L"Mathilda");
 }
 
 
@@ -83,7 +90,8 @@ MV PLAI::MvGetNext(void)
 	/* generate all moves without removing checks. we'll use this as a heuristic for the amount of
 	 * mobillity on the board, which we can use to estimate the depth we can search */
 
-	ga.Log(LGT::SearchStartAI, L"");
+	ga.Log(LGT::Open, LGF::Normal, 
+			ga.bdg.cpcToMove == CPC::White ? L"White" : L"Black", wstring(L"(") + szName + L")");
 	BDG bdg = ga.bdg;
 	static vector <MV> rgmv;
 	bdg.GenRgmv(rgmv, RMCHK::NoRemove);
@@ -91,12 +99,12 @@ MV PLAI::MvGetNext(void)
 		return MV();
 	static vector<MV> rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 1.00e+6f;	// approximate number of moves to analyze
+	const float cmvSearch = 2.00e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2*fracAlphaBeta*fracAlphaBeta));
-	ga.Log(LGT::SearchDepthAI, wstring(L"Search depth: ") + to_wstring(depthMax));
-
+//	depthMax = 3;
+	ga.Log(LGT::Data, LGF::Normal, wstring(L"Search depth:"), to_wstring(depthMax));
 	/* and find the best move */
 
 	bdg.GenRgmv(rgmv, RMCHK::Remove);
@@ -108,10 +116,13 @@ MV PLAI::MvGetNext(void)
 	cYield = 0;
 	MV mvBest;
 	float evalAlpha = -evalInf, evalBeta = evalInf;
+	cbdgmvevGen = rgbdgmvev.size();
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
+		ga.Log(LGT::Open, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(bdgmvev.eval));
 		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
-		ga.Log(LGT::SearchMoveAI, bdg.SzDecodeMvPost(bdgmvev.mv) + L" " + SzFromEval(bdgmvev.eval) + L" " + SzFromEval(eval));
+		LGF lgf = LGF::Normal;
 		if (eval > evalAlpha) {
+			lgf = LGF::Bold;
 			evalAlpha = eval;
 			mvBest = bdgmvev.mv;
 			if (eval > evalMateMin) {
@@ -120,18 +131,20 @@ MV PLAI::MvGetNext(void)
 					depthMax = depthMate;
 			}
 		}
+		ga.Log(LGT::Close, lgf, bdg.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
 	}
 
 	chrono::time_point tpEnd = chrono::high_resolution_clock::now();
 
-	ga.Log(LGT::SearchNodesAI, wstring(L"Evaluated ") + to_wstring(cbdgmvevEval) + L" positions");
-	ga.Log(LGT::SearchNodesAI, wstring(L"Pruned: ") + 
-			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevEval)) + L"%");
+	ga.Log(LGT::Data, LGF::Normal, wstring(L"Evaluated"), to_wstring(cbdgmvevEval) + L" positions");
+	ga.Log(LGT::Data, LGF::Normal, wstring(L"Pruned:"),
+			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevGen)) + L"%");
 	duration dtp = tpEnd - tpStart;
 	milliseconds ms = duration_cast<milliseconds>(dtp);
-	ga.Log(LGT::SearchNodesAI, wstring(L"Time: ") + to_wstring(ms.count()) + L"ms");
+	ga.Log(LGT::Data, LGF::Normal, L"Time:", to_wstring(ms.count()) + L"ms");
 	float sp = (float)cbdgmvevEval / (float)ms.count();
-	ga.Log(LGT::SearchNodesAI, wstring(L"Speed: ") + to_wstring((int)round(sp)) + L" nodes/ms");
+	ga.Log(LGT::Data, LGF::Normal, L"Speed:", to_wstring((int)round(sp)) + L" nodes/ms");
+	ga.Log(LGT::Close, LGF::Normal, L"", L"");
 	assert(!mvBest.fIsNil());
 	return mvBest;
 }
@@ -147,26 +160,31 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
 	if (depth >= depthMax)
 		return EvalBdgQuiescent(bdgmvevEval, depth, evalAlpha, evalBeta);
 
-	if (++cYield % 1000 == 0)
+	if (++cYield % 10 == 0)
 		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
 	PreSortMoves(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
 
 	int cmv = 0;
+	cbdgmvevGen += rgbdgmvev.size();
 	float evalBest = -evalInf;
 	for (BDGMVEV& bdgmvev : rgbdgmvev) {
 		if (bdgmvev.FInCheck(~bdgmvev.cpcToMove))
 			continue;
+		ga.Log(LGT::Open, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(bdgmvev.eval));
 		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		cmv++;
+		LGF lgf = LGF::Normal;
 		if (eval >= evalBeta) {
-			cbdgmvevPrune += (int)rgbdgmvev.size() - cmv;
+			cbdgmvevPrune += rgbdgmvev.size() - cmv;
+			ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
 		}
 		if (eval > evalBest) {
 			evalBest = eval;
 			if (eval > evalAlpha) {
+				lgf = LGF::Bold;
 				evalAlpha = eval;
 				if (eval > evalMateMin) {
 					int depthMate = (int)roundf(evalMate - eval);
@@ -175,6 +193,7 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
 				}
 			}
 		}
+		ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
 	}
 
 	/* if we could find no legal moves, we either have checkmate or stalemate */
@@ -215,30 +234,37 @@ float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, f
 	}
 
 	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
-	if (bdgmvevEval.rgmvReplyAll.size() == 0)
+	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
+		ga.Log(LGT::Data, LGF::Normal, L"", L"[" + SzFromEval(eval) + L"]");
 		return -eval;
+	}
 
-	if (++cYield % 1000 == 0)
+	if (++cYield % 10 == 0)
 		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
 	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
-
+	
+	cbdgmvevGen += rgbdgmvev.size();
 	float evalBest = -evalInf;
 	int cmv = 0;
 	for (BDGMVEV bdgmvev : rgbdgmvev) {
-		float eval;
-		eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
+		ga.Log(LGT::Open, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(bdgmvev.eval));
+		float eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
 		cmv++;
+		LGF lgf = LGF::Normal;
 		if (eval >= evalBeta) {
-			cbdgmvevPrune += (int)rgbdgmvev.size() - cmv;
+			cbdgmvevPrune += rgbdgmvev.size() - cmv;
+			ga.Log(LGT::Close, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
 		}
 		if (eval > evalBest) {
+			lgf = LGF::Bold;
 			evalBest = eval;
 			if (eval > evalAlpha)
 				evalAlpha = eval;
 		}
+		ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
 	}
 
 	return evalBest;
@@ -477,4 +503,28 @@ float PLAI::VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpap
 		vpc += bdgmvev.VpcFromSq(sq) * mpapcsqeval[apc][rank * 8 + file];
 	}
 	return vpc;
+}
+
+
+/*
+ *
+ *	PLHUMAN class
+ * 
+ *	Human player, which drives the UI for getting moves.
+ * 
+ */
+
+
+PLHUMAN::PLHUMAN(GA& ga, wstring szName) : PL(ga, szName)
+{
+}
+
+
+MV PLHUMAN::MvGetNext(void)
+{
+	MV mv;
+	do {
+		ga.PumpMsg();
+	} while (mv.fIsNil());
+	return mv;
 }

@@ -69,11 +69,6 @@ public:
 		grf = (rank << 4) | file; 
 	}
 	
-	inline SQ(const SQ& sq) 
-	{ 
-		grf = sq.grf; 
-	}
-	
 	inline int file(void) const 
 	{ 
 		return grf & 0x07; 

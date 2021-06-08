@@ -100,6 +100,7 @@ public:
 
 	int Play(void);
 	void NewGame(RULE* prule);
+	void InitClocks(void);
 	void StartGame(void);
 	void EndGame(void);
 	void MakeMv(MV mv, SPMV spmv);
@@ -111,7 +112,9 @@ public:
 	void MoveToImv(int imv);
 	void GenRgmv(vector<MV>& rgmv);
 
-	virtual void Log(LGT lgt, const wstring& sz);
+	virtual void ClearLog(void);
+	virtual void Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData);
+	virtual void SetLogDepth(int depth);
 
 	void Test(SPMV spmv);
 	void ValidateFEN(const WCHAR* szFEN) const;

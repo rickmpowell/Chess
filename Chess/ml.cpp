@@ -379,7 +379,7 @@ void UIGO::Draw(const RCF* prcfUpdate)
 
 
 UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this),
-		dyfList(0), dxfCellMarg(4.0f), dyfCellMarg(1.0f)
+		dyfList(0), dxfCellMarg(4.0f), dyfCellMarg(0.5f)
 {
 	for (int col = 0; col < CArray(mpcoldxf); col++)
 		mpcoldxf[col] = 0.0f;
@@ -503,10 +503,12 @@ void UIML::Layout(void)
 
 SIZF UIML::SizfLayoutPreferred(void)
 {
-	dyfList = SizfSz(L"0", ptxList).height + 2*dyfCellMarg;
+	/* I think this is the longest possible move text */
+	SIZF sizf = SizfSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
+	dyfList = sizf.height + 2*dyfCellMarg;
 
 	mpcoldxf[0] = dxfCellMarg+SizfSz(L"200.", ptxList).width;
-	mpcoldxf[1] = mpcoldxf[2] = dxfCellMarg + SizfSz(L"\x2659" L"e" L"\x00d7" L"d6" L"\x202f" L"e.p.+", ptxList).width;
+	mpcoldxf[1] = mpcoldxf[2] = dxfCellMarg + sizf.width;
 	mpcoldxf[3] = dxyfScrollBarWidth;
 
 	return SIZF(XfFromCol(4), -1.0f);
