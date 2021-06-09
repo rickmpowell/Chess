@@ -366,7 +366,6 @@ void GA::RedoMv(void)
 }
 
 
-
 /*	GA::MoveToImv
  *
  *	Move to the given move number in the move list, animating the board as in the
@@ -403,7 +402,7 @@ void GA::GenRgmv(vector<MV>& rgmv)
 
 int GA::Play(void)
 {
-	InitLog(3);
+	InitLog(2);
 	Log(LGT::Open, LGF::Normal, L"Game", L"");
 	try {
 		do {

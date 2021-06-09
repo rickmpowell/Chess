@@ -13,6 +13,17 @@
 bool fValidate = true;
 
 
+
+STATICDEPTH::STATICDEPTH(UIDBBTNS* puiParent) : STATIC(puiParent, RCF(), L""), ga(puiParent->uidb.ga)
+{
+}
+
+wstring STATICDEPTH::SzText(void) const
+{
+	return to_wstring(ga.uidb.DepthLog());
+}
+
+
 /*
  *
  *	UIDBBTNS
@@ -22,9 +33,10 @@ bool fValidate = true;
  */
 
 
-UIDBBTNS::UIDBBTNS(UI* puiParent) : UI(puiParent),
+UIDBBTNS::UIDBBTNS(UIDB* puiParent) : UI(puiParent), uidb(*puiParent),
 	btnTest(this, cmdTest, RCF(), L'\x2713'),
 	btnDnDepth(this, cmdLogDepthDown, RCF(), L'\x21e4'),
+	staticdepth(this),
 	btnUpDepth(this, cmdLogDepthUp, RCF(), L'\x21e5'),
 	btnLogOnOff(this, cmdLogFileToggle, RCF(), L'\x25bc')
 {
@@ -35,6 +47,7 @@ void UIDBBTNS::Layout(void)
 	RCF rcf(10.0f, 2.0f, 34.0f, 26.0f);;
 	btnTest.SetBounds(rcf);
 	btnDnDepth.SetBounds(rcf.Offset(34.0f, 0));
+	staticdepth.SetBounds(rcf.Offset(34.0f, 0));
 	btnUpDepth.SetBounds(rcf.Offset(34.0f, 0));
 	btnLogOnOff.SetBounds(rcf.Offset(34.0f, 0));
 }
@@ -51,7 +64,7 @@ void UIDBBTNS::Draw(const RCF* prcfUpdate)
 
 
 UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f), ptxLog(nullptr), ptxLogBold(nullptr), 
-		depthCur(0), depthShow(2), posLog(nullptr)
+		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
 }
 
@@ -77,8 +90,9 @@ void UIDB::CreateRsrc(void)
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxLogBold);
-
+	UI::CreateRsrc();
 }
+
 
 void UIDB::DiscardRsrc(void)
 {
@@ -187,7 +201,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
 	if (lgt == LGT::Open)
 		depthCur++;
 
-	if (lgentry.depth > depthShow)
+	if (lgentry.depth > DepthLog())
 		return;
 
 	if (rglgentry.size() > 0 && rglgentry.back().lgt == LGT::Temp)
@@ -226,27 +240,35 @@ void UIDB::ClearLog(void)
 {
 	rglgentry.clear();
 	UpdateContSize(SIZF(0,0));
-	Redraw();
 }
 
 
 void UIDB::SetDepthLog(int depth)
 {
-	depthShow = depth;
+	depthShowSet = depth;
 }
 
+void UIDB::SetDepthLogDefault(int depth)
+{
+	depthShowDefault = depth;
+}
 
 void UIDB::InitLog(int depth)
 {
 	ClearLog();
-	if (depth > 0)
-		SetDepthLog(depth);
+	if (depth < 0)
+		depth = -1;
+	SetDepthLogDefault(depth);
+	Redraw();
 }
 
 
 int UIDB::DepthLog(void) const
 {
-	return depthShow;
+	if (depthShowSet == -1)
+		return depthShowDefault;
+	else
+		return depthShowSet;
 }
 
 

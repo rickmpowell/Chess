@@ -1,3 +1,10 @@
+  Display log depth in debug panel
+  Implement "default" log depths, which can be overriden by user changing them
+  Logging gets really slow when a lot of log entries start piling up.
+  Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
+  We're erroneously reporting success when aborting test run
+  Clicking test button in UIDB should interrupt a running test
+  File logging and UIDB logging need to have their own depth
   Buttons in UIDB don't display sometimes on first boot
   Don't show player names in UITI during test runs
   AI: spin off AI into its own thread

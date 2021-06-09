@@ -187,7 +187,6 @@ public:
 };
 
 
-
 /*
  *
  *	BTN class
@@ -245,3 +244,30 @@ public:
 	SIZF SizfImg(void) const;
 };
 
+
+/*
+ *
+ *	STATIC ui control
+ * 
+ *	Just a simple static non-responsive area on the screen.
+ * 
+ */
+
+
+class STATIC : public UI
+{
+protected:
+	TX* ptxStatic;
+	BRS* pbrsStatic;
+	wstring szText;
+
+public:
+	STATIC(UI* puiParent, RCF rcf, const wstring& sz);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
+
+	virtual void Draw(const RCF* prcfUpdate);
+
+	virtual wstring SzText(void) const;
+	void SetText(const wstring& sz);
+};

@@ -11,16 +11,30 @@
 #include "bd.h"
 
 
+class UIDBBTNS;
 
+class STATICDEPTH : public STATIC
+{
+	GA& ga;
+public:
+	STATICDEPTH(UIDBBTNS* puiParent);
+	virtual wstring SzText(void) const;
+};
+
+
+class UIDB;
 
 class UIDBBTNS : public UI
 {
+	friend class STATICDEPTH;
+	UIDB& uidb;
 	BTNCH btnTest;
 	BTNCH btnUpDepth;
+	STATICDEPTH staticdepth;
 	BTNCH btnDnDepth;
 	BTNCH btnLogOnOff;
 public:
-	UIDBBTNS(UI* puiParent);
+	UIDBBTNS(UIDB* puiParent);
 	void Draw(const RCF* prcfUpdate = NULL);
 	virtual void Layout(void);
 	virtual SIZF SizfLayoutPreferred(void);
@@ -63,13 +77,16 @@ struct LGENTRY
 
 class UIDB : public UIPS
 {
+	friend class STATICDEPTH;
+
 	UIDBBTNS uidbbtns;
 	vector<LGENTRY> rglgentry;
 	TX* ptxLog;
 	TX* ptxLogBold;
 	float dyfLine;
 	int depthCur;
-	int depthShow;
+	int depthShowSet;
+	int depthShowDefault;
 	ofstream* posLog;
 public:
 	UIDB(GA* pga);
@@ -80,11 +97,13 @@ public:
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	virtual void DrawContent(const RCF& rcfCont);
 	virtual float DyfLine(void) const;
+
 	void AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData);
 	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const;
 	void InitLog(int depth);
 	void ClearLog(void);
 	void SetDepthLog(int depth);
+	void SetDepthLogDefault(int depth);
 	int DepthLog(void) const;
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const;

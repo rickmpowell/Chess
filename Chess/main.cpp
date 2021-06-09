@@ -966,6 +966,7 @@ public:
     {
         int depth = app.pga->uidb.DepthLog();
         app.pga->uidb.SetDepthLog(depth + 1);
+        app.pga->uidb.Redraw();
         return 1;
     }
 
@@ -988,6 +989,7 @@ public:
         if (depth > 1)
             depth--;
         app.pga->uidb.SetDepthLog(depth);
+        app.pga->uidb.Redraw();
         return 1;
     }
 

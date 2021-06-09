@@ -87,6 +87,7 @@ int PLAI2::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return 4;
 	return depthMax;
 }
 
@@ -179,6 +180,7 @@ int PLAI::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(rgmv.size() * rgmvOpp.size());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return 4; 
 	return depthMax;
 }
 
@@ -193,7 +195,7 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
 	if (depth >= depthMax)
 		return EvalBdgQuiescent(bdgmvevEval, depth, evalAlpha, evalBeta);
 
-	if (++cYield % 1000 == 0)
+	if (++cYield % 100 == 0)
 		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
@@ -268,11 +270,11 @@ float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, f
 
 	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
 	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
-		ga.Log(LGT::Data, LGF::Normal, L"", L"[" + SzFromEval(eval) + L"]");
+		ga.Log(LGT::Data, LGF::Normal, L"Total", SzFromEval(eval));
 		return -eval;
 	}
 
-	if (++cYield % 10 == 0)
+	if (++cYield % 100 == 0)
 		ga.PumpMsg();
 
 	vector<BDGMVEV> rgbdgmvev;
@@ -360,6 +362,10 @@ float PLAI::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 	float evalMob = (float)((int)rgmvSelf.size() - (int)bdgmvev.rgmvReplyAll.size()) /
 		(float)((int)rgmvSelf.size() + (int)bdgmvev.rgmvReplyAll.size());
 
+	if (fFull) {
+		ga.Log(LGT::Data, LGF::Normal, L"Material", to_wstring((int)vpcSelf) + L"-" + to_wstring((int)vpcNext));
+		ga.Log(LGT::Data, LGF::Normal, L"Mobility", to_wstring(rgmvSelf.size()) + L"-" + to_wstring(bdgmvev.rgmvReplyAll.size()) + L"]");
+	}
 	float evalControl = 0.0f;
 	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob;
 }

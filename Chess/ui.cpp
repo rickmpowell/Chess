@@ -798,12 +798,15 @@ void BTNCH::DiscardRsrcClass(void)
 	SafeRelease(&pbrsButton);
 }
 
+
 BTNCH::BTNCH(UI* puiParent, int cmd, RCF rcf, WCHAR ch) : BTN(puiParent, cmd, rcf), ch(ch)
 {
 }
 
+
 void BTNCH::Draw(const RCF* prcfUpdate)
 {
+	CreateRsrc();
 	WCHAR sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
@@ -827,6 +830,7 @@ BTNIMG::~BTNIMG(void)
 
 void BTNIMG::Draw(const RCF* prcfUpdate)
 {
+	CreateRsrc();
 	DC* pdc = AppGet().pdc;
 	pdc->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
 	RCF rcfTo = RcfInterior();
@@ -859,4 +863,55 @@ SIZF BTNIMG::SizfImg(void) const
 }
 
 
+/*
+ *
+ *	STATIC ui elements
+ * 
+ *	Static controls
+ * 
+ */
 
+
+STATIC::STATIC(UI* puiParent, RCF rcf, const wstring& sz) : UI(puiParent, rcf), szText(sz)
+{
+}
+
+void STATIC::CreateRsrc(void)
+{
+	if (ptxStatic)
+		return;
+
+	AppGet().pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsStatic);
+	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		20.0f, L"",
+		&ptxStatic);
+}
+
+
+void STATIC::DiscardRsrc(void)
+{
+	SafeRelease(&ptxStatic);
+	SafeRelease(&pbrsStatic);
+}
+
+void STATIC::SetText(const wstring& sz)
+{
+	szText = sz;
+}
+
+wstring STATIC::SzText(void) const
+{
+	return szText;
+}
+
+void STATIC::Draw(const RCF* prcfUpdate)
+{
+	CreateRsrc();
+	RCF rcfChar(PTF(0, 0), SizfSz(SzText(), ptxStatic));
+	RCF rcfTo = RcfInterior();
+	FillRcfBack(rcfTo);
+	rcfChar += rcfTo.PtfCenter();
+	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
+	DrawSzCenter(SzText(), ptxStatic, rcfTo, pbrsStatic);
+}
