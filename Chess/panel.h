@@ -64,7 +64,7 @@ public:
 	void SetContent(const RCF& rcfCont);
 	RCF RcfView(void) const;
 	RCF RcfContent(void) const;
-	void UpdateContSize(const PTF& ptf);
+	void UpdateContSize(const SIZF& sizf);
 	void AdjustRcfView(RCF rcf);
 	virtual float DyfLine(void) const;
 		

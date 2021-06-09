@@ -1,5 +1,5 @@
+  Buttons in UIDB don't display sometimes on first boot
   Don't show player names in UITI during test runs
-  logging to file
   AI: spin off AI into its own thread
   With Arial font, player name UI elements has a very wide gap between name and color circle
   Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
@@ -26,7 +26,6 @@
   UIPL: scale long player names in UITI and UIML
   UITI: Put name of our program with the logo
   UITI Layout using font metrics
-  Save: Save our game PGN log file in the directory of the .exe 
   Test with alternate fonts
   Tooltips don't resize for shorter text (only with FreeSerif?)
   UIBD: Dragging pieces outside board clips the dragged piece
@@ -89,6 +88,10 @@
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
   UIBD: Optimize redraw
+* Save: Save our game PGN log file in the directory of the .exe 
+* Add UI turn on/off file logging
+* logging to file
+* Add UI to pick log depth level, 
 * Logging options: heirarchy depth
 * Test: Move test progress into debug panel
 * Add an option in logging to replace last log entry

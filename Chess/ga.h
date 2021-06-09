@@ -114,7 +114,8 @@ public:
 
 	virtual void ClearLog(void);
 	virtual void Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData);
-	virtual void SetLogDepth(int depth);
+	virtual void SetDepthLog(int depth);
+	virtual void InitLog(int depth);
 
 	void Test(SPMV spmv);
 	void ValidateFEN(const WCHAR* szFEN) const;
@@ -139,7 +140,7 @@ public:
 	void ProcessTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
 
-	void SavePGNFile(const WCHAR szFile[]);
+	void SavePGNFile(const wstring& szFile);
 	void Serialize(ostream& os);
 	void SerializeHeaders(ostream& os);
 	void SerializeHeader(ostream& os, const string& szTag, const string& szVal);

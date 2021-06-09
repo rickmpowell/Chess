@@ -14,6 +14,7 @@
 #include <windowsx.h>
 #include <CommCtrl.h>
 #include <commdlg.h>
+#include <shlobj_core.h>
 
 #include <d2d1_1.h>
 #include <d2d1_1helper.h>
@@ -362,3 +363,5 @@ inline void SafeRelease(Interface** ppi)
 		*ppi = NULL;
 	}
 }
+
+string SzFlattenWsz(const wstring& wsz);

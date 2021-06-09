@@ -260,6 +260,21 @@ wstring APP::SzLoad(int ids) const
 }
 
 
+/*  APP::SzAppDataPath
+ *
+ *  Returns a path to the app data directory, which is where we save log files
+ *  and the like. Ensures that the directory exists.
+ * 
+ *  The path will be something like C:\Users\[Name]\AppData\Local\Chess
+ */
+wstring APP::SzAppDataPath(void) const
+{
+    wchar_t szPath[1024];
+    ::SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szPath);
+    return wstring(szPath) + L"\\" + L"SQ" + L"\\" + L"Chess";
+}
+
+
 /*  APP::Redraw
  *
  *  Force a redraw of the application. Redraws the entire app if prcf is NULL.
@@ -667,6 +682,8 @@ public:
  *  Command for the player with the current move to resign
  * 
  */
+
+
 class CMDRESIGN : public CMD
 {
 public:
@@ -940,6 +957,68 @@ public:
 };
 
 
+class CMDLOGDEPTHUP : public CMD
+{
+public:
+    CMDLOGDEPTHUP(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        int depth = app.pga->uidb.DepthLog();
+        app.pga->uidb.SetDepthLog(depth + 1);
+        return 1;
+    }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipLogDepthUp);
+    }
+
+};
+
+
+class CMDLOGDEPTHDOWN : public CMD
+{
+public:
+    CMDLOGDEPTHDOWN(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        int depth = app.pga->uidb.DepthLog();
+        if (depth > 1)
+            depth--;
+        app.pga->uidb.SetDepthLog(depth);
+        return 1;
+    }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipLogDepthDown);
+    }
+};
+
+
+class CMDLOGFILETOGGLE : public CMD
+{
+public:
+    CMDLOGFILETOGGLE(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->uidb.EnableLogFile(!app.pga->uidb.FLogFileEnabled());
+        return 1;
+    }
+
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipLogFileToggle);
+    }
+
+};
+
+
+
+
 /*
  *
  *  CMDEXIT command
@@ -991,6 +1070,9 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDSETUPBOARD(*this, cmdSetupBoard));
     cmdlist.Add(new CMDCLOCKTOGGLE(*this, cmdClockOnOff));
     cmdlist.Add(new CMDDEBUGPANEL(*this, cmdDebugPanel));
+    cmdlist.Add(new CMDLOGDEPTHUP(*this, cmdLogDepthUp));
+    cmdlist.Add(new CMDLOGDEPTHDOWN(*this, cmdLogDepthDown));
+    cmdlist.Add(new CMDLOGFILETOGGLE(*this, cmdLogFileToggle));
 }
 
 
@@ -1089,4 +1171,19 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
     }
 
     return DefWindowProc(hwnd, wm, wparam, lparam);
+}
+
+
+/*  SzFlattenWsz
+ *
+ *  Flattens the unicode string to an ansi string
+ */
+string SzFlattenWsz(const wstring& wsz)
+{
+    char sz[1024];
+    size_t cch = wsz.length();
+    if (cch >= sizeof(sz) - 1)
+        cch = sizeof(sz) - 1;
+    sz[WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), NULL, NULL)] = 0;
+    return sz;
 }

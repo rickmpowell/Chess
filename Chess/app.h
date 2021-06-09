@@ -155,6 +155,7 @@ public:
 	int MessagePump(void);
 	DWORD TmMessage(void);
 	wstring SzLoad(int ids) const;
+	wstring SzAppDataPath(void) const;
 
 private:
 	void CreateRsrc(void);

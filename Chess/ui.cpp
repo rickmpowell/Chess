@@ -787,7 +787,7 @@ void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 	pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsButton);
 	pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		24.0f, L"",
+		20.0f, L"",
 		&ptxButton);
 }
 
@@ -807,10 +807,12 @@ void BTNCH::Draw(const RCF* prcfUpdate)
 	WCHAR sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
+	RCF rcfChar(PTF(0, 0), SizfSz(sz, ptxButton));
 	RCF rcfTo = RcfInterior();
 	FillRcfBack(rcfTo);
 	pbrsButton->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
-	rcfTo.top -= 2.f;
+	rcfChar += rcfTo.PtfCenter();
+	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
 	DrawSzCenter(sz, ptxButton, rcfTo, pbrsButton);
 }
 

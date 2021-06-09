@@ -16,8 +16,7 @@
  */
 void GA::Test(SPMV spmv)
 {
-	ClearLog();
-	SetLogDepth(3);
+	InitLog(3);
 	Log(LGT::Open, LGF::Normal, L"Test", L"Start");
 	this->spmv = spmv;
 	Log(LGT::Open, LGF::Normal, L"New Game", L"");

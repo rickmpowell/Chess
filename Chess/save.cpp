@@ -14,7 +14,7 @@
  *
  *	Saves the game state as a PGN file
  */
-void GA::SavePGNFile(const WCHAR szFile[])
+void GA::SavePGNFile(const wstring& szFile)
 {
 	ofstream os(szFile, ios_base::out);
 	if (os.fail())

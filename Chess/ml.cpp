@@ -675,7 +675,7 @@ void UIML::UpdateContSize(void)
 	float dyf = (ga.bdg.rgmvGame.size()+1) / 2 * dyfList;
 	if (dyf == 0)
 		dyf = dyfList;
-	UIPS::UpdateContSize(PTF(RcfContent().DxfWidth(), 4.0f + dyf));
+	UIPS::UpdateContSize(SIZF(RcfContent().DxfWidth(), 4.0f + dyf));
 }
 
 

@@ -181,10 +181,10 @@ RCF UIPS::RcfContent(void) const
  *	Updates the size of the content area. Call this when you add content to
  *	the content area.
  */
-void UIPS::UpdateContSize(const PTF& ptf)
+void UIPS::UpdateContSize(const SIZF& sizf)
 {
-	rcfCont.bottom = rcfCont.top + ptf.y;
-	rcfCont.right = rcfCont.left + ptf.x;
+	rcfCont.bottom = rcfCont.top + sizf.height;
+	rcfCont.right = rcfCont.left + sizf.width;
 }
 
 

@@ -7,23 +7,41 @@
  */
 
 #include "debug.h"
+#include "ga.h"
 #include "resources/Resource.h"
 
 bool fValidate = true;
 
 
-UIDBBTNS::UIDBBTNS(UI* puiParent) : UI(puiParent), btnTest(this, cmdTest, RCF(), L'\x2713')
+/*
+ *
+ *	UIDBBTNS
+ * 
+ *	Debug button bar
+ * 
+ */
+
+
+UIDBBTNS::UIDBBTNS(UI* puiParent) : UI(puiParent),
+	btnTest(this, cmdTest, RCF(), L'\x2713'),
+	btnDnDepth(this, cmdLogDepthDown, RCF(), L'\x21e4'),
+	btnUpDepth(this, cmdLogDepthUp, RCF(), L'\x21e5'),
+	btnLogOnOff(this, cmdLogFileToggle, RCF(), L'\x25bc')
 {
 }
 
 void UIDBBTNS::Layout(void)
 {
-	btnTest.SetBounds(RCF(12.0f, 4.0f, 38.0f, 30.0f));
+	RCF rcf(10.0f, 2.0f, 34.0f, 26.0f);;
+	btnTest.SetBounds(rcf);
+	btnDnDepth.SetBounds(rcf.Offset(34.0f, 0));
+	btnUpDepth.SetBounds(rcf.Offset(34.0f, 0));
+	btnLogOnOff.SetBounds(rcf.Offset(34.0f, 0));
 }
 
 SIZF UIDBBTNS::SizfLayoutPreferred(void)
 {
-	return SIZF(-1.0f, 40.0f);
+	return SIZF(-1.0f, 28.0f);
 }
 
 void UIDBBTNS::Draw(const RCF* prcfUpdate)
@@ -32,9 +50,20 @@ void UIDBBTNS::Draw(const RCF* prcfUpdate)
 }
 
 
-UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f), ptxLog(nullptr), ptxLogBold(nullptr), depthLog(0), depthShow(2)
+UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f), ptxLog(nullptr), ptxLogBold(nullptr), 
+		depthCur(0), depthShow(2), posLog(nullptr)
 {
 }
+
+UIDB::~UIDB()
+{
+	if (posLog) {
+		posLog->close();
+		delete posLog;
+	}
+	DiscardRsrc();
+}
+
 
 void UIDB::CreateRsrc(void)
 {
@@ -58,7 +87,10 @@ void UIDB::DiscardRsrc(void)
 }
 
 
-
+/*	UIDB::Layout
+ *
+ *	Layout the items in the debug panel.
+ */
 void UIDB::Layout(void)
 {
 	/* position top items */
@@ -144,16 +176,16 @@ float UIDB::DyfLine(void) const
 }
 
 
-void UIDB::ShowLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
+void UIDB::AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
 {
 	LGENTRY lgentry(lgt, lgf, szTag, szData);
 
 	if (lgt == LGT::Close)
-		depthLog--;
-	assert(depthLog >= 0);
-	lgentry.depth = depthLog;
+		depthCur--;
+	assert(depthCur >= 0);
+	lgentry.depth = depthCur;
 	if (lgt == LGT::Open)
-		depthLog++;
+		depthCur++;
 
 	if (lgentry.depth > depthShow)
 		return;
@@ -170,22 +202,70 @@ void UIDB::ShowLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData
 	else
 		lgentry.dyfTop = rglgentry.back().dyfTop + rglgentry.back().dyfHeight;
 
-
+	if (posLog && lgentry.lgt != LGT::Temp) {
+		*posLog << string(4 * lgentry.depth, ' ');
+		*posLog << SzFlattenWsz(lgentry.szTag);
+		*posLog << ' ';
+		*posLog << SzFlattenWsz(lgentry.szData);
+		*posLog << endl;
+	}
 	rglgentry.push_back(lgentry);
 
 	float dyfBot = lgentry.dyfTop + lgentry.dyfHeight;
-	UpdateContSize(PTF(RcfContent().DxfWidth(), dyfBot));
+	UpdateContSize(SIZF(RcfContent().DxfWidth(), dyfBot));
 	FMakeVis(RcfContent().top + dyfBot, lgentry.dyfHeight);
 	Redraw();
 }
 
+
+/*	UIDB::ClearLog
+ *
+ *	Clears the current log
+ */
 void UIDB::ClearLog(void)
 {
 	rglgentry.clear();
+	UpdateContSize(SIZF(0,0));
 	Redraw();
 }
 
-void UIDB::SetLogDepth(int depth)
+
+void UIDB::SetDepthLog(int depth)
 {
 	depthShow = depth;
+}
+
+
+void UIDB::InitLog(int depth)
+{
+	ClearLog();
+	if (depth > 0)
+		SetDepthLog(depth);
+}
+
+
+int UIDB::DepthLog(void) const
+{
+	return depthShow;
+}
+
+
+void UIDB::EnableLogFile(bool fEnable)
+{
+	if (fEnable == (posLog != nullptr))
+		return;
+	if (posLog) {
+		posLog->close();
+		delete posLog;
+		posLog = nullptr;
+	}
+	else {
+		wstring szAppData = ga.app.SzAppDataPath();
+		posLog = new ofstream(szAppData + L"\\chess.log");
+	}
+}
+
+bool UIDB::FLogFileEnabled(void) const
+{
+	return posLog != nullptr;
 }

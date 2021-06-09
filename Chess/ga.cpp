@@ -403,8 +403,7 @@ void GA::GenRgmv(vector<MV>& rgmv)
 
 int GA::Play(void)
 {
-	ClearLog();
-	SetLogDepth(3);
+	InitLog(3);
 	Log(LGT::Open, LGF::Normal, L"Game", L"");
 	try {
 		do {
@@ -412,7 +411,7 @@ int GA::Play(void)
 			MV mv = ppl->MvGetNext();
 			assert(!mv.fIsNil());
 			MakeMv(mv, spmv);
-			SavePGNFile(L"current.pgn");
+			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
 		} while (bdg.gs == GS::Playing);
 	}
 	catch (int err) {
@@ -456,20 +455,23 @@ void GA::PumpMsg(void)
  */
 void GA::Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
 {
-	if (uidb.FVisible())
-		uidb.ShowLog(lgt, lgf, szTag, szData);
+	uidb.AddLog(lgt, lgf, szTag, szData);
 }
 
 
 void GA::ClearLog(void)
 {
-	if (uidb.FVisible())
-		uidb.ClearLog();
+	uidb.ClearLog();
 }
 
 
-void GA::SetLogDepth(int depth)
+void GA::SetDepthLog(int depth)
 {
-	if (uidb.FVisible())
-		uidb.SetLogDepth(depth);
+	uidb.SetDepthLog(depth);
+}
+
+
+void GA::InitLog(int depth)
+{
+	uidb.InitLog(depth);
 }
