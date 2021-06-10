@@ -110,7 +110,7 @@ public:
 	void UndoMv(void);
 	void RedoMv(void);
 	void MoveToImv(int imv);
-	void GenRgmv(vector<MV>& rgmv);
+	void GenRgmv(RGMV& rgmv);
 
 	virtual void ClearLog(void);
 	virtual void Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData);

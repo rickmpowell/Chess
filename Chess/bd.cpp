@@ -390,7 +390,7 @@ void BD::UndoMvSq(MV mv)
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
+void BD::GenRgmv(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const
 {
 	Validate();
 	GenRgmvColor(rgmv, cpcMove, false);
@@ -399,7 +399,7 @@ void BD::GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 }
 
 
-void BD::GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
+void BD::GenRgmvQuiescent(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const
 {
 	GenRgmvColor(rgmv, cpcMove, true);
 	if (rmchk == RMCHK::Remove) {
@@ -409,7 +409,7 @@ void BD::GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const
 }
 
 
-void BD::RemoveInCheckMoves(vector<MV>& rgmv, CPC cpcMove) const
+void BD::RemoveInCheckMoves(RGMV& rgmv, CPC cpcMove) const
 {
  	unsigned imvDest = 0;
 	BD bd(*this);
@@ -429,7 +429,7 @@ void BD::RemoveInCheckMoves(vector<MV>& rgmv, CPC cpcMove) const
  *	Removes quiet moves from the given move list. For now quiet moves are
  *	anything that is not a capture or check.
  */
-void BD::RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const
+void BD::RemoveQuiescentMoves(RGMV& rgmv, CPC cpcMove) const
 {
 	if (FInCheck(cpcMove))	/* don't prune if we're in check */
 		return;
@@ -532,7 +532,7 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
  *	Generates moves for the given color pieces. Does not check if the king is left in
  *	check, so caller must weed those moves out.
  */
-void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const
+void BD::GenRgmvColor(RGMV& rgmv, CPC cpcMove, bool fForAttack) const
 {
 	rgmv.clear();
 
@@ -583,7 +583,7 @@ void BD::GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const
  *	Generates legal moves (without check tests) for a pawn
  *	in the sqFrom square.
  */
-void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvPawn(RGMV& rgmv, SQ sqFrom) const
 {
 	/* pushing pawns */
 
@@ -617,7 +617,7 @@ void BD::GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const
  *	to the move list, which includes promotions to queen, rook, knight, and
  *	bishop.
  */
-void BD::AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const
+void BD::AddRgmvMvPromotions(RGMV& rgmv, MV mv) const
 {
 	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Queen));
 	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Rook));
@@ -630,7 +630,7 @@ void BD::AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const
  *
  *	Generates pawn capture moves of pawns on sqFrom in the dsq direction
  */
-void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
+void BD::GenRgmvPawnCapture(RGMV& rgmv, SQ sqFrom, int dsq) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Pawn);
 	SQ sqTo = sqFrom + dsq;
@@ -654,7 +654,7 @@ void BD::GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const
  *	Generates legal moves for the knight at sqFrom. Does not check that
  *	the king ends up in check.
  */
-void BD::GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvKnight(RGMV& rgmv, SQ sqFrom) const
 {
 	static int rgdsq[] = { 33, 31, 18, 14, -14, -18, -31, -33 };
 	for (int idsq = 0; idsq < CArray(rgdsq); idsq++)
@@ -666,7 +666,7 @@ void BD::GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const
  *
  *	Generates moves for the bishop on square sqFrom
  */
-void BD::GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvBishop(RGMV& rgmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Bishop); 
 	GenRgmvSlide(rgmv, sqFrom, 17);
@@ -676,7 +676,7 @@ void BD::GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const
 }
 
 
-void BD::GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvRook(RGMV& rgmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Rook); 
 	GenRgmvSlide(rgmv, sqFrom, 16);
@@ -690,7 +690,7 @@ void BD::GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const
  *
  *	Generates  moves for the queen at sqFrom
  */
-void BD::GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvQueen(RGMV& rgmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Queen);
 	GenRgmvSlide(rgmv, sqFrom, 17);
@@ -709,7 +709,7 @@ void BD::GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const
  *	Generates moves for the king at sqFrom. Note: like all the move generators,
  *	this does not check that the king is moving into check.
  */
-void BD::GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvKing(RGMV& rgmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::King);
 	static int rgdsq[] = { 17, 16, 15, 1, -1, -15, -16, -17 };
@@ -725,7 +725,7 @@ void BD::GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const
  *	check and intermediate squares are not under attack, but does not check the final 
  *	king destination.
  */
-void BD::GenRgmvCastle(vector<MV>& rgmv, SQ sqKing) const
+void BD::GenRgmvCastle(RGMV& rgmv, SQ sqKing) const
 {
 	/* this code is a little contorted in order to avoid calling FSqAttacked (which 
 	   is an expensive test) as much as possible. */
@@ -753,7 +753,7 @@ void BD::GenRgmvCastle(vector<MV>& rgmv, SQ sqKing) const
  *
  *	Generates en passant pawn moves from the pawn at sqFrom
  */
-void BD::GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const
+void BD::GenRgmvEnPassant(RGMV& rgmv, SQ sqFrom) const
 {
 	assert(sqEnPassant != sqNil);
 	assert(ApcFromSq(sqFrom) == APC::Pawn);
@@ -1004,13 +1004,13 @@ void BDG::InitFENFullmoveCounter(const WCHAR*& sz)
  *	Optionally doesn't bother to remove moves that would leave the 
  *	king in check.
  */
-void BDG::GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const
+void BDG::GenRgmv(RGMV& rgmv, RMCHK rmchk) const
 {
 	BD::GenRgmv(rgmv, cpcToMove, rmchk);
 }
 
 
-void BDG::GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const
+void BDG::GenRgmvQuiescent(RGMV& rgmv, RMCHK rmchk) const
 {
 	BD::GenRgmvQuiescent(rgmv, cpcToMove, rmchk);
 }
@@ -1110,7 +1110,7 @@ void BDG::RedoMv(void)
  *	Tests for the game in an end state. Returns the new state. Takes the legal move
  *	list for the current to-move player and the rule struture.
  */
-GS BDG::GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const
+GS BDG::GsTestGameOver(const RGMV& rgmv, const RULE& rule) const
 {
 	if (rgmv.size() == 0) {
 		if (FInCheck(cpcToMove))
@@ -1131,7 +1131,7 @@ GS BDG::GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const
 }
 
 
-void BDG::SetGameOver(const vector<MV>& rgmv, const RULE& rule)
+void BDG::SetGameOver(const RGMV& rgmv, const RULE& rule)
 {
 	SetGs(GsTestGameOver(rgmv, rule));
 }

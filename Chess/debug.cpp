@@ -14,11 +14,12 @@ bool fValidate = true;
 
 
 
-STATICDEPTH::STATICDEPTH(UIDBBTNS* puiParent) : STATIC(puiParent, RCF(), L""), ga(puiParent->uidb.ga)
+SPINDEPTH::SPINDEPTH(UIDBBTNS* puiParent) : SPIN(puiParent, cmdLogDepthUp, cmdLogDepthDown), 
+		ga(puiParent->uidb.ga)
 {
 }
 
-wstring STATICDEPTH::SzText(void) const
+wstring SPINDEPTH::SzValue(void) const
 {
 	return to_wstring(ga.uidb.DepthLog());
 }
@@ -34,27 +35,21 @@ wstring STATICDEPTH::SzText(void) const
 
 
 UIDBBTNS::UIDBBTNS(UIDB* puiParent) : UI(puiParent), uidb(*puiParent),
-	btnTest(this, cmdTest, RCF(), L'\x2713'),
-	btnDnDepth(this, cmdLogDepthDown, RCF(), L'\x21e4'),
-	staticdepth(this),
-	btnUpDepth(this, cmdLogDepthUp, RCF(), L'\x21e5'),
-	btnLogOnOff(this, cmdLogFileToggle, RCF(), L'\x25bc')
+	btnTest(this, cmdTest, L'\x2713'), spindepth(this),
+	btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk)
 {
 }
 
 void UIDBBTNS::Layout(void)
 {
-	RCF rcf(10.0f, 2.0f, 34.0f, 26.0f);;
-	btnTest.SetBounds(rcf);
-	btnDnDepth.SetBounds(rcf.Offset(34.0f, 0));
-	staticdepth.SetBounds(rcf.Offset(34.0f, 0));
-	btnUpDepth.SetBounds(rcf.Offset(34.0f, 0));
-	btnLogOnOff.SetBounds(rcf.Offset(34.0f, 0));
+	btnTest.SetBounds(RCF(12.0f, 2.0f, 40.0f, 30.0f));
+	spindepth.SetBounds(RCF(52.0f, 2.0f, 92.0f, 30.0f));
+	btnLogOnOff.SetBounds(RCF(104.0f, 2.0f, 132.0f, 30.0f));
 }
 
 SIZF UIDBBTNS::SizfLayoutPreferred(void)
 {
-	return SIZF(-1.0f, 28.0f);
+	return SIZF(-1.0f, 32.0f);
 }
 
 void UIDBBTNS::Draw(const RCF* prcfUpdate)

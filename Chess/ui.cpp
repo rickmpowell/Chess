@@ -77,11 +77,11 @@ void UI::DiscardRsrcClass(void)
 }
 
 
-ID2D1PathGeometry* UI::PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf)
+ID2D1PathGeometry* UI::PgeomCreate(PTF rgptf[], int cptf)
 {
 	/* capture X, which is created as a cross that is rotated later */
 	ID2D1PathGeometry* pgeom;
-	pfactd2->CreatePathGeometry(&pgeom);
+	AppGet().pfactd2->CreatePathGeometry(&pgeom);
 	ID2D1GeometrySink* psink;
 	pgeom->Open(&psink);
 	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
@@ -93,7 +93,7 @@ ID2D1PathGeometry* UI::PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf)
 }
 
 
-BMP* UI::PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic)
+BMP* UI::PbmpFromPngRes(int idb)
 {
 	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
 	if (hres == NULL)
@@ -108,18 +108,18 @@ BMP* UI::PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic)
 
 	HRESULT hr;
 	IWICStream* pstm = NULL;
-	hr = pfactwic->CreateStream(&pstm);
+	hr = AppGet().pfactwic->CreateStream(&pstm);
 	hr = pstm->InitializeFromMemory(pbRes, cbRes);
 	IWICBitmapDecoder* pdec = NULL;
-	hr = pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
+	hr = AppGet().pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
 	IWICBitmapFrameDecode* pframe = NULL;
 	hr = pdec->GetFrame(0, &pframe);
 	IWICFormatConverter* pconv = NULL;
-	hr = pfactwic->CreateFormatConverter(&pconv);
+	hr = AppGet().pfactwic->CreateFormatConverter(&pconv);
 	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
 		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
 	ID2D1Bitmap1* pbmp;
-	hr = pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
+	hr = AppGet().pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
 
 	SafeRelease(&pframe);
 	SafeRelease(&pconv);
@@ -716,7 +716,7 @@ void UI::Log(LGT lgt, const wstring& sz) const
  */
 
 
-BTN::BTN(UI* puiParent, int cmd, RCF rcf) : UI(puiParent, rcf), cmd(cmd)
+BTN::BTN(UI* puiParent, int cmd) : UI(puiParent), cmd(cmd)
 {
 	this->fHilite = false;
 	this->fTrack = false;
@@ -799,7 +799,7 @@ void BTNCH::DiscardRsrcClass(void)
 }
 
 
-BTNCH::BTNCH(UI* puiParent, int cmd, RCF rcf, WCHAR ch) : BTN(puiParent, cmd, rcf), ch(ch)
+BTNCH::BTNCH(UI* puiParent, int cmd, WCHAR ch) : BTN(puiParent, cmd), ch(ch)
 {
 }
 
@@ -819,7 +819,7 @@ void BTNCH::Draw(const RCF* prcfUpdate)
 	DrawSzCenter(sz, ptxButton, rcfTo, pbrsButton);
 }
 
-BTNIMG::BTNIMG(UI* puiParent, int cmd, RCF rcf, int idb) : BTN(puiParent, cmd, rcf), idb(idb), pbmp(NULL)
+BTNIMG::BTNIMG(UI* puiParent, int cmd, int idb) : BTN(puiParent, cmd), idb(idb), pbmp(NULL)
 {
 }
 
@@ -836,6 +836,7 @@ void BTNIMG::Draw(const RCF* prcfUpdate)
 	RCF rcfTo = RcfInterior();
 	FillRcfBack(rcfTo);
 	rcfTo.Offset(rcfBounds.PtfTopLeft());
+	rcfTo.Inflate(PTF(-2.0f, -2.0f));
 	RCF rcfFrom = RCF(PTF(0, 0), pbmp->GetSize());
 	D2D1_COLOR_F colorSav = pbrText->GetColor();
 	pbrText->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
@@ -848,8 +849,7 @@ void BTNIMG::CreateRsrc(void)
 {
 	if (pbmp)
 		return;
-	APP& app = AppGet();
-	pbmp = PbmpFromPngRes(idb, app.pdc, app.pfactwic);
+	pbmp = PbmpFromPngRes(idb);
 }
 
 void BTNIMG::DiscardRsrc(void)
@@ -872,7 +872,8 @@ SIZF BTNIMG::SizfImg(void) const
  */
 
 
-STATIC::STATIC(UI* puiParent, RCF rcf, const wstring& sz) : UI(puiParent, rcf), szText(sz)
+STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent), szText(sz), 
+		ptxStatic(nullptr), pbrsStatic(nullptr)
 {
 }
 
@@ -914,4 +915,96 @@ void STATIC::Draw(const RCF* prcfUpdate)
 	rcfChar += rcfTo.PtfCenter();
 	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
 	DrawSzCenter(SzText(), ptxStatic, rcfTo, pbrsStatic);
+}
+
+/*
+ *
+ *	BTNGEOM
+ * 
+ *	Button with a geometry to fill for the visual
+ * 
+ */
+
+
+BTNGEOM::BTNGEOM(UI* puiParent, int cmd, PTF rgptf[], int cptf) : BTN(puiParent, cmd), pgeom(nullptr)
+{
+	pgeom = PgeomCreate(rgptf, cptf);
+}
+
+BTNGEOM::~BTNGEOM(void)
+{
+	SafeRelease(&pgeom);
+}
+
+void BTNGEOM::Draw(const RCF* prcfUpdate)
+{
+	float dxyfScale = RcfInterior().DxfWidth() / 2.0f;
+	FillRcf(RcfInterior(), pbrBack);
+	DC* pdc = AppGet().pdc;
+	pdc->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	PTF ptfCenter = rcfBounds.PtfCenter();
+	pdc->SetTransform(
+		Matrix3x2F::Scale(SizeF(dxyfScale, dxyfScale), PTF(0, 0)) *
+		Matrix3x2F::Translation(SizeF(ptfCenter.x, ptfCenter.y)));
+	D2D1_COLOR_F colorSav = pbrText->GetColor();
+	pbrText->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
+	pdc->FillGeometry(pgeom, pbrText);
+	pbrText->SetColor(colorSav);
+	pdc->SetTransform(Matrix3x2F::Identity());
+
+}
+
+
+/*
+ *
+ *	SPIN ui control
+ * 
+ */
+static PTF rgptfLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
+static PTF rgptfRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
+
+
+SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), 
+		btngeomUp(this, cmdUp, rgptfRight, 3), btngeomDown(this, cmdDown, rgptfLeft, 3),
+		ptxSpin(nullptr)
+{
+}
+
+
+void SPIN::CreateRsrc(void)
+{
+	if (ptxSpin)
+		return;
+
+	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		14.0f, L"",
+		&ptxSpin);
+}
+
+
+void SPIN::DiscardRsrc(void)
+{
+	SafeRelease(&ptxSpin);
+}
+
+void SPIN::Layout(void)
+{
+	float dxyfScale = RcfInterior().DyfHeight() / 2.0f;
+	RCF rcf = RcfInterior();
+	rcf.right = rcf.left + dxyfScale;
+	btngeomDown.SetBounds(rcf);
+	rcf = RcfInterior();
+	rcf.left = rcf.right - dxyfScale;
+	btngeomUp.SetBounds(rcf);
+}
+
+
+void SPIN::Draw(const RCF* prcfUpdate)
+{
+	wstring szValue = SzValue();
+	SIZF sizf = SizfSz(szValue, ptxSpin);
+	RCF rcf = RcfInterior();
+	rcf.Offset(PTF(0, (rcf.DyfHeight() - sizf.height) / 2));
+	DrawSzCenter(szValue, ptxSpin, rcf, pbrText);
 }

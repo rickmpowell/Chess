@@ -50,3 +50,4 @@
 #define idbLogo		  3
 #define idbWhiteFlag 4
 #define idbHandShake 5
+#define idbFloppyDisk 6

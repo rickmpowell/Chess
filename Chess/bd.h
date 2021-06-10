@@ -354,6 +354,11 @@ public:
 };
 
 
+class RGMV : public vector<MV>
+{
+};
+
+
 /*
  *
  *	GS emumeration
@@ -507,27 +512,27 @@ public:
 	void MakeMvSq(MV& mv);
 	void UndoMvSq(MV mv);
 
-	void GenRgmv(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvQuiescent(vector<MV>& rgmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvColor(vector<MV>& rgmv, CPC cpcMove, bool fForAttack) const;
-	void GenRgmvPawn(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvKnight(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvBishop(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvRook(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvQueen(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvKing(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvCastle(vector<MV>& rgmv, SQ sqFrom) const;
-	void GenRgmvCastleSide(vector<MV>& rgmv, SQ sqKing, int fileRook, int dsq) const;
-	void GenRgmvPawnCapture(vector<MV>& rgmv, SQ sqFrom, int dsq) const;
-	void AddRgmvMvPromotions(vector<MV>& rgmv, MV mv) const;
-	void GenRgmvEnPassant(vector<MV>& rgmv, SQ sqFrom) const;
+	void GenRgmv(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenRgmvQuiescent(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenRgmvColor(RGMV& rgmv, CPC cpcMove, bool fForAttack) const;
+	void GenRgmvPawn(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvKnight(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvBishop(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvRook(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvQueen(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvKing(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvCastle(RGMV& rgmv, SQ sqFrom) const;
+	void GenRgmvCastleSide(RGMV& rgmv, SQ sqKing, int fileRook, int dsq) const;
+	void GenRgmvPawnCapture(RGMV& rgmv, SQ sqFrom, int dsq) const;
+	void AddRgmvMvPromotions(RGMV& rgmv, MV mv) const;
+	void GenRgmvEnPassant(RGMV& rgmv, SQ sqFrom) const;
 
 
 	/*	BD::AddRgmvMv
 	 *
 	 *	Adds the move to the move vector
 	 */
-	inline void AddRgmvMv(vector<MV>& rgmv, MV mv) const
+	inline void AddRgmvMv(RGMV& rgmv, MV mv) const
 	{
 		rgmv.push_back(mv);
 	}
@@ -541,7 +546,7 @@ public:
 	 *	false if it's not a legal square or there is a piece in the
 	 *	square.
 	 */
-	inline bool FGenRgmvDsq(vector<MV>& rgmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
+	inline bool FGenRgmvDsq(RGMV& rgmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
 	{
 		SQ sqTo = sq + dsq;
 		if (sqTo.fIsOffBoard())
@@ -566,15 +571,15 @@ public:
 	 *	Stops when the piece runs into a piece of its own color, or a capture of
 	 *	an enemy piece, or it reaches the end of the board.
 	 */
-	inline void GenRgmvSlide(vector<MV>& rgmv, SQ sqFrom, int dsq) const
+	inline void GenRgmvSlide(RGMV& rgmv, SQ sqFrom, int dsq) const
 	{
 		IPC ipcFrom = (*this)(sqFrom);
 		for (int sq = sqFrom; FGenRgmvDsq(rgmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
 			;
 	}
 	
-	void RemoveInCheckMoves(vector<MV>& rgmv, CPC cpc) const;
-	void RemoveQuiescentMoves(vector<MV>& rgmv, CPC cpcMove) const;
+	void RemoveInCheckMoves(RGMV& rgmv, CPC cpc) const;
+	void RemoveQuiescentMoves(RGMV& rgmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
 	bool FSqAttacked(CPC cpc, SQ sqAttacked) const;
@@ -759,16 +764,16 @@ public:
 
 	void NewGame(void);
 
-	void GenRgmv(vector<MV>& rgmv, RMCHK rmchk) const;
-	void GenRgmvQuiescent(vector<MV>& rgmv, RMCHK rmchk) const;
+	void GenRgmv(RGMV& rgmv, RMCHK rmchk) const;
+	void GenRgmvQuiescent(RGMV& rgmv, RMCHK rmchk) const;
 	bool FMvIsQuiescent(MV mv) const;
 	
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);
 	
-	GS GsTestGameOver(const vector<MV>& rgmv, const RULE& rule) const;
-	void SetGameOver(const vector<MV>& rgmv, const RULE& rule);
+	GS GsTestGameOver(const RGMV& rgmv, const RULE& rule) const;
+	void SetGameOver(const RGMV& rgmv, const RULE& rule);
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int cmvDraw) const;

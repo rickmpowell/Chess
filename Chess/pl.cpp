@@ -81,7 +81,7 @@ float PLAI2::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 
 int PLAI2::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
 {
-	static vector<MV> rgmvOpp;
+	static RGMV rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
 	const float cmvSearch = 0.10e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
@@ -117,7 +117,7 @@ MV PLAI::MvGetNext(void)
 	ga.Log(LGT::Open, LGF::Normal, 
 			ga.bdg.cpcToMove == CPC::White ? L"White" : L"Black", wstring(L"(") + szName + L")");
 	BDG bdg = ga.bdg;
-	static vector <MV> rgmv;
+	static RGMV rgmv;
 	bdg.GenRgmv(rgmv, RMCHK::NoRemove);
 	if (rgmv.size() == 0)
 		return MV();
@@ -174,7 +174,7 @@ MV PLAI::MvGetNext(void)
 
 int PLAI::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
 {
-	static vector<MV> rgmvOpp;
+	static RGMV rgmvOpp;
 	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
 	const float cmvSearch = 0.50e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
@@ -357,7 +357,7 @@ float PLAI::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 	float vpcSelf = VpcFromCpc(bdgmvev, ~bdgmvev.cpcToMove);
 	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
 
-	static vector<MV> rgmvSelf;
+	static RGMV rgmvSelf;
 	bdgmvev.GenRgmvColor(rgmvSelf, ~bdgmvev.cpcToMove, false);
 	float evalMob = (float)((int)rgmvSelf.size() - (int)bdgmvev.rgmvReplyAll.size()) /
 		(float)((int)rgmvSelf.size() + (int)bdgmvev.rgmvReplyAll.size());

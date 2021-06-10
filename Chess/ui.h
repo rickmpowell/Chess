@@ -105,8 +105,8 @@ protected:
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
-	static GEOM* PgeomCreate(FACTD2* pfactd2, PTF rgptf[], int cptf);
-	static BMP* PbmpFromPngRes(int idb, DC* pdc, FACTWIC* pfactwic);
+	GEOM* PgeomCreate(PTF rgptf[], int cptf);
+	BMP* PbmpFromPngRes(int idb);
 
 protected:
 	RCF rcfBounds;	// rectangle is in global coordinates
@@ -203,14 +203,17 @@ protected:
 	bool fTrack;
 	int cmd;
 public:
-	BTN(UI* puiParent, int cmd, RCF rcf);
+	BTN(UI* puiParent, int cmd);
+
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
 	virtual void Draw(DC* pdc);
+
 	virtual void StartLeftDrag(PTF ptf);
 	virtual void EndLeftDrag(PTF ptf);
 	virtual void LeftDrag(PTF ptf);
 	virtual void MouseHover(PTF ptf, MHT mht);
+	
 	virtual wstring SzTip(void) const;
 };
 
@@ -226,7 +229,7 @@ public:
 	static void DiscardRsrcClass(void);
 
 public:
-	BTNCH(UI* puiParent, int cmd, RCF rcf, WCHAR ch);
+	BTNCH(UI* puiParent, int cmd, WCHAR ch);
 	virtual void Draw(const RCF* prcfUpdate);
 };
 
@@ -236,12 +239,30 @@ class BTNIMG : public BTN
 	int idb;
 	BMP* pbmp;
 public:
-	BTNIMG(UI* puiParent, int cmd, RCF rcf, int idb);
+	BTNIMG(UI* puiParent, int cmd, int idb);
 	~BTNIMG(void);
 	virtual void Draw(const RCF* prcfUpdate);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	SIZF SizfImg(void) const;
+};
+
+
+/*
+ *
+ *	BTNGEOM
+ * 
+ *	Geomtries are assumed to be scaled from a ...
+ */
+
+
+class BTNGEOM : public BTN
+{
+	GEOM* pgeom;
+public:
+	BTNGEOM(UI* puiParent, int cmd, PTF rgptf[], int cptf);
+	~BTNGEOM();
+	virtual void Draw(const RCF* prcfUpdate);
 };
 
 
@@ -262,7 +283,7 @@ protected:
 	wstring szText;
 
 public:
-	STATIC(UI* puiParent, RCF rcf, const wstring& sz);
+	STATIC(UI* puiParent, const wstring& sz);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
@@ -270,4 +291,39 @@ public:
 
 	virtual wstring SzText(void) const;
 	void SetText(const wstring& sz);
+};
+
+
+/*
+ *
+ *	SPIN ui control
+ * 
+ *	Spinner control, with arrows to go up/down and an integer value displayed
+ *	between them.
+ * 
+ */
+
+enum SPDIR
+{
+	spdirNil = -1,
+	spdirUp = 0,
+	spdirDown = 1,
+	spdirMax = 2
+};
+
+class SPIN : public UI
+{
+protected:
+	TX* ptxSpin;
+	BTNGEOM btngeomDown;
+	BTNGEOM btngeomUp;
+
+public:
+	SPIN(UI* puiParent, int cmdUp, int cmdDown);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	virtual void Layout(void);
+
+	virtual void Draw(const RCF* prcfUpdate);
+	virtual wstring SzValue(void) const = 0;
 };

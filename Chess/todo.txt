@@ -1,5 +1,4 @@
-  Display log depth in debug panel
-  Implement "default" log depths, which can be overriden by user changing them
+  Use custom move array that pre-allocates 50 fixed items
   Logging gets really slow when a lot of log entries start piling up.
   Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
   We're erroneously reporting success when aborting test run
@@ -34,7 +33,6 @@
   UITI: Put name of our program with the logo
   UITI Layout using font metrics
   Test with alternate fonts
-  Tooltips don't resize for shorter text (only with FreeSerif?)
   UIBD: Dragging pieces outside board clips the dragged piece
   UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
   Add canceled game-over state
@@ -95,6 +93,11 @@
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
   UIBD: Optimize redraw
+* Implement an integer spinner control and use it for log depth
+* PgeomCreate can get the d2 factory from AppGet().
+* Tooltips don't resize for shorter text (only with FreeSerif?)
+* Display log depth in debug panel
+* Implement "default" log depths, which can be overriden by user changing them
 * Save: Save our game PGN log file in the directory of the .exe 
 * Add UI turn on/off file logging
 * logging to file

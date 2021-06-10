@@ -26,8 +26,7 @@ void UIICON::CreateRsrc(void)
 {
 	if (pbmp)
 		return;
-	APP& app = AppGet();
-	pbmp = PbmpFromPngRes(idb, app.pdc, app.pfactwic);
+	pbmp = PbmpFromPngRes(idb);
 }
 
 

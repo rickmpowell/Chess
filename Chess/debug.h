@@ -13,12 +13,12 @@
 
 class UIDBBTNS;
 
-class STATICDEPTH : public STATIC
+class SPINDEPTH : public SPIN
 {
 	GA& ga;
 public:
-	STATICDEPTH(UIDBBTNS* puiParent);
-	virtual wstring SzText(void) const;
+	SPINDEPTH(UIDBBTNS* puiParent);
+	virtual wstring SzValue(void) const;
 };
 
 
@@ -26,13 +26,11 @@ class UIDB;
 
 class UIDBBTNS : public UI
 {
-	friend class STATICDEPTH;
+	friend class SPINDEPTH;
 	UIDB& uidb;
 	BTNCH btnTest;
-	BTNCH btnUpDepth;
-	STATICDEPTH staticdepth;
-	BTNCH btnDnDepth;
-	BTNCH btnLogOnOff;
+	SPINDEPTH spindepth;
+	BTNIMG btnLogOnOff;
 public:
 	UIDBBTNS(UIDB* puiParent);
 	void Draw(const RCF* prcfUpdate = NULL);
@@ -77,7 +75,7 @@ struct LGENTRY
 
 class UIDB : public UIPS
 {
-	friend class STATICDEPTH;
+	friend class SPINDEPTH;
 
 	UIDBBTNS uidbbtns;
 	vector<LGENTRY> rglgentry;

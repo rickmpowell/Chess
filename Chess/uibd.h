@@ -45,9 +45,9 @@ public:
 	static BRS* pbrBlack;
 	static BRS* pbrAnnotation;
 	static BRS* pbrHilite;
-	static BMP* pbmpPieces;
-	static GEOM* pgeomCross;
-	static GEOM* pgeomArrowHead;
+	BMP* pbmpPieces;
+	GEOM* pgeomCross;
+	GEOM* pgeomArrowHead;
 	TX* ptxLabel;
 
 	CPC cpcPointOfView;
@@ -63,7 +63,7 @@ public:
 	PTF ptfDragCur;
 	SQ sqHover;
 	RCF rcfDragPc;	// rectangle the dragged piece was last drawn in
-	vector<MV> rgmvDrag;	// legal moves in the UI
+	RGMV rgmvDrag;	// legal moves in the UI
 
 	vector<ANO> rgano;	// annotations
 

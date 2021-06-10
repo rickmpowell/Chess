@@ -394,7 +394,7 @@ void GA::MoveToImv(int imv)
 }
 
 
-void GA::GenRgmv(vector<MV>& rgmv)
+void GA::GenRgmv(RGMV& rgmv)
 {
 	bdg.GenRgmv(rgmv, RMCHK::Remove);
 }

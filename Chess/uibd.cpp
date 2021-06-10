@@ -25,9 +25,6 @@ BRS* UIBD::pbrDark;
 BRS* UIBD::pbrBlack;
 BRS* UIBD::pbrAnnotation;
 BRS* UIBD::pbrHilite;
-BMP* UIBD::pbmpPieces;
-GEOM* UIBD::pgeomCross;
-GEOM* UIBD::pgeomArrowHead;
 
 const float dxyfCrossFull = 20.0f;
 const float dxyfCrossCenter = 4.0f;
@@ -71,16 +68,7 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
 	pdc->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
 
-	/* bitmaps */
 
-	pbmpPieces = PbmpFromPngRes(idbPieces, pdc, pfactwic);
-
-	/* geometries */
-
-	/* capture X, which is created as a cross that is rotated later */
-	pgeomCross = PgeomCreate(pfactd2, rgptfCross, CArray(rgptfCross));
-	/* arrow head */
-	pgeomArrowHead = PgeomCreate(pfactd2, rgptfArrowHead, CArray(rgptfArrowHead));
 }
 
 
@@ -96,9 +84,7 @@ void UIBD::DiscardRsrcClass(void)
 	SafeRelease(&pbrBlack);
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
-	SafeRelease(&pbmpPieces);
-	SafeRelease(&pgeomCross);
-	SafeRelease(&pgeomArrowHead);
+
 }
 
 void UIBD::CreateRsrc(void)
@@ -110,11 +96,25 @@ void UIBD::CreateRsrc(void)
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		dxyfSquare/4.0f, L"",
 		&ptxLabel);
+
+	/* bitmaps */
+
+	pbmpPieces = PbmpFromPngRes(idbPieces);
+
+	/* geometries */
+
+	/* capture X, which is created as a cross that is rotated later */
+	pgeomCross = PgeomCreate(rgptfCross, CArray(rgptfCross));
+	/* arrow head */
+	pgeomArrowHead = PgeomCreate(rgptfArrowHead, CArray(rgptfArrowHead));
 }
 
 void UIBD::DiscardRsrc(void)
 {
 	SafeRelease(&ptxLabel);
+	SafeRelease(&pbmpPieces);
+	SafeRelease(&pgeomCross);
+	SafeRelease(&pgeomArrowHead);
 }
 
 
@@ -128,7 +128,7 @@ UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
 		angle(0.0f),
 		ptxLabel(NULL), dyfLabel(0)
 {
-	pbtnRotateBoard = new BTNCH(this, cmdRotateBoard, RCF(0, 0, 0, 0), L'\x2b6f');
+	pbtnRotateBoard = new BTNCH(this, cmdRotateBoard, L'\x2b6f');
 }
 
 

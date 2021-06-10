@@ -341,7 +341,7 @@ void UITIP::AttachOwner(UI* pui)
 	wstring szTip = puiOwner->SzTip();
 	SIZF sizfTip = SizfSz(szTip, ptxTip, 1000.0f, 1000.0f);
 	sizfTip.height += 8.0f;
-	sizfTip.width += 12.0f;
+	sizfTip.width += 14.0f;
 	RCF rcfTip = RCF(PTF(rcfOwner.XCenter(), rcfOwner.top - sizfTip.height - 1.0f), sizfTip);
 	RCF rcfDesk = puiParent->RcfInterior();
 	if (rcfTip.top < rcfDesk.top)

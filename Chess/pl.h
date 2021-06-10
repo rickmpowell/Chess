@@ -16,7 +16,7 @@ class BDGMVEV : public BDG
 public:
 	MV mv;
 	float eval;
-	vector<MV> rgmvReplyAll;	// all reply moves, including illegal moves that leave king in check
+	RGMV rgmvReplyAll;	// all reply moves, including illegal moves that leave king in check
 
 	inline BDGMVEV(void) : mv(MV()), eval(0.0f) { }
 

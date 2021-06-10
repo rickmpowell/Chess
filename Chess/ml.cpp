@@ -81,16 +81,16 @@ void UIGC::DiscardRsrcClass(void)
 void UIGC::Layout(void)
 {
 	RCF rcf = RcfInterior();
-	rcf.top += 4.0f;
-	rcf.bottom -= 4.0f;
+	rcf.top += 1.0f;
+	rcf.bottom -= 1.0f;
 	rcf.left += 48.0f;
 	SIZF sizf = pbtnResign->SizfImg();
 	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
 	pbtnResign->SetBounds(rcf);
 
 	rcf = RcfInterior();
-	rcf.top += 4.0f;
-	rcf.bottom -= 4.0f;
+	rcf.top += 2.0f;
+	rcf.bottom -= 2.0f;
 	rcf.right -= 48.0f;
 	sizf = pbtnOfferDraw->SizfImg();
 	rcf.left= rcf.right - (rcf.DyfHeight() * sizf.width / sizf.height);
@@ -101,14 +101,14 @@ void UIGC::Layout(void)
 SIZF UIGC::SizfLayoutPreferred(void)
 {
 	SIZF sizf = SizfSz(L"0", ptxText);
-	return SIZF(-1.0f, sizf.height + 8);
+	return SIZF(-1.0f, sizf.height*1.5f);
 }
 
 
 UIGC::UIGC(UIML* puiml) : UI(puiml)
 {
-	pbtnResign = new BTNIMG(this, cmdResign, RCF(0,0,0,0), idbWhiteFlag);
-	pbtnOfferDraw = new BTNIMG(this, cmdOfferDraw, RCF(0,0,0,0), idbHandShake);
+	pbtnResign = new BTNIMG(this, cmdResign, idbWhiteFlag);
+	pbtnOfferDraw = new BTNIMG(this, cmdOfferDraw, idbHandShake);
 }
 
 
