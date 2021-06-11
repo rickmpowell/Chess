@@ -16,7 +16,7 @@ void GA::OpenPGNFile(const WCHAR szFile[])
 	ifstream is(szFile, ifstream::in);
 	Deserialize(is);
 	uiml.UpdateContSize();
-	uiml.SetSel((int)bdg.rgmvGame.size() - 1, spmv);
+	uiml.SetSel((int)bdg.vmvGame.size() - 1, spmv);
 	this->spmv = SPMV::Animate;
 	uiml.FMakeVis(bdg.imvCur);
 	Redraw();
@@ -233,8 +233,8 @@ bool GA::FIsMoveNumber(TK* ptk, int& w) const
  */
 int BDG::ParseMv(const char*& pch, MV& mv) const
 {
-	RGMV rgmv;
-	GenRgmv(rgmv, RMCHK::Remove);
+	GMV gmv;
+	GenRgmv(gmv, RMCHK::Remove);
 
 	int rank, file;
 	SQ sq1;
@@ -247,13 +247,13 @@ int BDG::ParseMv(const char*& pch, MV& mv) const
 	case TKMV::Bishop:
 	case TKMV::Knight:
 	case TKMV::Pawn:
-		return ParsePieceMv(rgmv, tkmv, pch, mv);
+		return ParsePieceMv(gmv, tkmv, pch, mv);
 	case TKMV::Square:
-		return ParseSquareMv(rgmv, sq1, pch, mv);
+		return ParseSquareMv(gmv, sq1, pch, mv);
 	case TKMV::File:
-		return ParseFileMv(rgmv, sq1, pch, mv);
+		return ParseFileMv(gmv, sq1, pch, mv);
 	case TKMV::Rank:
-		return ParseRankMv(rgmv, sq1, pch, mv);
+		return ParseRankMv(gmv, sq1, pch, mv);
 	case TKMV::CastleKing:
 		file = fileKingKnight;
 		goto BuildCastle;
@@ -294,7 +294,7 @@ APC ApcFromTkmv(TKMV tkmv)
 }
 
 
-int BDG::ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const
+int BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
 {
 	SQ sq;
 
@@ -306,7 +306,7 @@ int BDG::ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& m
 	case TKMV::Take:
 		if (TkmvScan(pch, sq) != TKMV::Square)
 			return -1;
-		if (!FMvMatchPieceTo(rgmv, apc, -1, -1, sq, mv))
+		if (!FMvMatchPieceTo(gmv, apc, -1, -1, sq, mv))
 			return -1;
 		break;
 
@@ -321,13 +321,13 @@ int BDG::ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& m
 		}
 		if (tkmv != TKMV::Square) { /* Bc5 */
 			/* look up piece that can move to this square */
-			if (!FMvMatchPieceTo(rgmv, apc, -1, -1, sq, mv))
+			if (!FMvMatchPieceTo(gmv, apc, -1, -1, sq, mv))
 				return -1;
 			break;
 		}
 		/* Bd5c4 */
 		pch = pchNext;
-		if (!FMvMatchFromTo(rgmv, sq, sqTo, mv))
+		if (!FMvMatchFromTo(gmv, sq, sqTo, mv))
 			return -1;
 		break;
 	}
@@ -344,7 +344,7 @@ int BDG::ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& m
 		if (tkmv != TKMV::Square)
 			return -1;
 		pch = pchNext;
-		if (!FMvMatchPieceTo(rgmv, apc, -1, sq.file(), sqTo, mv))
+		if (!FMvMatchPieceTo(gmv, apc, -1, sq.file(), sqTo, mv))
 			return -1;
 		break;
 	}
@@ -361,7 +361,7 @@ int BDG::ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& m
 		if (tkmv != TKMV::Square)
 			return -1;
 		pch = pchNext;
-		if (!FMvMatchPieceTo(rgmv, apc, sq.rank(), -1, sqTo, mv))
+		if (!FMvMatchPieceTo(gmv, apc, sq.rank(), -1, sqTo, mv))
 			return -1;
 		break;
 	}
@@ -373,7 +373,7 @@ int BDG::ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& m
 }
 
 
-int BDG::ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const
+int BDG::ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 {
 	/* e4, e4e5, e4-e5, e4xe5 */
 	const char* pchNext = pch;
@@ -386,11 +386,11 @@ int BDG::ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) 
 	}
 	if (TkmvScan(pchNext, sq) == TKMV::Square) {
 		pch = pchNext;
-		if (!FMvMatchFromTo(rgmv, sq, sqTo, mv))
+		if (!FMvMatchFromTo(gmv, sq, sqTo, mv))
 			return -1;
 	}
 	else { /* e4 pawn move */
-		if (!FMvMatchPieceTo(rgmv, APC::Pawn, -1, -1, sq, mv))
+		if (!FMvMatchPieceTo(gmv, APC::Pawn, -1, -1, sq, mv))
 			return -1;
 	}
 	return ParseMvSuffixes(mv, pch);
@@ -433,7 +433,7 @@ int BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 }
 
 
-int BDG::ParseFileMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const
+int BDG::ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 {
 	/* de4, d-e4, dxe4 */
 	const char* pchNext = pch;
@@ -446,13 +446,13 @@ int BDG::ParseFileMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) co
 	if (tkmv != TKMV::Square)
 		return -1;
 	pch = pchNext;
-	if (!FMvMatchPieceTo(rgmv, APC::Pawn, -1, sq.file(), sqTo, mv))
+	if (!FMvMatchPieceTo(gmv, APC::Pawn, -1, sq.file(), sqTo, mv))
 		return -1;
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-int BDG::ParseRankMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const
+int BDG::ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 {
 	/* 7e4, 7-e4, 7xe4 */
 	const char* pchNext = pch;
@@ -465,15 +465,16 @@ int BDG::ParseRankMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) co
 	if (tkmv != TKMV::Square)
 		return -1;
 	pch = pchNext;
-	if (!FMvMatchPieceTo(rgmv, APC::Pawn, sq.rank(), -1, sqTo, mv))
+	if (!FMvMatchPieceTo(gmv, APC::Pawn, sq.rank(), -1, sqTo, mv))
 		return -1;
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-bool BDG::FMvMatchPieceTo(const vector<MV>& rgmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const
+bool BDG::FMvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const
 {
-	for (MV mvSearch : rgmv) {
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mvSearch = gmv[imv];
 		if (mvSearch.sqTo() == sqTo && ApcFromSq(mvSearch.sqFrom()) == apc) {
 			if (fileFrom != -1 && fileFrom != mvSearch.sqFrom().file())
 				continue;
@@ -486,9 +487,10 @@ bool BDG::FMvMatchPieceTo(const vector<MV>& rgmv, APC apc, int rankFrom, int fil
 	return false;
 }
 
-bool BDG::FMvMatchFromTo(const vector<MV>& rgmv, SQ sqFrom, SQ sqTo, MV& mv) const
+bool BDG::FMvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, MV& mv) const
 {
-	for (MV mvSearch : rgmv) {
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mvSearch = gmv[imv];
 		if (mvSearch.sqFrom() == sqFrom && mvSearch.sqTo() == sqTo) {
 			mv = mvSearch;
 			return true;

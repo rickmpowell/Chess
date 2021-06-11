@@ -1,3 +1,5 @@
+  Quitting the app while AI is running crashes in PresentSwch
+  Move as many drawing objects into classes as possible
   Use custom move array that pre-allocates 50 fixed items
   Logging gets really slow when a lot of log entries start piling up.
   Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run

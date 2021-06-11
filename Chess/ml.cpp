@@ -563,8 +563,8 @@ void UIML::DrawContent(const RCF& rcfCont)
 {
 	BDG bdgT(bdgInit);
 	float yfCont = RcfContent().top;
-	for (unsigned imv = 0; imv < ga.bdg.rgmvGame.size(); imv++) {
-		MV mv = ga.bdg.rgmvGame[imv];
+	for (unsigned imv = 0; imv < ga.bdg.vmvGame.size(); imv++) {
+		MV mv = ga.bdg.vmvGame[imv];
 		if (imv % 2 == 0) {
 			RCF rcf = RcfFromCol(yfCont + 4.0f + (imv / 2) * dyfList, 0);
 			DrawMoveNumber(rcf, imv / 2 + 1);
@@ -672,7 +672,7 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dyf = (ga.bdg.rgmvGame.size()+1) / 2 * dyfList;
+	float dyf = (ga.bdg.vmvGame.size()+1) / 2 * dyfList;
 	if (dyf == 0)
 		dyf = dyfList;
 	UIPS::UpdateContSize(SIZF(RcfContent().DxfWidth(), 4.0f + dyf));
@@ -703,7 +703,7 @@ HTML UIML::HtmlHitTest(PTF ptf, int* pimv)
 		imv = li * 2 + 1;
 	if (imv < 0)
 		return HTML::EmptyBefore;
-	if (imv >= ga.bdg.rgmvGame.size())
+	if (imv >= ga.bdg.vmvGame.size())
 		return HTML::EmptyAfter;
 	*pimv = imv;
 	return HTML::List;
@@ -743,7 +743,7 @@ void UIML::KeyDown(int vk)
 		ga.MoveToImv(0);
 		break;
 	case VK_END:
-		ga.MoveToImv((int)ga.bdg.rgmvGame.size() - 1);
+		ga.MoveToImv((int)ga.bdg.vmvGame.size() - 1);
 		break;
 	case VK_PRIOR:
 		ga.MoveToImv(ga.bdg.imvCur - 5*2);

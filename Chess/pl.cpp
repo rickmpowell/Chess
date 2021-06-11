@@ -27,11 +27,13 @@ PL::~PL(void)
 wstring SzFromEval(float eval)
 {
 
-	wchar_t sz[10], *pch = sz;
+	wchar_t sz[20], *pch = sz;
 	if (eval < 0) {
 		*pch++ = L'-';
 		eval = -eval;
 	}
+	else
+		*pch++ = L'+';
 	eval = round(eval * 1000.0f) / 1000.0f;
 	float w = floor(eval);
 	eval -= w;
@@ -56,7 +58,7 @@ wstring SzFromEval(float eval)
  * 
  */
 
-PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvevEval(0), cbdgmvevPrune(0), cbdgmvevGen(0)
+PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvPrune(0), cbdgmvGen(0)
 {
 	rgfAICoeff[0] = 5.0f;
 	rgfAICoeff[1] = 2.0f;
@@ -69,9 +71,9 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	SetName(L"Mathilda");
 }
 
-float PLAI2::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
+float PLAI2::EvalBdg(const BDGMV& bdgmv, bool fFull)
 {
-	float eval = PLAI::EvalBdg(bdgmvev, fFull);
+	float eval = PLAI::EvalBdg(bdgmv, fFull);
 	if (fFull) {
 		normal_distribution<float> flDist(0.0, 0.1f);
 		eval += flDist(rgen);
@@ -79,15 +81,14 @@ float PLAI2::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
 	return eval;
 }
 
-int PLAI2::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
+int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
-	static RGMV rgmvOpp;
-	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
+	static GMV gmvOpp;
+	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
 	const float cmvSearch = 0.10e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(rgmv.size() * rgmvOpp.size());
+	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return 4;
 	return depthMax;
 }
 
@@ -108,8 +109,8 @@ MV PLAI::MvGetNext(void)
 {
 	time_point tpStart = high_resolution_clock::now();
 
-	cbdgmvevEval = 0L;
-	cbdgmvevPrune = 0L;
+	cbdgmvEval = 0L;
+	cbdgmvPrune = 0L;
 
 	/* generate all moves without removing checks. we'll use this as a heuristic for the amount of
 	 * mobillity on the board, which we can use to estimate the depth we can search */
@@ -117,51 +118,51 @@ MV PLAI::MvGetNext(void)
 	ga.Log(LGT::Open, LGF::Normal, 
 			ga.bdg.cpcToMove == CPC::White ? L"White" : L"Black", wstring(L"(") + szName + L")");
 	BDG bdg = ga.bdg;
-	static RGMV rgmv;
-	bdg.GenRgmv(rgmv, RMCHK::NoRemove);
-	if (rgmv.size() == 0)
+	static GMV gmv;
+	bdg.GenRgmv(gmv, RMCHK::NoRemove);
+	if (gmv.cmv() == 0)
 		return MV();
-	int depthMax = DepthMax(bdg, rgmv);
+	int depthMax = DepthMax(bdg, gmv);
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Search depth:"), to_wstring(depthMax));
 	
 	/* and find the best move */
 
-	bdg.GenRgmv(rgmv, RMCHK::Remove);
-	vector<BDGMVEV> rgbdgmvev;
-	PreSortMoves(bdg, rgmv, rgbdgmvev);
+	bdg.GenRgmv(gmv, RMCHK::Remove);
+	vector<BDGMV> vbdgmv;
+	PreSortMoves(bdg, gmv, vbdgmv);
 
 	cYield = 0;
 	MV mvBest;
 	float evalAlpha = -evalInf, evalBeta = evalInf;
-	cbdgmvevGen = rgbdgmvev.size();
-	for (BDGMVEV& bdgmvev : rgbdgmvev) {
-		ga.Log(LGT::Open, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(bdgmvev.eval));
-		float eval = -EvalBdgDepth(bdgmvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
+	cbdgmvGen = vbdgmv.size();
+	for (BDGMV& bdgmv : vbdgmv) {
+		ga.Log(LGT::Open, LGF::Normal, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(bdgmv.eval));
+		float eval = -EvalBdgDepth(bdgmv, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
 		LGF lgf = LGF::Normal;
 		if (eval > evalAlpha) {
 			lgf = LGF::Bold;
 			evalAlpha = eval;
-			mvBest = bdgmvev.mv;
+			mvBest = bdgmv.mv;
 			if (eval > evalMateMin) {
 				int depthMate = (int)roundf(evalMate - eval);
 				if (depthMate < depthMax)
 					depthMax = depthMate;
 			}
 		}
-		ga.Log(LGT::Close, lgf, bdg.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
+		ga.Log(LGT::Close, lgf, bdg.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval));
 	}
 
 	chrono::time_point tpEnd = chrono::high_resolution_clock::now();
 
 	/* log some stats */
 
-	ga.Log(LGT::Data, LGF::Normal, wstring(L"Evaluated"), to_wstring(cbdgmvevEval) + L" positions");
+	ga.Log(LGT::Data, LGF::Normal, wstring(L"Evaluated"), to_wstring(cbdgmvEval) + L" positions");
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Pruned:"),
-			to_wstring((int)roundf(100.f*(float)cbdgmvevPrune/(float)cbdgmvevGen)) + L"%");
+			to_wstring((int)roundf(100.f*(float)cbdgmvPrune/(float)cbdgmvGen)) + L"%");
 	duration dtp = tpEnd - tpStart;
 	milliseconds ms = duration_cast<milliseconds>(dtp);
 	ga.Log(LGT::Data, LGF::Normal, L"Time:", to_wstring(ms.count()) + L"ms");
-	float sp = (float)cbdgmvevEval / (float)ms.count();
+	float sp = (float)cbdgmvEval / (float)ms.count();
 	ga.Log(LGT::Data, LGF::Normal, L"Speed:", to_wstring((int)round(sp)) + L" nodes/ms");
 	ga.Log(LGT::Close, LGF::Normal, L"", L"");
 
@@ -172,15 +173,14 @@ MV PLAI::MvGetNext(void)
 }
 
 
-int PLAI::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
+int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
-	static RGMV rgmvOpp;
-	bdg.GenRgmvColor(rgmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 0.50e+6f;	// approximate number of moves to analyze
+	static GMV gmvOpp;
+	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = 1.0e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(rgmv.size() * rgmvOpp.size());
+	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return 4; 
 	return depthMax;
 }
 
@@ -190,30 +190,30 @@ int PLAI::DepthMax(const BDG& bdg, const vector<MV>& rgmv) const
  *	Evaluates the board from the point of view of the person who last moved,
  *	i.e., the previous move.
  */
-float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule)
+float PLAI::EvalBdgDepth(BDGMV& bdgmvEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule)
 {
 	if (depth >= depthMax)
-		return EvalBdgQuiescent(bdgmvevEval, depth, evalAlpha, evalBeta);
+		return EvalBdgQuiescent(bdgmvEval, depth, evalAlpha, evalBeta);
 
 	if (++cYield % 100 == 0)
 		ga.PumpMsg();
 
-	vector<BDGMVEV> rgbdgmvev;
-	PreSortMoves(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
+	vector<BDGMV> vbdgmv;
+	PreSortMoves(bdgmvEval, bdgmvEval.gmvReplyAll, vbdgmv);
 
 	int cmv = 0;
-	cbdgmvevGen += rgbdgmvev.size();
+	cbdgmvGen += vbdgmv.size();
 	float evalBest = -evalInf;
-	for (BDGMVEV& bdgmvev : rgbdgmvev) {
-		if (bdgmvev.FInCheck(~bdgmvev.cpcToMove))
+	for (BDGMV& bdgmv : vbdgmv) {
+		if (bdgmv.FInCheck(~bdgmv.cpcToMove))
 			continue;
-		ga.Log(LGT::Open, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(bdgmvev.eval));
-		float eval = -EvalBdgDepth(bdgmvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
+		ga.Log(LGT::Open, LGF::Normal, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(bdgmv.eval));
+		float eval = -EvalBdgDepth(bdgmv, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		cmv++;
 		LGF lgf = LGF::Normal;
 		if (eval >= evalBeta) {
-			cbdgmvevPrune += rgbdgmvev.size() - cmv;
-			ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval) + L" [Pruning]");
+			cbdgmvPrune += vbdgmv.size() - cmv;
+			ga.Log(LGT::Close, lgf, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
 		}
 		if (eval > evalBest) {
@@ -228,20 +228,20 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
 				lgf = LGF::Bold;
 			}
 		}
-		ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
+		ga.Log(LGT::Close, lgf, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval));
 	}
 
 	/* if we could find no legal moves, we either have checkmate or stalemate */
 
 	if (cmv == 0) {
-		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
+		if (bdgmvEval.FInCheck(bdgmvEval.cpcToMove))
 			return -(evalMate - (float)depth);
 		else
 			return 0.0f;
 	}
 
 	/* checkmates were detected already, so GsTestGameOver can only return draws */
-	GS gs = bdgmvevEval.GsTestGameOver(bdgmvevEval.rgmvReplyAll, *ga.prule);
+	GS gs = bdgmvEval.GsTestGameOver(bdgmvEval.gmvReplyAll, *ga.prule);
 	assert(gs != GS::BlackCheckMated && gs != GS::WhiteCheckMated);
 	if (gs != GS::Playing)
 		return 0.0f;
@@ -255,21 +255,21 @@ float PLAI::EvalBdgDepth(BDGMVEV& bdgmvevEval, int depth, int depthMax, float ev
  *	Returns the quiescent evaluation of the board from the point of view of the 
  *	previous move player, i.e., it evaluates the previous move.
  */
-float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, float evalBeta)
+float PLAI::EvalBdgQuiescent(BDGMV& bdgmvEval, int depth, float evalAlpha, float evalBeta)
 {
 	/* we need to evaluate the board before we remove moves from the move list */
-	float eval = EvalBdg(bdgmvevEval, true);
+	float eval = EvalBdg(bdgmvEval, true);
 	
-	bdgmvevEval.RemoveInCheckMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
-	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
-		if (bdgmvevEval.FInCheck(bdgmvevEval.cpcToMove))
+	bdgmvEval.RemoveInCheckMoves(bdgmvEval.gmvReplyAll, bdgmvEval.cpcToMove);
+	if (bdgmvEval.gmvReplyAll.cmv() == 0) {
+		if (bdgmvEval.FInCheck(bdgmvEval.cpcToMove))
 			return -(evalMate - (float)depth);
 		else
 			return 0.0;
 	}
 
-	bdgmvevEval.RemoveQuiescentMoves(bdgmvevEval.rgmvReplyAll, bdgmvevEval.cpcToMove);
-	if (bdgmvevEval.rgmvReplyAll.size() == 0) {
+	bdgmvEval.RemoveQuiescentMoves(bdgmvEval.gmvReplyAll, bdgmvEval.cpcToMove);
+	if (bdgmvEval.gmvReplyAll.cmv() == 0) {
 		ga.Log(LGT::Data, LGF::Normal, L"Total", SzFromEval(eval));
 		return -eval;
 	}
@@ -277,20 +277,20 @@ float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, f
 	if (++cYield % 100 == 0)
 		ga.PumpMsg();
 
-	vector<BDGMVEV> rgbdgmvev;
-	FillRgbdgmvev(bdgmvevEval, bdgmvevEval.rgmvReplyAll, rgbdgmvev);
+	vector<BDGMV> vbdgmv;
+	FillRgbdgmvev(bdgmvEval, bdgmvEval.gmvReplyAll, vbdgmv);
 	
-	cbdgmvevGen += rgbdgmvev.size();
+	cbdgmvGen += vbdgmv.size();
 	float evalBest = -evalInf;
 	int cmv = 0;
-	for (BDGMVEV bdgmvev : rgbdgmvev) {
-		ga.Log(LGT::Open, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(bdgmvev.eval));
-		float eval = -EvalBdgQuiescent(bdgmvev, depth + 1, -evalBeta, -evalAlpha);
+	for (BDGMV& bdgmv : vbdgmv) {
+		ga.Log(LGT::Open, LGF::Normal, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(bdgmv.eval));
+		float eval = -EvalBdgQuiescent(bdgmv, depth + 1, -evalBeta, -evalAlpha);
 		cmv++;
 		LGF lgf = LGF::Normal;
 		if (eval >= evalBeta) {
-			cbdgmvevPrune += rgbdgmvev.size() - cmv;
-			ga.Log(LGT::Close, LGF::Normal, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval) + L" [Pruning]");
+			cbdgmvPrune += vbdgmv.size() - cmv;
+			ga.Log(LGT::Close, LGF::Normal, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
 		}
 		if (eval > evalBest) {
@@ -300,41 +300,41 @@ float PLAI::EvalBdgQuiescent(BDGMVEV& bdgmvevEval, int depth, float evalAlpha, f
 				lgf = LGF::Bold;
 			}
 		}
-		ga.Log(LGT::Close, lgf, bdgmvev.SzDecodeMvPost(bdgmvev.mv), SzFromEval(eval));
+		ga.Log(LGT::Close, lgf, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval));
 	}
 
 	return evalBest;
 }
 
 
-void PLAI::FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
+void PLAI::FillRgbdgmvev(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 {
-	rgbdgmvev.reserve(rgmv.size());
-	for (MV mv : rgmv) {
-		BDGMVEV bdgmvev(bdg, mv);
-		bdgmvev.eval = EvalBdg(bdgmvev, false);
-		rgbdgmvev.push_back(move(bdgmvev));
+	vbdgmv.reserve(gmv.cmv());
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		BDGMV bdgmv(bdg, gmv[imv]);
+		bdgmv.eval = EvalBdg(bdgmv, false);
+		vbdgmv.push_back(move(bdgmv));
 	}
 }
 
 
-void PLAI::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev)
+void PLAI::PreSortMoves(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 {
 	/* insertion sort */
 
-	rgbdgmvev.reserve(rgmv.size());
-	for (MV mv : rgmv) {
-		BDGMVEV bdgmvev(bdg, mv);
-		bdgmvev.eval = EvalBdg(bdgmvev, false);
-		unsigned imvFirst, imvLim;
-		for (imvFirst = 0, imvLim = (unsigned)rgbdgmvev.size(); ; ) {
+	vbdgmv.reserve(gmv.cmv());
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		BDGMV bdgmv(bdg, gmv[imv]);
+		bdgmv.eval = EvalBdg(bdgmv, false);
+		size_t imvFirst, imvLim;
+		for (imvFirst = 0, imvLim = vbdgmv.size(); ; ) {
 			if (imvFirst == imvLim) {
-				rgbdgmvev.insert(rgbdgmvev.begin()+imvFirst, move(bdgmvev));
+				vbdgmv.insert(vbdgmv.begin()+imvFirst, move(bdgmv));
 				break;
 			}
-			unsigned imvMid = (imvFirst + imvLim) / 2;
+			size_t imvMid = (imvFirst + imvLim) / 2;
 			assert(imvMid < imvLim);
-			if (rgbdgmvev[imvMid].eval < bdgmvev.eval)
+			if (vbdgmv[imvMid].eval < bdgmv.eval)
 				imvLim = imvMid;
 			else
 				imvFirst = imvMid+1;
@@ -349,22 +349,22 @@ void PLAI::PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>&
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-float PLAI::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
+float PLAI::EvalBdg(const BDGMV& bdgmv, bool fFull)
 {
-	cbdgmvevEval++;
+	cbdgmvEval++;
 
-	float vpcNext = VpcFromCpc(bdgmvev, bdgmvev.cpcToMove);
-	float vpcSelf = VpcFromCpc(bdgmvev, ~bdgmvev.cpcToMove);
+	float vpcNext = VpcFromCpc(bdgmv, bdgmv.cpcToMove);
+	float vpcSelf = VpcFromCpc(bdgmv, ~bdgmv.cpcToMove);
 	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
 
-	static RGMV rgmvSelf;
-	bdgmvev.GenRgmvColor(rgmvSelf, ~bdgmvev.cpcToMove, false);
-	float evalMob = (float)((int)rgmvSelf.size() - (int)bdgmvev.rgmvReplyAll.size()) /
-		(float)((int)rgmvSelf.size() + (int)bdgmvev.rgmvReplyAll.size());
+	static GMV gmvSelf;
+	bdgmv.GenRgmvColor(gmvSelf, ~bdgmv.cpcToMove, false);
+	float evalMob = (float)((int)gmvSelf.cmv() - (int)bdgmv.gmvReplyAll.cmv()) /
+		(float)((int)gmvSelf.cmv() + (int)bdgmv.gmvReplyAll.cmv());
 
 	if (fFull) {
 		ga.Log(LGT::Data, LGF::Normal, L"Material", to_wstring((int)vpcSelf) + L"-" + to_wstring((int)vpcNext));
-		ga.Log(LGT::Data, LGF::Normal, L"Mobility", to_wstring(rgmvSelf.size()) + L"-" + to_wstring(bdgmvev.rgmvReplyAll.size()) + L"]");
+		ga.Log(LGT::Data, LGF::Normal, L"Mobility", to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(bdgmv.gmvReplyAll.cmv()) + L"]");
 	}
 	float evalControl = 0.0f;
 	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob;
@@ -377,17 +377,17 @@ float PLAI::EvalBdg(const BDGMVEV& bdgmvev, bool fFull)
  *	stage of the game we're in and dispatches to the appropriate evaluation
  *	function (opening, middle game, endgame
  */
-float PLAI::VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const
+float PLAI::VpcFromCpc(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	if (bdgmvev.rgmvGame.size() < 2*15)
-		return VpcOpening(bdgmvev, cpcMove);
+	if (bdgmv.vmvGame.size() < 2*15)
+		return VpcOpening(bdgmv, cpcMove);
 
-	float vpcMove = bdgmvev.VpcTotalFromCpc(cpcMove);
-	float vpcOpp = bdgmvev.VpcTotalFromCpc(~cpcMove);
+	float vpcMove = bdgmv.VpcTotalFromCpc(cpcMove);
+	float vpcOpp = bdgmv.VpcTotalFromCpc(~cpcMove);
 	if (vpcMove < 1800.0f || vpcOpp < 1800.0f)
-		return VpcEndGame(bdgmvev, cpcMove);
+		return VpcEndGame(bdgmv, cpcMove);
 
-	return VpcMiddleGame(bdgmvev, cpcMove);
+	return VpcMiddleGame(bdgmv, cpcMove);
 }
 
 const float mpapcsqevalOpening[APC::ActMax][64] = {
@@ -448,9 +448,9 @@ const float mpapcsqevalOpening[APC::ActMax][64] = {
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 	 1.5f, 1.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.5f, 1.5f}
 };
-float PLAI::VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const
+float PLAI::VpcOpening(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	return VpcWeightTable(bdgmvev, cpcMove, mpapcsqevalOpening);
+	return VpcWeightTable(bdgmv, cpcMove, mpapcsqevalOpening);
 }
 
 
@@ -458,9 +458,9 @@ float PLAI::VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const
  *
  *	Returns the board evaluation for middle game stage of the game
  */
-float PLAI::VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
+float PLAI::VpcMiddleGame(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	return bdgmvev.VpcTotalFromCpc(cpcMove);
+	return bdgmv.VpcTotalFromCpc(cpcMove);
 }
 
 
@@ -523,24 +523,24 @@ const float mpapcsqevalEndGame[APC::ActMax][64] = {
 	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f}
 };
 
-float PLAI::VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const
+float PLAI::VpcEndGame(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	return VpcWeightTable(bdgmvev, cpcMove, mpapcsqevalEndGame);
+	return VpcWeightTable(bdgmv, cpcMove, mpapcsqevalEndGame);
 }
 
-float PLAI::VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
+float PLAI::VpcWeightTable(const BDGMV& bdgmv, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
 {
 	float vpc = 0.0f;
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SQ sq = bdgmvev.mptpcsq[cpcMove][tpc];
+		SQ sq = bdgmv.mptpcsq[cpcMove][tpc];
 		if (sq.fIsNil())
 			continue;
-		APC apc = bdgmvev.ApcFromSq(sq);
+		APC apc = bdgmv.ApcFromSq(sq);
 		int rank = sq.rank();
 		int file = sq.file();
 		if (cpcMove == CPC::White)
 			rank = rankMax - rank - 1;
-		vpc += bdgmvev.VpcFromSq(sq) * mpapcsqeval[apc][rank * 8 + file];
+		vpc += bdgmv.VpcFromSq(sq) * mpapcsqeval[apc][rank * 8 + file];
 	}
 	return vpc;
 }

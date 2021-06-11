@@ -106,7 +106,7 @@ public:
 class CMDLIST {
 private:
 	APP& app;
-	vector<CMD*> rgpcmd;
+	vector<CMD*> vpcmd;
 public:
 	CMDLIST(APP& app);
 	~CMDLIST(void);

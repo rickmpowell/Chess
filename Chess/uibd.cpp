@@ -186,7 +186,7 @@ void UIBD::Layout(void)
  */
 void UIBD::NewGame(void)
 {
-	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
+	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
 }
 
 
@@ -199,17 +199,19 @@ void UIBD::MakeMv(MV mv, SPMV spmv)
 {
 	assert(!mv.fIsNil());
 #ifndef NDEBUG
-	for (MV mvDrag : rgmvDrag)
+	for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
+		MV mvDrag = gmvDrag[imv];
 		if (mvDrag.sqFrom() == mv.sqFrom() && mvDrag.sqTo() == mv.sqTo())
 			goto FoundMove;
+	}
 	assert(false);
 FoundMove:
 #endif
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	ga.bdg.MakeMv(mv);
-	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
-	ga.bdg.SetGameOver(rgmvDrag, *ga.prule);
+	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.SetGameOver(gmvDrag, *ga.prule);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -218,11 +220,11 @@ FoundMove:
 void UIBD::UndoMv(SPMV spmv)
 {
 	if (FSpmvAnimate(spmv) && ga.bdg.imvCur >= 0) {
-		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur];
+		MV mv = ga.bdg.vmvGame[ga.bdg.imvCur];
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	ga.bdg.UndoMv();
-	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
+	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -230,12 +232,12 @@ void UIBD::UndoMv(SPMV spmv)
 
 void UIBD::RedoMv(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && ga.bdg.imvCur < (int)ga.bdg.rgmvGame.size()) {
-		MV mv = ga.bdg.rgmvGame[ga.bdg.imvCur+1];
+	if (FSpmvAnimate(spmv) && ga.bdg.imvCur < (int)ga.bdg.vmvGame.size()) {
+		MV mv = ga.bdg.vmvGame[ga.bdg.imvCur+1];
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	ga.bdg.RedoMv();
-	ga.bdg.GenRgmv(rgmvDrag, RMCHK::Remove);
+	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -417,7 +419,8 @@ void UIBD::DrawHover(void)
 	pbrBlack->SetOpacity(0.33f);
 	unsigned long grfDrawn = 0L;
 
-	for (MV mv : rgmvDrag) {
+	for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
+		MV mv = gmvDrag[imv];
 		if (mv.sqFrom() != sqHover)
 			continue;
 		/* don't draw percentage fill markers multiple times on the 
@@ -563,7 +566,7 @@ void UIBD::DrawHilites(void)
 void UIBD::DrawAnnotations(void)
 {
 	pbrAnnotation->SetOpacity(0.5f);
-	for (ANO ano : rgano) {
+	for (ANO& ano : vano) {
 		if (ano.sqTo.fIsNil())
 			DrawSquareAnnotation(ano.sqFrom);
 		else
@@ -586,7 +589,7 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 void UIBD::FlipBoard(CPC cpcNew)
 {
 	/* assumes all children are visible */
-	for (UI* pui : rgpuiChild)
+	for (UI* pui : vpuiChild)
 		pui->Show(false);
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
 		ga.Redraw();
@@ -594,7 +597,7 @@ void UIBD::FlipBoard(CPC cpcNew)
 	cpcPointOfView = cpcNew;
 	ga.Layout();
 	ga.Redraw();
-	for (UI* pui : rgpuiChild)
+	for (UI* pui : vpuiChild)
 		pui->Show(true);
 }
 
@@ -643,8 +646,8 @@ HTBD UIBD::HtbdHitTest(PTF ptf, SQ* psq) const
 bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(ga.bdg.CpcFromSq(sq) == ga.bdg.cpcToMove);
-	for (MV mv : rgmvDrag)
-		if (mv.sqFrom() == sq)
+	for (int imv = 0; imv < gmvDrag.cmv(); imv++)
+		if (gmvDrag[imv].sqFrom() == sq)
 			return true;
 	return false;
 }
@@ -684,7 +687,8 @@ void UIBD::EndLeftDrag(PTF ptf)
 	SQ sqTo;
 	HTBD htbd = HtbdHitTest(ptf, &sqTo);
 	if (!sqTo.fIsNil()) {
-		for (MV mv : rgmvDrag) {
+		for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
+			MV mv = gmvDrag[imv];
 			if (mv.sqFrom() == sqFrom && mv.sqTo() == sqTo) {
 				ga.MakeMv(mv, SPMV::Fast);
 				goto Done;

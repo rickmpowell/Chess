@@ -377,8 +377,8 @@ void GA::MoveToImv(int imv)
 	/* peg imv to legal sizes */
 	if (imv < -1)
 		imv = -1;
-	if (imv > (int)bdg.rgmvGame.size() - 1)
-		imv = (int)bdg.rgmvGame.size() - 1;
+	if (imv > (int)bdg.vmvGame.size() - 1)
+		imv = (int)bdg.vmvGame.size() - 1;
 	SPMV spmvSav = spmv;
 	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
 		spmv = SPMV::AnimateFast;
@@ -394,9 +394,9 @@ void GA::MoveToImv(int imv)
 }
 
 
-void GA::GenRgmv(RGMV& rgmv)
+void GA::GenRgmv(GMV& gmv)
 {
-	bdg.GenRgmv(rgmv, RMCHK::Remove);
+	bdg.GenRgmv(gmv, RMCHK::Remove);
 }
 
 
@@ -445,16 +445,6 @@ void GA::PumpMsg(void)
 			break;
 		}
 	}
-}
-
-
-/*	GA::Log
- *
- *	Log the given log type/string
- */
-void GA::Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
-{
-	uidb.AddLog(lgt, lgf, szTag, szData);
 }
 
 

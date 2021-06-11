@@ -11,20 +11,20 @@
 #include "bd.h"
 
 
-class BDGMVEV : public BDG
+class BDGMV : public BDG
 {
 public:
 	MV mv;
 	float eval;
-	RGMV rgmvReplyAll;	// all reply moves, including illegal moves that leave king in check
+	GMV gmvReplyAll;	// all reply moves, including illegal moves that leave king in check
 
-	inline BDGMVEV(void) : mv(MV()), eval(0.0f) { }
+	BDGMV(void) : mv(MV()), eval(0.0f) { }
 
-	inline BDGMVEV(const BDG& bdg, MV mv) : BDG(bdg), mv(mv), eval(0.0f) 
-	{ 
-		MakeMv(mv); 
-		rgmvReplyAll.reserve(50);  
-		GenRgmvColor(rgmvReplyAll, cpcToMove, false); 
+	BDGMV(const BDG& bdg, MV mv) : BDG(bdg), mv(mv), eval(0.0f)
+	{
+		MakeMv(mv);
+		gmvReplyAll.Reserve(50);
+		GenRgmvColor(gmvReplyAll, cpcToMove, false);
 	}
 };
 
@@ -49,11 +49,14 @@ protected:
 public:
 	PL(GA& ga, wstring szName);
 	~PL(void);
-	wstring& SzName(void) {
+
+	wstring& SzName(void) 
+	{
 		return szName;
 	}
 
-	void SetName(const wstring& szNew) {
+	void SetName(const wstring& szNew) 
+	{
 		szName = szNew;
 	}
 
@@ -76,28 +79,28 @@ class PLAI : public PL
 protected:
 	float rgfAICoeff[3];
 	long cYield;
-	size_t cbdgmvevEval;
-	size_t cbdgmvevGen;
-	size_t cbdgmvevPrune;
+	size_t cbdgmvEval;
+	size_t cbdgmvGen;
+	size_t cbdgmvPrune;
 
 public:
 	PLAI(GA& ga);
 	virtual MV MvGetNext(void);
 
 protected:
-	float EvalBdgDepth(BDGMVEV& bdg, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
-	float EvalBdgQuiescent(BDGMVEV& bdg, int depth, float evalAlpha, float evalBeta);
-	void PreSortMoves(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdg);
-	void FillRgbdgmvev(const BDG& bdg, const vector<MV>& rgmv, vector<BDGMVEV>& rgbdgmvev);
+	float EvalBdgDepth(BDGMV& bdgmv, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
+	float EvalBdgQuiescent(BDGMV& bdgev, int depth, float evalAlpha, float evalBeta);
+	void PreSortMoves(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv);
+	void FillRgbdgmvev(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv);
 
-	virtual int DepthMax(const BDG& bdg, const vector<MV>& rgmv) const;
-	virtual float EvalBdg(const BDGMVEV& bdgmvev, bool fFull);
+	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
+	virtual float EvalBdg(const BDGMV& bdgmv, bool fFull);
 
-	float VpcFromCpc(const BDGMVEV& bdgmvev, CPC cpcMove) const;
-	float VpcOpening(const BDGMVEV& bdgmvev, CPC cpcMove) const;
-	float VpcMiddleGame(const BDGMVEV& bdgmvev, CPC cpcMove) const;
-	float VpcEndGame(const BDGMVEV& bdgmvev, CPC cpcMove) const;
-	float VpcWeightTable(const BDGMVEV& bdgmvev, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const;
+	float VpcFromCpc(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcOpening(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcMiddleGame(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcEndGame(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcWeightTable(const BDGMV& bdgmv, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const;
 };
 
 
@@ -105,8 +108,8 @@ class PLAI2 : public PLAI
 {
 public:
 	PLAI2(GA& ga);
-	virtual int DepthMax(const BDG& bdg, const vector<MV>& rgmv) const;
-	virtual float EvalBdg(const BDGMVEV& bdgmvev, bool fFull);
+	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
+	virtual float EvalBdg(const BDGMV& bdgmv, bool fFull);
 };
 
 

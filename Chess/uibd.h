@@ -63,9 +63,9 @@ public:
 	PTF ptfDragCur;
 	SQ sqHover;
 	RCF rcfDragPc;	// rectangle the dragged piece was last drawn in
-	RGMV rgmvDrag;	// legal moves in the UI
+	GMV gmvDrag;	// legal moves in the UI
 
-	vector<ANO> rgano;	// annotations
+	vector<ANO> vano;	// annotations
 
 public:
 	UIBD(GA* pga);

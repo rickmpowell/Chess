@@ -153,8 +153,8 @@ UI::UI(UI* puiParent, RCF rcfBounds, bool fVisible) : puiParent(puiParent), rcfB
 
 UI::~UI(void) 
 {
-	while (rgpuiChild.size() > 0)
-		delete rgpuiChild[0];
+	while (vpuiChild.size() > 0)
+		delete vpuiChild[0];
 	if (puiParent) {
 		puiParent->RemoveChild(this);
 		puiParent = NULL;
@@ -168,7 +168,7 @@ UI::~UI(void)
  */
 void UI::AddChild(UI* puiChild) 
 {
-	rgpuiChild.push_back(puiChild);
+	vpuiChild.push_back(puiChild);
 }
 
 
@@ -179,12 +179,12 @@ void UI::AddChild(UI* puiChild)
 void UI::RemoveChild(UI* puiChild) 
 {
 	unsigned ipuiTo = 0, ipuiFrom;
-	for (ipuiFrom = 0; ipuiFrom < rgpuiChild.size(); ipuiFrom++) {
-		if (rgpuiChild[ipuiFrom] != puiChild)
-			rgpuiChild[ipuiTo++] = rgpuiChild[ipuiFrom];
+	for (ipuiFrom = 0; ipuiFrom < vpuiChild.size(); ipuiFrom++) {
+		if (vpuiChild[ipuiFrom] != puiChild)
+			vpuiChild[ipuiTo++] = vpuiChild[ipuiFrom];
 	}
 	assert(ipuiTo < ipuiFrom);
-	rgpuiChild.resize(ipuiTo);
+	vpuiChild.resize(ipuiTo);
 }
 
 
@@ -197,7 +197,7 @@ UI* UI::PuiPrevSib(void) const
 	if (puiParent == NULL)
 		return NULL;
 	UI* puiPrev = NULL;
-	for (UI* pui : puiParent->rgpuiChild) {
+	for (UI* pui : puiParent->vpuiChild) {
 		if (pui == this)
 			return puiPrev;
 		puiPrev = pui;
@@ -211,23 +211,23 @@ UI* UI::PuiNextSib(void) const
 {
 	if (puiParent == NULL)
 		return NULL;
-	for (int ipui = 0; ipui < puiParent->rgpuiChild.size() - 1; ipui++)
-		if (puiParent->rgpuiChild[ipui] == this)
-			return puiParent->rgpuiChild[ipui + 1];
+	for (int ipui = 0; ipui < puiParent->vpuiChild.size() - 1; ipui++)
+		if (puiParent->vpuiChild[ipui] == this)
+			return puiParent->vpuiChild[ipui + 1];
 	return NULL;
 }
 
 
 void UI::CreateRsrc(void)
 {
-	for (UI* puiChild : rgpuiChild)
+	for (UI* puiChild : vpuiChild)
 		puiChild->CreateRsrc();
 }
 
 
 void UI::DiscardRsrc(void)
 {
-	for (UI* puiChild : rgpuiChild)
+	for (UI* puiChild : vpuiChild)
 		puiChild->DiscardRsrc();
 }
 
@@ -329,7 +329,7 @@ void UI::OffsetBounds(float dxf, float dyf)
 	if (dxf == 0 && dyf == 0)
 		return;
 	rcfBounds.Offset(dxf, dyf);
-	for (UI* pui : rgpuiChild)
+	for (UI* pui : vpuiChild)
 		pui->OffsetBounds(dxf, dyf);
 }
 
@@ -363,7 +363,7 @@ UI* UI::PuiFromPtf(PTF ptf)
 {
 	if (!fVisible || !rcfBounds.FContainsPtf(ptf))
 		return NULL;
-	for (UI* puiChild : rgpuiChild) {
+	for (UI* puiChild : vpuiChild) {
 		UI* pui = puiChild->PuiFromPtf(ptf);
 		if (pui)
 			return pui;
@@ -548,7 +548,7 @@ void UI::Update(const RCF* prcfUpdate)
 	RCF rcfDraw = RcfLocalFromGlobal(rcf);
 	Draw(&rcfDraw);
 	AppGet().pdc->PopAxisAlignedClip();
-	for (UI* pui : rgpuiChild)
+	for (UI* pui : vpuiChild)
 		pui->Update(&rcf);
 }
 

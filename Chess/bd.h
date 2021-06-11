@@ -354,8 +354,176 @@ public:
 };
 
 
-class RGMV : public vector<MV>
+/*
+ *
+ *	GMV class
+ * 
+ *	Generated move list. Has simple array semantics.
+ * 
+ */
+
+
+const size_t cmvPreMax = 80;
+
+class GMV
 {
+private:
+	vector<uint32_t>* pvmvOverflow;
+	uint32_t amv[cmvPreMax];
+	int cmvCur;
+
+public:
+#pragma warning(push)
+#pragma warning (disable:26495)
+	GMV() : cmvCur(0), pvmvOverflow(nullptr) 
+	{
+	}
+#pragma warning(pop)
+
+	~GMV() 
+	{
+		if (pvmvOverflow)
+			delete pvmvOverflow;
+	}
+
+	/*	GMV copy constructor
+	 */
+	GMV(const GMV& gmv) : cmvCur(gmv.cmvCur), pvmvOverflow(nullptr)
+	{
+		assert(gmv.FValid());
+		for (int imv = 0; imv < min(cmvCur, cmvPreMax); imv++)
+			amv[imv] = gmv.amv[imv];
+		if (gmv.pvmvOverflow)
+			pvmvOverflow = new vector<uint32_t>(*gmv.pvmvOverflow);
+	}
+	
+
+	/*	GMV move constructor
+	 *
+	 *	Moves data from one GMV to another. Note that the source GMV is trashed.
+	 */
+	GMV(GMV&& gmv) noexcept : cmvCur(gmv.cmvCur), pvmvOverflow(gmv.pvmvOverflow)
+	{
+		assert(gmv.FValid());
+		for (int imv = 0; imv < min(cmvCur, cmvPreMax); imv++)
+			amv[imv] = gmv.amv[imv];
+		gmv.cmvCur = 0;
+		gmv.pvmvOverflow = nullptr;
+	}
+
+
+	GMV& operator=(const GMV& gmv)
+	{
+		assert(gmv.FValid());
+		cmvCur = gmv.cmvCur;
+		for (int imv = 0; imv < min(cmvCur, cmvPreMax); imv++)
+			amv[imv] = gmv.amv[imv];
+		if (gmv.pvmvOverflow) {
+			if (pvmvOverflow)
+				*pvmvOverflow = *gmv.pvmvOverflow;
+			else
+				pvmvOverflow = new vector<uint32_t>(*gmv.pvmvOverflow);
+		}
+		else {
+			if (pvmvOverflow) {
+				delete pvmvOverflow;
+				pvmvOverflow = nullptr;
+			}
+		}
+		assert(FValid());
+		return *this;
+	}
+
+#ifndef NDEBUG
+	bool FValid(void) const
+	{
+		return cmvCur <= cmvPreMax && pvmvOverflow == nullptr ||
+			cmvCur > cmvPreMax && pvmvOverflow != nullptr && pvmvOverflow->size() + cmvPreMax == cmvCur;
+	}
+#endif
+
+	
+	inline int cmv(void) const {
+		assert(FValid());
+		return cmvCur;
+	}
+
+
+	inline MV& operator[](int imv)
+	{
+		assert(FValid());
+		assert(imv >= 0 && imv < cmvCur);
+		if (imv < cmvPreMax)
+			return *(MV*)&amv[imv];
+		else {
+			assert(pvmvOverflow != nullptr);
+			return *(MV*)&(*pvmvOverflow)[imv - cmvPreMax];
+		}
+	}
+
+	inline MV operator[](int imv) const
+	{
+		assert(FValid());
+		assert(imv >= 0 && imv < cmvCur);
+		if (imv < cmvPreMax)
+			return *(MV*)&amv[imv];
+		else {
+			assert(pvmvOverflow != nullptr);
+			return *(MV*)&(*pvmvOverflow)[imv - cmvPreMax];
+		}
+	}
+
+	inline void AppendMv(MV mv)
+	{
+		assert(FValid()); 
+		if (cmvCur < cmvPreMax)
+			amv[cmvCur] = mv;
+		else {
+			if (pvmvOverflow == nullptr) {
+				assert(cmvCur == cmvPreMax);
+				pvmvOverflow = new vector<uint32_t>;
+			}
+			pvmvOverflow->push_back(mv);
+		}
+		cmvCur++;
+		assert(FValid());
+	}
+
+	void Resize(int cmvNew)
+	{
+		assert(FValid());
+		if (cmvNew > cmvPreMax) {
+			if (pvmvOverflow == nullptr)
+				pvmvOverflow = new vector<uint32_t>;
+			pvmvOverflow->resize(cmvNew - cmvPreMax);
+		}
+		else {
+			if (pvmvOverflow != nullptr) {
+				delete pvmvOverflow;
+				pvmvOverflow = nullptr;
+			}
+		}
+		cmvCur = cmvNew;
+		assert(FValid());
+	}
+
+	void Reserve(int cmv)
+	{
+		if (cmv <= cmvPreMax)
+			return;
+		if (pvmvOverflow == nullptr)
+			pvmvOverflow = new vector<uint32_t>;
+		pvmvOverflow->reserve(cmv - cmvPreMax);
+	}
+
+	void Clear(void)
+	{
+		if (pvmvOverflow) {
+			delete pvmvOverflow;
+			pvmvOverflow = nullptr;
+		}
+		cmvCur = 0;
+	}
 };
 
 
@@ -512,41 +680,31 @@ public:
 	void MakeMvSq(MV& mv);
 	void UndoMvSq(MV mv);
 
-	void GenRgmv(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvQuiescent(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvColor(RGMV& rgmv, CPC cpcMove, bool fForAttack) const;
-	void GenRgmvPawn(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvKnight(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvBishop(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvRook(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvQueen(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvKing(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvCastle(RGMV& rgmv, SQ sqFrom) const;
-	void GenRgmvCastleSide(RGMV& rgmv, SQ sqKing, int fileRook, int dsq) const;
-	void GenRgmvPawnCapture(RGMV& rgmv, SQ sqFrom, int dsq) const;
-	void AddRgmvMvPromotions(RGMV& rgmv, MV mv) const;
-	void GenRgmvEnPassant(RGMV& rgmv, SQ sqFrom) const;
-
-
-	/*	BD::AddRgmvMv
-	 *
-	 *	Adds the move to the move vector
-	 */
-	inline void AddRgmvMv(RGMV& rgmv, MV mv) const
-	{
-		rgmv.push_back(mv);
-	}
+	void GenRgmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenRgmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenRgmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const;
+	void GenRgmvPawn(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvKnight(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvBishop(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvRook(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvQueen(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvKing(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvCastle(GMV& gmv, SQ sqFrom) const;
+	void GenRgmvCastleSide(GMV& gmv, SQ sqKing, int fileRook, int dsq) const;
+	void GenRgmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const;
+	void AddRgmvMvPromotions(GMV& gmv, MV mv) const;
+	void GenRgmvEnPassant(GMV& gmv, SQ sqFrom) const;
 
 
 	/*	BD::FGenRgmvDsq
 	 *
 	 *	Checks the square in the direction given by dsq for a valid
-	 *	destination square. Adds the move to rgmv if it is valid.
+	 *	destination square. Adds the move to gmv if it is valid.
 	 *	Returns true if the destination square was empty; returns
 	 *	false if it's not a legal square or there is a piece in the
 	 *	square.
 	 */
-	inline bool FGenRgmvDsq(RGMV& rgmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
+	inline bool FGenRgmvDsq(GMV& gmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
 	{
 		SQ sqTo = sq + dsq;
 		if (sqTo.fIsOffBoard())
@@ -557,7 +715,7 @@ public:
 			return false;
 
 		/* add the move to the list */
-		AddRgmvMv(rgmv, MV(sqFrom, sqTo));
+		gmv.AppendMv(MV(sqFrom, sqTo));
 
 		/* return false if we've reached an enemy piece - this capture
 		   is the end of a potential slide move */
@@ -571,15 +729,15 @@ public:
 	 *	Stops when the piece runs into a piece of its own color, or a capture of
 	 *	an enemy piece, or it reaches the end of the board.
 	 */
-	inline void GenRgmvSlide(RGMV& rgmv, SQ sqFrom, int dsq) const
+	inline void GenRgmvSlide(GMV& gmv, SQ sqFrom, int dsq) const
 	{
 		IPC ipcFrom = (*this)(sqFrom);
-		for (int sq = sqFrom; FGenRgmvDsq(rgmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
+		for (int sq = sqFrom; FGenRgmvDsq(gmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
 			;
 	}
 	
-	void RemoveInCheckMoves(RGMV& rgmv, CPC cpc) const;
-	void RemoveQuiescentMoves(RGMV& rgmv, CPC cpcMove) const;
+	void RemoveInCheckMoves(GMV& gmv, CPC cpc) const;
+	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
 	bool FSqAttacked(CPC cpc, SQ sqAttacked) const;
@@ -752,7 +910,7 @@ class BDG : public BD
 public:
 	GS gs;
 	CPC cpcToMove;
-	vector<MV> rgmvGame;	// the game moves that resulted in bd board state
+	vector<MV> vmvGame;	// the game moves that resulted in bd board state
 	int imvCur;
 	int imvPawnOrTakeLast;	/* index of last pawn or capture move (used directly for 50-move 
 							   draw detection), but it is also a bound on how far back we need 
@@ -764,16 +922,16 @@ public:
 
 	void NewGame(void);
 
-	void GenRgmv(RGMV& rgmv, RMCHK rmchk) const;
-	void GenRgmvQuiescent(RGMV& rgmv, RMCHK rmchk) const;
+	void GenRgmv(GMV& gmv, RMCHK rmchk) const;
+	void GenRgmvQuiescent(GMV& gmv, RMCHK rmchk) const;
 	bool FMvIsQuiescent(MV mv) const;
 	
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);
 	
-	GS GsTestGameOver(const RGMV& rgmv, const RULE& rule) const;
-	void SetGameOver(const RGMV& rgmv, const RULE& rule);
+	GS GsTestGameOver(const GMV& gmv, const RULE& rule) const;
+	void SetGameOver(const GMV& gmv, const RULE& rule);
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int cmvDraw) const;
@@ -781,9 +939,9 @@ public:
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv, bool fPretty) const;
-	bool FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const;
-	bool FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const;
-	bool FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const;
+	bool FMvApcAmbiguous(const GMV& gmv, MV mv) const;
+	bool FMvApcRankAmbiguous(const GMV& gmv, MV mv) const;
+	bool FMvApcFileAmbiguous(const GMV& gmv, MV mv) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
 	wstring SzDecodeMvPost(MV mv) const;
 
@@ -795,13 +953,13 @@ public:
 	void InitFENFullmoveCounter(const WCHAR*& sz);
 
 	int ParseMv(const char*& pch, MV& mv) const;
-	int ParsePieceMv(const vector<MV>& rgmv, TKMV tkmv, const char*& pch, MV& mv) const;
-	int ParseSquareMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
+	int ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const;
+	int ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
 	int ParseMvSuffixes(MV& mv, const char*& pch) const;
-	int ParseFileMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
-	int ParseRankMv(const vector<MV>& rgmv, SQ sq, const char*& pch, MV& mv) const;
-	bool FMvMatchPieceTo(const vector<MV>& rgmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
-	bool FMvMatchFromTo(const vector<MV>& rgmv, SQ sqFrom, SQ sqTo, MV& mv) const;
+	int ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
+	int ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
+	bool FMvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
+	bool FMvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, MV& mv) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 };
 

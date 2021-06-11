@@ -136,34 +136,34 @@ void UIDB::DrawContent(const RCF& rcfCont)
 	rcf.right = rcf.left + 1000.0f;
 	
 	size_t ilgentryFirst;
-	for (ilgentryFirst = 0; ilgentryFirst < rglgentry.size(); ilgentryFirst++) {
-		if (rcf.top + rglgentry[ilgentryFirst].dyfTop + rglgentry[ilgentryFirst].dyfHeight > RcfView().top)
+	for (ilgentryFirst = 0; ilgentryFirst < vlgentry.size(); ilgentryFirst++) {
+		if (rcf.top + vlgentry[ilgentryFirst].dyfTop + vlgentry[ilgentryFirst].dyfHeight > RcfView().top)
 			break;
-		rcf.top = RcfContent().top + rglgentry[ilgentryFirst].dyfTop;
+		rcf.top = RcfContent().top + vlgentry[ilgentryFirst].dyfTop;
 	}
 
-	for (size_t ilgentry = ilgentryFirst; ilgentry < rglgentry.size() && rcf.top < RcfView().bottom; ilgentry++) {
+	for (size_t ilgentry = ilgentryFirst; ilgentry < vlgentry.size() && rcf.top < RcfView().bottom; ilgentry++) {
 		
 		/* 0 heights are those that were combined into another line */
 		
-		if (rglgentry[ilgentry].dyfHeight == 0)
+		if (vlgentry[ilgentry].dyfHeight == 0)
 			continue;
 		
 		/* get string and formatting */
 
-		wstring sz = rglgentry[ilgentry].szTag + L" " + rglgentry[ilgentry].szData;
+		wstring sz = vlgentry[ilgentry].szTag + L" " + vlgentry[ilgentry].szData;
 		rcf.bottom = rcf.top + dyfLine;
-		LGF lgf = rglgentry[ilgentry].lgf;
+		LGF lgf = vlgentry[ilgentry].lgf;
 
 		/* if matching open and close are next to each other, then combine them to a single line */
 
-		if (ilgentry + 1 < rglgentry.size() && FCombineLogEntries(rglgentry[ilgentry], rglgentry[ilgentry+1])) {
-			sz += wstring(L" ") + rglgentry[ilgentry+1].szData;
-			lgf = rglgentry[ilgentry + 1].lgf;
+		if (ilgentry + 1 < vlgentry.size() && FCombineLogEntries(vlgentry[ilgentry], vlgentry[ilgentry+1])) {
+			sz += wstring(L" ") + vlgentry[ilgentry+1].szData;
+			lgf = vlgentry[ilgentry + 1].lgf;
 		}
 
 		DrawSz(sz, lgf == LGF::Bold ? ptxLogBold : ptxLog, 
-			RCF(rcf.left+12.0f*rglgentry[ilgentry].depth, rcf.top, rcf.right, rcf.bottom), 
+			RCF(rcf.left+12.0f*vlgentry[ilgentry].depth, rcf.top, rcf.right, rcf.bottom), 
 			pbrText);
 		rcf.top = rcf.bottom;
 	}
@@ -185,31 +185,35 @@ float UIDB::DyfLine(void) const
 }
 
 
-void UIDB::AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
+bool UIDB::FDepthLog(LGT lgt, int& depth)
 {
-	LGENTRY lgentry(lgt, lgf, szTag, szData);
-
 	if (lgt == LGT::Close)
 		depthCur--;
 	assert(depthCur >= 0);
-	lgentry.depth = depthCur;
+	depth = depthCur;
 	if (lgt == LGT::Open)
 		depthCur++;
+	return depth <= DepthLog();
+}
 
-	if (lgentry.depth > DepthLog())
-		return;
 
-	if (rglgentry.size() > 0 && rglgentry.back().lgt == LGT::Temp)
-		rglgentry.pop_back();
+void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData)
+{
+	LGENTRY lgentry(lgt, lgf, depth, szTag, szData);
+
+	assert(depth <= DepthLog());
+
+	if (vlgentry.size() > 0 && vlgentry.back().lgt == LGT::Temp)
+		vlgentry.pop_back();
 	
-	if (rglgentry.size() > 0 && FCombineLogEntries(rglgentry.back(), lgentry))
+	if (vlgentry.size() > 0 && FCombineLogEntries(vlgentry.back(), lgentry))
 		lgentry.dyfHeight = 0;
 	else
 		lgentry.dyfHeight = dyfLine;
-	if (rglgentry.size() == 0)
+	if (vlgentry.size() == 0)
 		lgentry.dyfTop = 0;
 	else
-		lgentry.dyfTop = rglgentry.back().dyfTop + rglgentry.back().dyfHeight;
+		lgentry.dyfTop = vlgentry.back().dyfTop + vlgentry.back().dyfHeight;
 
 	if (posLog && lgentry.lgt != LGT::Temp) {
 		*posLog << string(4 * lgentry.depth, ' ');
@@ -218,7 +222,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
 		*posLog << SzFlattenWsz(lgentry.szData);
 		*posLog << endl;
 	}
-	rglgentry.push_back(lgentry);
+	vlgentry.push_back(lgentry);
 
 	float dyfBot = lgentry.dyfTop + lgentry.dyfHeight;
 	UpdateContSize(SIZF(RcfContent().DxfWidth(), dyfBot));
@@ -233,7 +237,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
  */
 void UIDB::ClearLog(void)
 {
-	rglgentry.clear();
+	vlgentry.clear();
 	UpdateContSize(SIZF(0,0));
 }
 

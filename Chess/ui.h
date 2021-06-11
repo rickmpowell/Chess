@@ -111,7 +111,7 @@ public:
 protected:
 	RCF rcfBounds;	// rectangle is in global coordinates
 	UI* puiParent;
-	vector<UI*> rgpuiChild;
+	vector<UI*> vpuiChild;
 	bool fVisible;
 
 public:

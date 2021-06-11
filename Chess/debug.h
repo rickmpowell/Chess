@@ -57,8 +57,8 @@ struct LGENTRY
 	float dyfTop;	// position of the line relative to rcfCont
 	float dyfHeight;
 
-	LGENTRY(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData) : 
-		lgt(lgt), szTag(szTag), szData(szData), lgf(lgf), depth(0), dyfTop(0.0f), dyfHeight(10.0f)
+	LGENTRY(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData) : 
+		lgt(lgt), szTag(szTag), depth(depth), szData(szData), lgf(lgf), dyfTop(0.0f), dyfHeight(10.0f)
 	{
 	}
 };
@@ -78,7 +78,7 @@ class UIDB : public UIPS
 	friend class SPINDEPTH;
 
 	UIDBBTNS uidbbtns;
-	vector<LGENTRY> rglgentry;
+	vector<LGENTRY> vlgentry;
 	TX* ptxLog;
 	TX* ptxLogBold;
 	float dyfLine;
@@ -96,7 +96,7 @@ public:
 	virtual void DrawContent(const RCF& rcfCont);
 	virtual float DyfLine(void) const;
 
-	void AddLog(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData);
+	void AddLog(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData);
 	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const;
 	void InitLog(int depth);
 	void ClearLog(void);
@@ -105,4 +105,5 @@ public:
 	int DepthLog(void) const;
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const;
+	bool FDepthLog(LGT lgt, int& depth);
 };

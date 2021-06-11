@@ -443,9 +443,9 @@ CMDLIST::CMDLIST(APP& app) : app(app)
 
 CMDLIST::~CMDLIST(void)
 {
-    while (rgpcmd.size() > 0) {
-        CMD* pcmd = rgpcmd.back();
-        rgpcmd.pop_back();
+    while (vpcmd.size() > 0) {
+        CMD* pcmd = vpcmd.back();
+        vpcmd.pop_back();
         delete pcmd;
     }
 }
@@ -453,36 +453,36 @@ CMDLIST::~CMDLIST(void)
 
 void CMDLIST::Add(CMD* pcmd)
 {
-    size_t ccmd = rgpcmd.size();
+    size_t ccmd = vpcmd.size();
     if (pcmd->icmd >= ccmd) {
-        rgpcmd.resize(pcmd->icmd + 1);
+        vpcmd.resize(pcmd->icmd + 1);
         for (size_t icmd = ccmd; icmd < pcmd->icmd+1; icmd++)
-            rgpcmd[icmd] = NULL;
+            vpcmd[icmd] = nullptr;
     }
-    assert(rgpcmd[pcmd->icmd] == NULL);
-    rgpcmd[pcmd->icmd] = pcmd;
+    assert(vpcmd[pcmd->icmd] == nullptr);
+    vpcmd[pcmd->icmd] = pcmd;
 }
 
 
 int CMDLIST::Execute(int icmd)
 {
-    assert(icmd < rgpcmd.size());
-    assert(rgpcmd[icmd] != NULL);
-    return rgpcmd[icmd]->Execute();
+    assert(icmd < vpcmd.size());
+    assert(vpcmd[icmd] != nullptr);
+    return vpcmd[icmd]->Execute();
 }
 
 
 void CMDLIST::InitMenu(HMENU hmenu)
 {
-    for (size_t icmd = 0; icmd < rgpcmd.size(); icmd++)
-        if (rgpcmd[icmd])
-            rgpcmd[icmd]->InitMenu(hmenu);
+    for (size_t icmd = 0; icmd < vpcmd.size(); icmd++)
+        if (vpcmd[icmd])
+            vpcmd[icmd]->InitMenu(hmenu);
 }
 
 
 wstring CMDLIST::SzTip(int icmd)
 {
-    return rgpcmd[icmd]->SzTip();
+    return vpcmd[icmd]->SzTip();
 }
 
 

@@ -390,37 +390,37 @@ void BD::UndoMvSq(MV mv)
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenRgmv(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const
+void BD::GenRgmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const
 {
 	Validate();
-	GenRgmvColor(rgmv, cpcMove, false);
+	GenRgmvColor(gmv, cpcMove, false);
 	if (rmchk == RMCHK::Remove)
-		RemoveInCheckMoves(rgmv, cpcMove);
+		RemoveInCheckMoves(gmv, cpcMove);
 }
 
 
-void BD::GenRgmvQuiescent(RGMV& rgmv, CPC cpcMove, RMCHK rmchk) const
+void BD::GenRgmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const
 {
-	GenRgmvColor(rgmv, cpcMove, true);
+	GenRgmvColor(gmv, cpcMove, true);
 	if (rmchk == RMCHK::Remove) {
-		RemoveInCheckMoves(rgmv, cpcMove);
-		RemoveQuiescentMoves(rgmv, cpcMove);
+		RemoveInCheckMoves(gmv, cpcMove);
+		RemoveQuiescentMoves(gmv, cpcMove);
 	}
 }
 
 
-void BD::RemoveInCheckMoves(RGMV& rgmv, CPC cpcMove) const
+void BD::RemoveInCheckMoves(GMV& gmv, CPC cpcMove) const
 {
  	unsigned imvDest = 0;
 	BD bd(*this);
-	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
-		MV mv = rgmv[imv];
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mv = gmv[imv];
 		bd.MakeMvSq(mv);
 		if (!bd.FInCheck(cpcMove))
-			rgmv[imvDest++] = mv;
+			gmv[imvDest++] = mv;
 		bd.UndoMvSq(mv);
 	}
-	rgmv.resize(imvDest);
+	gmv.Resize(imvDest);
 }
 
 
@@ -429,18 +429,18 @@ void BD::RemoveInCheckMoves(RGMV& rgmv, CPC cpcMove) const
  *	Removes quiet moves from the given move list. For now quiet moves are
  *	anything that is not a capture or check.
  */
-void BD::RemoveQuiescentMoves(RGMV& rgmv, CPC cpcMove) const
+void BD::RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const
 {
 	if (FInCheck(cpcMove))	/* don't prune if we're in check */
 		return;
 	int imvTo = 0;
-	for (unsigned imv = 0; imv < rgmv.size(); imv++) {
-		MV mv = rgmv[imv];
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mv = gmv[imv];
 		if (!FMvIsQuiescent(mv, cpcMove))
-			rgmv[imvTo++] = mv;
+			gmv[imvTo++] = mv;
 		/* TODO: need to test for checks */
 	}
-	rgmv.resize(imvTo);
+	gmv.Resize(imvTo);
 }
 
 
@@ -532,9 +532,9 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
  *	Generates moves for the given color pieces. Does not check if the king is left in
  *	check, so caller must weed those moves out.
  */
-void BD::GenRgmvColor(RGMV& rgmv, CPC cpcMove, bool fForAttack) const
+void BD::GenRgmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const
 {
-	rgmv.clear();
+	gmv.Clear();
 
 	/* go through each piece */
 
@@ -547,26 +547,26 @@ void BD::GenRgmvColor(RGMV& rgmv, CPC cpcMove, bool fForAttack) const
 	
 		switch (ApcFromSq(sqFrom)) {
 		case APC::Pawn:
-			GenRgmvPawn(rgmv, sqFrom);
+			GenRgmvPawn(gmv, sqFrom);
 			if (sqEnPassant != sqNil)
-				GenRgmvEnPassant(rgmv, sqFrom);
+				GenRgmvEnPassant(gmv, sqFrom);
 			break;
 		case APC::Knight:
-			GenRgmvKnight(rgmv, sqFrom);
+			GenRgmvKnight(gmv, sqFrom);
 			break;
 		case APC::Bishop:
-			GenRgmvBishop(rgmv, sqFrom);
+			GenRgmvBishop(gmv, sqFrom);
 			break;
 		case APC::Rook:
-			GenRgmvRook(rgmv, sqFrom);
+			GenRgmvRook(gmv, sqFrom);
 			break;
 		case APC::Queen:
-			GenRgmvQueen(rgmv, sqFrom);
+			GenRgmvQueen(gmv, sqFrom);
 			break;
 		case APC::King:
-			GenRgmvKing(rgmv, sqFrom);
+			GenRgmvKing(gmv, sqFrom);
 			if (!fForAttack)
-				GenRgmvCastle(rgmv, sqFrom);
+				GenRgmvCastle(gmv, sqFrom);
 			break;
 		default:
 			assert(false);
@@ -576,14 +576,12 @@ void BD::GenRgmvColor(RGMV& rgmv, CPC cpcMove, bool fForAttack) const
 }
 
 
-
-
 /*	BD::GenRgmvPawn
  *
  *	Generates legal moves (without check tests) for a pawn
  *	in the sqFrom square.
  */
-void BD::GenRgmvPawn(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvPawn(GMV& gmv, SQ sqFrom) const
 {
 	/* pushing pawns */
 
@@ -593,21 +591,21 @@ void BD::GenRgmvPawn(RGMV& rgmv, SQ sqFrom) const
 	if (FIsEmpty(sqTo)) {
 		MV mv = MV(sqFrom, sqTo);
 		if (sqTo.rank() == RankPromoteFromCpc(cpcFrom))
-			AddRgmvMvPromotions(rgmv, mv);
+			AddRgmvMvPromotions(gmv, mv);
 		else {
-			AddRgmvMv(rgmv, mv);	// move forward one square
+			gmv.AppendMv(mv);	// move forward one square
 			if (sqFrom.rank() == RankInitPawnFromCpc(cpcFrom)) {
 				sqTo += dsq;	// move foreward two squares as first move
 				if (FIsEmpty(sqTo))
-					AddRgmvMv(rgmv, MV(sqFrom, sqTo));
+					gmv.AppendMv(MV(sqFrom, sqTo));
 			}
 		}
 	}
 
 	/* captures */
 
-	GenRgmvPawnCapture(rgmv, sqFrom, dsq - 1);
-	GenRgmvPawnCapture(rgmv, sqFrom, dsq + 1);
+	GenRgmvPawnCapture(gmv, sqFrom, dsq - 1);
+	GenRgmvPawnCapture(gmv, sqFrom, dsq + 1);
 }
 
 
@@ -617,12 +615,12 @@ void BD::GenRgmvPawn(RGMV& rgmv, SQ sqFrom) const
  *	to the move list, which includes promotions to queen, rook, knight, and
  *	bishop.
  */
-void BD::AddRgmvMvPromotions(RGMV& rgmv, MV mv) const
+void BD::AddRgmvMvPromotions(GMV& gmv, MV mv) const
 {
-	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Queen));
-	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Rook));
-	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Bishop));
-	AddRgmvMv(rgmv, mv.SetApcPromote(APC::Knight));
+	gmv.AppendMv(mv.SetApcPromote(APC::Queen));
+	gmv.AppendMv(mv.SetApcPromote(APC::Rook));
+	gmv.AppendMv(mv.SetApcPromote(APC::Bishop));
+	gmv.AppendMv(mv.SetApcPromote(APC::Knight));
 }
 
 
@@ -630,7 +628,7 @@ void BD::AddRgmvMvPromotions(RGMV& rgmv, MV mv) const
  *
  *	Generates pawn capture moves of pawns on sqFrom in the dsq direction
  */
-void BD::GenRgmvPawnCapture(RGMV& rgmv, SQ sqFrom, int dsq) const
+void BD::GenRgmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Pawn);
 	SQ sqTo = sqFrom + dsq;
@@ -641,9 +639,9 @@ void BD::GenRgmvPawnCapture(RGMV& rgmv, SQ sqFrom, int dsq) const
 	if (!FIsEmpty(sqTo) && CpcFromSq(sqTo) != cpcFrom) {
 		MV mv(sqFrom, sqTo);
 		if (sqTo.rank() == RankPromoteFromCpc(cpcFrom))
-			AddRgmvMvPromotions(rgmv, mv);
+			AddRgmvMvPromotions(gmv, mv);
 		else
-			AddRgmvMv(rgmv, mv);
+			gmv.AppendMv(mv);
 	}
 }
 
@@ -654,11 +652,11 @@ void BD::GenRgmvPawnCapture(RGMV& rgmv, SQ sqFrom, int dsq) const
  *	Generates legal moves for the knight at sqFrom. Does not check that
  *	the king ends up in check.
  */
-void BD::GenRgmvKnight(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvKnight(GMV& gmv, SQ sqFrom) const
 {
 	static int rgdsq[] = { 33, 31, 18, 14, -14, -18, -31, -33 };
 	for (int idsq = 0; idsq < CArray(rgdsq); idsq++)
-		FGenRgmvDsq(rgmv, sqFrom, sqFrom, (*this)(sqFrom), rgdsq[idsq]);
+		FGenRgmvDsq(gmv, sqFrom, sqFrom, (*this)(sqFrom), rgdsq[idsq]);
 }
 
 
@@ -666,23 +664,23 @@ void BD::GenRgmvKnight(RGMV& rgmv, SQ sqFrom) const
  *
  *	Generates moves for the bishop on square sqFrom
  */
-void BD::GenRgmvBishop(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvBishop(GMV& gmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Bishop); 
-	GenRgmvSlide(rgmv, sqFrom, 17);
-	GenRgmvSlide(rgmv, sqFrom, 15);
-	GenRgmvSlide(rgmv, sqFrom, -15);
-	GenRgmvSlide(rgmv, sqFrom, -17);
+	GenRgmvSlide(gmv, sqFrom, 17);
+	GenRgmvSlide(gmv, sqFrom, 15);
+	GenRgmvSlide(gmv, sqFrom, -15);
+	GenRgmvSlide(gmv, sqFrom, -17);
 }
 
 
-void BD::GenRgmvRook(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvRook(GMV& gmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Rook); 
-	GenRgmvSlide(rgmv, sqFrom, 16);
-	GenRgmvSlide(rgmv, sqFrom, 1);
-	GenRgmvSlide(rgmv, sqFrom, -1);
-	GenRgmvSlide(rgmv, sqFrom, -16);
+	GenRgmvSlide(gmv, sqFrom, 16);
+	GenRgmvSlide(gmv, sqFrom, 1);
+	GenRgmvSlide(gmv, sqFrom, -1);
+	GenRgmvSlide(gmv, sqFrom, -16);
 }
 
 
@@ -690,17 +688,17 @@ void BD::GenRgmvRook(RGMV& rgmv, SQ sqFrom) const
  *
  *	Generates  moves for the queen at sqFrom
  */
-void BD::GenRgmvQueen(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvQueen(GMV& gmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::Queen);
-	GenRgmvSlide(rgmv, sqFrom, 17);
-	GenRgmvSlide(rgmv, sqFrom, 16);
-	GenRgmvSlide(rgmv, sqFrom, 15);
-	GenRgmvSlide(rgmv, sqFrom, 1);
-	GenRgmvSlide(rgmv, sqFrom, -1);
-	GenRgmvSlide(rgmv, sqFrom, -15);
-	GenRgmvSlide(rgmv, sqFrom, -16);
-	GenRgmvSlide(rgmv, sqFrom, -17);
+	GenRgmvSlide(gmv, sqFrom, 17);
+	GenRgmvSlide(gmv, sqFrom, 16);
+	GenRgmvSlide(gmv, sqFrom, 15);
+	GenRgmvSlide(gmv, sqFrom, 1);
+	GenRgmvSlide(gmv, sqFrom, -1);
+	GenRgmvSlide(gmv, sqFrom, -15);
+	GenRgmvSlide(gmv, sqFrom, -16);
+	GenRgmvSlide(gmv, sqFrom, -17);
 }
 
 
@@ -709,12 +707,12 @@ void BD::GenRgmvQueen(RGMV& rgmv, SQ sqFrom) const
  *	Generates moves for the king at sqFrom. Note: like all the move generators,
  *	this does not check that the king is moving into check.
  */
-void BD::GenRgmvKing(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvKing(GMV& gmv, SQ sqFrom) const
 {
 	assert(ApcFromSq(sqFrom) == APC::King);
 	static int rgdsq[] = { 17, 16, 15, 1, -1, -15, -16, -17 };
 	for (int idsq = 0; idsq < CArray(rgdsq); idsq++)
-		FGenRgmvDsq(rgmv, sqFrom, sqFrom, (*this)(sqFrom), rgdsq[idsq]);
+		FGenRgmvDsq(gmv, sqFrom, sqFrom, (*this)(sqFrom), rgdsq[idsq]);
 }
 
 
@@ -725,7 +723,7 @@ void BD::GenRgmvKing(RGMV& rgmv, SQ sqFrom) const
  *	check and intermediate squares are not under attack, but does not check the final 
  *	king destination.
  */
-void BD::GenRgmvCastle(RGMV& rgmv, SQ sqKing) const
+void BD::GenRgmvCastle(GMV& gmv, SQ sqKing) const
 {
 	/* this code is a little contorted in order to avoid calling FSqAttacked (which 
 	   is an expensive test) as much as possible. */
@@ -738,13 +736,13 @@ void BD::GenRgmvCastle(RGMV& rgmv, SQ sqKing) const
 			return;
 		fMaybeInCheck = false;
 		if (!FSqAttacked(cpcOpp, sqKing+1))
-			AddRgmvMv(rgmv, MV(sqKing, sqKing+2));
+			gmv.AppendMv(MV(sqKing, sqKing+2));
 	}
 	if (FCanCastle(cpcKing, csQueen) && FIsEmpty(sqKing-1) && FIsEmpty(sqKing-2) && FIsEmpty(sqKing-3)) {
 		if (fMaybeInCheck && FSqAttacked(cpcOpp, sqKing)) 
 			return;
 		if (!FSqAttacked(cpcOpp, sqKing-1))
-			AddRgmvMv(rgmv, MV(sqKing, sqKing-2));
+			gmv.AppendMv(MV(sqKing, sqKing-2));
 	}
 }
 
@@ -753,7 +751,7 @@ void BD::GenRgmvCastle(RGMV& rgmv, SQ sqKing) const
  *
  *	Generates en passant pawn moves from the pawn at sqFrom
  */
-void BD::GenRgmvEnPassant(RGMV& rgmv, SQ sqFrom) const
+void BD::GenRgmvEnPassant(GMV& gmv, SQ sqFrom) const
 {
 	assert(sqEnPassant != sqNil);
 	assert(ApcFromSq(sqFrom) == APC::Pawn);
@@ -771,7 +769,7 @@ void BD::GenRgmvEnPassant(RGMV& rgmv, SQ sqFrom) const
 	int fileEnPassant = sqEnPassant.file();
 	int fileFrom = sqFrom.file();
 	if (fileEnPassant == fileFrom + 1 || fileEnPassant == fileFrom - 1)
-		AddRgmvMv(rgmv, MV(sqFrom, sqEnPassant));
+		gmv.AppendMv(MV(sqFrom, sqEnPassant));
 }
 
 
@@ -908,7 +906,7 @@ BDG::BDG(const WCHAR* szFEN)
 void BDG::NewGame(void)
 {
 	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	rgmvGame.clear();
+	vmvGame.clear();
 	imvCur = -1;
 	imvPawnOrTakeLast = -1;
 	SetGs(GS::Playing);
@@ -1004,15 +1002,15 @@ void BDG::InitFENFullmoveCounter(const WCHAR*& sz)
  *	Optionally doesn't bother to remove moves that would leave the 
  *	king in check.
  */
-void BDG::GenRgmv(RGMV& rgmv, RMCHK rmchk) const
+void BDG::GenRgmv(GMV& gmv, RMCHK rmchk) const
 {
-	BD::GenRgmv(rgmv, cpcToMove, rmchk);
+	BD::GenRgmv(gmv, cpcToMove, rmchk);
 }
 
 
-void BDG::GenRgmvQuiescent(RGMV& rgmv, RMCHK rmchk) const
+void BDG::GenRgmvQuiescent(GMV& gmv, RMCHK rmchk) const
 {
-	BD::GenRgmvQuiescent(rgmv, cpcToMove, rmchk);
+	BD::GenRgmvQuiescent(gmv, cpcToMove, rmchk);
 }
 
 
@@ -1033,13 +1031,13 @@ void BDG::MakeMv(MV mv)
 	/* make the move and save the move in the move list */
 
 	MakeMvSq(mv);
-	if (++imvCur == rgmvGame.size())
-		rgmvGame.push_back(mv);
-	else if (mv != rgmvGame[imvCur]) {
-		rgmvGame[imvCur] = mv;
+	if (++imvCur == vmvGame.size())
+		vmvGame.push_back(mv);
+	else if (mv != vmvGame[imvCur]) {
+		vmvGame[imvCur] = mv;
 		/* all moves after this in the move list are now invalid */
-		for (int imv = imvCur + 1; imv < rgmvGame.size(); imv++)
-			rgmvGame[imv] = MV();
+		for (size_t imv = imvCur + 1; imv < vmvGame.size(); imv++)
+			vmvGame[imv] = MV();
 	}
 
 	/* keep track of last pawn move or capture, which is used to detect draws */
@@ -1078,11 +1076,11 @@ void BDG::UndoMv(void)
 	if (imvCur == imvPawnOrTakeLast) {
 		/* scan backwards looking for pawn moves or captures */
 		for (imvPawnOrTakeLast = imvCur-1; imvPawnOrTakeLast >= 0; imvPawnOrTakeLast--)
-			if (ApcFromSq(rgmvGame[imvPawnOrTakeLast].sqFrom()) == APC::Pawn || 
-					rgmvGame[imvPawnOrTakeLast].fIsCapture())
+			if (ApcFromSq(vmvGame[imvPawnOrTakeLast].sqFrom()) == APC::Pawn || 
+					vmvGame[imvPawnOrTakeLast].fIsCapture())
 				break;
 	}
-	UndoMvSq(rgmvGame[imvCur--]);
+	UndoMvSq(vmvGame[imvCur--]);
 	assert(imvCur >= -1);
 	cpcToMove = ~cpcToMove;
 }
@@ -1094,10 +1092,10 @@ void BDG::UndoMv(void)
  */
 void BDG::RedoMv(void)
 {
-	if (imvCur+1 >= rgmvGame.size() || rgmvGame[imvCur+1].fIsNil())
+	if (imvCur+1 >= vmvGame.size() || vmvGame[imvCur+1].fIsNil())
 		return;
 	imvCur++;
-	MV mv = rgmvGame[imvCur];
+	MV mv = vmvGame[imvCur];
 	if (ApcFromSq(mv.sqFrom()) == APC::Pawn || mv.fIsCapture())
 		imvPawnOrTakeLast = imvCur;
 	MakeMvSq(mv);
@@ -1110,9 +1108,9 @@ void BDG::RedoMv(void)
  *	Tests for the game in an end state. Returns the new state. Takes the legal move
  *	list for the current to-move player and the rule struture.
  */
-GS BDG::GsTestGameOver(const RGMV& rgmv, const RULE& rule) const
+GS BDG::GsTestGameOver(const GMV& gmv, const RULE& rule) const
 {
-	if (rgmv.size() == 0) {
+	if (gmv.cmv() == 0) {
 		if (FInCheck(cpcToMove))
 			return cpcToMove == CPC::White ? GS::WhiteCheckMated : GS::BlackCheckMated;
 		else
@@ -1131,9 +1129,9 @@ GS BDG::GsTestGameOver(const RGMV& rgmv, const RULE& rule) const
 }
 
 
-void BDG::SetGameOver(const RGMV& rgmv, const RULE& rule)
+void BDG::SetGameOver(const GMV& gmv, const RULE& rule)
 {
-	SetGs(GsTestGameOver(rgmv, rule));
+	SetGs(GsTestGameOver(gmv, rule));
 }
 
 
@@ -1206,11 +1204,11 @@ bool BDG::FDraw3Repeat(int cbdDraw) const
 		return false;
 	BD bd = *this;
 	int cbdSame = 1;
-	bd.UndoMvSq(rgmvGame[imvCur]);
-	bd.UndoMvSq(rgmvGame[imvCur - 1]);
+	bd.UndoMvSq(vmvGame[imvCur]);
+	bd.UndoMvSq(vmvGame[imvCur - 1]);
 	for (int imv = imvCur - 2; imv >= imvPawnOrTakeLast + 2; imv -= 2) {
-		bd.UndoMvSq(rgmvGame[imv]);
-		bd.UndoMvSq(rgmvGame[imv - 1]);
+		bd.UndoMvSq(vmvGame[imv]);
+		bd.UndoMvSq(vmvGame[imv - 1]);
 		if (bd == *this) {
 			if (++cbdSame >= cbdDraw)
 				return true;
@@ -1219,8 +1217,8 @@ bool BDG::FDraw3Repeat(int cbdDraw) const
 			   match the next position */
 			if (imv < imvPawnOrTakeLast + 2)
 				break;
-			bd.UndoMvSq(rgmvGame[imv]);
-			bd.UndoMvSq(rgmvGame[imv - 1]);
+			bd.UndoMvSq(vmvGame[imv]);
+			bd.UndoMvSq(vmvGame[imv - 1]);
 			assert(bd != *this);
 		}
 	}

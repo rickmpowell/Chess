@@ -85,8 +85,8 @@ void GA::SerializeMoveList(ostream& os)
 	BDG bdgSave;
 	bdgSave.NewGame();
 	string szLine;
-	for (unsigned imv = 0; imv < (unsigned)bdg.rgmvGame.size(); imv++) {
-		MV mv = bdg.rgmvGame[imv];
+	for (unsigned imv = 0; imv < (unsigned)bdg.vmvGame.size(); imv++) {
+		MV mv = bdg.vmvGame[imv];
 		if (imv % 2 == 0)
 			WriteSzLine80(os, szLine, to_string(imv/2 + 1) + ". ");
 		wstring wsz = bdgSave.SzDecodeMv(mv, false);
@@ -159,8 +159,8 @@ const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
 
 wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 {
-	RGMV rgmv;
-	GenRgmv(rgmv, RMCHK::NoRemove);
+	GMV gmv;
+	GenRgmv(gmv, RMCHK::NoRemove);
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mv.sqFrom();
@@ -209,11 +209,11 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	/* for ambiguous moves, we need to add various from square qualifiers depending
 	 * on where the ambiguity is */
 
-	if (FMvApcAmbiguous(rgmv, mv)) {
-		if (!FMvApcFileAmbiguous(rgmv, mv))
+	if (FMvApcAmbiguous(gmv, mv)) {
+		if (!FMvApcFileAmbiguous(gmv, mv))
 			*pch++ = L'a' + sqFrom.file();
 		else {
-			if (FMvApcRankAmbiguous(rgmv, mv))
+			if (FMvApcRankAmbiguous(gmv, mv))
 				*pch++ = L'a' + sqFrom.file();
 			*pch++ = L'1' + sqFrom.rank();
 		}
@@ -251,11 +251,12 @@ FinishMove:
 }
 
 
-bool BDG::FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const
+bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (MV mvOther : rgmv) {
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mvOther = gmv[imv];
 		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
 		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom))
@@ -265,11 +266,12 @@ bool BDG::FMvApcAmbiguous(const vector<MV>& rgmv, MV mv) const
 }
 
 
-bool BDG::FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const
+bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (MV mvOther : rgmv) {
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mvOther = gmv[imv];
 		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
 		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().rank() == sqFrom.rank())
@@ -279,11 +281,12 @@ bool BDG::FMvApcRankAmbiguous(const vector<MV>& rgmv, MV mv) const
 }
 
 
-bool BDG::FMvApcFileAmbiguous(const vector<MV>& rgmv, MV mv) const
+bool BDG::FMvApcFileAmbiguous(const GMV& gmv, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (MV mvOther : rgmv) {
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		MV mvOther = gmv[imv];
 		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
 		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().file() == sqFrom.file())
