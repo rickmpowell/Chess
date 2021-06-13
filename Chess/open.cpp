@@ -59,7 +59,7 @@ int GA::DeserializeTag(ISTKPGN& istkpgn)
 	public:
 		TK* ptkStart, * ptkEnd;
 		TK* ptkSym, * ptkVal;
-		TKS(void) : ptkStart(NULL), ptkSym(NULL), ptkVal(NULL), ptkEnd(NULL) { }
+		TKS(void) : ptkStart(nullptr), ptkEnd(nullptr), ptkSym(nullptr), ptkVal(nullptr) { }
 		~TKS(void) {
 			if (ptkStart) delete ptkStart;
 			if (ptkSym) delete ptkSym;
@@ -779,7 +779,7 @@ Retry:
  */
 
 
-ISTK::ISTK(istream& is) : is(is), li(1), ptkPrev(NULL)
+ISTK::ISTK(istream& is) : li(1), is(is), ptkPrev(NULL)
 {
 }
 

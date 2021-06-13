@@ -21,7 +21,7 @@
  *
  */
 
-const float BD::mpapcvpc[] = { 0.0f, 100.0f, 275.0f, 300.0f, 500.0f, 850.0f, 200.0f, -1.0f };
+const float BD::mpapcvpc[] = { 0.0f, 100.0f, 300.0f, 300.0f, 500.0f, 900.0f, 200.0f, -1.0f };
 
 BD::BD(void)
 {
@@ -91,7 +91,6 @@ void BD::InitFENPieces(const WCHAR*& szFEN)
 	/* parse the line */
 
 	int rank = rankMax - 1;
-	int tpcPawn = tpcPawnFirst;
 	SQ sq = SQ(rank, 0);
 	const WCHAR* pch;
 	for (pch = szFEN; *pch != L' ' && *pch != L'\0'; pch++) {
@@ -200,7 +199,6 @@ void BD::MakeMvSq(MV& mv)
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	IPC ipcFrom = (*this)(sqFrom);
-	IPC ipcTo = (*this)(sqTo);
 	APC apcFrom = ipcFrom.apc();
 
 	/* store undo information in the mv */
@@ -589,7 +587,7 @@ void BD::GenRgmvPawn(GMV& gmv, SQ sqFrom) const
 	int dsq = DsqPawnFromCpc(cpcFrom);
 	SQ sqTo = sqFrom + dsq;
 	if (FIsEmpty(sqTo)) {
-		MV mv = MV(sqFrom, sqTo);
+		MV mv(sqFrom, sqTo);
 		if (sqTo.rank() == RankPromoteFromCpc(cpcFrom))
 			AddRgmvMvPromotions(gmv, mv);
 		else {
@@ -736,13 +734,13 @@ void BD::GenRgmvCastle(GMV& gmv, SQ sqKing) const
 			return;
 		fMaybeInCheck = false;
 		if (!FSqAttacked(cpcOpp, sqKing+1))
-			gmv.AppendMv(MV(sqKing, sqKing+2));
+			gmv.AppendMv(sqKing, sqKing+2);
 	}
 	if (FCanCastle(cpcKing, csQueen) && FIsEmpty(sqKing-1) && FIsEmpty(sqKing-2) && FIsEmpty(sqKing-3)) {
 		if (fMaybeInCheck && FSqAttacked(cpcOpp, sqKing)) 
 			return;
 		if (!FSqAttacked(cpcOpp, sqKing-1))
-			gmv.AppendMv(MV(sqKing, sqKing-2));
+			gmv.AppendMv(sqKing, sqKing-2);
 	}
 }
 
@@ -769,7 +767,7 @@ void BD::GenRgmvEnPassant(GMV& gmv, SQ sqFrom) const
 	int fileEnPassant = sqEnPassant.file();
 	int fileFrom = sqFrom.file();
 	if (fileEnPassant == fileFrom + 1 || fileEnPassant == fileFrom - 1)
-		gmv.AppendMv(MV(sqFrom, sqEnPassant));
+		gmv.AppendMv(sqFrom, sqEnPassant);
 }
 
 
@@ -1092,7 +1090,7 @@ void BDG::UndoMv(void)
  */
 void BDG::RedoMv(void)
 {
-	if (imvCur+1 >= vmvGame.size() || vmvGame[imvCur+1].fIsNil())
+	if (imvCur+1 >= (int)vmvGame.size() || vmvGame[imvCur+1].fIsNil())
 		return;
 	imvCur++;
 	MV mv = vmvGame[imvCur];

@@ -58,7 +58,7 @@ struct LGENTRY
 	float dyfHeight;
 
 	LGENTRY(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData) : 
-		lgt(lgt), szTag(szTag), depth(depth), szData(szData), lgf(lgf), dyfTop(0.0f), dyfHeight(10.0f)
+		lgt(lgt), lgf(lgf), szTag(szTag), szData(szData), depth(depth), dyfTop(0.0f), dyfHeight(10.0f)
 	{
 	}
 };

@@ -58,7 +58,7 @@ void UIDBBTNS::Draw(const RCF* prcfUpdate)
 }
 
 
-UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this), dyfLine(12.0f), ptxLog(nullptr), ptxLogBold(nullptr), 
+UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this),ptxLog(nullptr), ptxLogBold(nullptr), dyfLine(12.0f),
 		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
 }

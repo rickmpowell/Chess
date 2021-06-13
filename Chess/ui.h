@@ -109,15 +109,15 @@ public:
 	BMP* PbmpFromPngRes(int idb);
 
 protected:
-	RCF rcfBounds;	// rectangle is in global coordinates
 	UI* puiParent;
 	vector<UI*> vpuiChild;
+	RCF rcfBounds;	// rectangle is in global coordinates
 	bool fVisible;
 
 public:
 	UI(UI* puiParent, bool fVisible=true);
 	UI(UI* puiParent, RCF rcfBounds, bool fVisible=true);
-	~UI(void);
+	virtual ~UI(void);
 
 	void AddChild(UI* puiChild);
 	void RemoveChild(UI* puiChild);
@@ -182,8 +182,6 @@ public:
 	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf=1.0e6f, float dyf=1.0e6f) const;
 	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
-
-	virtual void Log(LGT lgt, const wstring& sz) const;
 };
 
 
@@ -207,7 +205,7 @@ public:
 
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
-	virtual void Draw(DC* pdc);
+	virtual void Draw(const RCF* prcfUpdate);
 
 	virtual void StartLeftDrag(PTF ptf);
 	virtual void EndLeftDrag(PTF ptf);

@@ -10,6 +10,7 @@
 #include "ga.h"
 #include "Resources/Resource.h"
 
+mt19937 rgen(0);
 
 /*  AboutDlgProc
  *
@@ -68,7 +69,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
  * 
  *  Throws an exception if something fails.
  */
-APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(NULL), cmdlist(*this)
+APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), 
+        pdevd3(nullptr), pdcd3(nullptr), pdevd2(nullptr), pswch(nullptr), pbmpBackBuf(nullptr), pdc(nullptr),
+        cmdlist()
 {
     hcurArrow = LoadCursor(NULL, IDC_ARROW);
     hcurMove = LoadCursor(NULL, IDC_SIZEALL);
@@ -107,8 +110,8 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), pdc(
     InitCmdList();
 
     pga = new GA(*this);
-    pga->SetPl(CPC::White, new PLAI(*pga));
-    pga->SetPl(CPC::Black, new PLAI2(*pga));
+    pga->SetPl(CPC::Black, new PLAI(*pga));
+    pga->SetPl(CPC::White, new PLAI2(*pga));
  //   pga->SetPl(CPC::White, new PLHUMAN(*pga, L"Rick Powell"));
     pga->NewGame(new RULE);
 
@@ -350,20 +353,24 @@ bool APP::OnMouseMove(int x, int y)
 {
     PTF ptf;
     UI* pui = pga->PuiHitTest(&ptf, x, y);
-    if (pui) {
-        if (pga->puiCapt)
-            pui->LeftDrag(ptf);
-        else {
-            if (pga->puiHover == pui)
-                pui->MouseHover(ptf, MHT::Move);
-            else {
-                if (pga->puiHover)
-                    pga->puiHover->MouseHover(ptf, MHT::Exit);
-                pui->MouseHover(ptf, MHT::Enter);
-                pga->SetHover(pui);
-            }
-        }
+    if (pui == nullptr)
+        return true;
+
+    if (pga->puiCapt) {
+        pui->LeftDrag(ptf);
+        return true;
     }
+
+    if (pga->puiHover == pui) {
+        pui->MouseHover(ptf, MHT::Move);
+        return true;
+    }
+
+    if (pga->puiHover)
+        pga->puiHover->MouseHover(ptf, MHT::Exit);
+    pui->MouseHover(ptf, MHT::Enter);
+    pga->SetHover(pui);
+    
     return true;
 }
 
@@ -436,7 +443,7 @@ bool APP::OnTimer(UINT tid)
  */
 
 
-CMDLIST::CMDLIST(APP& app) : app(app)
+CMDLIST::CMDLIST(void)
 {
 }
 
@@ -453,10 +460,10 @@ CMDLIST::~CMDLIST(void)
 
 void CMDLIST::Add(CMD* pcmd)
 {
-    size_t ccmd = vpcmd.size();
+    int ccmd = (int)vpcmd.size();
     if (pcmd->icmd >= ccmd) {
         vpcmd.resize(pcmd->icmd + 1);
-        for (size_t icmd = ccmd; icmd < pcmd->icmd+1; icmd++)
+        for (int icmd = ccmd; icmd < pcmd->icmd+1; icmd++)
             vpcmd[icmd] = nullptr;
     }
     assert(vpcmd[pcmd->icmd] == nullptr);

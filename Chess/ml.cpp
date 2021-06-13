@@ -20,7 +20,7 @@
  */
 
 
-UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), cpc(cpc), ppl(NULL)
+UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), ppl(nullptr), cpc(cpc)
 {
 }
 
@@ -378,8 +378,9 @@ void UIGO::Draw(const RCF* prcfUpdate)
  */
 
 
-UIML::UIML(GA* pga) : UIPS(pga), imvSel(0), uigo(this, false), uigc(this),
-		dyfList(0), dxfCellMarg(4.0f), dyfCellMarg(0.5f)
+UIML::UIML(GA* pga) : UIPS(pga),  
+		dxfCellMarg(4.0f), dyfCellMarg(0.5f), dyfList(0), imvSel(0),
+		uigo(this, false), uigc(this)
 {
 	for (int col = 0; col < CArray(mpcoldxf); col++)
 		mpcoldxf[col] = 0.0f;
@@ -703,7 +704,7 @@ HTML UIML::HtmlHitTest(PTF ptf, int* pimv)
 		imv = li * 2 + 1;
 	if (imv < 0)
 		return HTML::EmptyBefore;
-	if (imv >= ga.bdg.vmvGame.size())
+	if (imv >= (int)ga.bdg.vmvGame.size())
 		return HTML::EmptyAfter;
 	*pimv = imv;
 	return HTML::List;

@@ -31,9 +31,10 @@ public:
 
 protected:
 	GA& ga;
+
 public:
 	UIP(GA* pga);
-	~UIP(void);
+	virtual ~UIP(void);
 	virtual void Draw(const RCF* prcfUpdate = NULL);
 	void SetShadow(void);
 	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop);
@@ -90,8 +91,8 @@ public:
 
 class UITIP : public UI
 {
+protected:
 	UI* puiOwner;
-public:
 
 public:
 	UITIP(UI* puiParent);

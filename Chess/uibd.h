@@ -50,14 +50,14 @@ public:
 	GEOM* pgeomArrowHead;
 	TX* ptxLabel;
 
+	BTNCH btnRotateBoard;
+
 	CPC cpcPointOfView;
 	RCF rcfSquares;
 	float dxyfSquare, dxyfBorder, dxyfMargin, dxyfOutline;
 	float dyfLabel;
-
-	BTN* pbtnRotateBoard;
-
 	float angle;	// angle for rotation animation
+
 	SQ sqDragInit;
 	PTF ptfDragInit;
 	PTF ptfDragCur;

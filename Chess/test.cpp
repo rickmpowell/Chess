@@ -155,11 +155,12 @@ void GA::ValidateEnPassant(const WCHAR*& sz) const
 		assert(bdg.sqEnPassant.fIsNil());
 	}
 	else if (*sz >= L'a' && *sz <= L'h') {
+#ifndef NDEBUG
 		int file = *sz - L'a';
+#endif
 		sz++;
 		if (*sz >= L'1' && *sz <= L'8') {
-			int rank = *sz - L'1';
-			assert(bdg.sqEnPassant == SQ(rank, file));
+			assert(bdg.sqEnPassant == SQ(*sz - L'1', file));
 			sz++;
 			if (*sz && *sz != L' ') {
 				assert(false);

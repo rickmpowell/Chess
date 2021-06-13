@@ -122,13 +122,13 @@ void UIBD::DiscardRsrc(void)
  *
  *	Constructor for the board screen panel.
  */
-UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
-		cpcPointOfView(CPC::White),
-		dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f), dxyfOutline(4.0f),
-		angle(0.0f),
-		ptxLabel(NULL), dyfLabel(0)
+UIBD::UIBD(GA* pga) : UIP(pga), 
+		pbmpPieces(nullptr), pgeomCross(nullptr), pgeomArrowHead(nullptr), ptxLabel(nullptr),
+		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
+		cpcPointOfView(CPC::White), 
+		rcfSquares(0, 0, 640.0f, 640.0f), dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f), dxyfOutline(4.0f), dyfLabel(0), angle(0.0f),
+		sqDragInit(sqNil), sqHover(sqNil)
 {
-	pbtnRotateBoard = new BTNCH(this, cmdRotateBoard, L'\x2b6f');
 }
 
 
@@ -138,8 +138,6 @@ UIBD::UIBD(GA* pga) : UIP(pga), sqDragInit(sqNil), sqHover(sqNil),
  */
 UIBD::~UIBD(void)
 {
-	if (pbtnRotateBoard)
-		delete pbtnRotateBoard;
 }
 
 
@@ -176,7 +174,7 @@ void UIBD::Layout(void)
 	float dxyfBtn = dxyfSquare * 0.33f;
 	rcf.top = rcf.bottom - dxyfBtn;
 	rcf.right = rcf.left + dxyfBtn;
-	pbtnRotateBoard->SetBounds(rcf);
+	btnRotateBoard.SetBounds(rcf);
 }
 
 
@@ -374,7 +372,6 @@ void UIBD::DrawGameState(void)
 {
 	if (ga.bdg.gs == GS::Playing)
 		return;
-	const WCHAR* szState = L"";
 	switch (ga.bdg.gs) {
 		/* TODO: show checkmate */
 	case GS::WhiteCheckMated: break;
@@ -685,7 +682,7 @@ void UIBD::EndLeftDrag(PTF ptf)
 	SQ sqFrom = sqDragInit;
 	sqDragInit = sqNil;
 	SQ sqTo;
-	HTBD htbd = HtbdHitTest(ptf, &sqTo);
+	HtbdHitTest(ptf, &sqTo);
 	if (!sqTo.fIsNil()) {
 		for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
 			MV mv = gmvDrag[imv];
@@ -714,7 +711,7 @@ Done:
 void UIBD::LeftDrag(PTF ptf)
 {
 	SQ sq;
-	HTBD htbd = HtbdHitTest(ptf, &sq);
+	HtbdHitTest(ptf, &sq);
 	if (sqDragInit.fIsNil()) {
 		EndLeftDrag(ptf);
 		return;

@@ -26,7 +26,13 @@ public:
 		gmvReplyAll.Reserve(50);
 		GenRgmvColor(gmvReplyAll, cpcToMove, false);
 	}
+
+	bool operator<(const BDGMV& bdgmv) const
+	{
+		return eval < bdgmv.eval;
+	}
 };
+
 
 
 /*
@@ -48,7 +54,7 @@ protected:
 
 public:
 	PL(GA& ga, wstring szName);
-	~PL(void);
+	virtual ~PL(void);
 
 	wstring& SzName(void) 
 	{
@@ -78,7 +84,7 @@ class PLAI : public PL
 {
 protected:
 	float rgfAICoeff[3];
-	long cYield;
+	unsigned long cYield;
 	size_t cbdgmvEval;
 	size_t cbdgmvGen;
 	size_t cbdgmvPrune;
@@ -98,8 +104,11 @@ protected:
 
 	float VpcFromCpc(const BDGMV& bdgmv, CPC cpcMove) const;
 	float VpcOpening(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcEarlyMidGame(const BDGMV& bdgmv, CPC cpcMove) const;
 	float VpcMiddleGame(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcLateMidGame(const BDGMV& bdgmv, CPC cpcMove) const;
 	float VpcEndGame(const BDGMV& bdgmv, CPC cpcMove) const;
+	float VpcLateEndGame(const BDGMV& bdgmv, CPC cpcMove) const;
 	float VpcWeightTable(const BDGMV& bdgmv, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const;
 };
 

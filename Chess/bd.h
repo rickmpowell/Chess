@@ -141,11 +141,11 @@ class IPC
 		cpcGrf : 1;
 
 public:
-	inline IPC(void) : tpcGrf(tpcPieceMin), cpcGrf(CPC::Black), apcGrf(APC::ActMax)
+	inline IPC(void) : tpcGrf(tpcPieceMin), apcGrf(APC::ActMax), cpcGrf(CPC::Black)
 	{
 	}
 
-	inline IPC(TPC tpc, CPC cpc, APC apc) : tpcGrf(tpc), cpcGrf(cpc), apcGrf(apc)
+	inline IPC(TPC tpc, CPC cpc, APC apc) : tpcGrf(tpc), apcGrf(apc), cpcGrf(cpc)
 	{
 	}
 
@@ -363,14 +363,14 @@ public:
  */
 
 
-const size_t cmvPreMax = 80;
+const size_t cmvPreMax = 60;
 
 class GMV
 {
 private:
-	vector<uint32_t>* pvmvOverflow;
 	uint32_t amv[cmvPreMax];
 	int cmvCur;
+	vector<uint32_t>* pvmvOverflow;
 
 public:
 #pragma warning(push)
@@ -391,8 +391,7 @@ public:
 	GMV(const GMV& gmv) : cmvCur(gmv.cmvCur), pvmvOverflow(nullptr)
 	{
 		assert(gmv.FValid());
-		for (int imv = 0; imv < min(cmvCur, cmvPreMax); imv++)
-			amv[imv] = gmv.amv[imv];
+		memcpy(amv, gmv.amv, min(cmvCur, cmvPreMax) * sizeof(uint32_t));
 		if (gmv.pvmvOverflow)
 			pvmvOverflow = new vector<uint32_t>(*gmv.pvmvOverflow);
 	}
@@ -405,8 +404,7 @@ public:
 	GMV(GMV&& gmv) noexcept : cmvCur(gmv.cmvCur), pvmvOverflow(gmv.pvmvOverflow)
 	{
 		assert(gmv.FValid());
-		for (int imv = 0; imv < min(cmvCur, cmvPreMax); imv++)
-			amv[imv] = gmv.amv[imv];
+		memcpy(amv, gmv.amv, min(cmvCur, cmvPreMax) * sizeof(uint32_t));
 		gmv.cmvCur = 0;
 		gmv.pvmvOverflow = nullptr;
 	}
@@ -416,8 +414,7 @@ public:
 	{
 		assert(gmv.FValid());
 		cmvCur = gmv.cmvCur;
-		for (int imv = 0; imv < min(cmvCur, cmvPreMax); imv++)
-			amv[imv] = gmv.amv[imv];
+		memcpy(amv, gmv.amv, min(cmvCur, cmvPreMax) * sizeof(uint32_t));
 		if (gmv.pvmvOverflow) {
 			if (pvmvOverflow)
 				*pvmvOverflow = *gmv.pvmvOverflow;
@@ -434,11 +431,26 @@ public:
 		return *this;
 	}
 
+	GMV& operator=(GMV&& gmv)
+	{
+		if (this == &gmv)
+			return *this;
+		cmvCur = gmv.cmvCur;
+		memcpy(amv, gmv.amv, min(cmvCur, cmvPreMax) * sizeof(uint32_t));
+		if (pvmvOverflow != nullptr) {
+			delete pvmvOverflow;
+			pvmvOverflow = nullptr;
+		}
+		pvmvOverflow = gmv.pvmvOverflow;
+		gmv.pvmvOverflow = nullptr;
+		return *this;
+	}
+
 #ifndef NDEBUG
 	bool FValid(void) const
 	{
-		return cmvCur <= cmvPreMax && pvmvOverflow == nullptr ||
-			cmvCur > cmvPreMax && pvmvOverflow != nullptr && pvmvOverflow->size() + cmvPreMax == cmvCur;
+		return (cmvCur <= cmvPreMax && pvmvOverflow == nullptr) ||
+			(cmvCur > cmvPreMax && pvmvOverflow != nullptr && pvmvOverflow->size() + cmvPreMax == cmvCur);
 	}
 #endif
 
@@ -473,20 +485,33 @@ public:
 		}
 	}
 
+	void AppendMvOverflow(MV mv)
+	{
+		if (pvmvOverflow == nullptr) {
+			assert(cmvCur == cmvPreMax);
+			pvmvOverflow = new vector<uint32_t>;
+		}
+		pvmvOverflow->push_back(mv);
+		cmvCur++;
+	}
+
 	inline void AppendMv(MV mv)
 	{
 		assert(FValid()); 
 		if (cmvCur < cmvPreMax)
-			amv[cmvCur] = mv;
-		else {
-			if (pvmvOverflow == nullptr) {
-				assert(cmvCur == cmvPreMax);
-				pvmvOverflow = new vector<uint32_t>;
-			}
-			pvmvOverflow->push_back(mv);
-		}
-		cmvCur++;
+			amv[cmvCur++] = mv;
+		else
+			AppendMvOverflow(mv);
 		assert(FValid());
+	}
+
+	inline void AppendMv(SQ sqFrom, SQ sqTo)
+	{
+		assert(FValid());
+		if (cmvCur < cmvPreMax) 
+			amv[cmvCur++] = MV(sqFrom, sqTo);
+		else
+			AppendMvOverflow(MV(sqFrom, sqTo));
 	}
 
 	void Resize(int cmvNew)
@@ -642,6 +667,7 @@ inline int DsqPawnFromCpc(CPC cpc)
  *	squares in the naive loop.
  * 
  */
+
 
 enum class RMCHK {	// GenRgmv Option to optionally remove checks
 	Remove,
@@ -805,7 +831,8 @@ public:
 	}
 	
 	inline CPC CpcFromSq(SQ sq) const { return (*this)(sq).cpc(); }
-	inline float VpcFromSq(SQ sq) const;
+	
+	float VpcFromSq(SQ sq) const;
 	
 	inline bool FIsEmpty(SQ sq) const 
 	{
@@ -919,7 +946,6 @@ public:
 public:
 	BDG(void);
 	BDG(const WCHAR* szFEN);
-
 	void NewGame(void);
 
 	void GenRgmv(GMV& gmv, RMCHK rmchk) const;
@@ -961,6 +987,28 @@ public:
 	bool FMvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
 	bool FMvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, MV& mv) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
+};
+
+
+/*
+ *
+ *	HABDG class
+ * 
+ *	Game board hash
+ *
+ */
+
+class HABDG
+{
+	uint32_t rggrfRandom[8 * 8][APC::ActMax];
+public:
+	HABDG(void)
+	{
+		uniform_int_distribution<uint32_t> grfDist(0L, 0xffffffffL);
+		for (int isq = 0; isq < 8 * 8; isq++)
+			for (APC apc = APC::Null; apc < APC::ActMax; ++apc)
+				rggrfRandom[isq][apc] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+	}
 };
 
 

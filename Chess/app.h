@@ -16,7 +16,7 @@
 class CO
 {
 public:
-	CO(void) { int err;  if (err = CoInitialize(NULL)) throw err; }
+	CO(void) { int err;  if ((err = CoInitialize(NULL)) != S_OK) throw err; }
 	~CO(void) { CoUninitialize(); }
 };
 
@@ -34,14 +34,14 @@ public:
 			int err;
 			D2D1_FACTORY_OPTIONS opt;
 			memset(&opt, 0, sizeof(opt));
-			if (err = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opt,
-				reinterpret_cast<void**>(&pfactd2)))
+			if ((err = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opt,
+				reinterpret_cast<void**>(&pfactd2))) != S_OK)
 				throw err;
-			if (err = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory,
-				reinterpret_cast<void**>(&pfactwic)))
+			if ((err = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory,
+				reinterpret_cast<void**>(&pfactwic))) != S_OK)
 				throw err;
-			if (err = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(pfactdwr),
-				reinterpret_cast<IUnknown**>(&pfactdwr)))
+			if ((err = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(pfactdwr),
+				reinterpret_cast<IUnknown**>(&pfactdwr))) != S_OK)
 				throw err;
 		}
 		catch (int err) {
@@ -84,6 +84,7 @@ protected:
 	int icmd;
 public:
 	CMD(APP& app, int icmd);
+	virtual ~CMD(void) { }
 	virtual int Execute(void);
 	virtual bool FEnabled(void) const;
 	virtual bool FCustomSzMenu(void) const;
@@ -105,10 +106,9 @@ public:
 
 class CMDLIST {
 private:
-	APP& app;
 	vector<CMD*> vpcmd;
 public:
-	CMDLIST(APP& app);
+	CMDLIST(void);
 	~CMDLIST(void);
 	void Add(CMD* pcmd);
 	int Execute(int icmd);
@@ -296,3 +296,4 @@ public:
 	}
 		
 };
+

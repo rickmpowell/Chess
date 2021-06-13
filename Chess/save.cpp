@@ -197,6 +197,9 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	case APC::Rook:
 	case APC::Queen:
 		break;
+	default:
+		assert(false);
+		break;
 	}
 
 	if (apc != APC::Pawn) {

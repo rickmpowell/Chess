@@ -10,8 +10,8 @@
 #include "ga.h"
 #include "debug.h"
 
+const unsigned long dcYield = 1000L;
 
-mt19937 rgen(0);
 
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName)
@@ -26,7 +26,6 @@ PL::~PL(void)
 
 wstring SzFromEval(float eval)
 {
-
 	wchar_t sz[20], *pch = sz;
 	if (eval < 0) {
 		*pch++ = L'-';
@@ -34,12 +33,14 @@ wstring SzFromEval(float eval)
 	}
 	else
 		*pch++ = L'+';
-	eval = round(eval * 1000.0f) / 1000.0f;
+	int cchFrac = 2;
+	float tens = pow(10.0f, (float)cchFrac);
+	eval = round(eval * tens) / tens;
 	float w = floor(eval);
 	eval -= w;
 	pch = PchDecodeInt((int)w, pch);
 	*pch++ = L'.';
-	for (int ich = 0; ich < 2; ich++) {
+	for (int ich = 0; ich < cchFrac-1; ich++) {
 		eval *= 10.0f;
 		w = floor(eval);
 		eval -= w;
@@ -58,10 +59,10 @@ wstring SzFromEval(float eval)
  * 
  */
 
-PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvPrune(0), cbdgmvGen(0)
+PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvGen(0), cbdgmvPrune(0)
 {
-	rgfAICoeff[0] = 5.0f;
-	rgfAICoeff[1] = 2.0f;
+	rgfAICoeff[0] = 1.0f;
+	rgfAICoeff[1] = 5.0f;
 }
 
 
@@ -70,28 +71,6 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	rgfAICoeff[1] = 0.1f;
 	SetName(L"Mathilda");
 }
-
-float PLAI2::EvalBdg(const BDGMV& bdgmv, bool fFull)
-{
-	float eval = PLAI::EvalBdg(bdgmv, fFull);
-	if (fFull) {
-		normal_distribution<float> flDist(0.0, 0.1f);
-		eval += flDist(rgen);
-	}
-	return eval;
-}
-
-int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
-{
-	static GMV gmvOpp;
-	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 0.10e+6f;	// approximate number of moves to analyze
-	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return depthMax;
-}
-
 
 /*	PLAI::MvGetNext
  *
@@ -156,7 +135,7 @@ MV PLAI::MvGetNext(void)
 
 	/* log some stats */
 
-	ga.Log(LGT::Data, LGF::Normal, wstring(L"Evaluated"), to_wstring(cbdgmvEval) + L" positions");
+	ga.Log(LGT::Data, LGF::Normal, wstring(L"Evaluated"), to_wstring(cbdgmvEval) + L" boards");
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Pruned:"),
 			to_wstring((int)roundf(100.f*(float)cbdgmvPrune/(float)cbdgmvGen)) + L"%");
 	duration dtp = tpEnd - tpStart;
@@ -195,7 +174,7 @@ float PLAI::EvalBdgDepth(BDGMV& bdgmvEval, int depth, int depthMax, float evalAl
 	if (depth >= depthMax)
 		return EvalBdgQuiescent(bdgmvEval, depth, evalAlpha, evalBeta);
 
-	if (++cYield % 100 == 0)
+	if (++cYield % dcYield == 0)
 		ga.PumpMsg();
 
 	vector<BDGMV> vbdgmv;
@@ -211,7 +190,7 @@ float PLAI::EvalBdgDepth(BDGMV& bdgmvEval, int depth, int depthMax, float evalAl
 		float eval = -EvalBdgDepth(bdgmv, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		cmv++;
 		LGF lgf = LGF::Normal;
-		if (eval >= evalBeta) {
+		if (eval > evalBeta) {
 			cbdgmvPrune += vbdgmv.size() - cmv;
 			ga.Log(LGT::Close, lgf, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
@@ -274,7 +253,7 @@ float PLAI::EvalBdgQuiescent(BDGMV& bdgmvEval, int depth, float evalAlpha, float
 		return -eval;
 	}
 
-	if (++cYield % 100 == 0)
+	if (++cYield % dcYield == 0)
 		ga.PumpMsg();
 
 	vector<BDGMV> vbdgmv;
@@ -288,7 +267,7 @@ float PLAI::EvalBdgQuiescent(BDGMV& bdgmvEval, int depth, float evalAlpha, float
 		float eval = -EvalBdgQuiescent(bdgmv, depth + 1, -evalBeta, -evalAlpha);
 		cmv++;
 		LGF lgf = LGF::Normal;
-		if (eval >= evalBeta) {
+		if (eval > evalBeta) {
 			cbdgmvPrune += vbdgmv.size() - cmv;
 			ga.Log(LGT::Close, LGF::Normal, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
@@ -327,11 +306,7 @@ void PLAI::PreSortMoves(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 		BDGMV bdgmv(bdg, gmv[imv]);
 		bdgmv.eval = EvalBdg(bdgmv, false);
 		size_t imvFirst, imvLim;
-		for (imvFirst = 0, imvLim = vbdgmv.size(); ; ) {
-			if (imvFirst == imvLim) {
-				vbdgmv.insert(vbdgmv.begin()+imvFirst, move(bdgmv));
-				break;
-			}
+		for (imvFirst = 0, imvLim = vbdgmv.size(); imvFirst != imvLim; ) {
 			size_t imvMid = (imvFirst + imvLim) / 2;
 			assert(imvMid < imvLim);
 			if (vbdgmv[imvMid].eval < bdgmv.eval)
@@ -339,6 +314,7 @@ void PLAI::PreSortMoves(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 			else
 				imvFirst = imvMid+1;
 		}
+		vbdgmv.insert(vbdgmv.begin() + imvFirst, move(bdgmv));
 	}
 }
 
@@ -355,19 +331,17 @@ float PLAI::EvalBdg(const BDGMV& bdgmv, bool fFull)
 
 	float vpcNext = VpcFromCpc(bdgmv, bdgmv.cpcToMove);
 	float vpcSelf = VpcFromCpc(bdgmv, ~bdgmv.cpcToMove);
-	float evalMat = (float)(vpcSelf - vpcNext) / (float)(vpcSelf + vpcNext);
+	float evalMat = vpcSelf - vpcNext;
 
 	static GMV gmvSelf;
 	bdgmv.GenRgmvColor(gmvSelf, ~bdgmv.cpcToMove, false);
-	float evalMob = (float)((int)gmvSelf.cmv() - (int)bdgmv.gmvReplyAll.cmv()) /
-		(float)((int)gmvSelf.cmv() + (int)bdgmv.gmvReplyAll.cmv());
+	int evalMob = gmvSelf.cmv() - bdgmv.gmvReplyAll.cmv();
 
 	if (fFull) {
 		ga.Log(LGT::Data, LGF::Normal, L"Material", to_wstring((int)vpcSelf) + L"-" + to_wstring((int)vpcNext));
 		ga.Log(LGT::Data, LGF::Normal, L"Mobility", to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(bdgmv.gmvReplyAll.cmv()) + L"]");
 	}
-	float evalControl = 0.0f;
-	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * evalMob;
+	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * (float)evalMob;
 }
 
 
@@ -379,15 +353,18 @@ float PLAI::EvalBdg(const BDGMV& bdgmv, bool fFull)
  */
 float PLAI::VpcFromCpc(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	if (bdgmv.vmvGame.size() < 2*15)
-		return VpcOpening(bdgmv, cpcMove);
-
 	float vpcMove = bdgmv.VpcTotalFromCpc(cpcMove);
-	float vpcOpp = bdgmv.VpcTotalFromCpc(~cpcMove);
-	if (vpcMove < 1800.0f || vpcOpp < 1800.0f)
+	if (vpcMove > 7000.0f)
+		return VpcOpening(bdgmv, cpcMove);
+	if (vpcMove > 6200.0f)
+		return VpcEarlyMidGame(bdgmv, cpcMove);
+	if (vpcMove > 5400.0f)
+		return VpcMiddleGame(bdgmv, cpcMove);
+	if (vpcMove > 4600.0f)
+		return VpcLateMidGame(bdgmv, cpcMove);
+	if (vpcMove > 2200.0f)
 		return VpcEndGame(bdgmv, cpcMove);
-
-	return VpcMiddleGame(bdgmv, cpcMove);
+	return VpcLateEndGame(bdgmv, cpcMove);
 }
 
 const float mpapcsqevalOpening[APC::ActMax][64] = {
@@ -454,6 +431,11 @@ float PLAI::VpcOpening(const BDGMV& bdgmv, CPC cpcMove) const
 }
 
 
+float PLAI::VpcEarlyMidGame(const BDGMV& bdgmv, CPC cpcMove) const
+{
+	return VpcMiddleGame(bdgmv, cpcMove);
+}
+
 /*	PLAI::VpcMiddleGame
  *
  *	Returns the board evaluation for middle game stage of the game
@@ -463,6 +445,10 @@ float PLAI::VpcMiddleGame(const BDGMV& bdgmv, CPC cpcMove) const
 	return bdgmv.VpcTotalFromCpc(cpcMove);
 }
 
+float PLAI::VpcLateMidGame(const BDGMV& bdgmv, CPC cpcMove) const
+{
+	return VpcMiddleGame(bdgmv, cpcMove);
+}
 
 const float mpapcsqevalEndGame[APC::ActMax][64] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
@@ -475,11 +461,11 @@ const float mpapcsqevalEndGame[APC::ActMax][64] = {
 	 0, 0, 0, 0, 0, 0, 0, 0},
 	{9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f,	// APC::Pawn
 	 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f,
+	 2.5f, 2.5f, 2.5f, 2.5f, 2.5f, 2.5f, 2.5f, 2.5f,
 	 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f,
 	 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f,
 	 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f,
 	 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
 	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Knight
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
@@ -528,6 +514,11 @@ float PLAI::VpcEndGame(const BDGMV& bdgmv, CPC cpcMove) const
 	return VpcWeightTable(bdgmv, cpcMove, mpapcsqevalEndGame);
 }
 
+float PLAI::VpcLateEndGame(const BDGMV& bdgmv, CPC cpcMove) const
+{
+	return VpcEndGame(bdgmv, cpcMove);
+}
+
 float PLAI::VpcWeightTable(const BDGMV& bdgmv, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
 {
 	float vpc = 0.0f;
@@ -544,6 +535,38 @@ float PLAI::VpcWeightTable(const BDGMV& bdgmv, CPC cpcMove, const float mpapcsqe
 	}
 	return vpc;
 }
+
+
+/*
+ *
+ *	PLAI2
+ * 
+ */
+
+
+float PLAI2::EvalBdg(const BDGMV& bdgmv, bool fFull)
+{
+	float eval;
+	eval = PLAI::EvalBdg(bdgmv, fFull);
+	if (fFull) {
+		normal_distribution<float> flDist(0.0, 0.5f);
+		eval += flDist(rgen);
+	}
+	return eval;
+}
+
+
+int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
+{
+	static GMV gmvOpp;
+	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = 1.0e+6f;	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
+	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return depthMax;
+}
+
 
 
 /*

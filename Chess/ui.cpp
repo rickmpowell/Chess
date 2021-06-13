@@ -211,7 +211,7 @@ UI* UI::PuiNextSib(void) const
 {
 	if (puiParent == NULL)
 		return NULL;
-	for (int ipui = 0; ipui < puiParent->vpuiChild.size() - 1; ipui++)
+	for (int ipui = 0; ipui < (int)puiParent->vpuiChild.size() - 1; ipui++)
 		if (puiParent->vpuiChild[ipui] == this)
 			return puiParent->vpuiChild[ipui + 1];
 	return NULL;
@@ -659,6 +659,7 @@ void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) cons
 	DWRITE_TEXT_ALIGNMENT taSav = ptx->GetTextAlignment();
 	ptx->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	DrawSz(sz, ptx, rcf, pbr);
+	ptx->SetTextAlignment(taSav);
 }
 
 
@@ -698,17 +699,6 @@ void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 }
 
 
-/*	UI::Log
- *
- *	Logging
- */
-void UI::Log(LGT lgt, const wstring& sz) const
-{
-	if (puiParent)
-		puiParent->Log(lgt, sz);
-}
-
-
 /*
  *
  *	BTN classes
@@ -734,7 +724,7 @@ void BTN::Hilite(bool fHiliteNew)
 	Redraw();
 }
 
-void BTN::Draw(DC* pdc) 
+void BTN::Draw(const RCF* prcfUpdate) 
 {
 }
 
@@ -838,6 +828,14 @@ void BTNIMG::Draw(const RCF* prcfUpdate)
 	rcfTo.Offset(rcfBounds.PtfTopLeft());
 	rcfTo.Inflate(PTF(-2.0f, -2.0f));
 	RCF rcfFrom = RCF(PTF(0, 0), pbmp->GetSize());
+	if (rcfFrom.DxfWidth() < rcfTo.DxfWidth()) {
+		float dxyf = (rcfTo.DxfWidth() - rcfFrom.DxfWidth()) / 2.0f;
+		rcfTo.Inflate(-dxyf, -dxyf);
+	}
+	if (rcfFrom.DyfHeight() < rcfTo.DyfHeight()) {
+		float dxyf = (rcfTo.DyfHeight() - rcfFrom.DyfHeight()) / 2.0f;
+		rcfTo.Inflate(-dxyf, -dxyf);
+	}
 	D2D1_COLOR_F colorSav = pbrText->GetColor();
 	pbrText->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
 	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcfTo, rcfFrom);
@@ -872,8 +870,8 @@ SIZF BTNIMG::SizfImg(void) const
  */
 
 
-STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent), szText(sz), 
-		ptxStatic(nullptr), pbrsStatic(nullptr)
+STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent),  
+		ptxStatic(nullptr), pbrsStatic(nullptr), szText(sz)
 {
 }
 
@@ -964,9 +962,9 @@ static PTF rgptfLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
 static PTF rgptfRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
 
 
-SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), 
-		btngeomUp(this, cmdUp, rgptfRight, 3), btngeomDown(this, cmdDown, rgptfLeft, 3),
-		ptxSpin(nullptr)
+SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), ptxSpin(nullptr),
+		btngeomDown(this, cmdDown, rgptfLeft, 3), btngeomUp(this, cmdUp, rgptfRight, 3)
+		
 {
 }
 

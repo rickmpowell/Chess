@@ -241,6 +241,7 @@ public:
 	inline RCF& SetSize(const SIZF& sizf) {
 		right = left + sizf.width;
 		bottom = top + sizf.height;
+		return *this;
 	}
 
 	inline RCF& Move(const PTF& ptfTopLeft) {
@@ -365,3 +366,13 @@ inline void SafeRelease(Interface** ppi)
 }
 
 string SzFlattenWsz(const wstring& wsz);
+
+
+/*
+ *
+ *	Our random number generator. Generates 32-bit random numbers
+ *	using a Mersenne twister.
+ *
+ */
+
+extern mt19937 rgen;
