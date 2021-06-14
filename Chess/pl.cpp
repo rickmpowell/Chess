@@ -156,7 +156,7 @@ int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
 	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 1.0e+6f;	// approximate number of moves to analyze
+	const float cmvSearch = 5.0e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
@@ -190,7 +190,7 @@ float PLAI::EvalBdgDepth(BDGMV& bdgmvEval, int depth, int depthMax, float evalAl
 		float eval = -EvalBdgDepth(bdgmv, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		cmv++;
 		LGF lgf = LGF::Normal;
-		if (eval > evalBeta) {
+		if (eval >= evalBeta) {
 			cbdgmvPrune += vbdgmv.size() - cmv;
 			ga.Log(LGT::Close, lgf, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
@@ -267,7 +267,7 @@ float PLAI::EvalBdgQuiescent(BDGMV& bdgmvEval, int depth, float evalAlpha, float
 		float eval = -EvalBdgQuiescent(bdgmv, depth + 1, -evalBeta, -evalAlpha);
 		cmv++;
 		LGF lgf = LGF::Normal;
-		if (eval > evalBeta) {
+		if (eval >= evalBeta) {
 			cbdgmvPrune += vbdgmv.size() - cmv;
 			ga.Log(LGT::Close, LGF::Normal, bdgmv.SzDecodeMvPost(bdgmv.mv), SzFromEval(eval) + L" [Pruning]");
 			return eval;
@@ -331,6 +331,13 @@ float PLAI::EvalBdg(const BDGMV& bdgmv, bool fFull)
 
 	float vpcNext = VpcFromCpc(bdgmv, bdgmv.cpcToMove);
 	float vpcSelf = VpcFromCpc(bdgmv, ~bdgmv.cpcToMove);
+	if (!fFull) {
+		/* make a guess that this is a bad move if we're moving to an attacked square,
+		 * which will improve alpha-beta pruning, but not something we want to do on
+		 * real board evaluation */
+		if (bdgmv.FSqAttacked(bdgmv.cpcToMove, bdgmv.mv.sqTo()))
+			vpcSelf -= bdgmv.VpcFromSq(bdgmv.mv.sqTo());
+	}
 	float evalMat = vpcSelf - vpcNext;
 
 	static GMV gmvSelf;
@@ -353,7 +360,7 @@ float PLAI::EvalBdg(const BDGMV& bdgmv, bool fFull)
  */
 float PLAI::VpcFromCpc(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	float vpcMove = bdgmv.VpcTotalFromCpc(cpcMove);
+	float vpcMove = bdgmv.VpcTotalFromCpc(cpcMove) + bdgmv.VpcTotalFromCpc(~cpcMove);
 	if (vpcMove > 7000.0f)
 		return VpcOpening(bdgmv, cpcMove);
 	if (vpcMove > 6200.0f)
@@ -409,11 +416,11 @@ const float mpapcsqevalOpening[APC::ActMax][64] = {
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
 	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Queen
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 	 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f,
 	 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f,
-	 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+	 0.9f, 0.9f, 0.9f, 0.8f, 0.8f, 0.9f, 0.9f, 0.9f,
+	 0.9f, 0.9f, 0.9f, 0.8f, 0.8f, 0.9f, 0.9f, 0.9f,
+	 0.9f, 0.9f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f, 0.9f,
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
 	{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,	// APC::King
@@ -433,7 +440,7 @@ float PLAI::VpcOpening(const BDGMV& bdgmv, CPC cpcMove) const
 
 float PLAI::VpcEarlyMidGame(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	return VpcMiddleGame(bdgmv, cpcMove);
+	return (VpcMiddleGame(bdgmv, cpcMove) + VpcOpening(bdgmv, cpcMove)) / 2.0f;
 }
 
 /*	PLAI::VpcMiddleGame
@@ -447,7 +454,7 @@ float PLAI::VpcMiddleGame(const BDGMV& bdgmv, CPC cpcMove) const
 
 float PLAI::VpcLateMidGame(const BDGMV& bdgmv, CPC cpcMove) const
 {
-	return VpcMiddleGame(bdgmv, cpcMove);
+	return (VpcMiddleGame(bdgmv, cpcMove) + VpcEndGame(bdgmv, cpcMove)) / 2.0f;
 }
 
 const float mpapcsqevalEndGame[APC::ActMax][64] = {
@@ -560,7 +567,7 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
 	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 1.0e+6f;	// approximate number of moves to analyze
+	const float cmvSearch = 2.0e+6f;	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));

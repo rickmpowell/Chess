@@ -1,6 +1,11 @@
-  Quitting the app while AI is running crashes in PresentSwch
+  Save icon on debug command bar is clipped on left edge
+  Use UCI (universal chess interface) to communicate to UI from AI
+  Starting AI with black-to-move lets white move first
+  Move logging buttons into their own button bar in UIDB
+  Should we do move/undo instead of duplicating boards? 
+  Hash boards
+  Quitting the app while AI is running sometimes crashes in PresentSwch
   Move as many drawing objects into classes as possible
-  Use custom move array that pre-allocates 50 fixed items
   Logging gets really slow when a lot of log entries start piling up.
   Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
   We're erroneously reporting success when aborting test run
@@ -27,7 +32,6 @@
   Size icons in move list slightly larger than text
   Consider a different board evaluation for pre-sorting alpha-beta pruning
   Can we search for already evaluated board positions? Could save a lot of time in end game.
-  Should make board evaluations relative to pawn value
   If text in move list gets too small, replace icons with letters
   Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Scale buttons to size of window
@@ -95,6 +99,10 @@
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
   UIBD: Optimize redraw
+* Split up game into more parts: opening, early mid, mid, late mid, end, late end.
+* Should make board evaluations relative to pawn value
+* Convert to Intel compiler
+* Use custom move array that pre-allocates 50 fixed items
 * Implement an integer spinner control and use it for log depth
 * PgeomCreate can get the d2 factory from AppGet().
 * Tooltips don't resize for shorter text (only with FreeSerif?)

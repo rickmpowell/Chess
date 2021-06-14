@@ -347,7 +347,7 @@ void UIGO::Draw(const RCF* prcfUpdate)
 		DrawSzCenter(L"Draw Agreed", ptxText, rcfEndType);
 		break;
 	case GS::DrawDead:
-		DrawSzCenter(L"Dead Position", ptxText, rcfEndType);
+		DrawSzCenter(L"Insufficient Material", ptxText, rcfEndType);
 		break;
 	default:
 		assert(false);
