@@ -165,7 +165,8 @@ private:
 
 	void InitCmdList(void);
 
-	void Redraw(const RCF* prcf);
+	void Redraw(void);
+	void Redraw(RCF rcf);
 
 	void OnPaint(void);
 	void OnSize(UINT dx, UINT dy);

@@ -280,17 +280,19 @@ wstring APP::SzAppDataPath(void) const
 
 /*  APP::Redraw
  *
- *  Force a redraw of the application. Redraws the entire app if prcf is NULL.
+ *  Force a redraw of the application. 
  */
-void APP::Redraw(const RCF* prcf)
+void APP::Redraw(void)
 {
-    if (prcf == NULL)
-        ::InvalidateRect(hwnd, NULL, true);
-    else {
-        RECT rc;
-        ::SetRect(&rc, (int)prcf->left, (int)prcf->top, (int)prcf->right, (int)prcf->bottom);
-        ::InvalidateRect(hwnd, &rc, true);
-    }
+    ::InvalidateRect(hwnd, NULL, true);
+    ::UpdateWindow(hwnd);
+}
+
+void APP::Redraw(RCF rcf)
+{
+    RECT rc;
+    ::SetRect(&rc, (int)floor(rcf.left), (int)floor(rcf.top), (int)ceil(rcf.right), (int)ceil(rcf.bottom));
+    ::InvalidateRect(hwnd, &rc, true);
     ::UpdateWindow(hwnd);
 }
 
