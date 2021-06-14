@@ -15,7 +15,6 @@
   Don't show player names in UITI during test runs
   AI: spin off AI into its own thread
   With Arial font, player name UI elements has a very wide gap between name and color circle
-  Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
   Need a visual indication of where focus is
   Improve visuals for scrollbar
   Peg scrollbar thumb at minimum size
@@ -99,6 +98,7 @@
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
   UIBD: Optimize redraw
+* Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
 * Split up game into more parts: opening, early mid, mid, late mid, end, late end.
 * Should make board evaluations relative to pawn value
 * Convert to Intel compiler

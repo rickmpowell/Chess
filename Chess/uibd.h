@@ -83,13 +83,14 @@ public:
 	virtual void Layout(void);
 
 	virtual void Draw(RCF rcfUpdate);
-	void DrawMargins(void);
-	void DrawSquares(void);
-	void DrawLabels(void);
-	void DrawFileLabels(void);
-	void DrawRankLabels(void);
-	void DrawHover(void);
-	void DrawPieces(void);
+	void DrawMargins(RCF rcfUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
+	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
+	void DrawLabels(int rankFirst, int rankLast, int fileFirst, int fileLast);
+	void DrawFileLabels(int fileFirst, int fileLast);
+	void DrawRankLabels(int rankFirst, int rankLast);
+	bool FHoverSq(SQ sq, MV& mv);
+	void DrawHoverMv(MV mv);
+	void DrawPieceSq(SQ sq);
 	void DrawAnnotations(void);
 	void DrawSquareAnnotation(SQ sq);
 	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);

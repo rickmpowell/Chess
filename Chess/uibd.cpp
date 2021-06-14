@@ -148,7 +148,6 @@ UIBD::~UIBD(void)
 void UIBD::Layout(void)
 {
 	DiscardRsrc();
-	CreateRsrc();
 
 	rcfSquares = RcfInterior();
 
@@ -166,6 +165,7 @@ void UIBD::Layout(void)
 	rcfSquares.Inflate(-dxyf, -dxyf);
 	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
 	
+	CreateRsrc();
 	dyfLabel = SizfSz(L"8", ptxLabel).height;
 
 	/* position the rotation button */
@@ -255,16 +255,25 @@ void UIBD::RedoMv(SPMV spmv)
 void UIBD::Draw(RCF rcfUpdate)
 {
 	DC* pdc = AppGet().pdc;
+	int rankFirst = (int)floor((rcfUpdate.left - rcfSquares.left) / dxyfSquare);
+	int rankLast = (int)floor((rcfUpdate.right - rcfSquares.left) / dxyfSquare);
+	int fileFirst = (int)floor((rcfUpdate.top - rcfSquares.top) / dxyfSquare);
+	int fileLast = (int)floor((rcfUpdate.bottom - rcfSquares.top) / dxyfSquare);
+	rankFirst = min(max(rankFirst, 0), rankMax - 1);
+	rankLast = min(max(rankLast, 0), rankMax - 1);
+	fileFirst = min(max(fileFirst, 0), fileMax - 1);
+	fileLast = min(max(fileLast, 0), fileMax - 1);
+
 	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
-	DrawMargins();
-	DrawLabels();
-	DrawSquares();
-	DrawHover();
-	DrawPieces();
+	DrawMargins(rcfUpdate, rankFirst, rankLast, fileFirst, fileLast);
+	DrawSquares(rankFirst, rankLast, fileFirst, fileLast);
 	DrawHilites();
 	DrawAnnotations();
 	DrawGameState();
 	pdc->SetTransform(Matrix3x2F::Identity());
+
+	if (!sqDragInit.fIsNil())
+		DrawDragPc(rcfDragPc);
 }
 
 
@@ -273,16 +282,17 @@ void UIBD::Draw(RCF rcfUpdate)
  *	For the green and cream board, the margins are the cream color
  *	with a thin green line just outside the square grid.
  */
-void UIBD::DrawMargins(void)
+void UIBD::DrawMargins(RCF rcfUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
-	RCF rcf = RcfInterior();
-	FillRcf(rcf, pbrLight);
+	FillRcf(rcfUpdate, pbrLight);
 	if (dxyfMargin > 0.0f) {
+		RCF rcf = RcfInterior();
 		rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
-		FillRcf(rcf, pbrDark);
+		FillRcf(rcf & rcfUpdate, pbrDark);
 		rcf.Inflate(PTF(-dxyfOutline, -dxyfOutline));
-		FillRcf(rcf, pbrLight);
+		FillRcf(rcf & rcfUpdate, pbrLight);
 	}
+	DrawLabels(rankFirst, rankLast, fileFirst, fileLast);
 }
 
 
@@ -290,15 +300,22 @@ void UIBD::DrawMargins(void)
  *
  *	Draws the squares of the chessboard. Assumes the light color
  *	has already been used to fill the board area, so all we need to
- *	do is draw the dark colors on top
+ *	do is draw the dark colors on top.
+ * 
+ *	Once the background is laid down, we draw the piece and any
+ *	move hints that need to be done on the square.
  */
-void UIBD::DrawSquares(void)
+void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
-	for (int rank = 0; rank < rankMax; rank++)
-		for (int file = 0; file < fileMax; file++) {
+	for (int rank = rankFirst; rank <= rankLast; rank++)
+		for (int file = fileFirst; file <= fileLast; file++) {
 			SQ sq(rank, file);
 			if ((rank + file) % 2 == 0)
 				FillRcf(RcfFromSq(sq), pbrDark);
+			MV mv;
+			if (FHoverSq(sq, mv))
+				DrawHoverMv(mv);
+			DrawPieceSq(sq);
 		}
 }
 
@@ -308,12 +325,12 @@ void UIBD::DrawSquares(void)
  *	Draws the square labels in the margin area of the green and cream
  *	board.
  */
-void UIBD::DrawLabels(void)
+void UIBD::DrawLabels(int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
 	if (dxyfMargin <= 0.0f)
 		return;
-	DrawFileLabels();
-	DrawRankLabels();
+	DrawFileLabels(rankFirst, rankLast);
+	DrawRankLabels(fileFirst, fileLast);
 }
 
 
@@ -321,20 +338,17 @@ void UIBD::DrawLabels(void)
  *
  *	Draws the file letter labels along the bottom of the board.
  */
-void UIBD::DrawFileLabels(void)
+void UIBD::DrawFileLabels(int fileFirst, int fileLast)
 {
-	TCHAR szLabel[2];
-	szLabel[0] = L'a';
+	assert(fileLast >= fileFirst);
+	wchar_t szLabel[2];
+	szLabel[0] = L'a' + fileFirst;
 	szLabel[1] = 0;
-	RCF rcf;
-	rcf.top = rcfSquares.bottom + dxyfBorder+dxyfOutline + dxyfBorder;
-	rcf.bottom = rcf.top + dyfLabel;
-	ptxLabel->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-	for (int file = 0; file < fileMax; file++) {
-		RCF rcfT(RcfFromSq(SQ(0, file)));
-		rcf.left = rcfT.left;
-		rcf.right = rcfT.right;
-		DrawSz(wstring(szLabel), ptxLabel, rcf, pbrDark);
+	float yfTop = rcfSquares.bottom + dxyfBorder+dxyfOutline + dxyfBorder;
+	float yfBot = yfTop + dyfLabel;
+	for (int file = 0; file <= fileLast; file++) {
+		RCF rcf(RcfFromSq(SQ(0, file)));
+		DrawSzCenter(wstring(szLabel), ptxLabel, RCF(rcf.left, yfTop, rcf.right, yfBot), pbrDark);
 		szLabel[0]++;
 	}
 }
@@ -344,22 +358,21 @@ void UIBD::DrawFileLabels(void)
  *
  *	Draws the numerical rank labels along the side of the board
  */
-void UIBD::DrawRankLabels(void)
+void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 {
-	RCF rcf(dxyfMargin/2, rcfSquares.top, dxyfMargin, 0);
-	TCHAR szLabel[2];
-	szLabel[0] = cpcPointOfView == CPC::Black ? '1' : '8';
+	assert(rankLast >= rankFirst);
+	wchar_t szLabel[2];
+	szLabel[0] = L'1' + rankFirst;
 	szLabel[1] = 0;
-	for (int rank = 0; rank < rankMax; rank++) {
-		rcf.bottom = rcf.top + dxyfSquare;
+	float dxfLabel = SizfSz(L"8", ptxLabel).width;
+	float dxfRight = rcfSquares.left - (dxyfBorder + dxyfOutline + dxyfBorder) - dxfLabel/2.0f;
+	float dxfLeft = dxfRight - dxfLabel;
+	for (int rank = rankFirst; rank <= rankLast; rank++) {
+		RCF rcf = RcfFromSq(SQ(rank, 0));
 		DrawSzCenter(wstring(szLabel), ptxLabel,
-			RCF(rcf.left, (rcf.top + rcf.bottom - dyfLabel) / 2, rcf.right, rcf.bottom),
+			RCF(dxfLeft, (rcf.top + rcf.bottom - dyfLabel) / 2, dxfRight, rcf.bottom),
 			pbrDark);
-		rcf.top = rcf.bottom;
-		if (cpcPointOfView == CPC::Black)
-			szLabel[0]++;
-		else
-			szLabel[0]--;
+		szLabel[0]++;
 	}
 }
 
@@ -402,75 +415,66 @@ RCF UIBD::RcfFromSq(SQ sq) const
 }
 
 
-/*	UIBD::DrawHover
- *
- *	Draws the move hints that we display while the user is hovering
- *	the mouse over a moveable piece.
- *
- *	We draw a circle over every square you can move to.
- */
-void UIBD::DrawHover(void)
+bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
 	if (sqHover == sqNil || ga.bdg.gs != GS::Playing)
-		return;
-	pbrBlack->SetOpacity(0.33f);
-	unsigned long grfDrawn = 0L;
-
+		return false;
 	for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
-		MV mv = gmvDrag[imv];
-		if (mv.sqFrom() != sqHover)
-			continue;
-		/* don't draw percentage fill markers multiple times on the 
-		 * same square (which can only happens during pawn promotions) */
-		SQ sqTo = mv.sqTo();
-		if (grfDrawn & sqTo.fgrf())
-			continue;
-		grfDrawn |= sqTo.fgrf();
-		RCF rcf = RcfFromSq(sqTo);
-		if (!ga.bdg.FMvIsCapture(mv)) {
-			/* moving to an empty square - draw a circle */
-			ELLF ellf(PTF((rcf.right + rcf.left) / 2, (rcf.top + rcf.bottom) / 2),
-				PTF(dxyfSquare / 5, dxyfSquare / 5));
-			FillEllf(ellf, pbrBlack);
-		}
-		else {
-			/* taking an opponent piece - draw an X */
-			DC* pdc = AppGet().pdc;
-			pdc->SetTransform(
-				Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
-				Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),
-					dxyfSquare / (2.0f * dxyfCrossFull)),
-					PTF(0.0, 0.0)) *
-				Matrix3x2F::Translation(SizeF(rcfBounds.left + (rcf.right + rcf.left) / 2,
-					rcfBounds.top + (rcf.top + rcf.bottom) / 2)));
-			pdc->FillGeometry(pgeomCross, pbrBlack);
-			pdc->SetTransform(Matrix3x2F::Identity());
+		if (gmvDrag[imv].sqFrom() == sqHover && gmvDrag[imv].sqTo() == sq) {
+			mv = gmvDrag[imv];
+			return true;
 		}
 	}
+	return false;
+}
+
+
+/*	UIBD::DrawHoverMv
+ *
+ *	Draws the move hints over destination squares that we display while the 
+ *	user is hovering the mouse over a moveable piece.
+ *
+ *	We draw a circle over every square you can move to, and an X over captures.
+ */
+void UIBD::DrawHoverMv(MV mv)
+{
+	pbrBlack->SetOpacity(0.33f);
+
+	RCF rcf = RcfFromSq(mv.sqTo());
+	if (!ga.bdg.FMvIsCapture(mv)) {
+		/* moving to an empty square - draw a circle */
+		ELLF ellf(PTF((rcf.right + rcf.left) / 2, (rcf.top + rcf.bottom) / 2),
+			PTF(dxyfSquare / 5, dxyfSquare / 5));
+		FillEllf(ellf, pbrBlack);
+	}
+	else {
+		/* taking an opponent piece - draw an X */
+		DC* pdc = AppGet().pdc;
+		pdc->SetTransform(
+			Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
+			Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),
+				dxyfSquare / (2.0f * dxyfCrossFull)),
+				PTF(0.0, 0.0)) *
+			Matrix3x2F::Translation(SizeF(rcfBounds.left + (rcf.right + rcf.left) / 2,
+				rcfBounds.top + (rcf.top + rcf.bottom) / 2)));
+		pdc->FillGeometry(pgeomCross, pbrBlack);
+		pdc->SetTransform(Matrix3x2F::Identity());
+	}
+
 	pbrBlack->SetOpacity(1.0f);
 }
 
 
-/*	UIBD::DrawPieces
+/*	UIBD::DrawPieceSq
  *
- *	Draws pieces on the board. Includes support for the tracking display
- *	while we're dragging pieces.
- *
- *	Direct2D is fast enough for us to do full screen redraws on just about
- *	any user-initiated change, so there isn't much point in optimizing.
+ *	Draws pieces on the board. 
  */
-void UIBD::DrawPieces(void)
+void UIBD::DrawPieceSq(SQ sq)
 {
-	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
-		for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-			SQ sq = ga.bdg.SqFromTpc(tpc, cpc);
-			if (sq.fIsNil())
-				continue;
-			float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-			DrawPc(RcfFromSq(sq), opacity, ga.bdg(sq));
-		}
-	if (!sqDragInit.fIsNil())
-		DrawDragPc(rcfDragPc);
+	if (sq.fIsNil())
+		return;
+	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
+	DrawPc(RcfFromSq(sq), opacity, ga.bdg(sq));
 }
 
 
@@ -489,7 +493,6 @@ void UIBD::DrawDragPc(const RCF& rcf)
 
 void UIBD::FillRcfBack(RCF rcf) const
 {
-	/* TODO: should probably draw the entire board (squares and labels) here */
 	FillRcf(rcf, pbrLight);
 }
 
