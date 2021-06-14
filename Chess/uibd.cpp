@@ -252,7 +252,7 @@ void UIBD::RedoMv(SPMV spmv)
  *	in response to user input, which simplifies drawing quite a bit. We
  *	just handle all dragging drawing in here.
  */
-void UIBD::Draw(const RCF* prcfUpdate)
+void UIBD::Draw(RCF rcfUpdate)
 {
 	DC* pdc = AppGet().pdc;
 	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));

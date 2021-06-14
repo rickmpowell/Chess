@@ -88,11 +88,9 @@ void GA::SetPl(CPC cpc, PL* ppl)
  *	Draws the full game on the screen. For now, we have plenty of speed
  *	to do full redraws, so there's no attempt to optimize this.
  */
-void GA::Draw(const RCF* prcfUpdate)
+void GA::Draw(RCF rcfUpdate)
 {
-	if (!prcfUpdate)
-		prcfUpdate = &rcfBounds;
-	FillRcf(*prcfUpdate, pbrDesktop);
+	FillRcf(rcfUpdate, pbrDesktop);
 }
 
 

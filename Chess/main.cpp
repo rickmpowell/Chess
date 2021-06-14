@@ -341,7 +341,7 @@ void APP::OnPaint(void)
         pga->BeginDraw();
         RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top,
             (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
-        pga->Update(&rcf);
+        pga->Update(rcf);
         pga->EndDraw();
     }
 

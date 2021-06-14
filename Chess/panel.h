@@ -35,7 +35,7 @@ protected:
 public:
 	UIP(GA* pga);
 	virtual ~UIP(void);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	void SetShadow(void);
 	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop);
 };
@@ -69,8 +69,8 @@ public:
 	void AdjustRcfView(RCF rcf);
 	virtual float DyfLine(void) const;
 		
-	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual void DrawContent(const RCF& rcf);
+	virtual void Draw(RCF rcfUpdate);
+	virtual void DrawContent(RCF rcf);
 
 	virtual void MouseHover(PTF ptf, MHT mht);
 	virtual void ScrollWheel(PTF ptf, int dwheel);
@@ -96,7 +96,7 @@ protected:
 
 public:
 	UITIP(UI* puiParent);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 	void AttachOwner(UI* pui);
 };
 

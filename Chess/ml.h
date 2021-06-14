@@ -38,7 +38,7 @@ public:
 public:
 	UICLOCK(UIML* puiml, CPC cpc);
 	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	void DrawColon(RCF& rcf, unsigned frac) const;
 	bool FTimeOutWarning(DWORD tm) const;
 };
@@ -66,7 +66,7 @@ public:
 
 public:
 	UIGC(UIML* puiml);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	virtual void Layout(void);
 	virtual SIZF SizfLayoutPreferred(void);
 };
@@ -94,7 +94,7 @@ public:
 public:
 	UIGO(UIML* puiml, bool fVisible);
 	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF prcfUpdate);
 };
 
 
@@ -159,8 +159,8 @@ public:
 	virtual SIZF SizfLayoutPreferred(void);
 	void ShowClocks(bool fTimed);
 	
-	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual void DrawContent(const RCF& rcfCont);
+	virtual void Draw(RCF rcfUpdate);
+	virtual void DrawContent(RCF rcfCont);
 
 	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
 	void DrawMoveNumber(RCF rcf, int imv);

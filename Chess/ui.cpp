@@ -535,21 +535,19 @@ PTF UI::PtfLocalFromGlobal(PTF ptf) const
  *	Updates the UI element and all child elements. prcfUpdate is in
  *	global coordinates.
  */
-void UI::Update(const RCF* prcfUpdate)
+void UI::Update(RCF rcfUpdate)
 {
 	if (!fVisible)
 		return;
-	if (prcfUpdate == NULL)
-		prcfUpdate = &rcfBounds;
-	RCF rcf = *prcfUpdate & rcfBounds;
+	RCF rcf = rcfUpdate & rcfBounds;
 	if (!rcf)
 		return;
 	AppGet().pdc->PushAxisAlignedClip(rcf, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	RCF rcfDraw = RcfLocalFromGlobal(rcf);
-	Draw(&rcfDraw);
+	Draw(rcfDraw);
 	AppGet().pdc->PopAxisAlignedClip();
 	for (UI* pui : vpuiChild)
-		pui->Update(&rcf);
+		pui->Update(rcf);
 }
 
 
@@ -562,12 +560,12 @@ void UI::Redraw(void)
 	if (!fVisible)
 		return;
 	BeginDraw();
-	Update(&rcfBounds);
+	Update(rcfBounds);
 	EndDraw();
 }
 
 
-void UI::Draw(const RCF* prcfDraw)
+void UI::Draw(RCF rcfDraw)
 {
 }
 
@@ -724,7 +722,7 @@ void BTN::Hilite(bool fHiliteNew)
 	Redraw();
 }
 
-void BTN::Draw(const RCF* prcfUpdate) 
+void BTN::Draw(RCF rcfUpdate) 
 {
 }
 
@@ -794,7 +792,7 @@ BTNCH::BTNCH(UI* puiParent, int cmd, WCHAR ch) : BTN(puiParent, cmd), ch(ch)
 }
 
 
-void BTNCH::Draw(const RCF* prcfUpdate)
+void BTNCH::Draw(RCF rcfUpdate)
 {
 	CreateRsrc();
 	WCHAR sz[2];
@@ -818,7 +816,7 @@ BTNIMG::~BTNIMG(void)
 	DiscardRsrc();
 }
 
-void BTNIMG::Draw(const RCF* prcfUpdate)
+void BTNIMG::Draw(RCF rcfUpdate)
 {
 	CreateRsrc();
 	DC* pdc = AppGet().pdc;
@@ -904,7 +902,7 @@ wstring STATIC::SzText(void) const
 	return szText;
 }
 
-void STATIC::Draw(const RCF* prcfUpdate)
+void STATIC::Draw(RCF rcfUpdate)
 {
 	CreateRsrc();
 	RCF rcfChar(PTF(0, 0), SizfSz(SzText(), ptxStatic));
@@ -934,7 +932,7 @@ BTNGEOM::~BTNGEOM(void)
 	SafeRelease(&pgeom);
 }
 
-void BTNGEOM::Draw(const RCF* prcfUpdate)
+void BTNGEOM::Draw(RCF rcfUpdate)
 {
 	float dxyfScale = RcfInterior().DxfWidth() / 2.0f;
 	FillRcf(RcfInterior(), pbrBack);
@@ -998,7 +996,7 @@ void SPIN::Layout(void)
 }
 
 
-void SPIN::Draw(const RCF* prcfUpdate)
+void SPIN::Draw(RCF rcfUpdate)
 {
 	wstring szValue = SzValue();
 	SIZF sizf = SizfSz(szValue, ptxSpin);

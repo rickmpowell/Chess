@@ -52,9 +52,9 @@ SIZF UIDBBTNS::SizfLayoutPreferred(void)
 	return SIZF(-1.0f, 32.0f);
 }
 
-void UIDBBTNS::Draw(const RCF* prcfUpdate)
+void UIDBBTNS::Draw(RCF rcfUpdate)
 {
-	FillRcf(*prcfUpdate, pbrBack);
+	FillRcf(rcfUpdate, pbrBack);
 }
 
 
@@ -122,14 +122,14 @@ void UIDB::Layout(void)
 }
 
 
-void UIDB::Draw(const RCF* prcfUpdate)
+void UIDB::Draw(RCF rcfUpdate)
 {
-	FillRcf(*prcfUpdate, pbrGridLine);
-	UIPS::Draw(prcfUpdate); // draws content area of the scrollable area
+	FillRcf(rcfUpdate, pbrGridLine);
+	UIPS::Draw(rcfUpdate); // draws content area of the scrollable area
 }
 
 
-void UIDB::DrawContent(const RCF& rcfCont)
+void UIDB::DrawContent(RCF rcfCont)
 {
 	RCF rcf = RcfContent();
 	rcf.left += 4.0f;

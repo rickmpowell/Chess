@@ -33,7 +33,7 @@ class UIDBBTNS : public UI
 	BTNIMG btnLogOnOff;
 public:
 	UIDBBTNS(UIDB* puiParent);
-	void Draw(const RCF* prcfUpdate = NULL);
+	void Draw(RCF rcfUpdate);
 	virtual void Layout(void);
 	virtual SIZF SizfLayoutPreferred(void);
 };
@@ -92,8 +92,8 @@ public:
 	virtual void Layout(void);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
-	virtual void DrawContent(const RCF& rcfCont);
+	virtual void Draw(RCF rcfUpdate);
+	virtual void DrawContent(RCF rcfCont);
 	virtual float DyfLine(void) const;
 
 	void AddLog(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData);

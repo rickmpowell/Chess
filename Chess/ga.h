@@ -71,7 +71,7 @@ public:
 	GA(APP& app);
 	~GA(void);
 
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	virtual void PresentSwch(void) const;
 	virtual APP& AppGet(void) const;
 	virtual void BeginDraw(void);

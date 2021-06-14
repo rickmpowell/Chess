@@ -163,10 +163,10 @@ public:
 	PTF PtfGlobalFromLocal(PTF ptf) const;
 	PTF PtfLocalFromGlobal(PTF ptf) const;
 
-	void Update(const RCF* prcfUpdate = NULL);
+	void Update(RCF rcfUpdate);
 	void Redraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
-	virtual void Draw(const RCF* prcfDraw=NULL);
+	virtual void Draw(RCF rcfDraw);
 	virtual void PresentSwch(void) const;
 	virtual APP& AppGet(void) const;
 	virtual void BeginDraw(void);
@@ -205,7 +205,7 @@ public:
 
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 
 	virtual void StartLeftDrag(PTF ptf);
 	virtual void EndLeftDrag(PTF ptf);
@@ -228,7 +228,7 @@ public:
 
 public:
 	BTNCH(UI* puiParent, int cmd, WCHAR ch);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 };
 
 
@@ -239,7 +239,7 @@ class BTNIMG : public BTN
 public:
 	BTNIMG(UI* puiParent, int cmd, int idb);
 	~BTNIMG(void);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	SIZF SizfImg(void) const;
@@ -260,7 +260,7 @@ class BTNGEOM : public BTN
 public:
 	BTNGEOM(UI* puiParent, int cmd, PTF rgptf[], int cptf);
 	~BTNGEOM();
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 };
 
 
@@ -285,7 +285,7 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 
 	virtual wstring SzText(void) const;
 	void SetText(const wstring& sz);
@@ -322,6 +322,6 @@ public:
 	virtual void DiscardRsrc(void);
 	virtual void Layout(void);
 
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 	virtual wstring SzValue(void) const = 0;
 };

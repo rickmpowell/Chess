@@ -36,7 +36,7 @@ void UIICON::DiscardRsrc(void)
 }
 
 
-void UIICON::Draw(const RCF* prcfUpdate)
+void UIICON::Draw(RCF rcfUpdate)
 {
 	D2D1_SIZE_F sizf = Sizf();
 	DrawBmp(RcfInterior(), pbmp, RCF(0, 0, sizf.width, sizf.height), 1.0f);
@@ -63,7 +63,7 @@ UIGT::UIGT(UI* puiParent) : UI(puiParent)
 }
 
 
-void UIGT::Draw(const RCF* prcfUpdate)
+void UIGT::Draw(RCF rcfUpdate)
 {
 	DrawSz(L"Casual", ptxList, RcfInterior());
 }
@@ -81,7 +81,7 @@ UILOCALE::UILOCALE(UI* puiParent) : UI(puiParent)
 {
 }
 
-void UILOCALE::Draw(const RCF* prcfUpdate)
+void UILOCALE::Draw(RCF rcfUpdate)
 {
 	DrawSz(L"Local Machine", ptxList, RcfInterior());
 }
@@ -99,7 +99,7 @@ UIGTM::UIGTM(UI* puiParent) : UI(puiParent)
 {
 }
 
-void UIGTM::Draw(const RCF* prcfUpdate)
+void UIGTM::Draw(RCF rcfUpdate)
 {
 	DrawSz(L"Rapid \x2022 10+0", ptxList, RcfInterior());
 }
@@ -172,9 +172,9 @@ void UITI::Layout(void)
 }
 
 
-void UITI::Draw(const RCF* prcfUpdate)
+void UITI::Draw(RCF rcfUpdate)
 {
-	FillRcf(*prcfUpdate, pbrBack);
+	FillRcf(rcfUpdate, pbrBack);
 
 	RCF rcf = RcfInterior();
 	rcf.top = rcf.bottom - 36.0f;

@@ -82,7 +82,7 @@ public:
 
 	virtual void Layout(void);
 
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	void DrawMargins(void);
 	void DrawSquares(void);
 	void DrawLabels(void);
@@ -135,5 +135,5 @@ public:
 	UIPCP(GA* pga);
 	~UIPCP(void);
 
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 };

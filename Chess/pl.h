@@ -158,7 +158,7 @@ private:
 public:
 	UIPL(UI* puiParent, CPC cpc);
 	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	void SetPl(PL* pplNew);
 };
 

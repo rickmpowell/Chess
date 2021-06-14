@@ -32,9 +32,9 @@ SIZF UIPL::SizfLayoutPreferred(void)
 }
 
 
-void UIPL::Draw(const RCF* prcfUpdate)
+void UIPL::Draw(RCF rcfUpdate)
 {
-	FillRcf(*prcfUpdate, pbrBack);
+	FillRcf(rcfUpdate, pbrBack);
 
 	RCF rcf = RcfInterior();
 	rcf.left += 12.0f;
@@ -112,9 +112,9 @@ UIGC::UIGC(UIML* puiml) : UI(puiml)
 }
 
 
-void UIGC::Draw(const RCF* prcfUpdate)
+void UIGC::Draw(RCF rcfUpdate)
 {
-	FillRcf(*prcfUpdate, pbrBack);
+	FillRcf(rcfUpdate, pbrBack);
 }
 
 
@@ -157,7 +157,7 @@ SIZF UICLOCK::SizfLayoutPreferred(void)
 }
 
 
-void UICLOCK::Draw(const RCF* prcfUpdate)
+void UICLOCK::Draw(RCF rcfUpdate)
 {
 	DWORD tm = ga.mpcpctmClock[cpc];
 
@@ -292,7 +292,7 @@ SIZF UIGO::SizfLayoutPreferred(void)
 }
 
 
-void UIGO::Draw(const RCF* prcfUpdate)
+void UIGO::Draw(RCF rcfUpdate)
 {
 	float dyfLine = SizfSz(L"A", ptxText).height + 3.0f;
 
@@ -528,10 +528,10 @@ float UIML::DyfLine(void) const
  *	Draws the move list screen panel, which includes a top header box and
  *	a scrollable move list
  */
-void UIML::Draw(const RCF* prcfUpdate)
+void UIML::Draw(RCF rcfUpdate)
 {
-	FillRcf(*prcfUpdate, pbrGridLine);
-	UIPS::Draw(prcfUpdate); // draws content area of the scrollable area
+	FillRcf(rcfUpdate, pbrGridLine);
+	UIPS::Draw(rcfUpdate); // draws content area of the scrollable area
 }
 
 
@@ -560,7 +560,7 @@ RCF UIML::RcfFromImv(int imv) const
  *	Draws the content of the scrollable part of the move list screen
  *	panel.
  */
-void UIML::DrawContent(const RCF& rcfCont)
+void UIML::DrawContent(RCF rcfCont)
 {
 	BDG bdgT(bdgInit);
 	float yfCont = RcfContent().top;

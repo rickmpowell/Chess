@@ -21,7 +21,7 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 	SIZF Sizf(void) const;
 };
 
@@ -30,7 +30,7 @@ class UILOCALE : public UI
 {
 public:
 	UILOCALE(UI* puiParent);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 };
 
 
@@ -38,7 +38,7 @@ class UIGT : public UI
 {
 public:
 	UIGT(UI* puiParent);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 };
 
 
@@ -46,7 +46,7 @@ class UIGTM : public UI
 {
 public:
 	UIGTM(UI* puiParent);
-	virtual void Draw(const RCF* prcfUpdate);
+	virtual void Draw(RCF rcfUpdate);
 };
 
 
@@ -81,6 +81,6 @@ public:
 	UITI(GA* pga);
 	void SetPl(CPC cpc, PL* ppl);
 	virtual void Layout(void);
-	virtual void Draw(const RCF* prcfUpdate = NULL);
+	virtual void Draw(RCF rcfUpdate);
 	void SetText(const wstring& sz);
 };

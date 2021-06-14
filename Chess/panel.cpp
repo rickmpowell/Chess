@@ -101,7 +101,7 @@ UIP::~UIP(void)
  *	Base class for drawing a screen panel. The default implementation
  *	just fills the panel with the background brush.
  */
-void UIP::Draw(const RCF* prcfUpdate)
+void UIP::Draw(RCF rcfUpdate)
 {
 	FillRcf(RcfInterior(), pbrBack);
 }
@@ -249,7 +249,7 @@ bool UIPS::FMakeVis(float yf, float dyf)
 }
 
 
-void UIPS::Draw(const RCF* prcfUpdate)
+void UIPS::Draw(RCF rcfUpdate)
 {
 	/* just redraw the entire content area clipped to the view */
 	APP& app = AppGet();
@@ -261,7 +261,7 @@ void UIPS::Draw(const RCF* prcfUpdate)
 }
 
 
-void UIPS::DrawContent(const RCF& rcf)
+void UIPS::DrawContent(RCF rcf)
 {
 }
 
@@ -318,7 +318,7 @@ UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(NULL)
 {
 }
 
-void UITIP::Draw(const RCF* prcfUpdate)
+void UITIP::Draw(RCF rcfUpdate)
 {
 	RCF rcf = RcfInterior();
 	FillRcf(rcf, pbrText);
