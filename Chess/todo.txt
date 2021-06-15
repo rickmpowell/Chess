@@ -1,4 +1,3 @@
-  Save icon on debug command bar is clipped on left edge
   Use UCI (universal chess interface) to communicate to UI from AI
   Starting AI with black-to-move lets white move first
   Move logging buttons into their own button bar in UIDB
@@ -11,7 +10,6 @@
   We're erroneously reporting success when aborting test run
   Clicking test button in UIDB should interrupt a running test
   File logging and UIDB logging need to have their own depth
-  Buttons in UIDB don't display sometimes on first boot
   Don't show player names in UITI during test runs
   AI: spin off AI into its own thread
   With Arial font, player name UI elements has a very wide gap between name and color circle
@@ -35,7 +33,6 @@
   Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Scale buttons to size of window
   UIPL: scale long player names in UITI and UIML
-  UITI: Put name of our program with the logo
   UITI Layout using font metrics
   Test with alternate fonts
   UIBD: Dragging pieces outside board clips the dragged piece
@@ -97,7 +94,10 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
-  UIBD: Optimize redraw
+* UITI: Put name of our program with the logo
+* Buttons in UIDB don't display sometimes on first boot
+* Save icon on debug command bar is clipped on left edge
+* UIBD: Optimize redraw
 * Label text size on UIBD is changing - maybe when alt-tabbing to another app and coming back?
 * Split up game into more parts: opening, early mid, mid, late mid, end, late end.
 * Should make board evaluations relative to pawn value

@@ -135,7 +135,7 @@ void UITI::DiscardRsrcClass(void)
 }
 
 
-UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbLogo), uilocale(this), uigt(this), uigtm(this),
+UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbSqChessLogo), uilocale(this), uigt(this), uigtm(this),
 		uiplWhite(this, CPC::White), uiplBlack(this, CPC::Black), szText(L"")
 {
 }

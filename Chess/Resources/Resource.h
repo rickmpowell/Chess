@@ -51,3 +51,4 @@
 #define idbWhiteFlag 4
 #define idbHandShake 5
 #define idbFloppyDisk 6
+#define idbSqChessLogo 7
