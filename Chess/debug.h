@@ -11,31 +11,52 @@
 #include "bd.h"
 
 
-class UIDBBTNS;
+/*
+ *
+ *	UIBBDB
+ * 
+ *	Button bar for debug panel
+ * 
+ */
+
+class UIDB;
+class UIBBDB;
+class UIBBDBLOG;
 
 class SPINDEPTH : public SPIN
 {
 	GA& ga;
 public:
-	SPINDEPTH(UIDBBTNS* puiParent);
+	SPINDEPTH(UIBBDBLOG* puiParent);
 	virtual wstring SzValue(void) const;
 };
 
-
-class UIDB;
-
-class UIDBBTNS : public UI
+class UIBBDB : public UIBB
 {
-	friend class SPINDEPTH;
-	UIDB& uidb;
 	BTNCH btnTest;
-	SPINDEPTH spindepth;
-	BTNIMG btnLogOnOff;
 public:
-	UIDBBTNS(UIDB* puiParent);
-	void Draw(RCF rcfUpdate);
+	UIBBDB(UIDB* puiParent);
 	virtual void Layout(void);
-	virtual SIZF SizfLayoutPreferred(void);
+};
+
+
+/*
+ *
+ *	UIBBDBLOG
+ * 
+ *	Log controls in the debug panel
+ *
+ */
+
+class UIBBDBLOG : public UIBB
+{
+	UIDB& uidb;
+	friend class SPINDEPTH;
+	BTNIMG btnLogOnOff;
+	SPINDEPTH spindepth;
+public:
+	UIBBDBLOG(UIDB* puiParent);
+	virtual void Layout(void);
 };
 
 
@@ -77,7 +98,8 @@ class UIDB : public UIPS
 {
 	friend class SPINDEPTH;
 
-	UIDBBTNS uidbbtns;
+	UIBBDB uibbdb;
+	UIBBDBLOG uibbdblog;
 	vector<LGENTRY> vlgentry;
 	TX* ptxLog;
 	TX* ptxLogBold;

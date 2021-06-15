@@ -100,3 +100,21 @@ public:
 	void AttachOwner(UI* pui);
 };
 
+
+/*
+ *
+ *	UIBB
+ * 
+ *	Button bar
+ * 
+ */
+
+class UIBB : public UI
+{
+public:
+	UIBB(UIPS* puiParent);
+	virtual void Layout(void);
+	virtual SIZF SizfLayoutPreferred(void);
+	virtual void Draw(RCF rcfUpdate);
+	void AdjustBtnRcfBounds(UI* pui, RCF& rcf, float dxfWidth);
+};

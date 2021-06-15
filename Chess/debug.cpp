@@ -14,7 +14,7 @@ bool fValidate = true;
 
 
 
-SPINDEPTH::SPINDEPTH(UIDBBTNS* puiParent) : SPIN(puiParent, cmdLogDepthUp, cmdLogDepthDown), 
+SPINDEPTH::SPINDEPTH(UIBBDBLOG* puiParent) : SPIN(puiParent, cmdLogDepthUp, cmdLogDepthDown), 
 		ga(puiParent->uidb.ga)
 {
 }
@@ -34,31 +34,53 @@ wstring SPINDEPTH::SzValue(void) const
  */
 
 
-UIDBBTNS::UIDBBTNS(UIDB* puiParent) : UI(puiParent), uidb(*puiParent),
-	btnTest(this, cmdTest, L'\x2713'), spindepth(this),
-	btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk)
+UIBBDB::UIBBDB(UIDB* puiParent) : UIBB(puiParent), 
+	btnTest(this, cmdTest, L'\x2713')
 {
 }
 
-void UIDBBTNS::Layout(void)
+void UIBBDB::Layout(void)
 {
-	btnTest.SetBounds(RCF(12.0f, 2.0f, 40.0f, 30.0f));
-	spindepth.SetBounds(RCF(52.0f, 2.0f, 92.0f, 30.0f));
-	btnLogOnOff.SetBounds(RCF(104.0f, 2.0f, 132.0f, 30.0f));
-}
-
-SIZF UIDBBTNS::SizfLayoutPreferred(void)
-{
-	return SIZF(-1.0f, 32.0f);
-}
-
-void UIDBBTNS::Draw(RCF rcfUpdate)
-{
-	FillRcf(rcfUpdate, pbrBack);
+	RCF rcf = RcfInterior().Inflate(-2.0f, -2.0f);
+	rcf.right = rcf.left;
+	AdjustBtnRcfBounds(&btnTest, rcf, rcf.DyfHeight());
 }
 
 
-UIDB::UIDB(GA* pga) : UIPS(pga), uidbbtns(this),ptxLog(nullptr), ptxLogBold(nullptr), dyfLine(12.0f),
+/*
+ *
+ *	UIBBDBLOG
+ * 
+ *	Button bar for log controls
+ * 
+ */
+
+UIBBDBLOG::UIBBDBLOG(UIDB* puiParent) : UIBB(puiParent), uidb(*puiParent),
+		btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk), spindepth(this)
+{
+}
+
+
+void UIBBDBLOG::Layout(void)
+{
+	RCF rcf = RcfInterior().Inflate(-2.0f, -2.0f);
+	rcf.right = rcf.left;
+	AdjustBtnRcfBounds(&spindepth, rcf, 40.0f);
+	AdjustBtnRcfBounds(&btnLogOnOff, rcf, rcf.DyfHeight());
+}
+
+
+/*
+ *
+ *	UIDB
+ * 
+ *	Debug panel
+ * 
+ */
+
+
+UIDB::UIDB(GA* pga) : UIPS(pga), uibbdb(this), uibbdblog(this), 
+		ptxLog(nullptr), ptxLogBold(nullptr), dyfLine(12.0f),
 		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
 }
@@ -93,6 +115,7 @@ void UIDB::DiscardRsrc(void)
 {
 	SafeRelease(&ptxLog);
 	SafeRelease(&ptxLogBold);
+	UI::DiscardRsrc();
 }
 
 
@@ -106,13 +129,13 @@ void UIDB::Layout(void)
 	RCF rcf = RcfInterior();
 	RCF rcfView = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(&uidbbtns, rcf, true);
+	AdjustUIRcfBounds(&uibbdb, rcf, true);
 	rcfView.top = rcf.bottom;
 
 	/* positon bottom items */
 	rcf = RcfInterior();
 	rcf.top = rcf.bottom;
-	// no items yet
+	AdjustUIRcfBounds(&uibbdblog, rcf, false);
 	rcfView.bottom = rcf.top;
 
 	/* move list content is whatever is left */

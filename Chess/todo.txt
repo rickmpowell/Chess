@@ -1,6 +1,5 @@
   Use UCI (universal chess interface) to communicate to UI from AI
   Starting AI with black-to-move lets white move first
-  Move logging buttons into their own button bar in UIDB
   Should we do move/undo instead of duplicating boards? 
   Hash boards
   Quitting the app while AI is running sometimes crashes in PresentSwch
@@ -94,6 +93,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* Move logging buttons into their own button bar in UIDB
 * UITI: Put name of our program with the logo
 * Buttons in UIDB don't display sometimes on first boot
 * Save icon on debug command bar is clipped on left edge

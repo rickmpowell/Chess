@@ -307,6 +307,43 @@ void UIPS::ScrollWheel(PTF ptf, int dwheel)
 
 /*
  *
+ *	UIBB
+ * 
+ *	Button bar in a scrolling panel
+ * 
+ */
+
+UIBB::UIBB(UIPS* puiParent) : UI(puiParent)
+{
+}
+
+void UIBB::Layout(void)
+{
+	/* TODO: do a standard layout of some kind */
+}
+
+SIZF UIBB::SizfLayoutPreferred(void)
+{
+	return SIZF(-1.0f, 32.0f);
+}
+
+void UIBB::Draw(RCF rcfUpdate)
+{
+	FillRcf(rcfUpdate, pbrBack);
+}
+
+void UIBB::AdjustBtnRcfBounds(UI* pui, RCF& rcf, float dxfWidth)
+{
+	if (pui == NULL || !pui->FVisible())
+		return;
+	rcf.left = rcf.right + 10.0f;
+	rcf.right = rcf.left + dxfWidth;
+	pui->SetBounds(rcf);
+}
+
+
+/*
+ *
  *	UITIP class implementation
  *
  *	Tooltip user interface item
@@ -317,6 +354,7 @@ void UIPS::ScrollWheel(PTF ptf, int dwheel)
 UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(NULL)
 {
 }
+
 
 void UITIP::Draw(RCF rcfUpdate)
 {
@@ -330,6 +368,7 @@ void UITIP::Draw(RCF rcfUpdate)
 			DrawSz(sz, ptxTip, rcf.Inflate(PTF(-5.0f, -3.0f)), pbrText);
 	}
 }
+
 
 void UITIP::AttachOwner(UI* pui)
 {
