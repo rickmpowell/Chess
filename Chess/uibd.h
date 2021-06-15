@@ -85,7 +85,6 @@ public:
 	virtual void Draw(RCF rcfUpdate);
 	void DrawMargins(RCF rcfUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
-	void DrawLabels(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
 	bool FHoverSq(SQ sq, MV& mv);

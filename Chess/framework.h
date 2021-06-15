@@ -376,3 +376,9 @@ string SzFlattenWsz(const wstring& wsz);
  */
 
 extern mt19937 rgen;
+
+
+template<class T> inline T peg(const T& t, const T& tFirst, const T& tLast)
+{
+	return min(max(t, tFirst), tLast);
+}

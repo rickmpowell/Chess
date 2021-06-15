@@ -164,9 +164,11 @@ public:
 	PTF PtfLocalFromGlobal(PTF ptf) const;
 
 	void Update(RCF rcfUpdate);
+	void Redraw(RCF rcfUpdate);
 	void Redraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
 	virtual void Draw(RCF rcfDraw);
+
 	virtual void PresentSwch(void) const;
 	virtual APP& AppGet(void) const;
 	virtual void BeginDraw(void);

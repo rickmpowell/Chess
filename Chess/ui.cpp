@@ -532,7 +532,7 @@ PTF UI::PtfLocalFromGlobal(PTF ptf) const
 
 /*	UI::Update
  *
- *	Updates the UI element and all child elements. prcfUpdate is in
+ *	Updates the UI element and all child elements. rcfUpdate is in
  *	global coordinates.
  */
 void UI::Update(RCF rcfUpdate)
@@ -557,10 +557,20 @@ void UI::Update(RCF rcfUpdate)
  */
 void UI::Redraw(void)
 {
+	Redraw(RcfInterior());
+}
+
+
+/*	UI::Redraw
+ *
+ *	Redraws the area of the UI element. rcfUpdate is in local coordinates.
+ */
+void UI::Redraw(RCF rcfUpdate)
+{
 	if (!fVisible)
 		return;
 	BeginDraw();
-	Update(rcfBounds);
+	Update(RcfGlobalFromLocal(rcfUpdate));
 	EndDraw();
 }
 

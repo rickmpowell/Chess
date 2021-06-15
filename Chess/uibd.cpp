@@ -152,7 +152,7 @@ void UIBD::Layout(void)
 	rcfSquares = RcfInterior();
 
 	dxyfMargin = rcfBounds.DyfHeight() / 16.0f;
-	if (dxyfMargin > 15.0f)
+	if (dxyfMargin > 18.0f)
 		dxyfBorder = dxyfMargin / 30.0f;
 	else
 		dxyfMargin = dxyfBorder = 0;
@@ -255,14 +255,21 @@ void UIBD::RedoMv(SPMV spmv)
 void UIBD::Draw(RCF rcfUpdate)
 {
 	DC* pdc = AppGet().pdc;
-	int rankFirst = (int)floor((rcfUpdate.left - rcfSquares.left) / dxyfSquare);
-	int rankLast = (int)floor((rcfUpdate.right - rcfSquares.left) / dxyfSquare);
-	int fileFirst = (int)floor((rcfUpdate.top - rcfSquares.top) / dxyfSquare);
-	int fileLast = (int)floor((rcfUpdate.bottom - rcfSquares.top) / dxyfSquare);
-	rankFirst = min(max(rankFirst, 0), rankMax - 1);
-	rankLast = min(max(rankLast, 0), rankMax - 1);
-	fileFirst = min(max(fileFirst, 0), fileMax - 1);
-	fileLast = min(max(fileLast, 0), fileMax - 1);
+	int rankFirst = (int)floor((rcfUpdate.top - rcfSquares.top) / dxyfSquare);
+	float dyf = (rcfUpdate.bottom - rcfSquares.top) / dxyfSquare;
+	int rankLast = (int)floor(dyf) - (int)(floor(dyf) == dyf);
+	int fileFirst = (int)floor((rcfUpdate.left - rcfSquares.left) / dxyfSquare);
+	float dxf = (rcfUpdate.right - rcfSquares.left) / dxyfSquare;
+	int fileLast = (int)floor(dxf) - (int)(floor(dxf) == dxf);
+	rankFirst = peg(rankFirst, 0, rankMax - 1);
+	rankLast = peg(rankLast, 0, rankMax - 1);
+	fileFirst = peg(fileFirst, 0, fileMax - 1);
+	fileLast = peg(fileLast, 0, fileMax - 1);
+	if (cpcPointOfView == CPC::White) {
+		rankFirst = rankMax - rankFirst - 1;
+		rankLast = rankMax - rankLast - 1;
+		swap(rankFirst, rankLast);
+	}
 
 	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
 	DrawMargins(rcfUpdate, rankFirst, rankLast, fileFirst, fileLast);
@@ -280,19 +287,21 @@ void UIBD::Draw(RCF rcfUpdate)
 /*	UIBD::DrawMargins
  *
  *	For the green and cream board, the margins are the cream color
- *	with a thin green line just outside the square grid.
+ *	with a thin green line just outside the square grid. Also draws
+ *	the file and rank labels along the edge of the board.
  */
 void UIBD::DrawMargins(RCF rcfUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
 	FillRcf(rcfUpdate, pbrLight);
-	if (dxyfMargin > 0.0f) {
-		RCF rcf = RcfInterior();
-		rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
-		FillRcf(rcf & rcfUpdate, pbrDark);
-		rcf.Inflate(PTF(-dxyfOutline, -dxyfOutline));
-		FillRcf(rcf & rcfUpdate, pbrLight);
-	}
-	DrawLabels(rankFirst, rankLast, fileFirst, fileLast);
+	if (dxyfMargin <= 0.0f)
+		return;
+	RCF rcf = RcfInterior();
+	rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
+	FillRcf(rcf & rcfUpdate, pbrDark);
+	rcf.Inflate(PTF(-dxyfOutline, -dxyfOutline));
+	FillRcf(rcf & rcfUpdate, pbrLight);
+	DrawFileLabels(rankFirst, rankLast);
+	DrawRankLabels(fileFirst, fileLast);
 }
 
 
@@ -317,20 +326,6 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 				DrawHoverMv(mv);
 			DrawPieceSq(sq);
 		}
-}
-
-
-/*	UIBD::DrawLabels
- *
- *	Draws the square labels in the margin area of the green and cream
- *	board.
- */
-void UIBD::DrawLabels(int rankFirst, int rankLast, int fileFirst, int fileLast)
-{
-	if (dxyfMargin <= 0.0f)
-		return;
-	DrawFileLabels(rankFirst, rankLast);
-	DrawRankLabels(fileFirst, fileLast);
 }
 
 
@@ -415,6 +410,11 @@ RCF UIBD::RcfFromSq(SQ sq) const
 }
 
 
+/*	UIBD::FHoverSq
+ *
+ *	Returns true if the square is the destination of move that originates in the
+ *	tracking square sqHover. Returns the move itself in mv. 
+ */
 bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
 	if (sqHover == sqNil || ga.bdg.gs != GS::Playing)
@@ -547,12 +547,14 @@ void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe)
 	RCF rcfFrom = RcfFromSq(sqDragInit);
 	ptfDragInit = rcfFrom.PtfTopLeft();
 	RCF rcfTo = RcfFromSq(sqTo);
+	RCF rcfFrame = rcfFrom;
 	for (float framef = 0.0f; framef < framefMax; framef++) {
 		rcfDragPc = rcfFrom;
 		float framefRem = framefMax - framef;
 		rcfDragPc.Offset((rcfFrom.left*framefRem + rcfTo.left*framef) / framefMax - rcfFrom.left,
 			(rcfFrom.top*framefRem + rcfTo.top*framef) / framefMax - rcfFrom.top);
-		Redraw();
+		Redraw(rcfFrame|rcfDragPc);
+		rcfFrame = rcfDragPc;
 	}
 	sqDragInit = sqNil;
 }
