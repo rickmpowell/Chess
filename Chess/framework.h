@@ -382,3 +382,93 @@ template<class T> inline T peg(const T& t, const T& tFirst, const T& tLast)
 {
 	return min(max(t, tFirst), tLast);
 }
+
+
+/*
+ *
+ *	Some classes for saving/restoring various Direct2D state using constructors
+ *	and destructors so we get automatic restore of state on exit. State will be
+ *	restored even in the event of exceptions. We're only adding these as we need 
+ *	them, so the list isn't complete.
+ * 
+ */
+
+/*	DC antialias mode */
+
+struct AADC {
+	DC* pdc;
+	D2D1_ANTIALIAS_MODE dcaaSav;
+	AADC(DC* pdc, D2D1_ANTIALIAS_MODE aa) : pdc(pdc), dcaaSav(pdc->GetAntialiasMode()) {
+		Set(aa);
+	}
+	void Set(D2D1_ANTIALIAS_MODE aa) {
+		pdc->SetAntialiasMode(aa);
+	}
+	~AADC(void) { 
+		Set(dcaaSav); 
+	}
+};
+
+/*	solid brush color */
+
+struct COLORBRS {
+	BRS* pbrs;
+	D2D1_COLOR_F colorSav;
+	COLORBRS(BRS* pbrs, D2D1_COLOR_F color) : pbrs(pbrs), colorSav(pbrs->GetColor()) {
+		Set(color); 
+	}
+	void Set(D2D1_COLOR_F color) { 
+		pbrs->SetColor(color);
+	}
+	~COLORBRS(void) { 
+		Set(colorSav); 
+	}
+};
+
+/*	text format text alignment */
+
+struct TATX {
+	TX* ptx;
+	DWRITE_TEXT_ALIGNMENT taSav;
+	TATX(TX* ptx, DWRITE_TEXT_ALIGNMENT ta) : ptx(ptx), taSav(ptx->GetTextAlignment()) {
+		Set(ta);
+	}
+	void Set(DWRITE_TEXT_ALIGNMENT ta) {
+		ptx->SetTextAlignment(ta);
+	}
+	~TATX(void) {
+		ptx->SetTextAlignment(taSav);
+	}
+};
+
+/*	Brush opacity */
+
+struct OPACITYBR {
+	BR* pbr;
+	float opacitySav;
+	OPACITYBR(BR* pbr, float opacity) : pbr(pbr), opacitySav(pbr->GetOpacity()) {
+		Set(opacity);
+	}
+	void Set(float opacity) {
+		pbr->SetOpacity(opacity);
+	}
+	~OPACITYBR(void) {
+		Set(opacitySav);
+	}
+};
+
+/*	DC transform - note that this assigns back to the identity, it does
+    not save and restore */
+
+struct TRANSDC {
+	DC* pdc;
+	TRANSDC(DC* pdc, const D2D1_MATRIX_3X2_F& trans) : pdc(pdc) {
+		Set(trans);
+	}
+	void Set(const D2D1_MATRIX_3X2_F& trans) {
+		pdc->SetTransform(trans);
+	}
+	~TRANSDC(void) {
+		Set(Matrix3x2F::Identity());
+	}
+};

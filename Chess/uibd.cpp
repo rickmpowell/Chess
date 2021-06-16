@@ -271,13 +271,14 @@ void UIBD::Draw(RCF rcfUpdate)
 		swap(rankFirst, rankLast);
 	}
 
-	pdc->SetTransform(Matrix3x2F::Rotation(angle, Point2F((rcfBounds.left + rcfBounds.right) / 2, (rcfBounds.top + rcfBounds.bottom) / 2)));
+	{
+	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcfBounds.PtfCenter()));
 	DrawMargins(rcfUpdate, rankFirst, rankLast, fileFirst, fileLast);
 	DrawSquares(rankFirst, rankLast, fileFirst, fileLast);
 	DrawHilites();
 	DrawAnnotations();
 	DrawGameState();
-	pdc->SetTransform(Matrix3x2F::Identity());
+	}
 
 	if (!sqDragInit.fIsNil())
 		DrawDragPc(rcfDragPc);
@@ -438,7 +439,7 @@ bool UIBD::FHoverSq(SQ sq, MV& mv)
  */
 void UIBD::DrawHoverMv(MV mv)
 {
-	pbrBlack->SetOpacity(0.33f);
+	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
 	RCF rcf = RcfFromSq(mv.sqTo());
 	if (!ga.bdg.FMvIsCapture(mv)) {
@@ -450,7 +451,7 @@ void UIBD::DrawHoverMv(MV mv)
 	else {
 		/* taking an opponent piece - draw an X */
 		DC* pdc = AppGet().pdc;
-		pdc->SetTransform(
+		TRANSDC transdcSav(pdc, 	
 			Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
 			Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),
 				dxyfSquare / (2.0f * dxyfCrossFull)),
@@ -458,10 +459,7 @@ void UIBD::DrawHoverMv(MV mv)
 			Matrix3x2F::Translation(SizeF(rcfBounds.left + (rcf.right + rcf.left) / 2,
 				rcfBounds.top + (rcf.top + rcf.bottom) / 2)));
 		pdc->FillGeometry(pgeomCross, pbrBlack);
-		pdc->SetTransform(Matrix3x2F::Identity());
 	}
-
-	pbrBlack->SetOpacity(1.0f);
 }
 
 
@@ -567,14 +565,13 @@ void UIBD::DrawHilites(void)
 
 void UIBD::DrawAnnotations(void)
 {
-	pbrAnnotation->SetOpacity(0.5f);
+	OPACITYBR(pbrAnnotation, 0.5f);
 	for (ANO& ano : vano) {
 		if (ano.sqTo.fIsNil())
 			DrawSquareAnnotation(ano.sqFrom);
 		else
 			DrawArrowAnnotation(ano.sqFrom, ano.sqTo);
 	}
-	pbrAnnotation->SetOpacity(1.0f);
 }
 
 
@@ -593,12 +590,14 @@ void UIBD::FlipBoard(CPC cpcNew)
 	/* assumes all children are visible */
 	for (UI* pui : vpuiChild)
 		pui->Show(false);
+
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
 		ga.Redraw();
 	angle = 0.0f;
 	cpcPointOfView = cpcNew;
 	ga.Layout();
 	ga.Redraw();
+
 	for (UI* pui : vpuiChild)
 		pui->Show(true);
 }

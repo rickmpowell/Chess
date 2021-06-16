@@ -31,7 +31,6 @@
   If text in move list gets too small, replace icons with letters
   Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Scale buttons to size of window
-  UIPL: scale long player names in UITI and UIML
   UITI Layout using font metrics
   Test with alternate fonts
   UIBD: Dragging pieces outside board clips the dragged piece
@@ -86,13 +85,14 @@
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
   Keyboard entry of moves
-  UIBD: When dragging pieces, highlight square when hovering over a legal move
   UI for picking clock/timing rules 
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* UIPL: scale long player names in UITI and UIML
+* UIBD: When dragging pieces, highlight square when hovering over a legal move
 * Move logging buttons into their own button bar in UIDB
 * UITI: Put name of our program with the logo
 * Buttons in UIDB don't display sometimes on first boot

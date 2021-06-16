@@ -179,10 +179,12 @@ public:
 	void FillRcf(RCF rcf, BR* pbr) const;
 	virtual void FillRcfBack(RCF rcf) const;
 	void FillEllf(ELLF ellf, BR* pbr) const;
+	void DrawEllf(ELLF ellf, BR* pbr) const;
 	void DrawSz(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf=1.0e6f, float dyf=1.0e6f) const;
+	void DrawSzFit(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
 	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
 };
 

@@ -115,7 +115,6 @@ void GA::BeginDraw(void)
 {
 	app.CreateRsrc();
 	app.pdc->BeginDraw();
-	app.pdc->SetTransform(Matrix3x2F::Identity());
 }
 
 

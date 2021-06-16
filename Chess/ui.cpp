@@ -650,6 +650,18 @@ void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 }
 
 
+/*	UI::DrawEllf
+ *
+ *	Helper function for drawing an ellipse with a brush. Rectangle is in
+ *	local UI coordinates
+ */
+void UI::DrawEllf(ELLF ellf, ID2D1Brush* pbr) const
+{
+	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
+	AppGet().pdc->DrawEllipse(&ellf, pbr);
+}
+
+
 /*	UI::DrawSz
  *
  *	Helper function for writing text on the screen panel. Rectangle is in
@@ -664,10 +676,8 @@ void UI::DrawSz(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
 
 void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
 {
-	DWRITE_TEXT_ALIGNMENT taSav = ptx->GetTextAlignment();
-	ptx->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	TATX tatxSav(ptx, DWRITE_TEXT_ALIGNMENT_CENTER);
 	DrawSz(sz, ptx, rcf, pbr);
-	ptx->SetTextAlignment(taSav);
 }
 
 
@@ -695,6 +705,67 @@ void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr) const
 }
 
 
+
+
+/*	UI::DrawSzFit
+ *
+ *	Draws the text in the rectangle, sizing the font smaller to make it
+ *	fit. Uses ptx as the font style to base dependent fonts on. Text
+ *	is baseline aligned, which should be constant no matter what size
+ *	font we eventually end up using.
+ */
+void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) const
+{
+	if (pbrText == nullptr)
+		pbrText = UI::pbrText;
+
+	/* if the text fits, just blast it out */
+
+	IDWriteTextLayout* play = nullptr;
+	AppGet().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcfFit.DyfHeight(), &play);
+	DWRITE_TEXT_METRICS tm;
+	play->GetMetrics(&tm);
+	if (tm.width <= rcfFit.DxfWidth() && tm.height <= rcfFit.DyfHeight()) {
+		DrawSz(sz, ptxBase, rcfFit, pbrText);
+		SafeRelease(&play);
+		return;
+	}
+
+	RCF rcf = RcfGlobalFromLocal(rcfFit);
+
+	/* figure out where our baseline is */
+
+	DWRITE_LINE_METRICS lm;
+	uint32_t clm;
+	play->GetLineMetrics(&lm, 1, &clm);
+	float yfBaseline = rcf.top + lm.baseline;
+
+	/* and loop using progressively smaller fonts until the text fits */
+
+	IDWriteTextFormat* ptx = nullptr;
+	for (float dyfFont = ptxBase->GetFontSize() - 1.0f; dyfFont > 6.0f; dyfFont--) {
+		SafeRelease(&play);
+		SafeRelease(&ptx);
+		AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+			dyfFont, L"", &ptx);
+		AppGet().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
+			ptx, rcf.DxfWidth(), rcf.DyfHeight(), &play);
+		DWRITE_TEXT_METRICS tm;
+		play->GetMetrics(&tm);
+		if (tm.width <= rcfFit.DxfWidth() && tm.height <= rcfFit.DyfHeight())
+			break;
+	}
+
+	play->GetLineMetrics(&lm, 1, &clm);
+	AppGet().pdc->DrawTextLayout(Point2F(rcf.left, yfBaseline - lm.baseline), play,
+			pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
+
+	SafeRelease(&play);
+	SafeRelease(&ptx);
+}
+
+
 /*	UI::DrawBmp
  *
  *	Helper function for drawing part of a bitmap on the screen panel. Destination
@@ -703,7 +774,7 @@ void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr) const
 void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 {
 	AppGet().pdc->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
-		opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcfFrom);
+			opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcfFrom);
 }
 
 
@@ -811,26 +882,29 @@ void BTNCH::Draw(RCF rcfUpdate)
 	RCF rcfChar(PTF(0, 0), SizfSz(sz, ptxButton));
 	RCF rcfTo = RcfInterior();
 	FillRcfBack(rcfTo);
-	pbrsButton->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
+	COLORBRS colorbrsSav(pbrsButton, ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
 	rcfChar += rcfTo.PtfCenter();
 	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
 	DrawSzCenter(sz, ptxButton, rcfTo, pbrsButton);
 }
 
+
 BTNIMG::BTNIMG(UI* puiParent, int cmd, int idb) : BTN(puiParent, cmd), idb(idb), pbmp(NULL)
 {
 }
+
 
 BTNIMG::~BTNIMG(void)
 {
 	DiscardRsrc();
 }
 
+
 void BTNIMG::Draw(RCF rcfUpdate)
 {
 	CreateRsrc();
 	DC* pdc = AppGet().pdc;
-	pdc->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_ALIASED);
 	RCF rcfTo = RcfInterior();
 	FillRcfBack(rcfTo);
 	rcfTo.Offset(rcfBounds.PtfTopLeft());
@@ -844,10 +918,8 @@ void BTNIMG::Draw(RCF rcfUpdate)
 		float dxyf = (rcfTo.DyfHeight() - rcfFrom.DyfHeight()) / 2.0f;
 		rcfTo.Inflate(-dxyf, -dxyf);
 	}
-	D2D1_COLOR_F colorSav = pbrText->GetColor();
-	pbrText->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
+	COLORBRS colorbrsSav(pbrText, ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
 	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcfTo, rcfFrom);
-	pbrText->SetColor(colorSav);
 }
 
 
@@ -858,10 +930,12 @@ void BTNIMG::CreateRsrc(void)
 	pbmp = PbmpFromPngRes(idb);
 }
 
+
 void BTNIMG::DiscardRsrc(void)
 {
 	SafeRelease(&pbmp);
 }
+
 
 SIZF BTNIMG::SizfImg(void) const
 {
@@ -883,6 +957,7 @@ STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent),
 {
 }
 
+
 void STATIC::CreateRsrc(void)
 {
 	if (ptxStatic)
@@ -902,15 +977,18 @@ void STATIC::DiscardRsrc(void)
 	SafeRelease(&pbrsStatic);
 }
 
+
 void STATIC::SetText(const wstring& sz)
 {
 	szText = sz;
 }
 
+
 wstring STATIC::SzText(void) const
 {
 	return szText;
 }
+
 
 void STATIC::Draw(RCF rcfUpdate)
 {
@@ -922,6 +1000,7 @@ void STATIC::Draw(RCF rcfUpdate)
 	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
 	DrawSzCenter(SzText(), ptxStatic, rcfTo, pbrsStatic);
 }
+
 
 /*
  *
@@ -947,17 +1026,13 @@ void BTNGEOM::Draw(RCF rcfUpdate)
 	float dxyfScale = RcfInterior().DxfWidth() / 2.0f;
 	FillRcf(RcfInterior(), pbrBack);
 	DC* pdc = AppGet().pdc;
-	pdc->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	PTF ptfCenter = rcfBounds.PtfCenter();
-	pdc->SetTransform(
+	TRANSDC transdc(pdc,
 		Matrix3x2F::Scale(SizeF(dxyfScale, dxyfScale), PTF(0, 0)) *
 		Matrix3x2F::Translation(SizeF(ptfCenter.x, ptfCenter.y)));
-	D2D1_COLOR_F colorSav = pbrText->GetColor();
-	pbrText->SetColor(ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
+	COLORBRS colorbrsSav(pbrText, ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
 	pdc->FillGeometry(pgeom, pbrText);
-	pbrText->SetColor(colorSav);
-	pdc->SetTransform(Matrix3x2F::Identity());
-
 }
 
 

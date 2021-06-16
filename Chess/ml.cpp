@@ -20,39 +20,68 @@
  */
 
 
+/*	UIPL::UIPL
+ *
+ *	Player name UI element constructor
+ */
 UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), ppl(nullptr), cpc(cpc)
 {
 }
 
 
+/*	UIPL::SizfLayoutPreferred
+ *
+ *	Returns the preferred height of the player name UI element for fitting
+ *	in a vertically oriented screen panel.
+ */
 SIZF UIPL::SizfLayoutPreferred(void)
 {
 	SIZF sizf = SizfSz(L"A", ptxText);
-	return SIZF(-1.0f, sizf.height + 8);
+	return SIZF(-1.0f, sizf.height + 12.0f);
 }
 
 
+/*	UIPL::Draw
+ *
+ *	Draws the player UI element, which is just a circle to indicate the
+ *	color the player is playing, and their name.
+ */
 void UIPL::Draw(RCF rcfUpdate)
 {
 	FillRcf(rcfUpdate, pbrBack);
 
+	/* draw the circle indicating which side */
+
 	RCF rcf = RcfInterior();
 	rcf.left += 12.0f;
+	float dxyfRadius = rcf.DyfHeight() / 2.0f - 7.0f;
+	ELLF ellf(PTF(rcf.left+dxyfRadius, rcf.PtfCenter().y), PTF(dxyfRadius, dxyfRadius));
+	
+	AADC aadcSav(AppGet().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
-	ptxText->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
-	wstring szColor = cpc == CPC::White ? L"\x26aa" : L"\x26ab";
-	SIZF sizf = SizfSz(szColor, ptxText, rcf.DxfWidth(), rcf.DyfHeight());
-	rcf.bottom = rcf.top + sizf.height;
-	rcf.Offset(PTF(0, RcfInterior().YCenter() - rcf.YCenter()));
-	DrawSz(szColor, ptxText, rcf);
+	if (cpc == CPC::White)
+		DrawEllf(ellf, pbrText);
+	else
+		FillEllf(ellf, pbrText);
+
+	/* and the player name */
+
 	if (ppl) {
 		wstring szName = ppl->SzName();
-		rcf.left += sizf.width + sizf.width;
-		DrawSz(szName, ptxText, rcf);
+		rcf.left += 3 * dxyfRadius;
+		SIZF sizf = SizfSz(ppl->SzName(), ptxText);
+		rcf.Inflate(0, -(rcf.DyfHeight() - sizf.height) / 2);
+		DrawSzFit(szName, ptxText, rcf);
 	}
 }
 
 
+/*	UIPL::SetPl
+ *
+ *	Sets the player name to be displayed in the UI element. Does not take
+ *	ownership of the PL. Owner is responsible for clearing the PL if the
+ *	player changes.
+ */
 void UIPL::SetPl(PL* pplNew)
 {
 	ppl = pplNew;
@@ -164,11 +193,8 @@ void UICLOCK::Draw(RCF rcfUpdate)
 	/* fill background */
 
 	RCF rcf = RcfInterior();
-	D2D1_COLOR_F coSav = pbrAltBack->GetColor();
-	if (FTimeOutWarning(tm))
-		pbrAltBack->SetColor(ColorF(1.0f, 0.9f, 0.9f));
+	COLORBRS colorbrsSav(pbrAltBack, FTimeOutWarning(tm) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
 	FillRcf(rcf, pbrAltBack);
-	pbrAltBack->SetColor(coSav);
 
 	/* break down time into parts */
 
@@ -197,7 +223,7 @@ void UICLOCK::Draw(RCF rcfUpdate)
 
 	/* print out the text piece at a time */
 
-	ptxClock->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	TATX tatxSav(ptxClock, DWRITE_TEXT_ALIGNMENT_LEADING);
 	SIZF sizfDigit = SizfSz(L"0", ptxClock, 1000.0f, 1000.0f);
 	SIZF sizfPunc = SizfSz(L":", ptxClock, 1000.0f, 1000.0f);
 	rcf.bottom = rcf.top + sizfDigit.height;
@@ -240,11 +266,9 @@ bool UICLOCK::FTimeOutWarning(DWORD tm) const
 
 void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 {
-	if (frac < 500 && cpc == ga.bdg.cpcToMove)
-		pbrText->SetOpacity(0.33f);
-	SIZF sizfPunc = SizfSz(L":", ptxClock, rcf.DxfWidth(), rcf.DyfHeight());
+	OPACITYBR(pbrText, (frac < 500 && cpc == ga.bdg.cpcToMove) ? 0.33f : 1.0f);
+	SIZF sizfPunc = SizfSz(L":", ptxClock);
 	DrawSz(L":", ptxClock, rcf, pbrText);
-	pbrText->SetOpacity(1.0f);
 	rcf.left += sizfPunc.width;
 }
 
@@ -612,7 +636,7 @@ void UIML::DrawSel(int imv)
 void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
 {
 	wstring sz = bdg.SzMoveAndDecode(mv);
-	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING);
+	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_LEADING);
 	rcf.top += dyfCellMarg;
 	rcf.bottom -= dyfCellMarg;
 	rcf.left += dxfCellMarg;
@@ -634,7 +658,7 @@ void UIML::DrawMoveNumber(RCF rcf, int imv)
 	WCHAR* pch = PchDecodeInt(imv, sz);
 	*pch++ = L'.';
 	*pch = 0;
-	ptxList->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING);
+	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);
 	DrawSz(wstring(sz), ptxList, rcf);
 }
 
