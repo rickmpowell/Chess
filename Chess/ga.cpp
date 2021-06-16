@@ -48,11 +48,12 @@ void GA::DiscardRsrcClass(void)
 }
 
 
-GA::GA(APP& app) : UI(NULL), app(app), 
+GA::GA(APP& app) : UI(nullptr), app(app), 
 	uiti(this), uibd(this), uiml(this), uidb(this), uitip(this), 
-	puiCapt(NULL), puiFocus(NULL), puiHover(NULL), spmv(SPMV::Animate), prule(NULL)
+	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr), spmv(SPMV::Animate), fInPlay(false), prule(nullptr)
+
 {
-	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = NULL;
+	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = nullptr;
 	tmLast = 0L;
 	mpcpctmClock[CPC::White] = mpcpctmClock[CPC::Black] = 0;
 }
@@ -399,14 +400,22 @@ void GA::GenRgmv(GMV& gmv)
 
 int GA::Play(void)
 {
+	struct INPLAY
+	{
+		GA& ga;
+		INPLAY(GA& ga) : ga(ga) { ga.fInPlay = true; }
+		~INPLAY() { ga.fInPlay = false; }
+	} inplay(*this);
+
 	InitLog(2);
 	Log(LGT::Open, LGF::Normal, L"Game", L"");
 	try {
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
-			MV mv = ppl->MvGetNext();
+			SPMV spmvT = spmv;
+			MV mv = ppl->MvGetNext(spmvT);
 			assert(!mv.fIsNil());
-			MakeMv(mv, spmv);
+			MakeMv(mv, spmvT);
 			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
 		} while (bdg.gs == GS::Playing);
 	}

@@ -52,6 +52,9 @@ protected:
 	GA& ga;
 	wstring szName;
 
+	MV mvNext;
+	SPMV spmvNext;
+
 public:
 	PL(GA& ga, wstring szName);
 	virtual ~PL(void);
@@ -66,7 +69,9 @@ public:
 		szName = szNew;
 	}
 
-	virtual MV MvGetNext(void) = 0;
+	virtual MV MvGetNext(SPMV& spmv) = 0;
+
+	void ReceiveMv(MV mv, SPMV spmv);
 };
 
 
@@ -91,7 +96,7 @@ protected:
 
 public:
 	PLAI(GA& ga);
-	virtual MV MvGetNext(void);
+	virtual MV MvGetNext(SPMV& spmv);
 
 protected:
 	float EvalBdgDepth(BDGMV& bdgmv, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
@@ -135,7 +140,7 @@ class PLHUMAN : public PL
 {
 public:
 	PLHUMAN(GA& ga, wstring szName);
-	virtual MV MvGetNext(void);
+	virtual MV MvGetNext(SPMV& spmv);
 };
 
 

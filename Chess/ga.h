@@ -59,6 +59,7 @@ public:
 	UI* puiFocus;
 	UI* puiHover;
 	SPMV spmv;
+	bool fInPlay;
 
 public:
 	BDG bdg;	// board

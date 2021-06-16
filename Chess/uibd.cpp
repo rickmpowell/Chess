@@ -691,7 +691,7 @@ void UIBD::EndLeftDrag(PTF ptf)
 		for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
 			MV mv = gmvDrag[imv];
 			if (mv.sqFrom() == sqFrom && mv.sqTo() == sqTo) {
-				ga.MakeMv(mv, SPMV::Fast);
+				ga.PplFromCpc(ga.bdg.cpcToMove)->ReceiveMv(mv, SPMV::Fast);
 				goto Done;
 			}
 		}

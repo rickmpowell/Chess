@@ -1,17 +1,22 @@
+  I don't think move list is baseline aligned - problem with descenders? 
+  I don't think move list is baseline aligned - problem with descenders? 
+  Can we make things like Undo work while AI is thinking?
+  Dragged human player moves shouldn't animate into place
+  Take advantage of DrawSzFit in move list, etc. to  make move list narrower
+  AI: Communicate best continuation back
   Use UCI (universal chess interface) to communicate to UI from AI
-  Starting AI with black-to-move lets white move first
-  Should we do move/undo instead of duplicating boards? 
+  AI: Starting AI with black-to-move lets white move first
+  AI: Should we do move/undo instead of duplicating boards? 
   Hash boards
-  Quitting the app while AI is running sometimes crashes in PresentSwch
-  Move as many drawing objects into classes as possible
-  Logging gets really slow when a lot of log entries start piling up.
-  Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
-  We're erroneously reporting success when aborting test run
-  Clicking test button in UIDB should interrupt a running test
-  File logging and UIDB logging need to have their own depth
-  Don't show player names in UITI during test runs
+  AI: Quitting the app while AI is running sometimes crashes in PresentSwch
+  UI: Move as many drawing objects into classes as possible
+  Log: Logging gets really slow when a lot of log entries start piling up.
+  Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
+  Test: We're erroneously reporting success when aborting test run
+  Test: Clicking test button in UIDB should interrupt a running test
+  Log: File logging and UIDB logging need to have their own depth
+  Test: Don't show player names in UITI during test runs
   AI: spin off AI into its own thread
-  With Arial font, player name UI elements has a very wide gap between name and color circle
   Need a visual indication of where focus is
   Improve visuals for scrollbar
   Peg scrollbar thumb at minimum size
@@ -56,7 +61,6 @@
   ML: Undo doesn't take down game over panel
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
-  Feature: Allow human to play the AI
   AI: build and keep lookahead tree 
   AI: Add debug ability to pause and step through eval tree
   UIBD: Hilite last made move on board
@@ -65,13 +69,11 @@
   Test: PGN games should feed moves through a PL
   ML: Merge UIGO and UIGC
   ML: Checkmates should have a # instead of a +
-  PL: Add message pump to the PL for getting player moves
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
   ML: Add a UI for offering draws
   UI for specifying player names
   UI for choosing computer player
-  UIBD: There is a weird hit test on the left edge of the board that is hitting squares three squares over
   UITI: Hook up UI elements to real information from the GA
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
@@ -91,6 +93,10 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* UIBD: There is a weird hit test on the left edge of the board that is hitting squares three squares over
+* Feature: Allow human to play the AI
+* PL: Add message pump to the PL for getting player moves
+* With Arial font, player name UI elements has a very wide gap between name and color circle
 * UIPL: scale long player names in UITI and UIML
 * UIBD: When dragging pieces, highlight square when hovering over a legal move
 * Move logging buttons into their own button bar in UIDB

@@ -14,7 +14,8 @@ const unsigned long dcYield = 1000L;
 
 
 
-PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName)
+PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), 
+		mvNext(MV()), spmvNext(SPMV::Animate)
 {
 }
 
@@ -54,6 +55,25 @@ wstring SzFromEval(float eval)
 	return wstring(sz);
 }
 
+
+/*	PL::ReceiveMv
+ *
+ *	receives a move from an external source, like the human UI, or by playing from
+ *	a file.
+ */
+void PL::ReceiveMv(MV mv, SPMV spmv)
+{
+	if (!ga.fInPlay) {
+		ga.MakeMv(mv, spmv);
+		ga.Play();
+	}
+	else {
+		mvNext = mv;
+		spmvNext = spmv;
+	}
+}
+
+
 /*
  *
  * 
@@ -84,8 +104,9 @@ const float evalInf = 10000.0f;
 const float evalMate = 9999.0f;
 const float evalMateMin = evalMate - 80.0f;
 
-MV PLAI::MvGetNext(void)
+MV PLAI::MvGetNext(SPMV& spmv)
 {
+	spmv = SPMV::Animate;
 	time_point tpStart = high_resolution_clock::now();
 
 	cbdgmvEval = 0L;
@@ -590,11 +611,13 @@ PLHUMAN::PLHUMAN(GA& ga, wstring szName) : PL(ga, szName)
 }
 
 
-MV PLHUMAN::MvGetNext(void)
+MV PLHUMAN::MvGetNext(SPMV& spmv)
 {
-	MV mv;
+	mvNext = MV();
 	do {
 		ga.PumpMsg();
-	} while (mv.fIsNil());
+	} while (mvNext.fIsNil());
+	MV mv = mvNext;
+	mvNext = MV();
 	return mv;
 }
