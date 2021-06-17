@@ -1020,7 +1020,8 @@ bool BDG::FMvIsQuiescent(MV mv) const
 
 /*	BDG::MakeMv
  *
- *	Make a move on the board, and keeps the move list for the game.
+ *	Make a move on the board, and keeps the move list for the game. Caller is
+ *	responsible for testing for game over.
  */
 void BDG::MakeMv(MV mv)
 {
@@ -1067,6 +1068,11 @@ wstring BDG::SzMoveAndDecode(MV mv)
 }
 
 
+/*	BDG::UndoMv
+ *
+ *	Undoes the last made move at imvCur. Caller is responsible for resetting game
+ *	over state
+ */
 void BDG::UndoMv(void)
 {
 	if (imvCur < 0)
@@ -1086,7 +1092,8 @@ void BDG::UndoMv(void)
 
 /*	BDG::RedoMv
  *
- *	Redoes that last undone move, which will be at imvCur+1.
+ *	Redoes that last undone move, which will be at imvCur+1. Caller is responsible
+ *	for testing for game-over state afterwards.
  */
 void BDG::RedoMv(void)
 {

@@ -34,6 +34,8 @@ protected:
 public:
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
 
 public:
 	UICLOCK(UIML* puiml, CPC cpc);
@@ -50,51 +52,29 @@ public:
  *	UIGC
  * 
  *	Game control UI element. Button control list for doing a few random
- *	game operations, like resign, offer draw, new game, etc.
+ *	game operations, like resign, offer draw, new game, etc. At end of
+ *	game, it expand and shows results of the game.
  * 
  */
 
 
 class UIGC : public UI
 {
-private:
-	BTNIMG* pbtnResign;
-	BTNIMG* pbtnOfferDraw;
+protected:
+	GA& ga;
+	BTNIMG btnResign;
+	BTNIMG btnOfferDraw;
+	TX* ptxScore;
+
 public:
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
 
 public:
 	UIGC(UIML* puiml);
 	virtual void Draw(RCF rcfUpdate);
 	virtual void Layout(void);
 	virtual SIZF SizfLayoutPreferred(void);
-};
-
-
-/*
- *
- *	UIGO
- *
- *	Game over sub-panel in the move list.
- *
- */
-
-
-class UIGO : public UI
-{
-protected:
-	GA& ga;
-	static TX* ptxScore;
-
-public:
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
-
-public:
-	UIGO(UIML* puiml, bool fVisible);
-	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(RCF prcfUpdate);
 };
 
 
@@ -123,10 +103,10 @@ class UIML : public UIPS
 {
 	friend class UIPL;
 	friend class UICLOCK;
-	friend class UIGO;
+	friend class UIGC;
 	friend class GA;
 
-	static TX* ptxList;
+	TX* ptxList;
 	float mpcoldxf[4];
 	float dxfCellMarg, dyfCellMarg;
 	float dyfList;
@@ -140,15 +120,14 @@ class UIML : public UIPS
 	int imvSel;
 	UIPL* mpcpcpuipl[CPC::ColorMax];
 	UICLOCK* mpcpcpuiclock[CPC::ColorMax];
-	UIGO uigo;
 	UIGC uigc;
 
 public:
 	UIML(GA* pga);
 	~UIML(void);
 
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
 
 	void SetPl(CPC cpc, PL* ppl);
 
@@ -177,6 +156,4 @@ public:
 	virtual void LeftDrag(PTF ptf);
 
 	virtual void KeyDown(int vk);
-
-	void DrawPl(CPC cpcPointOfView, RCF rcfArea, bool fTop) const;
 };

@@ -102,7 +102,7 @@ protected:
 	float EvalBdgDepth(BDGMV& bdgmv, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
 	float EvalBdgQuiescent(BDGMV& bdgev, int depth, float evalAlpha, float evalBeta);
 	void PreSortMoves(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv);
-	void FillRgbdgmvev(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv);
+	void FillRgbdgmv(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv);
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
 	virtual float EvalBdg(const BDGMV& bdgmv, bool fFull);

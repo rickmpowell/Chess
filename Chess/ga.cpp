@@ -388,6 +388,7 @@ void GA::MoveToImv(int imv)
 	while (bdg.imvCur < imv)
 		uibd.RedoMv(spmv);
 	spmv = spmvSav;
+	uiml.Layout();	// in case game over state changed
 	uiml.SetSel(bdg.imvCur, spmv);
 }
 

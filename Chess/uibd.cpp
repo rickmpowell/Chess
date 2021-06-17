@@ -190,8 +190,8 @@ void UIBD::NewGame(void)
 
 /*	UIBD::MakeMv
  *
- *	Makes a move on the board and echoes it to the screen 
- *	board panel. We also do end of game checking here.
+ *	Makes a move on the board and echoes it to the screen board panel. We also do end of 
+ *	game checking here.
  */
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
@@ -223,6 +223,7 @@ void UIBD::UndoMv(SPMV spmv)
 	}
 	ga.bdg.UndoMv();
 	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.SetGs(GS::Playing);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -236,6 +237,7 @@ void UIBD::RedoMv(SPMV spmv)
 	}
 	ga.bdg.RedoMv();
 	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.SetGameOver(gmvDrag, *ga.prule);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }

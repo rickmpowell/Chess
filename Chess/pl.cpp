@@ -76,8 +76,12 @@ void PL::ReceiveMv(MV mv, SPMV spmv)
 
 /*
  *
+ *	PLAI and PLAI2
+ * 
+ *	AI computer players. Base PLAI implements alpha-beta pruned look ahead tree.
  * 
  */
+
 
 PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvGen(0), cbdgmvPrune(0)
 {
@@ -85,12 +89,35 @@ PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvGen(0), c
 	rgfAICoeff[1] = 5.0f;
 }
 
-
 PLAI2::PLAI2(GA& ga) : PLAI(ga)
 {
 	rgfAICoeff[1] = 0.1f;
 	SetName(L"Mathilda");
 }
+
+int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
+{
+	static GMV gmvOpp;
+	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = 0.5e+6f;	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
+	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return depthMax;
+}
+
+int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
+{
+	static GMV gmvOpp;
+	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = 2.0e+6f;	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
+	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return depthMax;
+}
+
+
 
 /*	PLAI::MvGetNext
  *
@@ -172,17 +199,6 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	return mvBest;
 }
 
-
-int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
-{
-	static GMV gmvOpp;
-	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 5.0e+6f;	// approximate number of moves to analyze
-	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return depthMax;
-}
 
 
 /*	PLAI::EvalBdgDepth
@@ -278,7 +294,7 @@ float PLAI::EvalBdgQuiescent(BDGMV& bdgmvEval, int depth, float evalAlpha, float
 		ga.PumpMsg();
 
 	vector<BDGMV> vbdgmv;
-	FillRgbdgmvev(bdgmvEval, bdgmvEval.gmvReplyAll, vbdgmv);
+	FillRgbdgmv(bdgmvEval, bdgmvEval.gmvReplyAll, vbdgmv);
 	
 	cbdgmvGen += vbdgmv.size();
 	float evalBest = -evalInf;
@@ -307,7 +323,11 @@ float PLAI::EvalBdgQuiescent(BDGMV& bdgmvEval, int depth, float evalAlpha, float
 }
 
 
-void PLAI::FillRgbdgmvev(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
+/*	PLAI::FillRgbdgmv
+ *
+ *	Fills the BDGMV array with the moves in gmv.
+ */
+void PLAI::FillRgbdgmv(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 {
 	vbdgmv.reserve(gmv.cmv());
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
@@ -318,6 +338,12 @@ void PLAI::FillRgbdgmvev(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 }
 
 
+/*	PLAI::PreSortMoves
+ *
+ *	Using generated moves in gmv (generated from bdg),  pre-sorts them by fast 
+ *	evaluation to optimize the benefits of alpha-beta pruning. Sorted BDGMV
+ *	list is returned in vbdgmv.
+ */
 void PLAI::PreSortMoves(const BDG& bdg, const GMV& gmv, vector<BDGMV>& vbdgmv)
 {
 	/* insertion sort */
@@ -354,8 +380,8 @@ float PLAI::EvalBdg(const BDGMV& bdgmv, bool fFull)
 	float vpcSelf = VpcFromCpc(bdgmv, ~bdgmv.cpcToMove);
 	if (!fFull) {
 		/* make a guess that this is a bad move if we're moving to an attacked square,
-		 * which will improve alpha-beta pruning, but not something we want to do on
-		 * real board evaluation */
+		   which will improve alpha-beta pruning, but not something we want to do on
+		   real board evaluation */
 		if (bdgmv.FSqAttacked(bdgmv.cpcToMove, bdgmv.mv.sqTo()))
 			vpcSelf -= bdgmv.VpcFromSq(bdgmv.mv.sqTo());
 	}
@@ -464,6 +490,7 @@ float PLAI::VpcEarlyMidGame(const BDGMV& bdgmv, CPC cpcMove) const
 	return (VpcMiddleGame(bdgmv, cpcMove) + VpcOpening(bdgmv, cpcMove)) / 2.0f;
 }
 
+
 /*	PLAI::VpcMiddleGame
  *
  *	Returns the board evaluation for middle game stage of the game
@@ -473,10 +500,12 @@ float PLAI::VpcMiddleGame(const BDGMV& bdgmv, CPC cpcMove) const
 	return bdgmv.VpcTotalFromCpc(cpcMove);
 }
 
+
 float PLAI::VpcLateMidGame(const BDGMV& bdgmv, CPC cpcMove) const
 {
 	return (VpcMiddleGame(bdgmv, cpcMove) + VpcEndGame(bdgmv, cpcMove)) / 2.0f;
 }
+
 
 const float mpapcsqevalEndGame[APC::ActMax][64] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
@@ -542,11 +571,18 @@ float PLAI::VpcEndGame(const BDGMV& bdgmv, CPC cpcMove) const
 	return VpcWeightTable(bdgmv, cpcMove, mpapcsqevalEndGame);
 }
 
+
 float PLAI::VpcLateEndGame(const BDGMV& bdgmv, CPC cpcMove) const
 {
 	return VpcEndGame(bdgmv, cpcMove);
 }
 
+
+/*	PLAI::VpcWeightTable
+ *
+ *	Uses a weight table to compute piece values. Weight tables are multpliers
+ *	on the base value of the piece.
+ */
 float PLAI::VpcWeightTable(const BDGMV& bdgmv, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
 {
 	float vpc = 0.0f;
@@ -583,17 +619,6 @@ float PLAI2::EvalBdg(const BDGMV& bdgmv, bool fFull)
 	return eval;
 }
 
-
-int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
-{
-	static GMV gmvOpp;
-	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 2.0e+6f;	// approximate number of moves to analyze
-	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return depthMax;
-}
 
 
 

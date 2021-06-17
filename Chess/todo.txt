@@ -1,4 +1,4 @@
-  I don't think move list is baseline aligned - problem with descenders? 
+  Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
   I don't think move list is baseline aligned - problem with descenders? 
   Can we make things like Undo work while AI is thinking?
   Dragged human player moves shouldn't animate into place
@@ -48,7 +48,6 @@
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
   Move gen: bitboard pawns
-  AI: need to discourage early queen development
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: annotate candidate best moves on board
   AI: interruptible
@@ -58,7 +57,6 @@
   Eval: Add square control factor to evaluation function
   Limit UI during message pumps in test and AI
   AI: Do a multithreaded lookup
-  ML: Undo doesn't take down game over panel
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   AI: build and keep lookahead tree 
@@ -67,7 +65,6 @@
   Feature: Add a UI for setting up a board
   AI: Play through until no checks before evaluation
   Test: PGN games should feed moves through a PL
-  ML: Merge UIGO and UIGC
   ML: Checkmates should have a # instead of a +
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
@@ -81,7 +78,7 @@
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
   GA: Break the UI out of the GA
-  Official game has slightly different rules for some draw situations
+  Official game has slightly different rules for some draw situation5s
   Playing test PGN files in Fast mode should display result in game over panel
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
@@ -93,6 +90,9 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* AI: need to discourage early queen development
+* ML: Undo doesn't take down game over panel
+* ML: Merge UIGO and UIGC
 * UIBD: There is a weird hit test on the left edge of the board that is hitting squares three squares over
 * Feature: Allow human to play the AI
 * PL: Add message pump to the PL for getting player moves

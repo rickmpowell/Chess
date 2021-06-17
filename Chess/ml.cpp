@@ -97,53 +97,136 @@ void UIPL::SetPl(PL* pplNew)
  */
 
 
-void UIGC::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+UIGC::UIGC(UIML* puiml) : UI(puiml), ga(puiml->ga),
+		btnResign(this, cmdResign, idbWhiteFlag), btnOfferDraw(this, cmdOfferDraw, idbHandShake),
+		ptxScore(nullptr)
 {
 }
 
 
-void UIGC::DiscardRsrcClass(void)
+
+void UIGC::CreateRsrc(void)
 {
+	UI::CreateRsrc();
+	if (ptxScore)
+		return;
+	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
+		&ptxScore);
+}
+
+
+void UIGC::DiscardRsrc(void)
+{
+	SafeRelease(&ptxScore);
 }
 
 
 void UIGC::Layout(void)
 {
-	RCF rcf = RcfInterior();
-	rcf.top += 1.0f;
-	rcf.bottom -= 1.0f;
-	rcf.left += 48.0f;
-	SIZF sizf = pbtnResign->SizfImg();
-	rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
-	pbtnResign->SetBounds(rcf);
+	if (ga.bdg.gs == GS::Playing) {
+		RCF rcf = RcfInterior().Inflate(PTF(0, -1.0f));
+		rcf.left += 48.0f;
+		SIZF sizf = btnResign.SizfImg();
+		rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
+		btnResign.SetBounds(rcf);
 
-	rcf = RcfInterior();
-	rcf.top += 2.0f;
-	rcf.bottom -= 2.0f;
-	rcf.right -= 48.0f;
-	sizf = pbtnOfferDraw->SizfImg();
-	rcf.left= rcf.right - (rcf.DyfHeight() * sizf.width / sizf.height);
-	pbtnOfferDraw->SetBounds(rcf);
+		rcf = RcfInterior().Inflate(PTF(0, -1.0f));
+		rcf.right -= 48.0f;
+		sizf = btnOfferDraw.SizfImg();
+		rcf.left = rcf.right - (rcf.DyfHeight() * sizf.width / sizf.height);
+		btnOfferDraw.SetBounds(rcf);
+	}
+	btnResign.Show(ga.bdg.gs == GS::Playing);
+	btnOfferDraw.Show(ga.bdg.gs == GS::Playing);
 }
 
 
 SIZF UIGC::SizfLayoutPreferred(void)
 {
 	SIZF sizf = SizfSz(L"0", ptxText);
-	return SIZF(-1.0f, sizf.height*1.5f);
+	sizf.width = -1.0f;
+	sizf.height *= (ga.bdg.gs == GS::Playing) ? 1.5f : 5.0f;
+	return sizf;
 }
-
-
-UIGC::UIGC(UIML* puiml) : UI(puiml)
-{
-	pbtnResign = new BTNIMG(this, cmdResign, idbWhiteFlag);
-	pbtnOfferDraw = new BTNIMG(this, cmdOfferDraw, idbHandShake);
-}
-
 
 void UIGC::Draw(RCF rcfUpdate)
 {
 	FillRcf(rcfUpdate, pbrBack);
+	if (ga.bdg.gs == GS::Playing)
+		return;
+
+	float dyfLine = SizfSz(L"A", ptxText).height + 3.0f;
+
+	RCF rcf = RcfInterior();
+
+	RCF rcfEndType = rcf;
+	rcfEndType.top = rcf.YCenter() - 3.0f*dyfLine/2.0f;
+	rcfEndType.bottom = rcfEndType.top + dyfLine;
+	RCF rcfResult = rcfEndType;
+	rcfResult.Offset(0, dyfLine);
+	RCF rcfScore = rcfResult;
+	rcfScore.Offset(0, dyfLine);
+
+	CPC cpcWin = CPC::NoColor;
+
+	switch (ga.bdg.gs) {
+	case GS::WhiteCheckMated:
+		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
+		cpcWin = CPC::Black;
+		break;
+	case GS::BlackCheckMated:
+		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
+		cpcWin = CPC::White;
+		break;
+	case GS::WhiteResigned:
+		DrawSzCenter(L"White Resigned", ptxText, rcfEndType);
+		cpcWin = CPC::Black;
+		break;
+	case GS::BlackResigned:
+		DrawSzCenter(L"Black Resigned", ptxText, rcfEndType);
+		cpcWin = CPC::White;
+		break;
+	case GS::WhiteTimedOut:
+		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
+		cpcWin = CPC::Black;
+		break;
+	case GS::BlackTimedOut:
+		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
+		cpcWin = CPC::White;
+		break;
+	case GS::StaleMate:
+		DrawSzCenter(L"Stalemate", ptxText, rcfEndType);
+		break;
+	case GS::Draw3Repeat:
+		DrawSzCenter(L"3-Fold Repitition", ptxText, rcfEndType);
+		break;
+	case GS::Draw50Move:
+		DrawSzCenter(L"50-Move", ptxText, rcfEndType);
+		break;
+	case GS::DrawAgree:
+		DrawSzCenter(L"Draw Agreed", ptxText, rcfEndType);
+		break;
+	case GS::DrawDead:
+		DrawSzCenter(L"Insufficient Material", ptxText, rcfEndType);
+		break;
+	default:
+		assert(false);
+		break;
+	}
+
+	const WCHAR* szResult = L"Draw";
+	const WCHAR* szScore = L"\x00bd-\x00bd";	/* 1/2-1/2 */
+	if (cpcWin == CPC::White) {
+		szResult = L"White Wins";
+		szScore = L"1-0";
+	}
+	else if (cpcWin == CPC::Black) {
+		szResult = L"Black Wins";
+		szScore = L"0-1";
+	}
+	DrawSzCenter(szResult, ptxText, rcfResult);
+	DrawSzCenter(szScore, ptxScore, rcfScore);
 }
 
 
@@ -178,6 +261,18 @@ UICLOCK::UICLOCK(UIML* puiml, CPC cpc) : UI(puiml), ga(puiml->ga), cpc(cpc)
 {
 }
 
+void UICLOCK::CreateRsrc(void)
+{
+	UI::CreateRsrc();
+	APP& app = AppGet();
+	CreateRsrcClass(app.pdc, app.pfactdwr, app.pfactwic);
+}
+
+void UICLOCK::DiscardRsrc(void)
+{
+	UI::DiscardRsrc();
+	DiscardRsrcClass();
+}
 
 SIZF UICLOCK::SizfLayoutPreferred(void)
 {
@@ -275,126 +370,6 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 
 /*
  *
- *	UIGO implementation
- *
- *	Game over sub-panel
- *
- */
-
-IDWriteTextFormat* UIGO::ptxScore;
-
-void UIGO::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (ptxScore)
-		return;
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
-		&ptxScore);
-}
-
-
-void UIGO::DiscardRsrcClass(void)
-{
-	SafeRelease(&ptxScore);
-}
-
-
-UIGO::UIGO(UIML* puiml, bool fVisible) : UI(puiml, fVisible), ga(puiml->ga)
-{
-}
-
-
-/*	UIGO::SizfLayoutPreferred
- *
- *	Returns the preferred height of the UI element. Used by our parent
- *	to layout the UIML. 
- */
-SIZF UIGO::SizfLayoutPreferred(void)
-{
-	SIZF sizf = SizfSz(L"A", ptxText);
-	return SIZF(-1.0f, sizf.height * 5.0f);
-}
-
-
-void UIGO::Draw(RCF rcfUpdate)
-{
-	float dyfLine = SizfSz(L"A", ptxText).height + 3.0f;
-
-	RCF rcf = RcfInterior();
-	FillRcf(rcf, pbrBack);
-
-	RCF rcfEndType = rcf;
-	rcfEndType.top = rcf.YCenter() - (3.0f * dyfLine) / 2;
-	rcfEndType.bottom = rcfEndType.top + dyfLine;
-	RCF rcfResult = rcfEndType;
-	rcfResult.Offset(0, dyfLine);
-	RCF rcfScore = rcfResult;
-	rcfScore.Offset(0, dyfLine);
-
-	CPC cpcWin = CPC::NoColor;
-
-	switch (ga.bdg.gs) {
-	case GS::WhiteCheckMated:
-		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
-		cpcWin = CPC::Black;
-		break;
-	case GS::BlackCheckMated:
-		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
-		cpcWin = CPC::White;
-		break;
-	case GS::WhiteResigned:
-		DrawSzCenter(L"White Resigned", ptxText, rcfEndType);
-		cpcWin = CPC::Black;
-		break;
-	case GS::BlackResigned:
-		DrawSzCenter(L"Black Resigned", ptxText, rcfEndType);
-		cpcWin = CPC::White;
-		break;
-	case GS::WhiteTimedOut:
-		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
-		cpcWin = CPC::Black;
-		break;
-	case GS::BlackTimedOut:
-		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
-		cpcWin = CPC::White;
-		break;
-	case GS::StaleMate:
-		DrawSzCenter(L"Stalemate", ptxText, rcfEndType);
-		break;
-	case GS::Draw3Repeat:
-		DrawSzCenter(L"3-Fold Repitition", ptxText, rcfEndType);
-		break;
-	case GS::Draw50Move:
-		DrawSzCenter(L"50-Move", ptxText, rcfEndType);
-		break;
-	case GS::DrawAgree:
-		DrawSzCenter(L"Draw Agreed", ptxText, rcfEndType);
-		break;
-	case GS::DrawDead:
-		DrawSzCenter(L"Insufficient Material", ptxText, rcfEndType);
-		break;
-	default:
-		assert(false);
-		break;
-	}
-
-	const WCHAR* szResult = L"Draw";
-	const WCHAR* szScore = L"\x00bd-\x00bd";	/* 1/2-1/2 */
-	if (cpcWin == CPC::White) {
-		szResult = L"White Wins";
-		szScore = L"1-0";
-	}
-	else if (cpcWin == CPC::Black) {
-		szResult = L"Black Wins";
-		szScore = L"0-1";
-	}
-	DrawSzCenter(szResult, ptxText, rcfResult);
-	DrawSzCenter(szScore, ptxScore, rcfScore);
-}
-
-
-/*
- *
  *	UIML class implementation
  *
  *	Move list implementation
@@ -403,8 +378,8 @@ void UIGO::Draw(RCF rcfUpdate)
 
 
 UIML::UIML(GA* pga) : UIPS(pga),  
-		dxfCellMarg(4.0f), dyfCellMarg(0.5f), dyfList(0), imvSel(0),
-		uigo(this, false), uigc(this)
+		ptxList(nullptr), dxfCellMarg(4.0f), dyfCellMarg(0.5f), dyfList(0), imvSel(0),
+		uigc(this)
 {
 	for (int col = 0; col < CArray(mpcoldxf); col++)
 		mpcoldxf[col] = 0.0f;
@@ -420,43 +395,33 @@ UIML::~UIML(void)
 }
 
 
-IDWriteTextFormat* UIML::ptxList;
-
-
-/*	UIML::CreateRsrcClass
+/*	UIML::CreateRsrc
  *
  *	Creates the drawing resources for displaying the move list screen
- *	panel. Note that this is a static routine working on global static
- *	resources that are shared by all instances of this class.
+ *	panel. 
  */
-void UIML::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+void UIML::CreateRsrc(void)
 {
+	UI::CreateRsrc();
 	if (ptxList)
 		return;
 
 	/* fonts */
 
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
 		&ptxList);
-
-	UIGC::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	UICLOCK::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	UIGO::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 }
 
 
-/*	UIML::DiscardRsrcClass
+/*	UIML::DiscardRsrc
  *
- *	Deletes all resources associated with this screen panel. This is a
- *	static routine, and works on static class globals.
+ *	Deletes all resources associated with this screen panel. 
  */
-void UIML::DiscardRsrcClass(void)
+void UIML::DiscardRsrc(void)
 {
+	UI::DiscardRsrc();
 	SafeRelease(&ptxList);
-	UIGC::DiscardRsrcClass();
-	UICLOCK::DiscardRsrcClass();
-	UIGO::DiscardRsrcClass();
 }
 
 
@@ -506,8 +471,8 @@ void UIML::Layout(void)
 	RCF rcf = RcfInterior();
 	RCF rcfView = rcf;
 	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView ^ 1], rcf, true);
-	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView ^ 1], rcf, true);
+	AdjustUIRcfBounds(mpcpcpuipl[~ga.uibd.cpcPointOfView], rcf, true);
+	AdjustUIRcfBounds(mpcpcpuiclock[~ga.uibd.cpcPointOfView], rcf, true);
 	rcfView.top = rcf.bottom;
 
 	/* position the bottom clocks, player names, and game controls */
@@ -517,7 +482,6 @@ void UIML::Layout(void)
 	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false);
 	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false);
 	AdjustUIRcfBounds(&uigc, rcf, false); 
-	AdjustUIRcfBounds(&uigo, rcf, false);
 	rcfView.bottom = rcf.top;
 
 	/* move list content is whatever is left */
@@ -532,7 +496,7 @@ SIZF UIML::SizfLayoutPreferred(void)
 	SIZF sizf = SizfSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
 	dyfList = sizf.height + 2*dyfCellMarg;
 
-	mpcoldxf[0] = dxfCellMarg+SizfSz(L"200.", ptxList).width;
+	mpcoldxf[0] = dxfCellMarg+SizfSz(L"100.", ptxList).width;
 	mpcoldxf[1] = mpcoldxf[2] = dxfCellMarg + sizf.width;
 	mpcoldxf[3] = dxyfScrollBarWidth;
 
@@ -665,7 +629,6 @@ void UIML::DrawMoveNumber(RCF rcf, int imv)
 
 void UIML::NewGame(void)
 {
-	uigo.Show(false);
 	ShowClocks(ga.prule->TmGame() != 0);
 	bdgInit = ga.bdg;
 	UpdateContSize();
@@ -686,7 +649,8 @@ void UIML::ShowClocks(bool fTimed)
  */
 void UIML::EndGame(void)
 {
-	uigo.Show(true);
+	Layout();
+	Redraw();
 }
 
 

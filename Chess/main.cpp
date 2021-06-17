@@ -110,9 +110,9 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL),
     InitCmdList();
 
     pga = new GA(*this);
- //   pga->SetPl(CPC::Black, new PLAI(*pga));
+    pga->SetPl(CPC::Black, new PLAI(*pga));
  //   pga->SetPl(CPC::White, new PLAI2(*pga));
-    pga->SetPl(CPC::Black, new PLHUMAN(*pga, L"My Dog Fido the Dog"));
+ //   pga->SetPl(CPC::Black, new PLHUMAN(*pga, L"My Dog Fido the Dog"));
     pga->SetPl(CPC::White, new PLHUMAN(*pga, L"Rick Powell"));
     pga->NewGame(new RULE);
 
