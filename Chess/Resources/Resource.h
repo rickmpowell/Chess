@@ -18,7 +18,6 @@
 #define idsTipPlayerLvlDown	17
 #define idsTipPlayerLvlDownBlack	18
 
-#define IDR_MAINFRAME	128
 #define iddAbout		1
 
 #define idmApp			1

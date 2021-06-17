@@ -1,4 +1,7 @@
-  Use our logo in app icon
+  Help box icon looks like shit
+  Make small icon with logo
+  Move level control in UIPL into the chooser
+  Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
   I don't think move list is baseline aligned - problem with descenders? 
   Can we make things like Undo work while AI is thinking?
@@ -70,7 +73,7 @@
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
   ML: Add a UI for offering draws
-  UI for specifying player names
+  UI for specifying human player names
   UITI: Hook up UI elements to real information from the GA
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
@@ -90,6 +93,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* Use our logo in app icon
 * UI for choosing computer player
 * AI: need to discourage early queen development
 * ML: Undo doesn't take down game over panel

@@ -105,7 +105,6 @@ void UIPL::Draw(RCF rcfUpdate)
 		ELLF ellf(PTF(rcf.left + dxyfRadius, rcf.top + 6.0f + dxyfRadius), PTF(dxyfRadius, dxyfRadius));
 
 		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-
 		DrawEllf(ellf, pbrText);
 		if (cpc == CPC::Black)
 			FillEllf(ellf, pbrText);
@@ -116,9 +115,9 @@ void UIPL::Draw(RCF rcfUpdate)
 			wstring szName = ppl->SzName();
 			rcf.left += 3 * dxyfRadius;
 			sizf = SizfSz(ppl->SzName(), ptxText);
-			rcf.Offset(0, 6.0f);
+			rcf.top += 6.0f;
 			if (spinlvl.FVisible())
-				rcf.right = spinlvl.RcfBounds().left;
+				rcf.right = spinlvl.RcfBounds().left - 1.0f;
 			DrawSzFit(szName, ptxText, rcf);
 		}
 	}
