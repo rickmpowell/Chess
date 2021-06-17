@@ -199,6 +199,7 @@
   <ItemGroup>
     <Image Include="Resources\Chess.ico" />
     <Image Include="Resources\hands-shaking.png" />
+    <Image Include="Resources\logo.ico" />
     <Image Include="Resources\small.ico" />
     <Image Include="Resources\white-flag.png" />
   </ItemGroup>

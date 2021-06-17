@@ -74,7 +74,7 @@ public:
 
 	virtual void Draw(RCF rcfUpdate);
 	virtual void PresentSwch(void) const;
-	virtual APP& AppGet(void) const;
+	virtual APP& App(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;

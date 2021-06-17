@@ -99,11 +99,11 @@ void UIDB::CreateRsrc(void)
 {
 	if (ptxLog)
 		return;
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxLog);
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxLogBold);

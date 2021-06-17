@@ -13,6 +13,8 @@
 #include "framework.h"
 #include "app.h"
 
+class GA;
+
 
 WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
 
@@ -87,7 +89,6 @@ enum class LGF {
  * 
  */
 
-
 class UI
 {
 protected:
@@ -124,7 +125,11 @@ public:
 	UI* PuiParent(void) const;
 	UI* PuiPrevSib(void) const;
 	UI* PuiNextSib(void) const;
-	
+
+	virtual APP& App(void) const;
+	const GA& Ga(void) const;
+	GA& Ga(void);
+
 	RCF RcfInterior(void) const;	// in local coordinates (top left is always {0,0})
 	RCF RcfBounds(void) const;	// in parent coordinates
 	bool FVisible(void) const;
@@ -170,7 +175,6 @@ public:
 	virtual void Draw(RCF rcfDraw);
 
 	virtual void PresentSwch(void) const;
-	virtual APP& AppGet(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
 	virtual void CreateRsrc(void);

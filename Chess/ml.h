@@ -32,6 +32,7 @@ public:
  *
  */
 
+struct INFOPL;
 
 class UIPL : public UI
 {
@@ -42,6 +43,7 @@ private:
 	PL* ppl;
 	CPC cpc;
 	bool fChooser;
+	int iinfoplHit;
 	float dyfLine;
 
 public:
@@ -54,7 +56,7 @@ public:
 	
 	virtual void Draw(RCF rcfUpdate);
 	void DrawChooser(RCF rcfUpdate);
-	void DrawChooserItem(const wstring& sz, RCF& rcf, int idbLogo);
+	void DrawChooserItem(const INFOPL& infopl, RCF& rcf);
 
 	void SetPl(PL* pplNew);
 

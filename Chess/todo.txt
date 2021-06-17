@@ -1,3 +1,4 @@
+  Use our logo in app icon
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
   I don't think move list is baseline aligned - problem with descenders? 
   Can we make things like Undo work while AI is thinking?
@@ -70,7 +71,6 @@
   ML: Hook up resignation button
   ML: Add a UI for offering draws
   UI for specifying player names
-  UI for choosing computer player
   UITI: Hook up UI elements to real information from the GA
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
@@ -90,6 +90,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* UI for choosing computer player
 * AI: need to discourage early queen development
 * ML: Undo doesn't take down game over panel
 * ML: Merge UIGO and UIGC
@@ -110,7 +111,7 @@
 * Convert to Intel compiler
 * Use custom move array that pre-allocates 50 fixed items
 * Implement an integer spinner control and use it for log depth
-* PgeomCreate can get the d2 factory from AppGet().
+* PgeomCreate can get the d2 factory from App().
 * Tooltips don't resize for shorter text (only with FreeSerif?)
 * Display log depth in debug panel
 * Implement "default" log depths, which can be overriden by user changing them

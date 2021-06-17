@@ -9,6 +9,7 @@
 #include "pl.h"
 #include "ga.h"
 #include "debug.h"
+#include "Resources/Resource.h"
 
 const unsigned long dcYield = 1000L;
 
@@ -95,11 +96,29 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	SetName(L"Mathilda");
 }
 
+float PLAI::CmvFromLevel(int level) const
+{
+	switch (level) {
+	case 1: return 1.0e+4f;
+	case 2: return 1.0e+5f;
+	case 3: return 5.0e+5f;
+	case 4: return 1.0e+6f;
+	case 5: return 2.0e+6f;
+	case 6: return 5.0e+6f;
+	case 7: return 8.0e+6f;
+	case 8: return 1.0e+7f;
+	case 9: return 2.0e+7f;
+	case 10: return 5.0e+7f;
+	default:
+		return 1.0e+6f;
+	}
+}
+
 int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
 	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 0.5e+6f;	// approximate number of moves to analyze
+	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
@@ -110,7 +129,7 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
 	bdg.GenRgmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = 2.0e+6f;	// approximate number of moves to analyze
+	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
@@ -628,8 +647,6 @@ float PLAI2::EvalBdg(const BDGMV& bdgmv, bool fFull)
 }
 
 
-
-
 /*
  *
  *	PLHUMAN class
@@ -653,4 +670,57 @@ MV PLHUMAN::MvGetNext(SPMV& spmv)
 	MV mv = mvNext;
 	mvNext = MV();
 	return mv;
+}
+
+
+/*
+ *
+ *	RGINFOPL
+ * 
+ *	The list of players wew have available to play.
+ * 
+ */
+
+RGINFOPL::RGINFOPL(void) 
+{
+	vinfopl.push_back(INFOPL(IDCLASSPL::AI, TPL::AI, L"Mobly", 4));
+	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"Mathilda", 2));
+	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Rick Powell"));
+	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"My Dog Is the Best Dog"));
+}
+
+RGINFOPL::~RGINFOPL(void) 
+{
+}
+
+PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
+{
+	PL* ppl = nullptr;
+	switch (vinfopl[iinfopl].idclasspl) {
+	case IDCLASSPL::AI:
+		ppl = new PLAI(ga);
+		break;
+	case IDCLASSPL::AI2:
+		ppl = new PLAI2(ga);
+		break;
+	case IDCLASSPL::Human:
+		ppl = new PLHUMAN(ga, vinfopl[iinfopl].szName);
+		break;
+	default:
+		assert(false);
+		return nullptr;
+	}
+	ppl->SetLevel(vinfopl[iinfopl].level);
+	return ppl;
+}
+
+int RGINFOPL::IdbFromInfopl(const INFOPL& infopl) const
+{
+	switch (infopl.tpl) {
+	case TPL::AI:
+		return idbAiLogo;
+	default:
+		break;
+	}
+	return idbHumanLogo;
 }

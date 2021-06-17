@@ -25,7 +25,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         if (LOWORD(wParam) != IDOK && LOWORD(wParam) != IDCANCEL)
             break;
-        EndDialog(hdlg, LOWORD(wParam));
+        ::EndDialog(hdlg, LOWORD(wParam));
         return (INT_PTR)TRUE;
     }
     return (INT_PTR)FALSE;
@@ -44,7 +44,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
         return app.MessagePump();
     }
     catch (int err) {
-        MessageBox(NULL,
+        ::MessageBox(NULL,
             L"Could not initialize application", L"Fatal Error",
             MB_OK);
         return err;
@@ -98,27 +98,25 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL),
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = sizeof(this);
     wcex.hInstance = hinst;
-    wcex.hIcon = LoadIcon(hinst, MAKEINTRESOURCE(idiApp));
+    wcex.hIcon = ::LoadIcon(hinst, MAKEINTRESOURCE(idiApp));
     wcex.hCursor = NULL;
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(idmApp);
     wcex.lpszClassName = szWndClassMain;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(idiSmall));
-    if (!RegisterClassEx(&wcex))
+    wcex.hIconSm = ::LoadIcon(wcex.hInstance, MAKEINTRESOURCE(idiSmall));
+    if (!::RegisterClassEx(&wcex))
         throw 1;
 
     /* load keyboard interface */
 
-    if (!(haccel = LoadAccelerators(hinst, MAKEINTRESOURCE(idaApp))))
+    if (!(haccel = ::LoadAccelerators(hinst, MAKEINTRESOURCE(idaApp))))
         throw 1;
 
     InitCmdList();
 
     pga = new GA(*this);
-    pga->SetPl(CPC::Black, new PLAI(*pga));
- //   pga->SetPl(CPC::White, new PLAI2(*pga));
- //   pga->SetPl(CPC::Black, new PLHUMAN(*pga, L"My Dog Fido the Dog"));
-    pga->SetPl(CPC::White, new PLHUMAN(*pga, L"Rick Powell"));
+    pga->SetPl(CPC::Black, rginfopl.PplFactory(*pga, 0));
+    pga->SetPl(CPC::White, rginfopl.PplFactory(*pga, 1));
     pga->NewGame(new RULE);
 
     /* create the main window */
@@ -132,7 +130,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL),
         NULL, NULL, hinst, this);
     if (hwnd == NULL)
         throw 1;    // BUG: cleanup haccel
-    ShowWindow(hwnd, sw);
+    ::ShowWindow(hwnd, sw);
 }
 
 
@@ -150,11 +148,11 @@ APP::~APP(void)
 int APP::MessagePump(void)
 {
     MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        if (TranslateAccelerator(msg.hwnd, haccel, &msg))
+    while (::GetMessage(&msg, NULL, 0, 0)) {
+        if (::TranslateAccelerator(msg.hwnd, haccel, &msg))
             continue;
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
     }
     return (int)msg.wParam;
 }
@@ -343,7 +341,7 @@ void APP::OnSize(UINT dx, UINT dy)
 void APP::OnPaint(void)
 {
     PAINTSTRUCT ps;
-    BeginPaint(hwnd, &ps);
+    ::BeginPaint(hwnd, &ps);
 
     if (pga) {
         pga->BeginDraw();
@@ -353,7 +351,7 @@ void APP::OnPaint(void)
         pga->EndDraw();
     }
 
-    EndPaint(hwnd, &ps);
+    ::EndPaint(hwnd, &ps);
 }
 
 
@@ -570,7 +568,7 @@ public:
 
     virtual int Execute(void) 
     {
-        DialogBox(app.hinst, MAKEINTRESOURCE(iddAbout), app.hwnd, AboutDlgProc);
+        ::DialogBox(app.hinst, MAKEINTRESOURCE(iddAbout), app.hwnd, AboutDlgProc);
         return 1;
     }
 };
@@ -1097,8 +1095,6 @@ public:
 };
 
 
-
-
 /*
  *
  *  CMDEXIT command
@@ -1186,7 +1182,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
     switch (wm) {
     case WM_NCCREATE:
         papp = (APP*)((CREATESTRUCT*)lparam)->lpCreateParams;
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)papp);
+        ::SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)papp);
         break;
 
     case WM_SIZE:
@@ -1194,7 +1190,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         return 0;
 
     case WM_DISPLAYCHANGE:
-        InvalidateRect(hwnd, nullptr, FALSE);
+        ::InvalidateRect(hwnd, nullptr, FALSE);
         return 0;
 
     case WM_PAINT:
@@ -1247,7 +1243,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         return 0;
 
     case WM_DESTROY:
-        PostQuitMessage(0);
+        ::PostQuitMessage(0);
         break;
 
     default:
@@ -1268,6 +1264,6 @@ string SzFlattenWsz(const wstring& wsz)
     size_t cch = wsz.length();
     if (cch >= sizeof(sz) - 1)
         cch = sizeof(sz) - 1;
-    sz[WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
+    sz[::WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
     return sz;
 }

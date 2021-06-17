@@ -106,9 +106,9 @@ void GA::InvalRcf(RCF rcf, bool fErase) const
 }
 
 
-APP& GA::AppGet(void) const
+APP& GA::App(void) const
 {
-	return app;
+	return this->app;
 }
 
 

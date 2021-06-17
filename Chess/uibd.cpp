@@ -92,7 +92,7 @@ void UIBD::CreateRsrc(void)
 	if (ptxLabel)
 		return;
 
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		dxyfSquare/4.0f, L"",
 		&ptxLabel);
@@ -256,7 +256,7 @@ void UIBD::RedoMv(SPMV spmv)
  */
 void UIBD::Draw(RCF rcfUpdate)
 {
-	DC* pdc = AppGet().pdc;
+	DC* pdc = App().pdc;
 	int rankFirst = (int)floor((rcfUpdate.top - rcfSquares.top) / dxyfSquare);
 	float dyf = (rcfUpdate.bottom - rcfSquares.top) / dxyfSquare;
 	int rankLast = (int)floor(dyf) - (int)(floor(dyf) == dyf);
@@ -452,7 +452,7 @@ void UIBD::DrawHoverMv(MV mv)
 	}
 	else {
 		/* taking an opponent piece - draw an X */
-		DC* pdc = AppGet().pdc;
+		DC* pdc = App().pdc;
 		TRANSDC transdcSav(pdc, 	
 			Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
 			Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),

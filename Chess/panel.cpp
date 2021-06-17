@@ -252,7 +252,7 @@ bool UIPS::FMakeVis(float yf, float dyf)
 void UIPS::Draw(RCF rcfUpdate)
 {
 	/* just redraw the entire content area clipped to the view */
-	APP& app = AppGet();
+	APP& app = App();
 	app.pdc->PushAxisAlignedClip(RcfGlobalFromLocal(rcfView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	FillRcf(rcfView, pbrBack);
 	DrawContent(rcfCont);
@@ -292,9 +292,9 @@ void UIPS::DrawScrollBar(void)
 void UIPS::MouseHover(PTF ptf, MHT mht)
 {
 	if (RcfView().FContainsPtf(ptf))
-		::SetCursor(AppGet().hcurUpDown);
+		::SetCursor(App().hcurUpDown);
 	else
-		::SetCursor(AppGet().hcurArrow);
+		::SetCursor(App().hcurArrow);
 }
 
 

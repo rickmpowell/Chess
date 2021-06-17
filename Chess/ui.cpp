@@ -81,7 +81,7 @@ ID2D1PathGeometry* UI::PgeomCreate(PTF rgptf[], int cptf)
 {
 	/* capture X, which is created as a cross that is rotated later */
 	ID2D1PathGeometry* pgeom;
-	AppGet().pfactd2->CreatePathGeometry(&pgeom);
+	App().pfactd2->CreatePathGeometry(&pgeom);
 	ID2D1GeometrySink* psink;
 	pgeom->Open(&psink);
 	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
@@ -108,18 +108,18 @@ BMP* UI::PbmpFromPngRes(int idb)
 
 	HRESULT hr;
 	IWICStream* pstm = NULL;
-	hr = AppGet().pfactwic->CreateStream(&pstm);
+	hr = App().pfactwic->CreateStream(&pstm);
 	hr = pstm->InitializeFromMemory(pbRes, cbRes);
 	IWICBitmapDecoder* pdec = NULL;
-	hr = AppGet().pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
+	hr = App().pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
 	IWICBitmapFrameDecode* pframe = NULL;
 	hr = pdec->GetFrame(0, &pframe);
 	IWICFormatConverter* pconv = NULL;
-	hr = AppGet().pfactwic->CreateFormatConverter(&pconv);
+	hr = App().pfactwic->CreateFormatConverter(&pconv);
 	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
 		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
 	ID2D1Bitmap1* pbmp;
-	hr = AppGet().pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
+	hr = App().pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
 
 	SafeRelease(&pframe);
 	SafeRelease(&pconv);
@@ -542,10 +542,10 @@ void UI::Update(RCF rcfUpdate)
 	RCF rcf = rcfUpdate & rcfBounds;
 	if (!rcf)
 		return;
-	AppGet().pdc->PushAxisAlignedClip(rcf, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	App().pdc->PushAxisAlignedClip(rcf, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	RCF rcfDraw = RcfLocalFromGlobal(rcf);
 	Draw(rcfDraw);
-	AppGet().pdc->PopAxisAlignedClip();
+	App().pdc->PopAxisAlignedClip();
 	for (UI* pui : vpuiChild)
 		pui->Update(rcf);
 }
@@ -596,12 +596,22 @@ void UI::PresentSwch(void) const
 }
 
 
-APP& UI::AppGet(void) const
+APP& UI::App(void) const
 {
 	assert(puiParent);
-	return puiParent->AppGet();
+	return puiParent->App();
 }
 
+
+const GA& UI::Ga(void) const
+{
+	return *App().pga;
+}
+
+GA& UI::Ga(void)
+{
+	return *App().pga;
+}
 
 void UI::BeginDraw(void)
 {
@@ -625,7 +635,7 @@ void UI::EndDraw(void)
 void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	AppGet().pdc->FillRectangle(&rcf, pbr);
+	App().pdc->FillRectangle(&rcf, pbr);
 }
 
 
@@ -646,7 +656,7 @@ void UI::FillRcfBack(RCF rcf) const
 void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 {
 	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
-	AppGet().pdc->FillEllipse(&ellf, pbr);
+	App().pdc->FillEllipse(&ellf, pbr);
 }
 
 
@@ -658,7 +668,7 @@ void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
 void UI::DrawEllf(ELLF ellf, ID2D1Brush* pbr) const
 {
 	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
-	AppGet().pdc->DrawEllipse(&ellf, pbr);
+	App().pdc->DrawEllipse(&ellf, pbr);
 }
 
 
@@ -670,7 +680,7 @@ void UI::DrawEllf(ELLF ellf, ID2D1Brush* pbr) const
 void UI::DrawSz(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	AppGet().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rcf, pbr==NULL ? pbrText : pbr);
+	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rcf, pbr==NULL ? pbrText : pbr);
 }
 
 
@@ -684,7 +694,7 @@ void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) cons
 SIZF UI::SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const
 {
 	IDWriteTextLayout* ptxl;
-	AppGet().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, dxf, dyf, &ptxl);
+	App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, dxf, dyf, &ptxl);
 	DWRITE_TEXT_METRICS dtm;
 	ptxl->GetMetrics(&dtm);
 	SafeRelease(&ptxl);
@@ -701,7 +711,7 @@ SIZF UI::SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const
 void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr) const
 {
 	rcf = RcfGlobalFromLocal(rcf);
-	AppGet().pdc->DrawText(rgch, (UINT32)cch, ptx, &rcf, pbr == NULL ? pbrText : pbr);
+	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rcf, pbr == NULL ? pbrText : pbr);
 }
 
 
@@ -722,7 +732,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) cons
 	/* if the text fits, just blast it out */
 
 	IDWriteTextLayout* play = nullptr;
-	AppGet().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcfFit.DyfHeight(), &play);
+	App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcfFit.DyfHeight(), &play);
 	DWRITE_TEXT_METRICS tm;
 	play->GetMetrics(&tm);
 	if (tm.width <= rcfFit.DxfWidth() && tm.height <= rcfFit.DyfHeight()) {
@@ -746,10 +756,10 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) cons
 	for (float dyfFont = ptxBase->GetFontSize() - 1.0f; dyfFont > 6.0f; dyfFont--) {
 		SafeRelease(&play);
 		SafeRelease(&ptx);
-		AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 			dyfFont, L"", &ptx);
-		AppGet().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
+		App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
 			ptx, rcf.DxfWidth(), rcf.DyfHeight(), &play);
 		DWRITE_TEXT_METRICS tm;
 		play->GetMetrics(&tm);
@@ -758,7 +768,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) cons
 	}
 
 	play->GetLineMetrics(&lm, 1, &clm);
-	AppGet().pdc->DrawTextLayout(Point2F(rcf.left, yfBaseline - lm.baseline), play,
+	App().pdc->DrawTextLayout(Point2F(rcf.left, yfBaseline - lm.baseline), play,
 			pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
 
 	SafeRelease(&play);
@@ -773,7 +783,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) cons
  */
 void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
 {
-	AppGet().pdc->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
+	App().pdc->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
 			opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcfFrom);
 }
 
@@ -903,7 +913,7 @@ BTNIMG::~BTNIMG(void)
 void BTNIMG::Draw(RCF rcfUpdate)
 {
 	CreateRsrc();
-	DC* pdc = AppGet().pdc;
+	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_ALIASED);
 	RCF rcfTo = RcfInterior();
 	FillRcfBack(rcfTo);
@@ -963,8 +973,8 @@ void STATIC::CreateRsrc(void)
 	if (ptxStatic)
 		return;
 
-	AppGet().pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsStatic);
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsStatic);
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		20.0f, L"",
 		&ptxStatic);
@@ -1025,7 +1035,7 @@ void BTNGEOM::Draw(RCF rcfUpdate)
 {
 	float dxyfScale = RcfInterior().DxfWidth() / 2.0f;
 	FillRcf(RcfInterior(), pbrBack);
-	DC* pdc = AppGet().pdc;
+	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	PTF ptfCenter = rcfBounds.PtfCenter();
 	TRANSDC transdc(pdc,
@@ -1057,7 +1067,7 @@ void SPIN::CreateRsrc(void)
 	if (ptxSpin)
 		return;
 
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		14.0f, L"",
 		&ptxSpin);

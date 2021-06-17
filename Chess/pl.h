@@ -124,6 +124,8 @@ protected:
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
 	virtual float EvalBdg(const BDGMV& bdgmv, bool fFull);
+	float CmvFromLevel(int level) const;
+
 
 	float VpcFromCpc(const BDGMV& bdgmv, CPC cpcMove) const;
 	float VpcOpening(const BDGMV& bdgmv, CPC cpcMove) const;
@@ -164,3 +166,49 @@ public:
 
 
 
+/*
+ *
+ *	RGINFOPL
+ * 
+ *	The list of available players we have to play a game.
+ * 
+ */
+
+enum class TPL	// types of players
+{
+	AI,
+	Human,
+	Stream
+};
+
+enum class IDCLASSPL	// player classes
+{
+	AI,
+	AI2,
+	Human
+};
+
+struct INFOPL
+{
+	IDCLASSPL idclasspl;
+	TPL tpl;
+	wstring szName;
+	int level;
+	INFOPL(IDCLASSPL idclasspl, TPL tpl, const wstring& szName, int level = 0) : idclasspl(idclasspl), tpl(tpl), szName(szName), level(level)
+	{
+	}
+};
+
+
+class RGINFOPL
+{
+public:
+	vector <INFOPL> vinfopl;
+
+	RGINFOPL(void);
+	~RGINFOPL(void);
+	PL* PplFactory(GA& ga, int iinfopl) const;
+	int IdbFromInfopl(const INFOPL& infopl) const;
+};
+
+extern RGINFOPL rginfopl;

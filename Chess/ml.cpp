@@ -11,6 +11,11 @@
 
 
 
+RGINFOPL rginfopl;
+
+
+
+
 SPINLVL::SPINLVL(UIPL* puiParent, int cmdUp, int cmdDown) : SPIN(puiParent, cmdUp, cmdDown), uipl(*puiParent)
 {
 }
@@ -36,7 +41,7 @@ wstring SPINLVL::SzValue(void) const
  *	Player name UI element constructor
  */
 UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), spinlvl(this, cmdPlayerLvlUp+cpc, cmdPlayerLvlDown+cpc), 
-		ppl(nullptr), cpc(cpc), fChooser(false), dyfLine(8.0f)
+		ppl(nullptr), cpc(cpc), fChooser(false), iinfoplHit(-1), dyfLine(8.0f)
 {
 }
 
@@ -46,6 +51,7 @@ void UIPL::CreateRsrc(void)
 	UI::CreateRsrc();
 	dyfLine = SizfSz(L"Ag", ptxText).height + 2 * 6.0f;
 }
+
 
 void UIPL::DiscardRsrc(void)
 {
@@ -72,7 +78,7 @@ SIZF UIPL::SizfLayoutPreferred(void)
 {
 	SIZF sizf(-1.0f, dyfLine);
 	if (fChooser)
-		sizf.height *= 4.0f;
+		sizf.height *= rginfopl.vinfopl.size();
 	return sizf;
 }
 
@@ -98,7 +104,7 @@ void UIPL::Draw(RCF rcfUpdate)
 		float dxyfRadius = sizf.height / 2.0f;
 		ELLF ellf(PTF(rcf.left + dxyfRadius, rcf.top + 6.0f + dxyfRadius), PTF(dxyfRadius, dxyfRadius));
 
-		AADC aadc(AppGet().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
 		DrawEllf(ellf, pbrText);
 		if (cpc == CPC::Black)
@@ -111,27 +117,30 @@ void UIPL::Draw(RCF rcfUpdate)
 			rcf.left += 3 * dxyfRadius;
 			sizf = SizfSz(ppl->SzName(), ptxText);
 			rcf.Offset(0, 6.0f);
+			if (spinlvl.FVisible())
+				rcf.right = spinlvl.RcfBounds().left;
 			DrawSzFit(szName, ptxText, rcf);
 		}
 	}
-
 }
 
 
 void UIPL::DrawChooser(RCF rcfUpdate)
 {
 	RCF rcf = RcfInterior();
-	DrawChooserItem(L"Mobly", rcf, idbAiLogo);
-	DrawChooserItem(L"Mathilda", rcf, idbAiLogo);
-	DrawChooserItem(L"Richard Powell", rcf, idbHumanLogo);
-	DrawChooserItem(L"My Good Dog", rcf, idbHumanLogo);
+	for (INFOPL& infopl : rginfopl.vinfopl)
+		DrawChooserItem(infopl, rcf);
 }
 
-void UIPL::DrawChooserItem(const wstring& sz, RCF& rcf, int idb)
+
+void UIPL::DrawChooserItem(const INFOPL& infopl, RCF& rcf)
 {
 	rcf.bottom = rcf.top + dyfLine;
 
-	BMP* pbmpLogo = PbmpFromPngRes(idb);
+	BMP* pbmpLogo = PbmpFromPngRes(rginfopl.IdbFromInfopl(infopl));
+	wstring sz = infopl.szName;
+	if (infopl.tpl == TPL::AI)
+		sz += L" (level " + to_wstring(infopl.level) + L")";
 	SIZF sizf = pbmpLogo->GetSize();
 	RCF rcfTo = rcf;
 	rcfTo.Inflate(0, -4.0f).Offset(12.0f, 0);
@@ -158,19 +167,29 @@ void UIPL::SetPl(PL* pplNew)
 
 void UIPL::MouseHover(PTF ptf, MHT mht)
 {
-	::SetCursor(AppGet().hcurUp);
+	if (fChooser)
+		::SetCursor(App().hcurArrow);
+	else
+		::SetCursor(App().hcurUp);
 }
 
 
 void UIPL::StartLeftDrag(PTF ptf)
 {
 	SetFocus(this);
+	if (fChooser)
+		iinfoplHit = (ptf.y - RcfInterior().top) / dyfLine;
 }
 
 
 void UIPL::EndLeftDrag(PTF ptf)
 {
 	SetFocus(nullptr);
+	if (fChooser) {
+		int iinfopl = (ptf.y - RcfInterior().top) / dyfLine;
+		if (iinfopl == iinfoplHit)
+			Ga().SetPl(cpc, rginfopl.PplFactory(Ga(), iinfopl));
+	}
 	fChooser = !fChooser;
 	puiParent->Layout();
 	puiParent->Redraw();
@@ -204,7 +223,7 @@ void UIGC::CreateRsrc(void)
 	UI::CreateRsrc();
 	if (ptxScore)
 		return;
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
 		&ptxScore);
 }
@@ -358,7 +377,7 @@ UICLOCK::UICLOCK(UIML* puiml, CPC cpc) : UI(puiml), ga(puiml->ga), cpc(cpc)
 void UICLOCK::CreateRsrc(void)
 {
 	UI::CreateRsrc();
-	APP& app = AppGet();
+	APP& app = App();
 	CreateRsrcClass(app.pdc, app.pfactdwr, app.pfactwic);
 }
 
@@ -502,7 +521,7 @@ void UIML::CreateRsrc(void)
 
 	/* fonts */
 
-	AppGet().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
 		&ptxList);
 }
