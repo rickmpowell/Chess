@@ -73,14 +73,19 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL),
         pdevd3(nullptr), pdcd3(nullptr), pdevd2(nullptr), pswch(nullptr), pbmpBackBuf(nullptr), pdc(nullptr),
         cmdlist()
 {
-    hcurArrow = LoadCursor(NULL, IDC_ARROW);
-    hcurMove = LoadCursor(NULL, IDC_SIZEALL);
-    hcurNo = LoadCursor(NULL, IDC_NO);
-    hcurUpDown = LoadCursor(NULL, IDC_SIZENS);
+    hcurArrow = ::LoadCursor(NULL, IDC_ARROW);
+    hcurMove = ::LoadCursor(NULL, IDC_SIZEALL);
+    hcurNo = ::LoadCursor(NULL, IDC_NO);
+    hcurUpDown = ::LoadCursor(NULL, IDC_SIZENS);
+    hcurHand = ::LoadCursor(NULL, IDC_HAND);
+    hcurCrossHair = ::LoadCursor(NULL, IDC_CROSS);
+    hcurUp = ::LoadCursor(NULL, IDC_UPARROW);
     assert(hcurArrow != NULL);  /* these cursors are system cursors and loading them can't fail */
     assert(hcurMove != NULL);
     assert(hcurNo != NULL);
     assert(hcurUpDown != NULL);
+    assert(hcurHand != NULL);
+    assert(hcurCrossHair != NULL);
 
     const TCHAR szWndClassMain[] = L"ChessMain";
 
@@ -172,7 +177,7 @@ void APP::CreateRsrc(void)
         ID3D11Device* pdevd3T;
         ID3D11DeviceContext* pdcd3T;
         D3D_FEATURE_LEVEL flRet;
-        D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+        D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
             rgfld3, CArray(rgfld3), D3D11_SDK_VERSION,
             &pdevd3T, &flRet, &pdcd3T);
         if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
@@ -217,7 +222,7 @@ void APP::CreateRsrcSize(void)
     swchd.BufferCount = 2;
     swchd.Scaling = DXGI_SCALING_STRETCH;
     swchd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    if (pfactDxgi->CreateSwapChainForHwnd(pdevd3, hwnd, &swchd, NULL, NULL, &pswch) != S_OK)
+    if (pfactDxgi->CreateSwapChainForHwnd(pdevd3, hwnd, &swchd, nullptr, nullptr, &pswch) != S_OK)
         throw 1;
 
     IDXGISurface* psurfDxgi;
@@ -285,7 +290,7 @@ wstring APP::SzAppDataPath(void) const
  */
 void APP::Redraw(void)
 {
-    ::InvalidateRect(hwnd, NULL, true);
+    ::InvalidateRect(hwnd, nullptr, true);
     ::UpdateWindow(hwnd);
 }
 
@@ -939,6 +944,42 @@ public:
 
 /*
  *
+ *  CMDPLAYERLVL
+ * 
+ *  Dispatches the command player level up/down commands for white and black
+ *  players (4 commands total)
+ * 
+ */
+
+
+class CMDPLAYERLVL : public CMD
+{
+public:
+    CMDPLAYERLVL(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        PL* ppl = app.pga->mpcpcppl[(icmd - cmdPlayerLvlUp) & 1];
+        int level = ppl->Level();
+        if (icmd >= cmdPlayerLvlDown)
+            level--;
+        else
+            level++;
+        ppl->SetLevel(level);
+        app.pga->uiml.Redraw();
+        app.pga->uiti.Redraw();
+        return 1;
+    }
+    
+    virtual wstring SzTip(void) const
+    {
+        return app.SzLoad(idsTipPlayerLvlUp+icmd-cmdPlayerLvlUp);
+    }
+};
+
+
+/*
+ *
  *  CMDDEBUGPANEL
  * 
  *  Command to toggle the debug panel on and off
@@ -969,6 +1010,15 @@ public:
 };
 
 
+/*
+ *
+ *  CMDLOGDEPTHUP
+ * 
+ *  Notifcation command for setting the logging depth up one level
+ * 
+ */
+
+
 class CMDLOGDEPTHUP : public CMD
 {
 public:
@@ -986,8 +1036,16 @@ public:
     {
         return app.SzLoad(idsTipLogDepthUp);
     }
-
 };
+
+
+/*
+ *
+ *  CMDLOGDEPTHDOWN
+ * 
+ *  Notification command for lowering the logging depth down one level
+ * 
+ */
 
 
 class CMDLOGDEPTHDOWN : public CMD
@@ -1012,6 +1070,15 @@ public:
 };
 
 
+/*
+ *
+ *  CMDLOGFILETOGGLE
+ * 
+ *  Toggles saving the log file on/off.
+ * 
+ */
+
+
 class CMDLOGFILETOGGLE : public CMD
 {
 public:
@@ -1027,7 +1094,6 @@ public:
     {
         return app.SzLoad(idsTipLogFileToggle);
     }
-
 };
 
 
@@ -1087,6 +1153,10 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDLOGDEPTHUP(*this, cmdLogDepthUp));
     cmdlist.Add(new CMDLOGDEPTHDOWN(*this, cmdLogDepthDown));
     cmdlist.Add(new CMDLOGFILETOGGLE(*this, cmdLogFileToggle));
+    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUp));
+    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUpBlack));
+    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDown));
+    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDownBlack));
 }
 
 
@@ -1124,7 +1194,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         return 0;
 
     case WM_DISPLAYCHANGE:
-        InvalidateRect(hwnd, NULL, FALSE);
+        InvalidateRect(hwnd, nullptr, FALSE);
         return 0;
 
     case WM_PAINT:
@@ -1198,6 +1268,6 @@ string SzFlattenWsz(const wstring& wsz)
     size_t cch = wsz.length();
     if (cch >= sizeof(sz) - 1)
         cch = sizeof(sz) - 1;
-    sz[WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), NULL, NULL)] = 0;
+    sz[WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
     return sz;
 }

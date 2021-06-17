@@ -13,6 +13,10 @@
 #define idsTipLogDepthUp 12
 #define idsTipLogDepthDown 13
 #define idsTipLogFileToggle 14
+#define idsTipPlayerLvlUp      15
+#define idsTipPlayerLvlUpBlack	16
+#define idsTipPlayerLvlDown	17
+#define idsTipPlayerLvlDownBlack	18
 
 #define IDR_MAINFRAME	128
 #define iddAbout		1
@@ -41,6 +45,10 @@
 #define cmdLogDepthUp		18
 #define cmdLogDepthDown		19
 #define cmdLogFileToggle	20
+#define cmdPlayerLvlUp      21
+#define cmdPlayerLvlUpBlack	22
+#define cmdPlayerLvlDown	23
+#define cmdPlayerLvlDownBlack	24
 #define cmdMax				21
 
 #define idiApp			1
@@ -52,3 +60,5 @@
 #define idbHandShake 5
 #define idbFloppyDisk 6
 #define idbSqChessLogo 7
+#define idbAiLogo 8
+#define idbHumanLogo 9

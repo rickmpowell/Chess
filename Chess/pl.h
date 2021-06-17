@@ -51,6 +51,7 @@ class PL
 protected:
 	GA& ga;
 	wstring szName;
+	int level;
 
 	MV mvNext;
 	SPMV spmvNext;
@@ -70,6 +71,21 @@ public:
 	}
 
 	virtual MV MvGetNext(SPMV& spmv) = 0;
+	
+	virtual bool FHasLevel(void) const
+	{
+		return false;
+	}
+
+	virtual int Level(void) const
+	{
+		return level;
+	}
+
+	virtual void SetLevel(int level)
+	{
+		this->level = level;
+	}
 
 	void ReceiveMv(MV mv, SPMV spmv);
 };
@@ -97,6 +113,8 @@ protected:
 public:
 	PLAI(GA& ga);
 	virtual MV MvGetNext(SPMV& spmv);
+	virtual bool FHasLevel(void) const;
+	virtual void SetLevel(int level);
 
 protected:
 	float EvalBdgDepth(BDGMV& bdgmv, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
@@ -140,30 +158,9 @@ class PLHUMAN : public PL
 {
 public:
 	PLHUMAN(GA& ga, wstring szName);
+
 	virtual MV MvGetNext(SPMV& spmv);
 };
 
 
-#include "ui.h"
-
-
-/*
- *
- *	UIPL
- *
- *	Player name UI element in the move list. Pretty simple control.
- *
- */
-
-class UIPL : public UI
-{
-private:
-	PL* ppl;
-	CPC cpc;
-public:
-	UIPL(UI* puiParent, CPC cpc);
-	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(RCF rcfUpdate);
-	void SetPl(PL* pplNew);
-};
 

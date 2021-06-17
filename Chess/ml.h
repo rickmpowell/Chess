@@ -10,6 +10,59 @@
 #pragma once
 #include "panel.h"
 #include "bd.h"
+#include "pl.h"
+
+
+class UIPL;
+
+class SPINLVL : public SPIN
+{
+	UIPL& uipl;
+public:
+	SPINLVL(UIPL* puiParent, int cmdUp, int cmdDown);
+	virtual wstring SzValue(void) const;
+};
+
+
+/*
+ *
+ *	UIPL
+ *
+ *	Player name UI element in the move list. Pretty simple control.
+ *
+ */
+
+
+class UIPL : public UI
+{
+	friend class SPINLVL;
+
+private:
+	SPINLVL spinlvl;
+	PL* ppl;
+	CPC cpc;
+	bool fChooser;
+	float dyfLine;
+
+public:
+	UIPL(UI* puiParent, CPC cpc);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
+
+	virtual void Layout(void);
+	virtual SIZF SizfLayoutPreferred(void);
+	
+	virtual void Draw(RCF rcfUpdate);
+	void DrawChooser(RCF rcfUpdate);
+	void DrawChooserItem(const wstring& sz, RCF& rcf, int idbLogo);
+
+	void SetPl(PL* pplNew);
+
+	virtual void MouseHover(PTF ptf, MHT mht);
+	virtual void StartLeftDrag(PTF ptf);
+	virtual void EndLeftDrag(PTF ptf);
+	virtual void LeftDrag(PTF ptf);
+};
 
 
 /*
@@ -44,7 +97,6 @@ public:
 	void DrawColon(RCF& rcf, unsigned frac) const;
 	bool FTimeOutWarning(DWORD tm) const;
 };
-
 
 
 /*

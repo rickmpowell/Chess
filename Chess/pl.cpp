@@ -14,7 +14,7 @@ const unsigned long dcYield = 1000L;
 
 
 
-PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), 
+PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
 		mvNext(MV()), spmvNext(SPMV::Animate)
 {
 }
@@ -199,7 +199,15 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	return mvBest;
 }
 
+bool PLAI::FHasLevel(void) const
+{
+	return true;
+}
 
+void PLAI::SetLevel(int level)
+{
+	this->level = peg(level, 1, 10);
+}
 
 /*	PLAI::EvalBdgDepth
  *

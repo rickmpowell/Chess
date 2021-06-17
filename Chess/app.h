@@ -146,6 +146,9 @@ public:
 	HCURSOR hcurMove;
 	HCURSOR hcurNo;
 	HCURSOR hcurUpDown;
+	HCURSOR hcurHand;
+	HCURSOR hcurCrossHair;
+	HCURSOR hcurUp;
 	class GA* pga;
 	CMDLIST cmdlist;
 

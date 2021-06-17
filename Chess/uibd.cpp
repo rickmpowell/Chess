@@ -567,7 +567,7 @@ void UIBD::DrawHilites(void)
 
 void UIBD::DrawAnnotations(void)
 {
-	OPACITYBR(pbrAnnotation, 0.5f);
+	OPACITYBR oopacitybr(pbrAnnotation, 0.5f);
 	for (ANO& ano : vano) {
 		if (ano.sqTo.fIsNil())
 			DrawSquareAnnotation(ano.sqFrom);
@@ -743,12 +743,12 @@ void UIBD::MouseHover(PTF ptf, MHT mht)
 	HiliteLegalMoves(htbd == HTBD::MoveablePc ? sq : sqNil);
 	switch (htbd) {
 	case HTBD::MoveablePc:
-		::SetCursor(ga.app.hcurMove);
+		::SetCursor(ga.app.hcurHand);
 		break;
 	case HTBD::Empty:
 	case HTBD::OpponentPc:
 	case HTBD::UnmoveablePc:
-		::SetCursor(ga.app.hcurNo);
+		::SetCursor(ga.app.hcurArrow);
 		break;
 	default:
 		::SetCursor(ga.app.hcurArrow);

@@ -10,6 +10,17 @@
 #include "resources/Resource.h"
 
 
+
+SPINLVL::SPINLVL(UIPL* puiParent, int cmdUp, int cmdDown) : SPIN(puiParent, cmdUp, cmdDown), uipl(*puiParent)
+{
+}
+
+wstring SPINLVL::SzValue(void) const
+{
+	return to_wstring(uipl.ppl->Level());
+}
+
+
 /*
  *
  *	UIPL
@@ -24,8 +35,31 @@
  *
  *	Player name UI element constructor
  */
-UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), ppl(nullptr), cpc(cpc)
+UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), spinlvl(this, cmdPlayerLvlUp+cpc, cmdPlayerLvlDown+cpc), 
+		ppl(nullptr), cpc(cpc), fChooser(false), dyfLine(8.0f)
 {
+}
+
+
+void UIPL::CreateRsrc(void)
+{
+	UI::CreateRsrc();
+	dyfLine = SizfSz(L"Ag", ptxText).height + 2 * 6.0f;
+}
+
+void UIPL::DiscardRsrc(void)
+{
+	UI::DiscardRsrc();
+}
+
+
+void UIPL::Layout(void)
+{
+	spinlvl.Show(!fChooser && ppl->FHasLevel());
+	RCF rcf = RcfInterior();
+	rcf.right -= 4.0f;
+	rcf.left = rcf.right - 45.0f;
+	spinlvl.SetBounds(rcf);
 }
 
 
@@ -36,8 +70,10 @@ UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), ppl(nullptr), cpc(cpc)
  */
 SIZF UIPL::SizfLayoutPreferred(void)
 {
-	SIZF sizf = SizfSz(L"A", ptxText);
-	return SIZF(-1.0f, sizf.height + 12.0f);
+	SIZF sizf(-1.0f, dyfLine);
+	if (fChooser)
+		sizf.height *= 4.0f;
+	return sizf;
 }
 
 
@@ -50,29 +86,61 @@ void UIPL::Draw(RCF rcfUpdate)
 {
 	FillRcf(rcfUpdate, pbrBack);
 
-	/* draw the circle indicating which side */
+	if (fChooser)
+		DrawChooser(rcfUpdate);
+	else {
 
-	RCF rcf = RcfInterior();
-	rcf.left += 12.0f;
-	float dxyfRadius = rcf.DyfHeight() / 2.0f - 7.0f;
-	ELLF ellf(PTF(rcf.left+dxyfRadius, rcf.PtfCenter().y), PTF(dxyfRadius, dxyfRadius));
-	
-	AADC aadcSav(AppGet().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		/* draw the circle indicating which side */
 
-	if (cpc == CPC::White)
+		RCF rcf = RcfInterior();
+		rcf.left += 12.0f;
+		SIZF sizf = SizfSz(L"Ag", ptxText);
+		float dxyfRadius = sizf.height / 2.0f;
+		ELLF ellf(PTF(rcf.left + dxyfRadius, rcf.top + 6.0f + dxyfRadius), PTF(dxyfRadius, dxyfRadius));
+
+		AADC aadc(AppGet().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+
 		DrawEllf(ellf, pbrText);
-	else
-		FillEllf(ellf, pbrText);
+		if (cpc == CPC::Black)
+			FillEllf(ellf, pbrText);
 
-	/* and the player name */
+		/* and the player name */
 
-	if (ppl) {
-		wstring szName = ppl->SzName();
-		rcf.left += 3 * dxyfRadius;
-		SIZF sizf = SizfSz(ppl->SzName(), ptxText);
-		rcf.Inflate(0, -(rcf.DyfHeight() - sizf.height) / 2);
-		DrawSzFit(szName, ptxText, rcf);
+		if (ppl) {
+			wstring szName = ppl->SzName();
+			rcf.left += 3 * dxyfRadius;
+			sizf = SizfSz(ppl->SzName(), ptxText);
+			rcf.Offset(0, 6.0f);
+			DrawSzFit(szName, ptxText, rcf);
+		}
 	}
+
+}
+
+
+void UIPL::DrawChooser(RCF rcfUpdate)
+{
+	RCF rcf = RcfInterior();
+	DrawChooserItem(L"Mobly", rcf, idbAiLogo);
+	DrawChooserItem(L"Mathilda", rcf, idbAiLogo);
+	DrawChooserItem(L"Richard Powell", rcf, idbHumanLogo);
+	DrawChooserItem(L"My Good Dog", rcf, idbHumanLogo);
+}
+
+void UIPL::DrawChooserItem(const wstring& sz, RCF& rcf, int idb)
+{
+	rcf.bottom = rcf.top + dyfLine;
+
+	BMP* pbmpLogo = PbmpFromPngRes(idb);
+	SIZF sizf = pbmpLogo->GetSize();
+	RCF rcfTo = rcf;
+	rcfTo.Inflate(0, -4.0f).Offset(12.0f, 0);
+	rcfTo.right = rcfTo.left + rcfTo.DyfHeight() / sizf.height * sizf.width;
+	DrawBmp(rcfTo, pbmpLogo, RCF(PTF(0, 0), sizf));
+	SafeRelease(&pbmpLogo);
+	DrawSz(sz, ptxText, RCF(rcfTo.right+13.0f, rcfTo.top+2.0, rcf.right, rcfTo.bottom-2.0f));
+
+	rcf.top = rcf.bottom;
 }
 
 
@@ -85,6 +153,32 @@ void UIPL::Draw(RCF rcfUpdate)
 void UIPL::SetPl(PL* pplNew)
 {
 	ppl = pplNew;
+}
+
+
+void UIPL::MouseHover(PTF ptf, MHT mht)
+{
+	::SetCursor(AppGet().hcurUp);
+}
+
+
+void UIPL::StartLeftDrag(PTF ptf)
+{
+	SetFocus(this);
+}
+
+
+void UIPL::EndLeftDrag(PTF ptf)
+{
+	SetFocus(nullptr);
+	fChooser = !fChooser;
+	puiParent->Layout();
+	puiParent->Redraw();
+}
+
+
+void UIPL::LeftDrag(PTF ptf)
+{
 }
 
 
@@ -288,7 +382,7 @@ void UICLOCK::Draw(RCF rcfUpdate)
 	/* fill background */
 
 	RCF rcf = RcfInterior();
-	COLORBRS colorbrsSav(pbrAltBack, FTimeOutWarning(tm) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
+	COLORBRS colorbrs(pbrAltBack, FTimeOutWarning(tm) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
 	FillRcf(rcf, pbrAltBack);
 
 	/* break down time into parts */
@@ -318,7 +412,7 @@ void UICLOCK::Draw(RCF rcfUpdate)
 
 	/* print out the text piece at a time */
 
-	TATX tatxSav(ptxClock, DWRITE_TEXT_ALIGNMENT_LEADING);
+	TATX tatx(ptxClock, DWRITE_TEXT_ALIGNMENT_LEADING);
 	SIZF sizfDigit = SizfSz(L"0", ptxClock, 1000.0f, 1000.0f);
 	SIZF sizfPunc = SizfSz(L":", ptxClock, 1000.0f, 1000.0f);
 	rcf.bottom = rcf.top + sizfDigit.height;
@@ -361,7 +455,7 @@ bool UICLOCK::FTimeOutWarning(DWORD tm) const
 
 void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 {
-	OPACITYBR(pbrText, (frac < 500 && cpc == ga.bdg.cpcToMove) ? 0.33f : 1.0f);
+	OPACITYBR opacitybr(pbrText, (frac < 500 && cpc == ga.bdg.cpcToMove) ? 0.33f : 1.0f);
 	SIZF sizfPunc = SizfSz(L":", ptxClock);
 	DrawSz(L":", ptxClock, rcf, pbrText);
 	rcf.left += sizfPunc.width;
