@@ -84,7 +84,7 @@ void PL::ReceiveMv(MV mv, SPMV spmv)
  */
 
 
-PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvGen(0), cbdgmvPrune(0)
+PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cbdgmvEval(0), cbdgmvGen(0), cbdgmvPrune(0)
 {
 	rgfAICoeff[0] = 1.0f;
 	rgfAICoeff[1] = 5.0f;
@@ -93,7 +93,7 @@ PLAI::PLAI(GA& ga) : PL(ga, L"Mobly"), cYield(0), cbdgmvEval(0), cbdgmvGen(0), c
 PLAI2::PLAI2(GA& ga) : PLAI(ga)
 {
 	rgfAICoeff[1] = 0.1f;
-	SetName(L"Mathilda");
+	SetName(L"SQ Mathilda");
 }
 
 float PLAI::CmvFromLevel(int level) const
@@ -168,7 +168,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	bdg.GenRgmv(gmv, RMCHK::NoRemove);
 	if (gmv.cmv() == 0)
 		return MV();
-	int depthMax = DepthMax(bdg, gmv);
+	int depthMax = peg(DepthMax(bdg, gmv), 2, 12);
 	ga.Log(LGT::Data, LGF::Normal, wstring(L"Search depth:"), to_wstring(depthMax));
 	
 	/* and find the best move */
@@ -640,7 +640,7 @@ float PLAI2::EvalBdg(const BDGMV& bdgmv, bool fFull)
 	float eval;
 	eval = PLAI::EvalBdg(bdgmv, fFull);
 	if (fFull) {
-		normal_distribution<float> flDist(0.0, 0.5f);
+		normal_distribution<float> flDist(0.0, 50.0f);
 		eval += flDist(rgen);
 	}
 	return eval;
@@ -668,6 +668,7 @@ MV PLHUMAN::MvGetNext(SPMV& spmv)
 		ga.PumpMsg();
 	} while (mvNext.fIsNil());
 	MV mv = mvNext;
+	spmv = spmvNext;
 	mvNext = MV();
 	return mv;
 }
@@ -683,8 +684,8 @@ MV PLHUMAN::MvGetNext(SPMV& spmv)
 
 RGINFOPL::RGINFOPL(void) 
 {
-	vinfopl.push_back(INFOPL(IDCLASSPL::AI, TPL::AI, L"Mobly", 4));
-	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"Mathilda", 2));
+	vinfopl.push_back(INFOPL(IDCLASSPL::AI, TPL::AI, L"SQ Mobly", 4));
+	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"SQ Mathilda", 2));
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Rick Powell"));
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"My Dog Is the Best Dog"));
 }

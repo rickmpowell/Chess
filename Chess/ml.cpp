@@ -484,7 +484,7 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
  *
  *	UIML class implementation
  *
- *	Move list implementation
+ *	Move list panel, which is player and clock bars along with the scrolling move list.
  *
  */
 

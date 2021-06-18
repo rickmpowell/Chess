@@ -1,11 +1,10 @@
+  With board rotated black point of view, animations are messed up
   Help box icon looks like shit
-  Make small icon with logo
   Move level control in UIPL into the chooser
   Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
   I don't think move list is baseline aligned - problem with descenders? 
   Can we make things like Undo work while AI is thinking?
-  Dragged human player moves shouldn't animate into place
   Take advantage of DrawSzFit in move list, etc. to  make move list narrower
   AI: Communicate best continuation back
   Use UCI (universal chess interface) to communicate to UI from AI
@@ -93,6 +92,8 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw
+* Dragged human player moves shouldn't animate into place
+* Make small icon with logo
 * Use our logo in app icon
 * UI for choosing computer player
 * AI: need to discourage early queen development
