@@ -77,7 +77,42 @@ enum class LGT
 
 enum class LGF {
 	Normal,
-	Bold
+	Bold,
+	Italic,
+	BoldItalic
+};
+
+struct ATTR
+{
+	wstring name;
+	wstring val;
+
+	ATTR(const wstring& name, const wstring& val) : name(name), val(val) {
+	}
+};
+
+
+struct TAG
+{
+	wstring sz;
+	map<wstring, wstring> mpnameval;
+
+	TAG(const wchar_t* sz) : sz(wstring(sz)) {
+	}
+
+	TAG(const wstring& sz) : sz(sz) {
+	}
+
+	TAG(const wstring sz, const ATTR& attr) : sz(sz)
+	{
+		mpnameval[attr.name] = attr.val;
+	}
+
+	TAG(const wstring& sz, const ATTR rgattr[], int cattr) : sz(sz)
+	{
+		for (int iattr = 0; iattr < cattr; iattr++)
+			mpnameval[rgattr[iattr].name] = rgattr[iattr].val;
+	}
 };
 
 
@@ -173,6 +208,53 @@ public:
 	void Redraw(void);
 	virtual void InvalRcf(RCF rcf, bool fErase) const;
 	virtual void Draw(RCF rcfDraw);
+
+	virtual bool FDepthLog(LGT lgt, int& depth);
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+
+	inline void XLogOpen(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal)
+	{
+		int depth;
+		if (FDepthLog(LGT::Open, depth))
+			AddLog(LGT::Open, lgf, depth, tag, szData);
+	}
+
+#define LogOpen(tag, szData) \
+	{ int depth; \
+		if (FDepthLog(LGT::Open, depth)) \
+			AddLog(LGT::Open, LGF::Normal, depth, tag, szData); }
+
+	inline void XLogClose(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal)
+	{
+		int depth;
+		if (FDepthLog(LGT::Close, depth))
+			AddLog(LGT::Close, lgf, depth, tag, szData);
+	}
+
+#define LogClose(szTag, szData, lgf) \
+	{ int depth; \
+		if (FDepthLog(LGT::Close, depth)) \
+			AddLog(LGT::Close, lgf, depth, szTag, szData); }
+
+	inline void XLogData(const wstring& szData)
+	{
+		int depth;
+		if (FDepthLog(LGT::Data, depth))
+			AddLog(LGT::Data, LGF::Normal, depth, L"", szData);
+	}
+
+#define LogData(szData) \
+	{ int depth; \
+		if (FDepthLog(LGT::Data, depth)) \
+			AddLog(LGT::Data, LGF::Normal, depth, L"", szData); }
+
+	inline void LogTemp(const wstring& szData)
+	{
+		int depth;
+		if (FDepthLog(LGT::Temp, depth))
+			AddLog(LGT::Temp, LGF::Normal, depth, L"", szData);
+	}
+
 
 	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);

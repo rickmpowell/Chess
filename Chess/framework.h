@@ -43,6 +43,7 @@ using namespace D2D1;
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <iomanip>
 #include <fstream>
 #include <filesystem>

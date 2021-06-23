@@ -174,6 +174,45 @@ void BD::SkipToNonSpace(const WCHAR*& sz)
 }
 
 
+void BD::InitFENCastle(const wchar_t*& sz)
+{
+	SkipToNonSpace(sz);
+	ClearCastle(CPC::White, csKing | csQueen);
+	ClearCastle(CPC::Black, csKing | csQueen);
+	for (; *sz && *sz != L' '; sz++) {
+		switch (*sz) {
+		case 'K': SetCastle(CPC::White, csKing); break;
+		case 'Q': SetCastle(CPC::White, csQueen); break;
+		case 'k': SetCastle(CPC::Black, csKing); break;
+		case 'q': SetCastle(CPC::Black, csQueen); break;
+		case '-': break;
+		default: goto Done;
+		}
+	}
+Done:
+	SkipToSpace(sz);
+}
+
+
+void BD::InitFENEnPassant(const wchar_t*& sz)
+{
+	SkipToNonSpace(sz);
+	sqEnPassant = sqNil;
+	int rank = -1, file = -1;
+	for (; *sz && *sz != L' '; sz++) {
+		if (*sz >= L'a' && *sz <= L'h')
+			file = *sz - L'a';
+		else if (*sz >= L'1' && *sz <= L'8')
+			rank = *sz - '1';
+		else if (*sz == '-')
+			rank = file = -1;
+	}
+	if (rank != -1 && file != -1)
+		sqEnPassant = SQ(rank, file);
+	SkipToSpace(sz);
+}
+
+
 /*	BD::TpcUnusedPawn
  *
  *	Finds an unused pawn slot in the mptpcsq array for the cpc color.
@@ -460,6 +499,11 @@ bool BD::FInCheck(CPC cpc) const
 }
 
 
+/*	BD::FSqAttacked
+ *
+ *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
+ *	on sqAttacked is not considered to be attacking sqAttacked.
+ */
 bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
 {
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
@@ -467,6 +511,8 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
 		if (sq.fIsNil())
 			continue;
 		int dsq = sq - sqAttacked;
+		if (dsq == 0)
+			continue;
 		APC apc = ApcFromSq(sq);
 		switch (apc) {
 		case APC::Pawn:
@@ -911,9 +957,9 @@ void BDG::NewGame(void)
 }
 
 
-void BDG::InitFEN(const WCHAR* szFEN)
+void BDG::InitFEN(const wchar_t* szFEN)
 {
-	const WCHAR* sz = szFEN;
+	const wchar_t* sz = szFEN;
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
 	InitFENCastle(sz);
@@ -923,7 +969,7 @@ void BDG::InitFEN(const WCHAR* szFEN)
 }
 
 
-void BDG::InitFENSideToMove(const WCHAR*& sz)
+void BDG::InitFENSideToMove(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);
 	cpcToMove = CPC::White;
@@ -939,58 +985,104 @@ Done:
 }
 
 
-/* TODO: move to BD */
-void BDG::InitFENCastle(const WCHAR*& sz)
+
+void BDG::InitFENHalfmoveClock(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);
-	ClearCastle(CPC::White, csKing | csQueen);
-	ClearCastle(CPC::Black, csKing | csQueen);
-	for (; *sz && *sz != L' '; sz++) {
-		switch (*sz) {
-		case 'K': SetCastle(CPC::White, csKing); break;
-		case 'Q': SetCastle(CPC::White, csQueen); break;
-		case 'k': SetCastle(CPC::Black, csKing); break;
-		case 'q': SetCastle(CPC::Black, csQueen); break;
-		case '-': break;
-		default: goto Done;
+	SkipToSpace(sz);
+}
+
+
+void BDG::InitFENFullmoveCounter(const wchar_t*& sz)
+{
+	SkipToNonSpace(sz);
+	SkipToSpace(sz);
+}
+
+
+/*	BDG::SzFEN
+ *
+ *	Returns the FEN string of the given board
+ */
+wstring BDG::SzFEN(void) const
+{
+	wstring sz;
+
+	/* write the squares and pieces */
+
+	for (int rank = rankMax-1; rank >= 0; rank--) {
+		int csqEmpty = 0;
+		for (int file = 0; file < fileMax; file++) {
+			SQ sq(rank, file);
+			if ((*this)(sq).fIsEmpty())
+				csqEmpty++;
+			else {
+				if (csqEmpty > 0) {
+					sz += to_wstring(csqEmpty);
+					csqEmpty = 0;
+				}
+				wchar_t ch = L' ';
+				switch (ApcFromSq(sq)) {
+				case APC::Pawn: ch = L'P'; break;
+				case APC::Knight: ch = L'N'; break;
+				case APC::Bishop: ch = L'B'; break;
+				case APC::Rook: ch = L'R'; break;
+				case APC::Queen: ch = L'Q'; break;
+				case APC::King: ch = L'K'; break;
+				default: assert(false); break;
+				}
+				if (CpcFromSq(sq) == CPC::Black)
+					ch += L'a' - L'A';
+				sz += ch;
+			}
 		}
+		if (csqEmpty > 0)
+			sz += to_wstring(csqEmpty);
+		sz += L'/';
 	}
-Done:
-	SkipToSpace(sz);
-}
 
+	/* piece to move */
 
-/* TODO: move to BD */
-void BDG::InitFENEnPassant(const WCHAR*& sz)
-{
-	SkipToNonSpace(sz);
-	sqEnPassant = sqNil;
-	int rank=-1, file=-1;
-	for (; *sz && *sz != L' '; sz++) {
-		if (*sz >= L'a' && *sz <= L'h')
-			file = *sz - L'a';
-		else if (*sz >= L'1' && *sz <= L'8')
-			rank = *sz - '1';
-		else if (*sz == '-')
-			rank = file = -1;
+	sz += L' ';
+	sz += cpcToMove == CPC::White ? L'w' : L'b';
+	
+	/* castling */
+
+	sz += L' ';
+	if (cs == 0)
+		sz += L'-';
+	else {
+		if (cs & csWhiteKing)
+			sz += L'K';
+		if (cs & csWhiteQueen)
+			sz += L'Q';
+		if (cs & csBlackKing)
+			sz += L'k';
+		if (cs & csBlackQueen)
+			sz += L'q';
 	}
-	if (rank != -1 && file != -1)
-		sqEnPassant = SQ(rank, file);
-	SkipToSpace(sz);
-}
 
+	/* en passant */
 
-void BDG::InitFENHalfmoveClock(const WCHAR*& sz)
-{
-	SkipToNonSpace(sz);
-	SkipToSpace(sz);
-}
+	sz += L' ';
+	if (sqEnPassant.fIsNil())
+		sz += L'-';
+	else {
+		sz += (L'a' + sqEnPassant.file());
+		sz += (L'1' + sqEnPassant.rank());
+	}
 
+	/* halfmove clock */
 
-void BDG::InitFENFullmoveCounter(const WCHAR*& sz)
-{
-	SkipToNonSpace(sz);
-	SkipToSpace(sz);
+	sz += L' ';
+	sz += to_wstring(imvCur - imvPawnOrTakeLast);
+
+	/* fullmove number */
+
+	sz += L' ';
+	sz += to_wstring(1 + imvCur/2);
+
+	return sz;
 }
 
 

@@ -8,6 +8,7 @@
 
 #include "panel.h"
 #include "ga.h"
+#include "debug.h"
 
 
 /*
@@ -135,6 +136,16 @@ void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop)
 		rcf.top--;
 }
 
+bool UIP::FDepthLog(LGT lgt, int& depth)
+{
+	return ga.uidb.FDepthLog(lgt, depth);
+}
+
+void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+{
+	ga.uidb.AddLog(lgt, lgf, depth, tag, szData);
+}
+
 
 /*
  *
@@ -236,6 +247,12 @@ void UIPS::ScrollTo(float dyf)
 }
 
 
+/*	UIPS::FMakeVis
+ *
+ *	Makes the position yf of height dyf in the content area visible within the view
+ *	rectangle. Returns true if we had to scroll to make the iteme visible, false if
+ *	the item was already visible
+ */
 bool UIPS::FMakeVis(float yf, float dyf)
 {
 	if (yf < rcfView.top)

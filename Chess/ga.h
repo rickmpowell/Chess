@@ -113,19 +113,12 @@ public:
 	void MoveToImv(int imv);
 	void GenRgmv(GMV& gmv);
 
-	/*	GA::Log
-	 *
-	 *	Logs a heirarchical line of data to the logger. We're taking advantage of
-	 *	the compiler's inlining and optimizations to avoid generating the logging 
-	 *	strings, which can have a major impact on performance of the AI.
+	/*	
+	 *	Logging
 	 */
-	inline void Log(LGT lgt, LGF lgf, const wstring& szTag, const wstring& szData)
-	{
-		int depth;
-		if (!uidb.FDepthLog(lgt, depth))
-			return;
-		uidb.AddLog(lgt, lgf, depth, szTag, szData);
-	}
+
+	virtual bool FDepthLog(LGT lgt, int& depth);
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
 
 	virtual void ClearLog(void);
 	virtual void SetDepthLog(int depth);

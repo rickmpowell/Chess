@@ -8,6 +8,7 @@
 
 #pragma once
 #include "ui.h"
+
 class GA;
 
 
@@ -38,6 +39,9 @@ public:
 	virtual void Draw(RCF rcfUpdate);
 	void SetShadow(void);
 	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop);
+
+	virtual bool FDepthLog(LGT lgt, int& depth);
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
 };
 
 

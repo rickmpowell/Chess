@@ -626,6 +626,18 @@ void UI::EndDraw(void)
 	puiParent->EndDraw();
 }
 
+bool UI::FDepthLog(LGT lgt, int& depth)
+{
+	assert(puiParent);
+	return puiParent->FDepthLog(lgt, depth);
+}
+
+void UI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+{
+	assert(puiParent);
+	puiParent->AddLog(lgt, lgf, depth, tag, szData);
+}
+
 
 /*	UI::FillRcf
  *

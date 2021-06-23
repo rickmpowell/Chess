@@ -151,19 +151,23 @@ void UIBD::Layout(void)
 
 	rcfSquares = RcfInterior();
 
-	dxyfMargin = rcfBounds.DyfHeight() / 16.0f;
-	if (dxyfMargin > 18.0f)
-		dxyfBorder = dxyfMargin / 30.0f;
-	else
-		dxyfMargin = dxyfBorder = 0;
+	dxyfSquare = roundf(rcfSquares.DxfWidth() / 9.5f);
 
-	/* these thin lines need to be integer values or they look like shit */
-	dxyfOutline = roundf(2.0f * dxyfBorder);
-	dxyfBorder = roundf(dxyfBorder);
+	dxyfBorder = dxyfSquare / 32.0f;
+	if (dxyfBorder < 1.0f) {
+		dxyfBorder = 0;
+		dxyfOutline = 0;
+		dxyfMargin = 0;
+		dxyfSquare = rcfSquares.DxfWidth() / 8.0f;
+	}
+	else {
+		dxyfOutline = roundf(2.0f * dxyfBorder);
+		dxyfBorder = roundf(dxyfBorder);
+		dxyfMargin = (RcfInterior().DxfWidth() - 2 * (dxyfBorder + dxyfOutline) - 8 * dxyfSquare) / 2.0f;
+	}
 
 	float dxyf = dxyfMargin + dxyfOutline + dxyfBorder;
 	rcfSquares.Inflate(-dxyf, -dxyf);
-	dxyfSquare = (rcfSquares.bottom - rcfSquares.top) / 8.0f;
 	
 	CreateRsrc();
 	dyfLabel = SizfSz(L"8", ptxLabel).height;
@@ -171,7 +175,7 @@ void UIBD::Layout(void)
 	/* position the rotation button */
 
 	RCF rcf = RcfInterior().Inflate(-dxyfBorder, -dxyfBorder);
-	float dxyfBtn = dxyfSquare * 0.33f;
+	float dxyfBtn = dxyfSquare * 0.375f;
 	rcf.top = rcf.bottom - dxyfBtn;
 	rcf.right = rcf.left + dxyfBtn;
 	btnRotateBoard.SetBounds(rcf);

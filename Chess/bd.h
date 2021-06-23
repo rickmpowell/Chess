@@ -431,7 +431,7 @@ public:
 		return *this;
 	}
 
-	GMV& operator=(GMV&& gmv)
+	GMV& operator=(GMV&& gmv) noexcept
 	{
 		if (this == &gmv)
 			return *this;
@@ -578,6 +578,16 @@ enum class GS {
 	Canceled
 };
 
+
+/*
+ *
+ *	CS enumeration
+ * 
+ *	Castle state. This is a 4-bit value which keeps track of which castles are still
+ *	legal.
+ *
+ */
+
 enum {
 	csKing = 0x01, csQueen = 0x04,
 	csWhiteKing = 0x01,
@@ -609,6 +619,14 @@ inline int CsUnpackColor(int csPack, CPC cpc)
 	int csUnpack = (csPack&1) | ((csPack&2)<<1);
 	return csUnpack << (BYTE)cpc;
 }
+
+/*
+ *
+ *	Some convenience functions that return specific special locations on the board. This
+ *	is not exhaustive, and I'm just writing and adding them as I need them. Many of these
+ *	need to be very fast.
+ * 
+ */
 
 
 /*	RankPromoteFromCpc
@@ -678,7 +696,7 @@ class BD
 {
 	static const float mpapcvpc[];
 public:
-	uint8_t mpsqipc[64+64];	// the board itself (maps square to piece)
+	uint8_t mpsqipc[64+64];	/* the board itself (maps square to piece) */
 	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards
 	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
@@ -696,16 +714,16 @@ public:
 	}
 
 	void SetEmpty(void);
+	bool operator==(const BD& bd) const;
+	bool operator!=(const BD& bd) const;
 
-	void InitFENPieces(const WCHAR*& szFEN);
-	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
-	void SkipToNonSpace(const WCHAR*& sz);
-	void SkipToSpace(const WCHAR*& sz);
-	TPC TpcUnusedPawn(CPC cpc) const;
+	/* making moves */
 
 	void MakeMvSq(MV& mv);
 	void UndoMvSq(MV mv);
 
+	/* move generation */
+	
 	void GenRgmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenRgmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const;
@@ -716,7 +734,6 @@ public:
 	void GenRgmvQueen(GMV& gmv, SQ sqFrom) const;
 	void GenRgmvKing(GMV& gmv, SQ sqFrom) const;
 	void GenRgmvCastle(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvCastleSide(GMV& gmv, SQ sqKing, int fileRook, int dsq) const;
 	void GenRgmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const;
 	void AddRgmvMvPromotions(GMV& gmv, MV mv) const;
 	void GenRgmvEnPassant(GMV& gmv, SQ sqFrom) const;
@@ -762,6 +779,10 @@ public:
 			;
 	}
 	
+	/*
+	 *	checking squares for attack 
+	 */
+
 	void RemoveInCheckMoves(GMV& gmv, CPC cpc) const;
 	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
@@ -785,6 +806,11 @@ public:
 		return false;
 	}
 
+	/*
+	 *	move, square, and piece convenience functions. most of these need to be highly
+	 *	optimized - beware of bit twiddling tricks!
+	 */
+	
 	inline bool FMvEnPassant(MV mv) const
 	{
 		return mv.sqTo() == sqEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
@@ -795,16 +821,36 @@ public:
 		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
-	inline IPC& operator()(int rank, int file) { return *(IPC*)&mpsqipc[rank * 16 + file]; }
-	inline IPC& operator()(SQ sq) { return *(IPC*)&mpsqipc[sq]; }
+	inline IPC& operator()(int rank, int file) 
+	{ 
+		return *(IPC*)&mpsqipc[rank * 16 + file]; 
+	}
+	
+	inline IPC& operator()(SQ sq) 
+	{
+		return *(IPC*)&mpsqipc[sq]; 
+	}
 
-	inline const IPC& operator()(SQ sq) const {
+	inline const IPC& operator()(SQ sq) const 
+	{
 		return *(IPC*)&mpsqipc[sq];
 	}
 
-	inline SQ& SqFromTpc(TPC tpc, CPC cpc) { return *(SQ*)&mptpcsq[cpc][tpc]; }
-	inline SQ& SqFromIpc(IPC ipc) { return SqFromTpc(ipc.tpc(), ipc.cpc()); }
-	inline SQ SqFromTpc(TPC tpc, CPC cpc) const { return *(SQ*)&mptpcsq[cpc][tpc]; }
+	inline SQ& SqFromTpc(TPC tpc, CPC cpc) 
+	{
+		return *(SQ*)&mptpcsq[cpc][tpc]; 
+	}
+	
+	inline SQ& SqFromIpc(IPC ipc) 
+	{
+		return SqFromTpc(ipc.tpc(), ipc.cpc()); 
+	}
+	
+	inline SQ SqFromTpc(TPC tpc, CPC cpc) const 
+	{
+		return *(SQ*)&mptpcsq[cpc][tpc]; 
+	}
+
 	inline SQ SqFromIpc(IPC ipc) const { return SqFromTpc(ipc.tpc(), ipc.cpc()); }
 
 	inline SQ& operator()(TPC tpc, CPC cpc) {
@@ -830,9 +876,10 @@ public:
 		return (*this)(sq).tpc();
 	}
 	
-	inline CPC CpcFromSq(SQ sq) const { return (*this)(sq).cpc(); }
-	
-	float VpcFromSq(SQ sq) const;
+	inline CPC CpcFromSq(SQ sq) const 
+	{ 
+		return (*this)(sq).cpc(); 
+	}
 	
 	inline bool FIsEmpty(SQ sq) const 
 	{
@@ -854,6 +901,10 @@ public:
 		this->cs &= ~(csSide << (int)cpc); 
 	}
 
+	/*
+	 *	bitboard manipulation
+	 */
+
 	inline void SetBB(IPC ipc, SQ sq)
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
@@ -864,10 +915,28 @@ public:
 		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
 	}
 
+	/*
+	 *	getting piece value of pieces/squares
+	 */
+
+	float VpcFromSq(SQ sq) const;
 	float VpcTotalFromCpc(CPC cpc) const;
 
-	bool operator==(const BD& bd) const;
-	bool operator!=(const BD& bd) const;
+	/*
+	 *	reading FEN strings 
+	 */
+
+	void InitFENPieces(const wchar_t*& szFEN);
+	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
+	void SkipToNonSpace(const wchar_t*& sz);
+	void SkipToSpace(const wchar_t*& sz);
+	void InitFENCastle(const wchar_t*& sz);
+	void InitFENEnPassant(const wchar_t*& sz);
+	TPC TpcUnusedPawn(CPC cpc) const;
+
+	/*
+	 *	debug and validation
+	 */
 
 #ifndef NDEBUG
 	void Validate(void) const;
@@ -948,20 +1017,36 @@ public:
 	BDG(const WCHAR* szFEN);
 	void NewGame(void);
 
+	/* 
+	 *	move generation 
+	 */
+
 	void GenRgmv(GMV& gmv, RMCHK rmchk) const;
 	void GenRgmvQuiescent(GMV& gmv, RMCHK rmchk) const;
 	bool FMvIsQuiescent(MV mv) const;
 	
+	/* 
+	 *	making moves 
+	 */
+
 	void MakeMv(MV mv);
 	void UndoMv(void);
 	void RedoMv(void);
 	
+	/* 
+	 *	game over tests
+	 */
+
 	GS GsTestGameOver(const GMV& gmv, const RULE& rule) const;
 	void SetGameOver(const GMV& gmv, const RULE& rule);
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int cmvDraw) const;
 	void SetGs(GS gs); 
+
+	/*
+	 *	decoding moves 
+	 */
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv, bool fPretty) const;
@@ -971,12 +1056,9 @@ public:
 	string SzFlattenMvSz(const wstring& wsz) const;
 	wstring SzDecodeMvPost(MV mv) const;
 
-	void InitFEN(const WCHAR* szFen);
-	void InitFENSideToMove(const WCHAR*& sz);
-	void InitFENCastle(const WCHAR*& sz);
-	void InitFENEnPassant(const WCHAR*& sz);
-	void InitFENHalfmoveClock(const WCHAR*& sz);
-	void InitFENFullmoveCounter(const WCHAR*& sz);
+	/* 
+	 *	parsing moves 
+	 */
 
 	int ParseMv(const char*& pch, MV& mv) const;
 	int ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const;
@@ -987,6 +1069,23 @@ public:
 	bool FMvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
 	bool FMvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, MV& mv) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
+
+	/*
+	 *	importing FEN strings 
+	 */
+
+	void InitFEN(const wchar_t* szFen);
+	void InitFENSideToMove(const wchar_t*& sz);
+	void InitFENHalfmoveClock(const wchar_t*& sz);
+	void InitFENFullmoveCounter(const wchar_t*& sz);
+
+	/* 
+	 *	exporting FEN strings 
+	 */
+
+	wstring SzFEN(void) const;
+	operator wstring() const { return SzFEN(); }
+
 };
 
 

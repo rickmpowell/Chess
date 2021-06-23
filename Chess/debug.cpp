@@ -65,8 +65,8 @@ void UIBBDBLOG::Layout(void)
 {
 	RCF rcf = RcfInterior().Inflate(-2.0f, -2.0f);
 	rcf.right = rcf.left;
-	AdjustBtnRcfBounds(&spindepth, rcf, 40.0f);
 	AdjustBtnRcfBounds(&btnLogOnOff, rcf, rcf.DyfHeight());
+	AdjustBtnRcfBounds(&spindepth, rcf, 40.0f);
 }
 
 
@@ -80,7 +80,7 @@ void UIBBDBLOG::Layout(void)
 
 
 UIDB::UIDB(GA* pga) : UIPS(pga), uibbdb(this), uibbdblog(this), 
-		ptxLog(nullptr), ptxLogBold(nullptr), dyfLine(12.0f),
+		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyfLine(12.0f),
 		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
 }
@@ -107,6 +107,14 @@ void UIDB::CreateRsrc(void)
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxLogBold);
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptxLogItalic);
+	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptxLogBoldItalic);
 	UI::CreateRsrc();
 }
 
@@ -115,6 +123,8 @@ void UIDB::DiscardRsrc(void)
 {
 	SafeRelease(&ptxLog);
 	SafeRelease(&ptxLogBold);
+	SafeRelease(&ptxLogItalic);
+	SafeRelease(&ptxLogBoldItalic);
 	UI::DiscardRsrc();
 }
 
@@ -154,51 +164,97 @@ void UIDB::Draw(RCF rcfUpdate)
 
 void UIDB::DrawContent(RCF rcfCont)
 {
+	if (vlgentry.size() == 0)
+		return;
+
 	RCF rcf = RcfContent();
 	rcf.left += 4.0f;
 	rcf.right = rcf.left + 1000.0f;
 	
-	size_t ilgentryFirst;
-	for (ilgentryFirst = 0; ilgentryFirst < vlgentry.size(); ilgentryFirst++) {
-		if (rcf.top + vlgentry[ilgentryFirst].dyfTop + vlgentry[ilgentryFirst].dyfHeight > RcfView().top)
-			break;
-		rcf.top = RcfContent().top + vlgentry[ilgentryFirst].dyfTop;
-	}
+	size_t ilgentryFirst = IlgentryFromYf(RcfView().top);
+	rcf.top = RcfContent().top + vlgentry[ilgentryFirst].dyfTop;
 
 	for (size_t ilgentry = ilgentryFirst; ilgentry < vlgentry.size() && rcf.top < RcfView().bottom; ilgentry++) {
-		
+		LGENTRY& lgentry = vlgentry[ilgentry];
+
 		/* 0 heights are those that were combined into another line */
 		
-		if (vlgentry[ilgentry].dyfHeight == 0)
+		if (lgentry.dyfHeight == 0)
 			continue;
 		
 		/* get string and formatting */
 
-		wstring sz = vlgentry[ilgentry].szTag + L" " + vlgentry[ilgentry].szData;
+		wstring sz;
+		if (lgentry.tag.sz.size() > 0)
+			sz = lgentry.tag.sz + L" ";
+		sz += lgentry.szData;
 		rcf.bottom = rcf.top + dyfLine;
-		LGF lgf = vlgentry[ilgentry].lgf;
+		LGF lgf = lgentry.lgf;
 
 		/* if matching open and close are next to each other, then combine them to a single line */
 
-		if (ilgentry + 1 < vlgentry.size() && FCombineLogEntries(vlgentry[ilgentry], vlgentry[ilgentry+1])) {
+		if (ilgentry + 1 < vlgentry.size() && FCombineLogEntries(lgentry, vlgentry[ilgentry+1])) {
 			sz += wstring(L" ") + vlgentry[ilgentry+1].szData;
 			lgf = vlgentry[ilgentry + 1].lgf;
 		}
 
-		DrawSz(sz, lgf == LGF::Bold ? ptxLogBold : ptxLog, 
-			RCF(rcf.left+12.0f*vlgentry[ilgentry].depth, rcf.top, rcf.right, rcf.bottom), 
+		TX* ptx;
+		switch (lgf) {
+		case LGF::Italic: ptx = ptxLogItalic; break;
+		case LGF::Bold: ptx = ptxLogBold; break;
+		case LGF::BoldItalic: ptx = ptxLogBoldItalic; break;
+		default: ptx = ptxLog; break;
+		}
+		DrawSz(sz, ptx, 
+			RCF(rcf.left+12.0f*lgentry.depth, rcf.top, rcf.right, rcf.bottom), 
 			pbrText);
 		rcf.top = rcf.bottom;
 	}
 }
 
 
+/*	UIDB::IlgentryFromYf
+ *
+ *	Finds the log entry in the content area that is located at the vertical location yf, which 
+ *	is in UIDB coordinates
+ */
+size_t UIDB::IlgentryFromYf(int yf) const
+{
+	float yfContentTop = RcfContent().top;
+	if (vlgentry.size() == 0)
+		return 0;
+	size_t ilgentryFirst = 0; 
+	size_t ilgentryLast = vlgentry.size()-1;
+	if (yf < yfContentTop + vlgentry[ilgentryFirst].dyfTop)
+		return 0;
+	if (yf >= yfContentTop + vlgentry[ilgentryLast].dyfTop + vlgentry[ilgentryLast].dyfHeight)
+		return ilgentryLast;
+
+	for (;;) {
+		size_t ilgentryMid = (ilgentryFirst + ilgentryLast) / 2;
+		if (yf < yfContentTop + vlgentry[ilgentryMid].dyfTop)
+			ilgentryLast = ilgentryMid-1;
+		else if (yf >= yfContentTop + vlgentry[ilgentryMid].dyfTop + vlgentry[ilgentryMid].dyfHeight)
+			ilgentryFirst = ilgentryMid+1;
+		else
+			return ilgentryMid;
+	}	
+}
+
+
+/*	UIDB::FCombineLogEntries
+ *
+ *	Returns true if the two log entries should be combined into a single line. Basically, if they
+ *	are the corresponding open/close of the same tag.
+ */
 bool UIDB::FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const
 {
-	return lgentry1.lgt == LGT::Open && 
-		lgentry1.szTag == lgentry2.szTag &&
-		((lgentry2.lgt == LGT::Close && lgentry1.depth == lgentry2.depth) ||
-		 (lgentry2.lgt == LGT::Temp && lgentry1.depth+1 == lgentry2.depth));
+	if (lgentry2.lgt == LGT::Temp)
+		return true;
+	if (lgentry1.lgt == LGT::Open && lgentry2.lgt == LGT::Close &&  
+			lgentry1.depth == lgentry2.depth && lgentry1.tag.sz == lgentry2.tag.sz)
+		return true;
+	return false;
 }
 
 
@@ -220,9 +276,9 @@ bool UIDB::FDepthLog(LGT lgt, int& depth)
 }
 
 
-void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData)
+void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {
-	LGENTRY lgentry(lgt, lgf, depth, szTag, szData);
+	LGENTRY lgentry(lgt, lgf, depth, tag, szData);
 
 	assert(depth <= DepthLog());
 
@@ -240,8 +296,10 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstri
 
 	if (posLog && lgentry.lgt != LGT::Temp) {
 		*posLog << string(4 * lgentry.depth, ' ');
-		*posLog << SzFlattenWsz(lgentry.szTag);
-		*posLog << ' ';
+		if (lgentry.tag.sz.size() > 0) {
+			*posLog << SzFlattenWsz(lgentry.tag.sz);
+			*posLog << ' ';
+		}
 		*posLog << SzFlattenWsz(lgentry.szData);
 		*posLog << endl;
 	}
@@ -262,6 +320,7 @@ void UIDB::ClearLog(void)
 {
 	vlgentry.clear();
 	UpdateContSize(SIZF(0,0));
+	FMakeVis(RcfContent().top, RcfContent().left);
 }
 
 

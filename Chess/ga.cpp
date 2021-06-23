@@ -147,8 +147,11 @@ void GA::Layout(void)
 
 	rcf.left = rcf.right + dxyfMargin;
 	rcf.bottom = rcfBounds.bottom - 100.0f;
-	if (rcf.DyfHeight() < 200.0f)
-		rcf.bottom = rcf.top + 200.0f;
+	/* make board a multiple of 8 pixels wide, so we don't get weird */
+	if ((int)rcf.bottom & 7)
+		rcf.bottom -= (int)rcf.bottom & 7;
+	if (rcf.DyfHeight() < 180.0f)
+		rcf.bottom = rcf.top + 180.0f;
 	rcf.right = rcf.left + rcf.DyfHeight();
 	uibd.SetBounds(rcf);
 
@@ -409,7 +412,7 @@ int GA::Play(void)
 	} inplay(*this);
 
 	InitLog(2);
-	Log(LGT::Open, LGF::Normal, L"Game", L"");
+	LogOpen(L"Game", L"");
 	try {
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
@@ -421,10 +424,10 @@ int GA::Play(void)
 		} while (bdg.gs == GS::Playing);
 	}
 	catch (int err) {
-		MessageBoxW(app.hwnd, L"Game play has been aborted.", NULL, MB_OK);
+		::MessageBoxW(app.hwnd, L"Game play has been aborted.", NULL, MB_OK);
 		return err;
 	}
-	Log(LGT::Close, LGF::Normal, L"Game", L"");
+	LogClose(L"Game", L"", LGF::Normal);
 	return 0;
 }
 
@@ -437,7 +440,7 @@ int GA::Play(void)
 void GA::PumpMsg(void)
 {
 	MSG msg;
-	if (::PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE | PM_NOYIELD)) {
+	while (::PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE|PM_NOYIELD)) {
 		switch (msg.message) {
 		case WM_KEYDOWN:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
@@ -445,13 +448,23 @@ void GA::PumpMsg(void)
 				throw -1;
 			break;
 		case WM_QUIT:
-			throw - 1;
+			throw -1;
 		default:
 			if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE))
 				::DispatchMessage(&msg);
 			break;
 		}
 	}
+}
+
+bool GA::FDepthLog(LGT lgt, int& depth)
+{
+	return uidb.FDepthLog(lgt, depth);
+}
+
+void GA::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+{
+	uidb.AddLog(lgt, lgf, depth, tag, szData);
 }
 
 

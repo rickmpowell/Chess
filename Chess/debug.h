@@ -68,18 +68,20 @@ public:
  *	Individual entries are tag/value pairs.
  * 
  */
+
+
 struct LGENTRY
 {
 	LGT lgt;
 	LGF lgf;
-	wstring szTag;
+	TAG tag;
 	wstring szData;
 	int depth;
 	float dyfTop;	// position of the line relative to rcfCont
 	float dyfHeight;
 
-	LGENTRY(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData) : 
-		lgt(lgt), lgf(lgf), szTag(szTag), szData(szData), depth(depth), dyfTop(0.0f), dyfHeight(10.0f)
+	LGENTRY(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : 
+		lgt(lgt), lgf(lgf), tag(tag), szData(szData), depth(depth), dyfTop(0.0f), dyfHeight(10.0f)
 	{
 	}
 };
@@ -103,6 +105,8 @@ class UIDB : public UIPS
 	vector<LGENTRY> vlgentry;
 	TX* ptxLog;
 	TX* ptxLogBold;
+	TX* ptxLogItalic;
+	TX* ptxLogBoldItalic;
 	float dyfLine;
 	int depthCur;
 	int depthShowSet;
@@ -117,8 +121,11 @@ public:
 	virtual void Draw(RCF rcfUpdate);
 	virtual void DrawContent(RCF rcfCont);
 	virtual float DyfLine(void) const;
+	size_t IlgentryFromYf(int yf) const;
 
-	void AddLog(LGT lgt, LGF lgf, int depth, const wstring& szTag, const wstring& szData);
+	virtual bool FDepthLog(LGT lgt, int& depth); 
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+	
 	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const;
 	void InitLog(int depth);
 	void ClearLog(void);
@@ -127,5 +134,4 @@ public:
 	int DepthLog(void) const;
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const;
-	bool FDepthLog(LGT lgt, int& depth);
 };

@@ -1,3 +1,5 @@
+  Ticking clock overwrites popup tips
+  Log: Should we hash tags?
   With board rotated black point of view, animations are messed up
   Help box icon looks like shit
   Move level control in UIPL into the chooser
@@ -13,7 +15,6 @@
   Hash boards
   AI: Quitting the app while AI is running sometimes crashes in PresentSwch
   UI: Move as many drawing objects into classes as possible
-  Log: Logging gets really slow when a lot of log entries start piling up.
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
   Test: We're erroneously reporting success when aborting test run
   Test: Clicking test button in UIDB should interrupt a running test
@@ -91,7 +92,10 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-  ML: Optimize redraw
+  ML: Optimize redraw (cache BDG with first visible line in the view area?)
+* Log: second game screws up the log content/view
+* Log: Add properties to tag 
+* Log: Logging gets really slow when a lot of log entries start piling up.
 * Dragged human player moves shouldn't animate into place
 * Make small icon with logo
 * Use our logo in app icon
