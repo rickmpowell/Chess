@@ -227,10 +227,10 @@ void APP::CreateRsrcSize(void)
     if (pswch->GetBuffer(0, IID_PPV_ARGS(&psurfDxgi)) != S_OK)
         throw 1;
 
-    float dxyf = (float)GetDpiForWindow(hwnd);
+    float dxy = (float)GetDpiForWindow(hwnd);
     D2D1_BITMAP_PROPERTIES1 propBmp;
     propBmp = BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
-        PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxyf, dxyf);
+        PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE), dxy, dxy);
     pdc->CreateBitmapFromDxgiSurface(psurfDxgi, &propBmp, &pbmpBackBuf);
     pdc->SetTarget(pbmpBackBuf);
     
@@ -292,11 +292,11 @@ void APP::Redraw(void)
     ::UpdateWindow(hwnd);
 }
 
-void APP::Redraw(RCF rcf)
+void APP::Redraw(RC rc)
 {
-    RECT rc;
-    ::SetRect(&rc, (int)floor(rcf.left), (int)floor(rcf.top), (int)ceil(rcf.right), (int)ceil(rcf.bottom));
-    ::InvalidateRect(hwnd, &rc, true);
+    RECT rect;
+    ::SetRect(&rect, (int)floor(rc.left), (int)floor(rc.top), (int)ceil(rc.right), (int)ceil(rc.bottom));
+    ::InvalidateRect(hwnd, &rect, true);
     ::UpdateWindow(hwnd);
 }
 
@@ -330,7 +330,7 @@ void APP::OnSize(UINT dx, UINT dy)
 {
     DiscardRsrcSize();
     CreateRsrc();
-    pga->Resize(PTF((float)dx, (float)dy));
+    pga->Resize(PT((float)dx, (float)dy));
 }
 
 
@@ -345,9 +345,9 @@ void APP::OnPaint(void)
 
     if (pga) {
         pga->BeginDraw();
-        RCF rcf((float)ps.rcPaint.left, (float)ps.rcPaint.top,
+        RC rc((float)ps.rcPaint.left, (float)ps.rcPaint.top,
             (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
-        pga->Update(rcf);
+        pga->Update(rc);
         pga->EndDraw();
     }
 
@@ -357,26 +357,26 @@ void APP::OnPaint(void)
 
 bool APP::OnMouseMove(int x, int y)
 {
-    PTF ptf;
-    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    PT pt;
+    UI* pui = pga->PuiHitTest(&pt, x, y);
     if (pui == nullptr)
         return true;
 
     if (pga->puiCapt) {
-        pui->LeftDrag(ptf);
+        pui->LeftDrag(pt);
         return true;
     }
 
     if (pga->puiHover == pui) {
-        pui->MouseHover(ptf, MHT::Move);
+        pui->MouseHover(pt, MHT::Move);
         return true;
     }
 
     if (pga->puiHover) {
-        PTF ptfExit = pga->puiHover->PtfLocalFromGlobal(PTF((float)x, (float)y));
-        pga->puiHover->MouseHover(ptfExit, MHT::Exit);
+        PT ptExit = pga->puiHover->PtLocalFromGlobal(PT((float)x, (float)y));
+        pga->puiHover->MouseHover(ptExit, MHT::Exit);
     }
-    pui->MouseHover(ptf, MHT::Enter);
+    pui->MouseHover(pt, MHT::Enter);
     pga->SetHover(pui);
     
     return true;
@@ -385,30 +385,30 @@ bool APP::OnMouseMove(int x, int y)
 
 bool APP::OnLeftDown(int x, int y)
 {
-    PTF ptf;
-    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    PT pt;
+    UI* pui = pga->PuiHitTest(&pt, x, y);
     if (pui)
-        pui->StartLeftDrag(ptf);
+        pui->StartLeftDrag(pt);
     return true;
 }
 
 
 bool APP::OnLeftUp(int x, int y)
 {
-    PTF ptf;
-    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    PT pt;
+    UI* pui = pga->PuiHitTest(&pt, x, y);
     if (pui)
-        pui->EndLeftDrag(ptf);
+        pui->EndLeftDrag(pt);
     return true;
 }
 
 
 bool APP::OnMouseWheel(int x, int y, int dwheel)
 {
-    PTF ptf;
-    UI* pui = pga->PuiHitTest(&ptf, x, y);
+    PT pt;
+    UI* pui = pga->PuiHitTest(&pt, x, y);
     if (pui)
-        pui->ScrollWheel(ptf, dwheel);
+        pui->ScrollWheel(pt, dwheel);
     return true;
 }
 

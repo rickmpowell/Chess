@@ -62,35 +62,34 @@ extern bool fValidate;
 
 /*
  *
- *	PTF class
+ *	PT class
  * 
  *	D2D1 floating point point class, with convenience features added on
  * 
  */
 
 
-class PTF : public D2D1_POINT_2F {
-public:
-	inline PTF() { }
-	inline PTF(float xf, float yf) { x = xf; y = yf; }
+struct PT : public D2D1_POINT_2F {
+	inline PT() { }
+	inline PT(float x, float y) { this->x = x; this->y = y; }
 
-	inline PTF& Offset(float dxf, float dyf) {
-		x += dxf;
-		y += dyf;
+	inline PT& Offset(float dx, float dy) {
+		x += dx;
+		y += dy;
 		return *this;
 	}
 
-	inline PTF& Offset(const PTF& ptf) {
-		return Offset(ptf.x, ptf.y);
+	inline PT& Offset(const PT& pt) {
+		return Offset(pt.x, pt.y);
 	}
 
-	inline PTF operator+(const PTF& ptf) const {
-		PTF ptfT(*this);
-		return ptfT.Offset(ptf);
+	inline PT operator+(const PT& pt) const {
+		PT ptT(*this);
+		return ptT.Offset(pt);
 	}
 
-	inline PTF operator-(void) const {
-		return PTF(-x, -y);
+	inline PT operator-(void) const {
+		return PT(-x, -y);
 	}
 
 };
@@ -98,105 +97,105 @@ public:
 
 /*
  *
- *	SIZF class
+ *	SIZ class
  * 
  *	D2D1 floating point size object, with some convenience features added on
  * 
  */
 
 
-class SIZF : public D2D1_SIZE_F
+struct SIZ : public D2D1_SIZE_F
 {
 public:
-	inline SIZF(void) { }
-	inline SIZF(const D2D1_SIZE_F& sizf) {
-		width = sizf.width; height = sizf.height;
+	inline SIZ(void) { }
+	inline SIZ(const D2D1_SIZE_F& siz) {
+		width = siz.width; height = siz.height;
 	}
-	inline SIZF(float dxf, float dyf) {
-		width = dxf;
-		height = dyf;
+	inline SIZ(float dx, float dy) {
+		width = dx;
+		height = dy;
 	}
 };
 
 
 /*
  *
- *	RCF class
+ *	RC class
  * 
  *	D2D1 floating point rectangle object, with a few convenience features built in.
  *
  */
 
 
-class RCF : public D2D1_RECT_F {
+struct RC : public D2D1_RECT_F {
 public:
-	inline RCF(void) { }
-	inline RCF(float xfLeft, float yfTop, float xfRight, float yfBot)
+	inline RC(void) { }
+	inline RC(float xLeft, float yTop, float xRight, float yBot)
 	{
-		left = xfLeft;
-		top = yfTop;
-		right = xfRight;
-		bottom = yfBot;
+		left = xLeft;
+		top = yTop;
+		right = xRight;
+		bottom = yBot;
 	}
 
-	inline RCF(const PTF& ptfTopLeft, const SIZF& sizf) {
-		left = ptfTopLeft.x;
-		top = ptfTopLeft.y;
-		right = left + sizf.width;
-		bottom = top + sizf.height;
+	inline RC(const PT& ptTopLeft, const SIZ& siz) {
+		left = ptTopLeft.x;
+		top = ptTopLeft.y;
+		right = left + siz.width;
+		bottom = top + siz.height;
 	}
 
-	inline RCF& Offset(float dxf, float dyf)
+	inline RC& Offset(float dx, float dy)
 	{
-		left += dxf;
-		right += dxf;
-		top += dyf;
-		bottom += dyf;
+		left += dx;
+		right += dx;
+		top += dy;
+		bottom += dy;
 		return *this;
 	}
 
-	inline RCF& Offset(const PTF& ptf)
+	inline RC& Offset(const PT& pt)
 	{
-		return Offset(ptf.x, ptf.y);
+		return Offset(pt.x, pt.y);
 	}
 
-	RCF& Inflate(float dxf, float dyf)
+	RC& Inflate(float dx, float dy)
 	{
-		left -= dxf;
-		right += dxf;
-		top -= dyf;
-		bottom += dyf;
+		left -= dx;
+		right += dx;
+		top -= dy;
+		bottom += dy;
 		return *this;
 	}
 
-	inline RCF& Inflate(const PTF& ptf)
+	inline RC& Inflate(const PT& pt)
 	{
-		return Inflate(ptf.x, ptf.y);
+		return Inflate(pt.x, pt.y);
 	}
 
-	RCF& Union(const RCF& rcf)
+	RC& Union(const RC& rc)
 	{
-		if (rcf.left < left)
-			left = rcf.left;
-		if (rcf.right > right)
-			right = rcf.right;
-		if (rcf.top < top)
-			top = rcf.top;
-		if (rcf.bottom > bottom)
-			bottom = rcf.bottom;
+		if (rc.left < left)
+			left = rc.left;
+		if (rc.right > right)
+			right = rc.right;
+		if (rc.top < top)
+			top = rc.top;
+		if (rc.bottom > bottom)
+			bottom = rc.bottom;
 		return *this;
 	}
 
-	RCF& Intersect(const RCF& rcf)
+	RC& Intersect(const RC& rc)
 	{
-		if (rcf.left > left)
-			left = rcf.left;
-		if (rcf.right < right)
-			right = rcf.right;
-		if (rcf.top > top)
-			top = rcf.top;
-		if (rcf.bottom < bottom)
-			bottom = rcf.bottom;
+		if (rc.left > left)
+			left = rc.left;
+		if (rc.right < right)
+			right = rc.right;
+		if (rc.top > top)
+			top = rc.top;
+		if (rc.bottom < bottom)
+			bottom = rc.bottom;
 		return *this;
 	}
 
@@ -205,16 +204,16 @@ public:
 		return left >= right || top >= bottom;
 	}
 
-	inline bool FContainsPtf(const PTF& ptf) const
+	inline bool FContainsPt(const PT& pt) const
 	{
-		return ptf.x >= left && ptf.x < right && ptf.y >= top && ptf.y < bottom;
+		return pt.x >= left && pt.x < right && pt.y >= top && pt.y < bottom;
 	}
 
-	inline float DxfWidth(void) const {
+	inline float DxWidth(void) const {
 		return right - left;
 	}
 
-	inline float DyfHeight(void) const {
+	inline float DyHeight(void) const {
 		return bottom - top;
 	}
 
@@ -226,63 +225,63 @@ public:
 		return (top + bottom) / 2.0f;
 	}
 
-	inline PTF PtfCenter(void) const
+	inline PT PtCenter(void) const
 	{
-		return PTF(XCenter(), YCenter());
+		return PT(XCenter(), YCenter());
 	}
 
-	inline SIZF Sizf(void) const {
-		return SIZF(DxfWidth(), DyfHeight());
+	inline SIZ Siz(void) const {
+		return SIZ(DxWidth(), DyHeight());
 	}
 
-	inline PTF PtfTopLeft(void) const {
-		return PTF(left, top);
+	inline PT PtTopLeft(void) const {
+		return PT(left, top);
 	}
 
-	inline RCF& SetSize(const SIZF& sizf) {
-		right = left + sizf.width;
-		bottom = top + sizf.height;
+	inline RC& SetSize(const SIZ& siz) {
+		right = left + siz.width;
+		bottom = top + siz.height;
 		return *this;
 	}
 
-	inline RCF& Move(const PTF& ptfTopLeft) {
-		return Offset(ptfTopLeft.x - left, ptfTopLeft.y - top);
+	inline RC& Move(const PT& ptTopLeft) {
+		return Offset(ptTopLeft.x - left, ptTopLeft.y - top);
 	}
 
-	inline RCF operator+(const PTF& ptf) const {
-		RCF rcf = *this;
-		return rcf.Offset(ptf);
+	inline RC operator+(const PT& pt) const {
+		RC rc = *this;
+		return rc.Offset(pt);
 	}
 
-	inline RCF& operator+=(const PTF& ptf) {
-		return Offset(ptf);
+	inline RC& operator+=(const PT& pt) {
+		return Offset(pt);
 	}
 	
-	inline RCF operator-(const PTF& ptf) const {
-		RCF rcf(*this);
-		return rcf.Offset(-ptf);
+	inline RC operator-(const PT& pt) const {
+		RC rc(*this);
+		return rc.Offset(-pt);
 	}
 
-	inline RCF& operator-=(const PTF& ptf) {
-		return Offset(-ptf);
+	inline RC& operator-=(const PT& pt) {
+		return Offset(-pt);
 	}
 
-	inline RCF operator|(const RCF& rcf) const {		
-		RCF rcfT = *this;
-		return rcfT.Union(rcf);
+	inline RC operator|(const RC& rc) const {		
+		RC rcT = *this;
+		return rcT.Union(rc);
 	}
 
-	inline RCF& operator|=(const RCF& rcf) {
-		return Union(rcf);
+	inline RC& operator|=(const RC& rc) {
+		return Union(rc);
 	}
 	
-	inline RCF operator&(const RCF& rcf) const {
-		RCF rcfT = *this;
-		return rcfT.Intersect(rcf);
+	inline RC operator&(const RC& rc) const {
+		RC rcT = *this;
+		return rcT.Intersect(rc);
 	}
 
-	inline RCF& operator&=(const RCF& rcf) {
-		return Intersect(rcf);
+	inline RC& operator&=(const RC& rc) {
+		return Intersect(rc);
 	}
 
 	inline operator int() const {
@@ -304,28 +303,28 @@ public:
  */
 
 
-class ELLF : public D2D1_ELLIPSE
+class ELL : public D2D1_ELLIPSE
 {
 public:
-	ELLF(void) { }
-	ELLF(const PTF& ptfCenter, const PTF& ptfRadius)
+	ELL(void) { }
+	ELL(const PT& ptCenter, const PT& ptRadius)
 	{
-		point.x = ptfCenter.x;
-		point.y = ptfCenter.y;
-		radiusX = ptfRadius.x;
-		radiusY = ptfRadius.y;
+		point.x = ptCenter.x;
+		point.y = ptCenter.y;
+		radiusX = ptRadius.x;
+		radiusY = ptRadius.y;
 	}
 
-	ELLF& Offset(float dxf, float dyf)
+	ELL& Offset(float dx, float dy)
 	{
-		point.x += dxf;
-		point.y += dyf;
+		point.x += dx;
+		point.y += dy;
 		return *this;
 	}
 
-	ELLF& Offset(const PTF& ptf)
+	ELL& Offset(const PT& pt)
 	{
-		return Offset(ptf.x, ptf.y);
+		return Offset(pt.x, pt.y);
 	}
 };
 
@@ -360,9 +359,9 @@ typedef IDXGISwapChain1 SWCH;
 template<class Interface>
 inline void SafeRelease(Interface** ppi)
 {
-	if (*ppi != NULL) {
+	if (*ppi != nullptr) {
 		(*ppi)->Release();
-		*ppi = NULL;
+		*ppi = nullptr;
 	}
 }
 
@@ -379,6 +378,12 @@ string SzFlattenWsz(const wstring& wsz);
 extern mt19937 rgen;
 
 
+/*	peg
+ *
+ *	A little helper function for pegging a value between first and last values.
+ *	After pegging, the return value is guaranteed to be greater or equal to
+ *	tFirst and less than or equal to tLast.
+ */
 template<class T> inline T peg(const T& t, const T& tFirst, const T& tLast)
 {
 	return min(max(t, tFirst), tLast);

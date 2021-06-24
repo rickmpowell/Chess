@@ -53,16 +53,16 @@ public:
 	BTNCH btnRotateBoard;
 
 	CPC cpcPointOfView;
-	RCF rcfSquares;
-	float dxyfSquare, dxyfBorder, dxyfMargin, dxyfOutline;
-	float dyfLabel;
+	RC rcSquares;
+	float dxySquare, dxyBorder, dxyMargin, dxyOutline;
+	float dyLabel;
 	float angle;	// angle for rotation animation
 
 	SQ sqDragInit;
-	PTF ptfDragInit;
-	PTF ptfDragCur;
+	PT ptDragInit;
+	PT ptDragCur;
 	SQ sqHover;
-	RCF rcfDragPc;	// rectangle the dragged piece was last drawn in
+	RC rcDragPc;	// rectangle the dragged piece was last drawn in
 	GMV gmvDrag;	// legal moves in the UI
 
 	vector<ANO> vano;	// annotations
@@ -82,8 +82,8 @@ public:
 
 	virtual void Layout(void);
 
-	virtual void Draw(RCF rcfUpdate);
-	void DrawMargins(RCF rcfUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
+	virtual void Draw(RC rcUpdate);
+	void DrawMargins(RC rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
@@ -96,24 +96,24 @@ public:
 
 	void DrawHilites(void);
 	void DrawGameState(void);
-	void DrawPc(RCF rcf, float opacity, IPC ipc);
+	void DrawPc(RC rc, float opacity, IPC ipc);
 	void AnimateMv(MV mv, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
-	void DrawDragPc(const RCF& rcf);
-	RCF RcfGetDrag(void);
-	void InvalOutsideRcf(RCF rcf) const;
+	void DrawDragPc(const RC& rc);
+	RC RcGetDrag(void);
+	void InvalOutsideRc(RC rc) const;
 	void HiliteLegalMoves(SQ sq);
-	RCF RcfFromSq(SQ sq) const;
+	RC RcFromSq(SQ sq) const;
 
-	virtual void FillRcfBack(RCF rcf) const;
+	virtual void FillRcBack(RC rc) const;
 
 	void FlipBoard(CPC cpcNew);
 
-	HTBD HtbdHitTest(PTF ptf, SQ* psq) const;
-	virtual void StartLeftDrag(PTF ptf);
-	virtual void EndLeftDrag(PTF ptf);
-	virtual void LeftDrag(PTF ptf);
-	virtual void MouseHover(PTF ptf, MHT mht);
+	HTBD HtbdHitTest(PT pt, SQ* psq) const;
+	virtual void StartLeftDrag(PT pt);
+	virtual void EndLeftDrag(PT pt);
+	virtual void LeftDrag(PT pt);
+	virtual void MouseHover(PT pt, MHT mht);
 
 	bool FMoveablePc(SQ sq) const;
 };
@@ -135,5 +135,5 @@ public:
 	UIPCP(GA* pga);
 	~UIPCP(void);
 
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 };

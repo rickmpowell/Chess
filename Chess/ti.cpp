@@ -36,14 +36,14 @@ void UIICON::DiscardRsrc(void)
 }
 
 
-void UIICON::Draw(RCF rcfUpdate)
+void UIICON::Draw(RC rcUpdate)
 {
-	D2D1_SIZE_F sizf = Sizf();
-	DrawBmp(RcfInterior(), pbmp, RCF(0, 0, sizf.width, sizf.height), 1.0f);
+	D2D1_SIZE_F siz = Siz();
+	DrawBmp(RcInterior(), pbmp, RC(0, 0, siz.width, siz.height), 1.0f);
 }
 
 
-SIZF UIICON::Sizf(void) const
+SIZ UIICON::Siz(void) const
 {
 	return pbmp->GetSize();
 }
@@ -63,9 +63,9 @@ UIGT::UIGT(UI* puiParent) : UI(puiParent)
 }
 
 
-void UIGT::Draw(RCF rcfUpdate)
+void UIGT::Draw(RC rcUpdate)
 {
-	DrawSz(L"Casual", ptxList, RcfInterior());
+	DrawSz(L"Casual", ptxList, RcInterior());
 }
 
 
@@ -81,9 +81,9 @@ UILOCALE::UILOCALE(UI* puiParent) : UI(puiParent)
 {
 }
 
-void UILOCALE::Draw(RCF rcfUpdate)
+void UILOCALE::Draw(RC rcUpdate)
 {
-	DrawSz(L"Local Machine", ptxList, RcfInterior());
+	DrawSz(L"Local Machine", ptxList, RcInterior());
 }
 
 
@@ -99,9 +99,9 @@ UIGTM::UIGTM(UI* puiParent) : UI(puiParent)
 {
 }
 
-void UIGTM::Draw(RCF rcfUpdate)
+void UIGTM::Draw(RC rcUpdate)
 {
-	DrawSz(L"Rapid \x2022 10+0", ptxList, RcfInterior());
+	DrawSz(L"Rapid \x2022 10+0", ptxList, RcInterior());
 }
 
 
@@ -143,47 +143,47 @@ UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbSqChessLogo), uilocale(this), ui
 
 void UITI::Layout(void)
 {
-	SIZF sizf = uiicon.Sizf();
-	RCF rcf(20.0f, 20.0f, 0, 90.0f);
-	rcf.right = rcf.left + sizf.width * 70.0f / sizf.height;
-	uiicon.SetBounds(rcf);
+	SIZ siz = uiicon.Siz();
+	RC rc(20.0f, 20.0f, 0, 90.0f);
+	rc.right = rc.left + siz.width * 70.0f / siz.height;
+	uiicon.SetBounds(rc);
 
-	rcf.left = rcf.right + 20.0f;
-	rcf.right = RcfInterior().right;
-	rcf.bottom = rcf.top + 16.0f;
-	uilocale.SetBounds(rcf);
+	rc.left = rc.right + 20.0f;
+	rc.right = RcInterior().right;
+	rc.bottom = rc.top + 16.0f;
+	uilocale.SetBounds(rc);
 
-	rcf.top = rcf.bottom;
-	rcf.bottom = rcf.top + 16.0f;
-	uigt.SetBounds(rcf);
+	rc.top = rc.bottom;
+	rc.bottom = rc.top + 16.0f;
+	uigt.SetBounds(rc);
 
-	rcf.top = rcf.bottom;
-	rcf.bottom = rcf.top + 16.0f;
-	uigtm.SetBounds(rcf);
+	rc.top = rc.bottom;
+	rc.bottom = rc.top + 16.0f;
+	uigtm.SetBounds(rc);
 
-	rcf.top = 100.0f;
-	rcf.left = 0;
-	rcf.bottom = rcf.top + 28.0f;
-	uiplWhite.SetBounds(rcf);
+	rc.top = 100.0f;
+	rc.left = 0;
+	rc.bottom = rc.top + 28.0f;
+	uiplWhite.SetBounds(rc);
 
-	rcf.top = rcf.bottom;
-	rcf.bottom = rcf.top + 28.0f;
-	uiplBlack.SetBounds(rcf);
+	rc.top = rc.bottom;
+	rc.bottom = rc.top + 28.0f;
+	uiplBlack.SetBounds(rc);
 }
 
 
-void UITI::Draw(RCF rcfUpdate)
+void UITI::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrBack);
+	FillRc(rcUpdate, pbrBack);
 
-	RCF rcf = RcfInterior();
-	rcf.top = rcf.bottom - 36.0f;
-	RCF rcfLine = rcf;
-	rcfLine.bottom = rcfLine.top + 1;
-	FillRcf(rcfLine, pbrGridLine);
+	RC rc = RcInterior();
+	rc.top = rc.bottom - 36.0f;
+	RC rcLine = rc;
+	rcLine.bottom = rcLine.top + 1;
+	FillRc(rcLine, pbrGridLine);
 
 	if (szText.size() > 0)
-		DrawSz(szText, ptxTextSm, rcf);
+		DrawSz(szText, ptxTextSm, rc);
 }
 
 

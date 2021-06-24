@@ -41,7 +41,7 @@ wstring SPINLVL::SzValue(void) const
  *	Player name UI element constructor
  */
 UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), spinlvl(this, cmdPlayerLvlUp+cpc, cmdPlayerLvlDown+cpc), 
-		ppl(nullptr), cpc(cpc), fChooser(false), iinfoplHit(-1), dyfLine(8.0f)
+		ppl(nullptr), cpc(cpc), fChooser(false), iinfoplHit(-1), dyLine(8.0f)
 {
 }
 
@@ -49,7 +49,7 @@ UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), spinlvl(this, cmdPlayerLvlUp
 void UIPL::CreateRsrc(void)
 {
 	UI::CreateRsrc();
-	dyfLine = SizfSz(L"Ag", ptxText).height + 2 * 6.0f;
+	dyLine = SizSz(L"Ag", ptxText).height + 2 * 6.0f;
 }
 
 
@@ -62,24 +62,24 @@ void UIPL::DiscardRsrc(void)
 void UIPL::Layout(void)
 {
 	spinlvl.Show(!fChooser && ppl->FHasLevel());
-	RCF rcf = RcfInterior();
-	rcf.right -= 4.0f;
-	rcf.left = rcf.right - 45.0f;
-	spinlvl.SetBounds(rcf);
+	RC rc = RcInterior();
+	rc.right -= 4.0f;
+	rc.left = rc.right - 45.0f;
+	spinlvl.SetBounds(rc);
 }
 
 
-/*	UIPL::SizfLayoutPreferred
+/*	UIPL::SizLayoutPreferred
  *
  *	Returns the preferred height of the player name UI element for fitting
  *	in a vertically oriented screen panel.
  */
-SIZF UIPL::SizfLayoutPreferred(void)
+SIZ UIPL::SizLayoutPreferred(void)
 {
-	SIZF sizf(-1.0f, dyfLine);
+	SIZ siz(-1.0f, dyLine);
 	if (fChooser)
-		sizf.height *= rginfopl.vinfopl.size();
-	return sizf;
+		siz.height *= rginfopl.vinfopl.size();
+	return siz;
 }
 
 
@@ -88,67 +88,67 @@ SIZF UIPL::SizfLayoutPreferred(void)
  *	Draws the player UI element, which is just a circle to indicate the
  *	color the player is playing, and their name.
  */
-void UIPL::Draw(RCF rcfUpdate)
+void UIPL::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrBack);
+	FillRc(rcUpdate, pbrBack);
 
 	if (fChooser)
-		DrawChooser(rcfUpdate);
+		DrawChooser(rcUpdate);
 	else {
 
 		/* draw the circle indicating which side */
 
-		RCF rcf = RcfInterior();
-		rcf.left += 12.0f;
-		SIZF sizf = SizfSz(L"Ag", ptxText);
-		float dxyfRadius = sizf.height / 2.0f;
-		ELLF ellf(PTF(rcf.left + dxyfRadius, rcf.top + 6.0f + dxyfRadius), PTF(dxyfRadius, dxyfRadius));
+		RC rc = RcInterior();
+		rc.left += 12.0f;
+		SIZ siz = SizSz(L"Ag", ptxText);
+		float dxyRadius = siz.height / 2.0f;
+		ELL ell(PT(rc.left + dxyRadius, rc.top + 6.0f + dxyRadius), PT(dxyRadius, dxyRadius));
 
 		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		DrawEllf(ellf, pbrText);
+		DrawEll(ell, pbrText);
 		if (cpc == CPC::Black)
-			FillEllf(ellf, pbrText);
+			FillEll(ell, pbrText);
 
 		/* and the player name */
 
 		if (ppl) {
 			wstring szName = ppl->SzName();
-			rcf.left += 3 * dxyfRadius;
-			sizf = SizfSz(ppl->SzName(), ptxText);
-			rcf.top += 6.0f;
+			rc.left += 3 * dxyRadius;
+			siz = SizSz(ppl->SzName(), ptxText);
+			rc.top += 6.0f;
 			if (spinlvl.FVisible())
-				rcf.right = spinlvl.RcfBounds().left - 1.0f;
-			DrawSzFit(szName, ptxText, rcf);
+				rc.right = spinlvl.RcBounds().left - 1.0f;
+			DrawSzFit(szName, ptxText, rc);
 		}
 	}
 }
 
 
-void UIPL::DrawChooser(RCF rcfUpdate)
+void UIPL::DrawChooser(RC rcUpdate)
 {
-	RCF rcf = RcfInterior();
+	RC rc = RcInterior();
 	for (INFOPL& infopl : rginfopl.vinfopl)
-		DrawChooserItem(infopl, rcf);
+		DrawChooserItem(infopl, rc);
 }
 
 
-void UIPL::DrawChooserItem(const INFOPL& infopl, RCF& rcf)
+void UIPL::DrawChooserItem(const INFOPL& infopl, RC& rc)
 {
-	rcf.bottom = rcf.top + dyfLine;
+	rc.bottom = rc.top + dyLine;
 
 	BMP* pbmpLogo = PbmpFromPngRes(rginfopl.IdbFromInfopl(infopl));
 	wstring sz = infopl.szName;
 	if (infopl.tpl == TPL::AI)
 		sz += L" (level " + to_wstring(infopl.level) + L")";
-	SIZF sizf = pbmpLogo->GetSize();
-	RCF rcfTo = rcf;
-	rcfTo.Inflate(0, -4.0f).Offset(12.0f, 0);
-	rcfTo.right = rcfTo.left + rcfTo.DyfHeight() / sizf.height * sizf.width;
-	DrawBmp(rcfTo, pbmpLogo, RCF(PTF(0, 0), sizf));
+	SIZ siz = pbmpLogo->GetSize();
+	RC rcTo = rc;
+	rcTo.Inflate(0, -4.0f).Offset(12.0f, 0);
+	rcTo.right = rcTo.left + rcTo.DyHeight() / siz.height * siz.width;
+	DrawBmp(rcTo, pbmpLogo, RC(PT(0, 0), siz));
 	SafeRelease(&pbmpLogo);
-	DrawSz(sz, ptxText, RCF(rcfTo.right+13.0f, rcfTo.top+2.0, rcf.right, rcfTo.bottom-2.0f));
+	DrawSz(sz, ptxText, RC(rcTo.right+13.0f, rcTo.top+2.0, rc.right, rcTo.bottom-2.0f));
 
-	rcf.top = rcf.bottom;
+	rc.top = rc.bottom;
 }
 
 
@@ -164,7 +164,7 @@ void UIPL::SetPl(PL* pplNew)
 }
 
 
-void UIPL::MouseHover(PTF ptf, MHT mht)
+void UIPL::MouseHover(PT pt, MHT mht)
 {
 	if (fChooser)
 		::SetCursor(App().hcurArrow);
@@ -173,19 +173,19 @@ void UIPL::MouseHover(PTF ptf, MHT mht)
 }
 
 
-void UIPL::StartLeftDrag(PTF ptf)
+void UIPL::StartLeftDrag(PT pt)
 {
 	SetFocus(this);
 	if (fChooser)
-		iinfoplHit = (ptf.y - RcfInterior().top) / dyfLine;
+		iinfoplHit = (pt.y - RcInterior().top) / dyLine;
 }
 
 
-void UIPL::EndLeftDrag(PTF ptf)
+void UIPL::EndLeftDrag(PT pt)
 {
 	SetFocus(nullptr);
 	if (fChooser) {
-		int iinfopl = (ptf.y - RcfInterior().top) / dyfLine;
+		int iinfopl = (pt.y - RcInterior().top) / dyLine;
 		if (iinfopl == iinfoplHit)
 			Ga().SetPl(cpc, rginfopl.PplFactory(Ga(), iinfopl));
 	}
@@ -195,7 +195,7 @@ void UIPL::EndLeftDrag(PTF ptf)
 }
 
 
-void UIPL::LeftDrag(PTF ptf)
+void UIPL::LeftDrag(PT pt)
 {
 }
 
@@ -237,90 +237,90 @@ void UIGC::DiscardRsrc(void)
 void UIGC::Layout(void)
 {
 	if (ga.bdg.gs == GS::Playing) {
-		RCF rcf = RcfInterior().Inflate(PTF(0, -1.0f));
-		rcf.left += 48.0f;
-		SIZF sizf = btnResign.SizfImg();
-		rcf.right = rcf.left + rcf.DyfHeight() * sizf.width / sizf.height;
-		btnResign.SetBounds(rcf);
+		RC rc = RcInterior().Inflate(PT(0, -1.0f));
+		rc.left += 48.0f;
+		SIZ siz = btnResign.SizImg();
+		rc.right = rc.left + rc.DyHeight() * siz.width / siz.height;
+		btnResign.SetBounds(rc);
 
-		rcf = RcfInterior().Inflate(PTF(0, -1.0f));
-		rcf.right -= 48.0f;
-		sizf = btnOfferDraw.SizfImg();
-		rcf.left = rcf.right - (rcf.DyfHeight() * sizf.width / sizf.height);
-		btnOfferDraw.SetBounds(rcf);
+		rc = RcInterior().Inflate(PT(0, -1.0f));
+		rc.right -= 48.0f;
+		siz = btnOfferDraw.SizImg();
+		rc.left = rc.right - (rc.DyHeight() * siz.width / siz.height);
+		btnOfferDraw.SetBounds(rc);
 	}
 	btnResign.Show(ga.bdg.gs == GS::Playing);
 	btnOfferDraw.Show(ga.bdg.gs == GS::Playing);
 }
 
 
-SIZF UIGC::SizfLayoutPreferred(void)
+SIZ UIGC::SizLayoutPreferred(void)
 {
-	SIZF sizf = SizfSz(L"0", ptxText);
-	sizf.width = -1.0f;
-	sizf.height *= (ga.bdg.gs == GS::Playing) ? 1.5f : 5.0f;
-	return sizf;
+	SIZ siz = SizSz(L"0", ptxText);
+	siz.width = -1.0f;
+	siz.height *= (ga.bdg.gs == GS::Playing) ? 1.5f : 5.0f;
+	return siz;
 }
 
-void UIGC::Draw(RCF rcfUpdate)
+void UIGC::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrBack);
+	FillRc(rcUpdate, pbrBack);
 	if (ga.bdg.gs == GS::Playing)
 		return;
 
-	float dyfLine = SizfSz(L"A", ptxText).height + 3.0f;
+	float dyLine = SizSz(L"A", ptxText).height + 3.0f;
 
-	RCF rcf = RcfInterior();
+	RC rc = RcInterior();
 
-	RCF rcfEndType = rcf;
-	rcfEndType.top = rcf.YCenter() - 3.0f*dyfLine/2.0f;
-	rcfEndType.bottom = rcfEndType.top + dyfLine;
-	RCF rcfResult = rcfEndType;
-	rcfResult.Offset(0, dyfLine);
-	RCF rcfScore = rcfResult;
-	rcfScore.Offset(0, dyfLine);
+	RC rcEndType = rc;
+	rcEndType.top = rc.YCenter() - 3.0f*dyLine/2.0f;
+	rcEndType.bottom = rcEndType.top + dyLine;
+	RC rcResult = rcEndType;
+	rcResult.Offset(0, dyLine);
+	RC rcScore = rcResult;
+	rcScore.Offset(0, dyLine);
 
 	CPC cpcWin = CPC::NoColor;
 
 	switch (ga.bdg.gs) {
 	case GS::WhiteCheckMated:
-		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
+		DrawSzCenter(L"Checkmate", ptxText, rcEndType);
 		cpcWin = CPC::Black;
 		break;
 	case GS::BlackCheckMated:
-		DrawSzCenter(L"Checkmate", ptxText, rcfEndType);
+		DrawSzCenter(L"Checkmate", ptxText, rcEndType);
 		cpcWin = CPC::White;
 		break;
 	case GS::WhiteResigned:
-		DrawSzCenter(L"White Resigned", ptxText, rcfEndType);
+		DrawSzCenter(L"White Resigned", ptxText, rcEndType);
 		cpcWin = CPC::Black;
 		break;
 	case GS::BlackResigned:
-		DrawSzCenter(L"Black Resigned", ptxText, rcfEndType);
+		DrawSzCenter(L"Black Resigned", ptxText, rcEndType);
 		cpcWin = CPC::White;
 		break;
 	case GS::WhiteTimedOut:
-		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
+		DrawSzCenter(L"Time Expired", ptxText, rcEndType);
 		cpcWin = CPC::Black;
 		break;
 	case GS::BlackTimedOut:
-		DrawSzCenter(L"Time Expired", ptxText, rcfEndType);
+		DrawSzCenter(L"Time Expired", ptxText, rcEndType);
 		cpcWin = CPC::White;
 		break;
 	case GS::StaleMate:
-		DrawSzCenter(L"Stalemate", ptxText, rcfEndType);
+		DrawSzCenter(L"Stalemate", ptxText, rcEndType);
 		break;
 	case GS::Draw3Repeat:
-		DrawSzCenter(L"3-Fold Repitition", ptxText, rcfEndType);
+		DrawSzCenter(L"3-Fold Repitition", ptxText, rcEndType);
 		break;
 	case GS::Draw50Move:
-		DrawSzCenter(L"50-Move", ptxText, rcfEndType);
+		DrawSzCenter(L"50-Move", ptxText, rcEndType);
 		break;
 	case GS::DrawAgree:
-		DrawSzCenter(L"Draw Agreed", ptxText, rcfEndType);
+		DrawSzCenter(L"Draw Agreed", ptxText, rcEndType);
 		break;
 	case GS::DrawDead:
-		DrawSzCenter(L"Insufficient Material", ptxText, rcfEndType);
+		DrawSzCenter(L"Insufficient Material", ptxText, rcEndType);
 		break;
 	default:
 		assert(false);
@@ -337,8 +337,8 @@ void UIGC::Draw(RCF rcfUpdate)
 		szResult = L"Black Wins";
 		szScore = L"0-1";
 	}
-	DrawSzCenter(szResult, ptxText, rcfResult);
-	DrawSzCenter(szScore, ptxScore, rcfScore);
+	DrawSzCenter(szResult, ptxText, rcResult);
+	DrawSzCenter(szScore, ptxScore, rcScore);
 }
 
 
@@ -386,22 +386,22 @@ void UICLOCK::DiscardRsrc(void)
 	DiscardRsrcClass();
 }
 
-SIZF UICLOCK::SizfLayoutPreferred(void)
+SIZ UICLOCK::SizLayoutPreferred(void)
 {
-	SIZF sizf = SizfSz(L"0", ptxClock);
-	return SIZF(-1.0, sizf.height * 4.0f / 3.0f);
+	SIZ siz = SizSz(L"0", ptxClock);
+	return SIZ(-1.0, siz.height * 4.0f / 3.0f);
 }
 
 
-void UICLOCK::Draw(RCF rcfUpdate)
+void UICLOCK::Draw(RC rcUpdate)
 {
 	DWORD tm = ga.mpcpctmClock[cpc];
 
 	/* fill background */
 
-	RCF rcf = RcfInterior();
+	RC rc = RcInterior();
 	COLORBRS colorbrs(pbrAltBack, FTimeOutWarning(tm) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
-	FillRcf(rcf, pbrAltBack);
+	FillRc(rc, pbrAltBack);
 
 	/* break down time into parts */
 
@@ -431,36 +431,36 @@ void UICLOCK::Draw(RCF rcfUpdate)
 	/* print out the text piece at a time */
 
 	TATX tatx(ptxClock, DWRITE_TEXT_ALIGNMENT_LEADING);
-	SIZF sizfDigit = SizfSz(L"0", ptxClock, 1000.0f, 1000.0f);
-	SIZF sizfPunc = SizfSz(L":", ptxClock, 1000.0f, 1000.0f);
-	rcf.bottom = rcf.top + sizfDigit.height;
-	rcf.Offset(0, RcfInterior().YCenter() - rcf.YCenter());
+	SIZ sizDigit = SizSz(L"0", ptxClock);
+	SIZ sizPunc = SizSz(L":", ptxClock);
+	rc.bottom = rc.top + sizDigit.height;
+	rc.Offset(0, RcInterior().YCenter() - rc.YCenter());
 	if (hr > 0) {
-		float dxfClock = sizfDigit.width + sizfPunc.width + 2*sizfDigit.width + sizfPunc.width + 2*sizfDigit.width;
-		rcf.left = rcf.XCenter() - dxfClock/2;
-		DrawRgch(sz, 1, ptxClock, rcf);	// hours
-		rcf.left += sizfDigit.width;
-		DrawColon(rcf, frac);
-		DrawRgch(sz + 2, 2, ptxClock, rcf); // minutes
-		rcf.left += 2*sizfDigit.width;
-		DrawColon(rcf, frac);
-		DrawRgch(sz + 5, 2, ptxClock, rcf); // seconds
+		float dxClock = sizDigit.width + sizPunc.width + 2*sizDigit.width + sizPunc.width + 2*sizDigit.width;
+		rc.left = rc.XCenter() - dxClock/2;
+		DrawRgch(sz, 1, ptxClock, rc);	// hours
+		rc.left += sizDigit.width;
+		DrawColon(rc, frac);
+		DrawRgch(sz + 2, 2, ptxClock, rc); // minutes
+		rc.left += 2*sizDigit.width;
+		DrawColon(rc, frac);
+		DrawRgch(sz + 5, 2, ptxClock, rc); // seconds
 	}
 	else if (min > 0) {
-		float dxfClock = 2*sizfDigit.width + sizfPunc.width + 2*sizfDigit.width;
-		rcf.left = (rcf.left + rcf.right - dxfClock) / 2;
-		DrawRgch(sz + 2, 2, ptxClock, rcf);	// minutes
-		rcf.left += 2*sizfDigit.width;
-		DrawColon(rcf, frac);
-		DrawRgch(sz + 5, 2, ptxClock, rcf);	// seconds 
+		float dxClock = 2*sizDigit.width + sizPunc.width + 2*sizDigit.width;
+		rc.left = (rc.left + rc.right - dxClock) / 2;
+		DrawRgch(sz + 2, 2, ptxClock, rc);	// minutes
+		rc.left += 2*sizDigit.width;
+		DrawColon(rc, frac);
+		DrawRgch(sz + 5, 2, ptxClock, rc);	// seconds 
 	}
 	else {
-		float dxfClock = sizfDigit.width + sizfPunc.width + 2*sizfDigit.width + sizfPunc.width + sizfDigit.width;
-		rcf.left = rcf.XCenter() - dxfClock / 2;;
-		DrawRgch(sz + 3, 1, ptxClock, rcf);	// minutes (=0)
-		rcf.left += sizfDigit.width;
-		DrawColon(rcf, frac);
-		DrawRgch(sz + 5, 4, ptxClock, rcf);	// seconds and tenths
+		float dxClock = sizDigit.width + sizPunc.width + 2*sizDigit.width + sizPunc.width + sizDigit.width;
+		rc.left = rc.XCenter() - dxClock / 2;;
+		DrawRgch(sz + 3, 1, ptxClock, rc);	// minutes (=0)
+		rc.left += sizDigit.width;
+		DrawColon(rc, frac);
+		DrawRgch(sz + 5, 4, ptxClock, rc);	// seconds and tenths
 	}
 }
 
@@ -471,12 +471,12 @@ bool UICLOCK::FTimeOutWarning(DWORD tm) const
 }
 
 
-void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
+void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 {
 	OPACITYBR opacitybr(pbrText, (frac < 500 && cpc == ga.bdg.cpcToMove) ? 0.33f : 1.0f);
-	SIZF sizfPunc = SizfSz(L":", ptxClock);
-	DrawSz(L":", ptxClock, rcf, pbrText);
-	rcf.left += sizfPunc.width;
+	SIZ sizPunc = SizSz(L":", ptxClock);
+	DrawSz(L":", ptxClock, rc, pbrText);
+	rc.left += sizPunc.width;
 }
 
 
@@ -490,11 +490,11 @@ void UICLOCK::DrawColon(RCF& rcf, unsigned frac) const
 
 
 UIML::UIML(GA* pga) : UIPS(pga),  
-		ptxList(nullptr), dxfCellMarg(4.0f), dyfCellMarg(0.5f), dyfList(0), imvSel(0),
+		ptxList(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvSel(0),
 		uigc(this)
 {
-	for (int col = 0; col < CArray(mpcoldxf); col++)
-		mpcoldxf[col] = 0.0f;
+	for (int col = 0; col < CArray(mpcoldx); col++)
+		mpcoldx[col] = 0.0f;
 	mpcpcpuiclock[CPC::White] = new UICLOCK(this, CPC::White);
 	mpcpcpuiclock[CPC::Black] = new UICLOCK(this, CPC::Black);
 	mpcpcpuipl[CPC::White] = new UIPL(this, CPC::White);
@@ -537,37 +537,37 @@ void UIML::DiscardRsrc(void)
 }
 
 
-float UIML::XfFromCol(int col) const
+float UIML::XFromCol(int col) const
 {
-	assert(col >= 0 && col < CArray(mpcoldxf) + 1);
-	float xf = 0;
+	assert(col >= 0 && col < CArray(mpcoldx) + 1);
+	float x = 0;
 	for (int colT = 0; colT < col; colT++)
-		xf += mpcoldxf[colT];
-	return xf;
+		x += mpcoldx[colT];
+	return x;
 }
 
 
-/*	UIML::DxfFromCol
+/*	UIML::DxFromCol
  *
  *	Returns the width of the col column in the move list
  */
-float UIML::DxfFromCol(int col) const
+float UIML::DxFromCol(int col) const
 {
-	assert(col >= 0 && col < CArray(mpcoldxf));
-	return mpcoldxf[col];
+	assert(col >= 0 && col < CArray(mpcoldx));
+	return mpcoldx[col];
 }
 
 
-/*	UIML::RcfFromCol
+/*	UIML::RcFromCol
  *
  *	Returns the rectangle a for a specific column and row in the move
- *	list. yf is the top of the rectangle and is typically computed relative
+ *	list. y is the top of the rectangle and is typically computed relative
  *	to the content rectangle, which is in panel coordinates.
  */
-RCF UIML::RcfFromCol(float yf, int col) const
+RC UIML::RcFromCol(float y, int col) const
 {
-	float xf = XfFromCol(col);
-	return RCF(xf, yf, xf + DxfFromCol(col), yf + dyfList);
+	float x = XFromCol(col);
+	return RC(x, y, x + DxFromCol(col), y + dyList);
 }
 
 
@@ -580,45 +580,45 @@ void UIML::Layout(void)
 {
 	/*	position the top clocks and player names */
 
-	RCF rcf = RcfInterior();
-	RCF rcfView = rcf;
-	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(mpcpcpuipl[~ga.uibd.cpcPointOfView], rcf, true);
-	AdjustUIRcfBounds(mpcpcpuiclock[~ga.uibd.cpcPointOfView], rcf, true);
-	rcfView.top = rcf.bottom;
+	RC rc = RcInterior();
+	RC rcView = rc;
+	rc.bottom = rc.top;
+	AdjustUIRcBounds(mpcpcpuipl[~ga.uibd.cpcPointOfView], rc, true);
+	AdjustUIRcBounds(mpcpcpuiclock[~ga.uibd.cpcPointOfView], rc, true);
+	rcView.top = rc.bottom;
 
 	/* position the bottom clocks, player names, and game controls */
 
-	rcf = RcfInterior();
-	rcf.top = rcf.bottom;
-	AdjustUIRcfBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rcf, false);
-	AdjustUIRcfBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rcf, false);
-	AdjustUIRcfBounds(&uigc, rcf, false); 
-	rcfView.bottom = rcf.top;
+	rc = RcInterior();
+	rc.top = rc.bottom;
+	AdjustUIRcBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rc, false);
+	AdjustUIRcBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rc, false);
+	AdjustUIRcBounds(&uigc, rc, false); 
+	rcView.bottom = rc.top;
 
 	/* move list content is whatever is left */
 	
-	AdjustRcfView(rcfView);
+	AdjustRcView(rcView);
 }
 
 
-SIZF UIML::SizfLayoutPreferred(void)
+SIZ UIML::SizLayoutPreferred(void)
 {
 	/* I think this is the longest possible move text */
-	SIZF sizf = SizfSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
-	dyfList = sizf.height + 2*dyfCellMarg;
+	SIZ siz = SizSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
+	dyList = siz.height + 2*dyCellMarg;
 
-	mpcoldxf[0] = dxfCellMarg+SizfSz(L"100.", ptxList).width;
-	mpcoldxf[1] = mpcoldxf[2] = dxfCellMarg + sizf.width;
-	mpcoldxf[3] = dxyfScrollBarWidth;
+	mpcoldx[0] = dxCellMarg+SizSz(L"100.", ptxList).width;
+	mpcoldx[1] = mpcoldx[2] = dxCellMarg + siz.width;
+	mpcoldx[3] = dxyScrollBarWidth;
 
-	return SIZF(XfFromCol(4), -1.0f);
+	return SIZ(XFromCol(4), -1.0f);
 }
 
 
-float UIML::DyfLine(void) const
+float UIML::DyLine(void) const
 {
-	return dyfList;
+	return dyList;
 }
 
 
@@ -628,10 +628,10 @@ float UIML::DyfLine(void) const
  *	Draws the move list screen panel, which includes a top header box and
  *	a scrollable move list
  */
-void UIML::Draw(RCF rcfUpdate)
+void UIML::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrGridLine);
-	UIPS::Draw(rcfUpdate); // draws content area of the scrollable area
+	FillRc(rcUpdate, pbrGridLine);
+	UIPS::Draw(rcUpdate); // draws content area of the scrollable area
 }
 
 
@@ -641,17 +641,17 @@ void UIML::SetPl(CPC cpc, PL* ppl)
 }
 
 
-/*	SPSARGMV::RcfFromImv
+/*	SPSARGMV::RcFromImv
  *
  *	Returns the rectangle of the imv move in the move list. Coordinates
  *	are relative to the content rectangle, which is in turn relative to
  *	the panel.
  */
-RCF UIML::RcfFromImv(int imv) const
+RC UIML::RcFromImv(int imv) const
 {
 	int rw = imv / 2;
-	float yf = RcfContent().top + 4.0f + rw * dyfList;
-	return RcfFromCol(yf, 1 + (imv % 2));
+	float y = RcContent().top + 4.0f + rw * dyList;
+	return RcFromCol(y, 1 + (imv % 2));
 }
 
 
@@ -660,21 +660,21 @@ RCF UIML::RcfFromImv(int imv) const
  *	Draws the content of the scrollable part of the move list screen
  *	panel.
  */
-void UIML::DrawContent(RCF rcfCont)
+void UIML::DrawContent(RC rcCont)
 {
 	BDG bdgT(bdgInit);
-	float yfCont = RcfContent().top;
+	float yCont = RcContent().top;
 	for (unsigned imv = 0; imv < ga.bdg.vmvGame.size(); imv++) {
 		MV mv = ga.bdg.vmvGame[imv];
 		if (imv % 2 == 0) {
-			RCF rcf = RcfFromCol(yfCont + 4.0f + (imv / 2) * dyfList, 0);
-			DrawMoveNumber(rcf, imv / 2 + 1);
+			RC rc = RcFromCol(yCont + 4.0f + (imv / 2) * dyList, 0);
+			DrawMoveNumber(rc, imv / 2 + 1);
 		}
 		if (!mv.fIsNil()) {
-			RCF rcf = RcfFromImv(imv);
+			RC rc = RcFromImv(imv);
 			if (imv == imvSel)
-				FillRcf(rcf, pbrHilite);
-			DrawAndMakeMv(rcf, bdgT, mv);
+				FillRc(rc, pbrHilite);
+			DrawAndMakeMv(rc, bdgT, mv);
 		}
 	}
 }
@@ -709,14 +709,14 @@ void UIML::DrawSel(int imv)
  *	the text of the decoded move is dependent on the board to take advantage
  *	of shorter text when there are no ambiguities.
  */
-void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
+void UIML::DrawAndMakeMv(RC rc, BDG& bdg, MV mv)
 {
 	wstring sz = bdg.SzMoveAndDecode(mv);
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_LEADING);
-	rcf.top += dyfCellMarg;
-	rcf.bottom -= dyfCellMarg;
-	rcf.left += dxfCellMarg;
-	DrawSz(sz, ptxList, rcf);
+	rc.top += dyCellMarg;
+	rc.bottom -= dyCellMarg;
+	rc.left += dxCellMarg;
+	DrawSz(sz, ptxList, rc);
 }
 
 
@@ -725,17 +725,17 @@ void UIML::DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv)
  *	Draws the move number in the move list. Followed by a period. Rectangle
  *	to draw the text within is supplied by caller.
  */
-void UIML::DrawMoveNumber(RCF rcf, int imv)
+void UIML::DrawMoveNumber(RC rc, int imv)
 {
-	rcf.top += dyfCellMarg;
-	rcf.bottom -= dyfCellMarg;
-	rcf.right -= dxfCellMarg;
+	rc.top += dyCellMarg;
+	rc.bottom -= dyCellMarg;
+	rc.right -= dxCellMarg;
 	WCHAR sz[8];
 	WCHAR* pch = PchDecodeInt(imv, sz);
 	*pch++ = L'.';
 	*pch = 0;
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);
-	DrawSz(wstring(sz), ptxList, rcf);
+	DrawSz(wstring(sz), ptxList, rc);
 }
 
 
@@ -773,34 +773,34 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dyf = (ga.bdg.vmvGame.size()+1) / 2 * dyfList;
-	if (dyf == 0)
-		dyf = dyfList;
-	UIPS::UpdateContSize(SIZF(RcfContent().DxfWidth(), 4.0f + dyf));
+	float dy = (ga.bdg.vmvGame.size()+1) / 2 * dyList;
+	if (dy == 0)
+		dy = dyList;
+	UIPS::UpdateContSize(SIZ(RcContent().DxWidth(), 4.0f + dy));
 }
 
 
 bool UIML::FMakeVis(int imv)
 {
-	return UIPS::FMakeVis(RcfContent().top + 4.0f + (imv / 2) * dyfList, dyfList);
+	return UIPS::FMakeVis(RcContent().top + 4.0f + (imv / 2) * dyList, dyList);
 }
 
-HTML UIML::HtmlHitTest(PTF ptf, int* pimv)
+HTML UIML::HtmlHitTest(PT pt, int* pimv)
 {
-	if (ptf.x < 0 || ptf.x >= RcfContent().right)
+	if (pt.x < 0 || pt.x >= RcContent().right)
 		return HTML::Miss;
-	if (ptf.x > RcfView().right) {
+	if (pt.x > RcView().right) {
 		/* TODO: move this into UIPS */
 		return HTML::Thumb;
 	}
 
-	int li = (int)floor((ptf.y - RcfContent().top) / DyfLine());
-	if (ptf.x < mpcoldxf[0])
+	int li = (int)floor((pt.y - RcContent().top) / DyLine());
+	if (pt.x < mpcoldx[0])
 		return HTML::MoveNumber;
 	int imv = -1;
-	if (ptf.x < mpcoldxf[0] + mpcoldxf[1])
+	if (pt.x < mpcoldx[0] + mpcoldx[1])
 		imv = li * 2;
-	else if (ptf.x < mpcoldxf[0] + mpcoldxf[1] + mpcoldxf[2])
+	else if (pt.x < mpcoldx[0] + mpcoldx[1] + mpcoldx[2])
 		imv = li * 2 + 1;
 	if (imv < 0)
 		return HTML::EmptyBefore;
@@ -810,21 +810,21 @@ HTML UIML::HtmlHitTest(PTF ptf, int* pimv)
 	return HTML::List;
 }
 
-void UIML::StartLeftDrag(PTF ptf)
+void UIML::StartLeftDrag(PT pt)
 {
 	int imv;
-	HTML html = HtmlHitTest(ptf, &imv);
+	HTML html = HtmlHitTest(pt, &imv);
 	if (html != HTML::List)
 		return;
 	SetSel(imv, SPMV::Fast);
 	ga.MoveToImv(imv);
 }
 
-void UIML::EndLeftDrag(PTF ptf)
+void UIML::EndLeftDrag(PT pt)
 {
 }
 
-void UIML::LeftDrag(PTF ptf)
+void UIML::LeftDrag(PT pt)
 {
 }
 

@@ -41,9 +41,9 @@ UIBBDB::UIBBDB(UIDB* puiParent) : UIBB(puiParent),
 
 void UIBBDB::Layout(void)
 {
-	RCF rcf = RcfInterior().Inflate(-2.0f, -2.0f);
-	rcf.right = rcf.left;
-	AdjustBtnRcfBounds(&btnTest, rcf, rcf.DyfHeight());
+	RC rc = RcInterior().Inflate(-2.0f, -2.0f);
+	rc.right = rc.left;
+	AdjustBtnRcBounds(&btnTest, rc, rc.DyHeight());
 }
 
 
@@ -63,10 +63,10 @@ UIBBDBLOG::UIBBDBLOG(UIDB* puiParent) : UIBB(puiParent), uidb(*puiParent),
 
 void UIBBDBLOG::Layout(void)
 {
-	RCF rcf = RcfInterior().Inflate(-2.0f, -2.0f);
-	rcf.right = rcf.left;
-	AdjustBtnRcfBounds(&btnLogOnOff, rcf, rcf.DyfHeight());
-	AdjustBtnRcfBounds(&spindepth, rcf, 40.0f);
+	RC rc = RcInterior().Inflate(-2.0f, -2.0f);
+	rc.right = rc.left;
+	AdjustBtnRcBounds(&btnLogOnOff, rc, rc.DyHeight());
+	AdjustBtnRcBounds(&spindepth, rc, 40.0f);
 }
 
 
@@ -80,7 +80,7 @@ void UIBBDBLOG::Layout(void)
 
 
 UIDB::UIDB(GA* pga) : UIPS(pga), uibbdb(this), uibbdblog(this), 
-		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyfLine(12.0f),
+		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyLine(12.0f),
 		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
 }
@@ -136,50 +136,50 @@ void UIDB::DiscardRsrc(void)
 void UIDB::Layout(void)
 {
 	/* position top items */
-	RCF rcf = RcfInterior();
-	RCF rcfView = rcf;
-	rcf.bottom = rcf.top;
-	AdjustUIRcfBounds(&uibbdb, rcf, true);
-	rcfView.top = rcf.bottom;
+	RC rc = RcInterior();
+	RC rcView = rc;
+	rc.bottom = rc.top;
+	AdjustUIRcBounds(&uibbdb, rc, true);
+	rcView.top = rc.bottom;
 
 	/* positon bottom items */
-	rcf = RcfInterior();
-	rcf.top = rcf.bottom;
-	AdjustUIRcfBounds(&uibbdblog, rcf, false);
-	rcfView.bottom = rcf.top;
+	rc = RcInterior();
+	rc.top = rc.bottom;
+	AdjustUIRcBounds(&uibbdblog, rc, false);
+	rcView.bottom = rc.top;
 
 	/* move list content is whatever is left */
 
-	dyfLine = SizfSz(L"0", ptxLog).height;
-	AdjustRcfView(rcfView);
+	dyLine = SizSz(L"0", ptxLog).height;
+	AdjustRcView(rcView);
 }
 
 
-void UIDB::Draw(RCF rcfUpdate)
+void UIDB::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrGridLine);
-	UIPS::Draw(rcfUpdate); // draws content area of the scrollable area
+	FillRc(rcUpdate, pbrGridLine);
+	UIPS::Draw(rcUpdate); // draws content area of the scrollable area
 }
 
 
-void UIDB::DrawContent(RCF rcfCont)
+void UIDB::DrawContent(RC rcCont)
 {
 	if (vlgentry.size() == 0)
 		return;
 
-	RCF rcf = RcfContent();
-	rcf.left += 4.0f;
-	rcf.right = rcf.left + 1000.0f;
+	RC rc = RcContent();
+	rc.left += 4.0f;
+	rc.right = rc.left + 1000.0f;
 	
-	size_t ilgentryFirst = IlgentryFromYf(RcfView().top);
-	rcf.top = RcfContent().top + vlgentry[ilgentryFirst].dyfTop;
+	size_t ilgentryFirst = IlgentryFromY(RcView().top);
+	rc.top = RcContent().top + vlgentry[ilgentryFirst].dyTop;
 
-	for (size_t ilgentry = ilgentryFirst; ilgentry < vlgentry.size() && rcf.top < RcfView().bottom; ilgentry++) {
+	for (size_t ilgentry = ilgentryFirst; ilgentry < vlgentry.size() && rc.top < RcView().bottom; ilgentry++) {
 		LGENTRY& lgentry = vlgentry[ilgentry];
 
 		/* 0 heights are those that were combined into another line */
 		
-		if (lgentry.dyfHeight == 0)
+		if (lgentry.dyHeight == 0)
 			continue;
 		
 		/* get string and formatting */
@@ -188,7 +188,7 @@ void UIDB::DrawContent(RCF rcfCont)
 		if (lgentry.tag.sz.size() > 0)
 			sz = lgentry.tag.sz + L" ";
 		sz += lgentry.szData;
-		rcf.bottom = rcf.top + dyfLine;
+		rc.bottom = rc.top + dyLine;
 		LGF lgf = lgentry.lgf;
 
 		/* if matching open and close are next to each other, then combine them to a single line */
@@ -206,35 +206,34 @@ void UIDB::DrawContent(RCF rcfCont)
 		default: ptx = ptxLog; break;
 		}
 		DrawSz(sz, ptx, 
-			RCF(rcf.left+12.0f*lgentry.depth, rcf.top, rcf.right, rcf.bottom), 
+			RC(rc.left+12.0f*lgentry.depth, rc.top, rc.right, rc.bottom), 
 			pbrText);
-		rcf.top = rcf.bottom;
+		rc.top = rc.bottom;
 	}
 }
 
 
-/*	UIDB::IlgentryFromYf
+/*	UIDB::IlgentryFromY
  *
- *	Finds the log entry in the content area that is located at the vertical location yf, which 
+ *	Finds the log entry in the content area that is located at the vertical location y, which 
  *	is in UIDB coordinates
  */
-size_t UIDB::IlgentryFromYf(int yf) const
+size_t UIDB::IlgentryFromY(int y) const
 {
-	float yfContentTop = RcfContent().top;
+	float yContentTop = RcContent().top;
 	if (vlgentry.size() == 0)
 		return 0;
 	size_t ilgentryFirst = 0; 
 	size_t ilgentryLast = vlgentry.size()-1;
-	if (yf < yfContentTop + vlgentry[ilgentryFirst].dyfTop)
-		return 0;
-	if (yf >= yfContentTop + vlgentry[ilgentryLast].dyfTop + vlgentry[ilgentryLast].dyfHeight)
+	if (y < yContentTop + vlgentry[ilgentryFirst].dyTop)
+	if (y >= yContentTop + vlgentry[ilgentryLast].dyTop + vlgentry[ilgentryLast].dyHeight)
 		return ilgentryLast;
 
 	for (;;) {
 		size_t ilgentryMid = (ilgentryFirst + ilgentryLast) / 2;
-		if (yf < yfContentTop + vlgentry[ilgentryMid].dyfTop)
+		if (y < yContentTop + vlgentry[ilgentryMid].dyTop)
 			ilgentryLast = ilgentryMid-1;
-		else if (yf >= yfContentTop + vlgentry[ilgentryMid].dyfTop + vlgentry[ilgentryMid].dyfHeight)
+		else if (y >= yContentTop + vlgentry[ilgentryMid].dyTop + vlgentry[ilgentryMid].dyHeight)
 			ilgentryFirst = ilgentryMid+1;
 		else
 			return ilgentryMid;
@@ -258,9 +257,9 @@ bool UIDB::FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) 
 }
 
 
-float UIDB::DyfLine(void) const
+float UIDB::DyLine(void) const
 {
-	return dyfLine;
+	return dyLine;
 }
 
 
@@ -286,13 +285,13 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 		vlgentry.pop_back();
 	
 	if (vlgentry.size() > 0 && FCombineLogEntries(vlgentry.back(), lgentry))
-		lgentry.dyfHeight = 0;
+		lgentry.dyHeight = 0;
 	else
-		lgentry.dyfHeight = dyfLine;
+		lgentry.dyHeight = dyLine;
 	if (vlgentry.size() == 0)
-		lgentry.dyfTop = 0;
+		lgentry.dyTop = 0;
 	else
-		lgentry.dyfTop = vlgentry.back().dyfTop + vlgentry.back().dyfHeight;
+		lgentry.dyTop = vlgentry.back().dyTop + vlgentry.back().dyHeight;
 
 	if (posLog && lgentry.lgt != LGT::Temp) {
 		*posLog << string(4 * lgentry.depth, ' ');
@@ -305,9 +304,9 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 	}
 	vlgentry.push_back(lgentry);
 
-	float dyfBot = lgentry.dyfTop + lgentry.dyfHeight;
-	UpdateContSize(SIZF(RcfContent().DxfWidth(), dyfBot));
-	FMakeVis(RcfContent().top + dyfBot, lgentry.dyfHeight);
+	float dyBot = lgentry.dyTop + lgentry.dyHeight;
+	UpdateContSize(SIZ(RcContent().DxWidth(), dyBot));
+	FMakeVis(RcContent().top + dyBot, lgentry.dyHeight);
 	Redraw();
 }
 
@@ -319,8 +318,8 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 void UIDB::ClearLog(void)
 {
 	vlgentry.clear();
-	UpdateContSize(SIZF(0,0));
-	FMakeVis(RcfContent().top, RcfContent().left);
+	UpdateContSize(SIZ(0,0));
+	FMakeVis(RcContent().top, RcContent().left);
 }
 
 

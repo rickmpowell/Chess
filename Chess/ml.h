@@ -32,6 +32,7 @@ public:
  *
  */
 
+
 struct INFOPL;
 
 class UIPL : public UI
@@ -44,7 +45,7 @@ private:
 	CPC cpc;
 	bool fChooser;
 	int iinfoplHit;
-	float dyfLine;
+	float dyLine;
 
 public:
 	UIPL(UI* puiParent, CPC cpc);
@@ -52,18 +53,18 @@ public:
 	virtual void DiscardRsrc(void);
 
 	virtual void Layout(void);
-	virtual SIZF SizfLayoutPreferred(void);
+	virtual SIZ SizLayoutPreferred(void);
 	
-	virtual void Draw(RCF rcfUpdate);
-	void DrawChooser(RCF rcfUpdate);
-	void DrawChooserItem(const INFOPL& infopl, RCF& rcf);
+	virtual void Draw(RC rcUpdate);
+	void DrawChooser(RC rcUpdate);
+	void DrawChooserItem(const INFOPL& infopl, RC& rc);
 
 	void SetPl(PL* pplNew);
 
-	virtual void MouseHover(PTF ptf, MHT mht);
-	virtual void StartLeftDrag(PTF ptf);
-	virtual void EndLeftDrag(PTF ptf);
-	virtual void LeftDrag(PTF ptf);
+	virtual void MouseHover(PT pt, MHT mht);
+	virtual void StartLeftDrag(PT pt);
+	virtual void EndLeftDrag(PT pt);
+	virtual void LeftDrag(PT pt);
 };
 
 
@@ -94,9 +95,9 @@ public:
 
 public:
 	UICLOCK(UIML* puiml, CPC cpc);
-	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(RCF rcfUpdate);
-	void DrawColon(RCF& rcf, unsigned frac) const;
+	virtual SIZ SizLayoutPreferred(void);
+	virtual void Draw(RC rcUpdate);
+	void DrawColon(RC& rc, unsigned frac) const;
 	bool FTimeOutWarning(DWORD tm) const;
 };
 
@@ -126,9 +127,9 @@ public:
 
 public:
 	UIGC(UIML* puiml);
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 	virtual void Layout(void);
-	virtual SIZF SizfLayoutPreferred(void);
+	virtual SIZ SizLayoutPreferred(void);
 };
 
 
@@ -161,14 +162,14 @@ class UIML : public UIPS
 	friend class GA;
 
 	TX* ptxList;
-	float mpcoldxf[4];
-	float dxfCellMarg, dyfCellMarg;
-	float dyfList;
+	float mpcoldx[4];
+	float dxCellMarg, dyCellMarg;
+	float dyList;
 
-	float XfFromCol(int col) const;
-	float DxfFromCol(int col) const;
-	RCF RcfFromCol(float yf, int col) const;
-	RCF RcfFromImv(int imv) const;
+	float XFromCol(int col) const;
+	float DxFromCol(int col) const;
+	RC RcFromCol(float y, int col) const;
+	RC RcFromImv(int imv) const;
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int imvSel;
@@ -189,25 +190,25 @@ public:
 	void EndGame(void);
 
 	virtual void Layout(void);
-	virtual SIZF SizfLayoutPreferred(void);
+	virtual SIZ SizLayoutPreferred(void);
 	void ShowClocks(bool fTimed);
 	
-	virtual void Draw(RCF rcfUpdate);
-	virtual void DrawContent(RCF rcfCont);
+	virtual void Draw(RC rcUpdate);
+	virtual void DrawContent(RC rcCont);
 
-	void DrawAndMakeMv(RCF rcf, BDG& bdg, MV mv);
-	void DrawMoveNumber(RCF rcf, int imv);
+	void DrawAndMakeMv(RC rc, BDG& bdg, MV mv);
+	void DrawMoveNumber(RC rc, int imv);
 	void DrawSel(int imv);
 	void SetSel(int imv, SPMV spmv);
 
 	bool FMakeVis(int imv);
 	void UpdateContSize(void);
-	virtual float DyfLine(void) const;
+	virtual float DyLine(void) const;
 
-	HTML HtmlHitTest(PTF ptf, int* pimv);
-	virtual void StartLeftDrag(PTF ptf);
-	virtual void EndLeftDrag(PTF ptf);
-	virtual void LeftDrag(PTF ptf);
+	HTML HtmlHitTest(PT pt, int* pimv);
+	virtual void StartLeftDrag(PT pt);
+	virtual void EndLeftDrag(PT pt);
+	virtual void LeftDrag(PT pt);
 
 	virtual void KeyDown(int vk);
 };

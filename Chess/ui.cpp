@@ -77,15 +77,15 @@ void UI::DiscardRsrcClass(void)
 }
 
 
-ID2D1PathGeometry* UI::PgeomCreate(PTF rgptf[], int cptf)
+ID2D1PathGeometry* UI::PgeomCreate(PT rgpt[], int cpt)
 {
 	/* capture X, which is created as a cross that is rotated later */
 	ID2D1PathGeometry* pgeom;
 	App().pfactd2->CreatePathGeometry(&pgeom);
 	ID2D1GeometrySink* psink;
 	pgeom->Open(&psink);
-	psink->BeginFigure(rgptf[0], D2D1_FIGURE_BEGIN_FILLED);
-	psink->AddLines(&rgptf[1], cptf - 1);
+	psink->BeginFigure(rgpt[0], D2D1_FIGURE_BEGIN_FILLED);
+	psink->AddLines(&rgpt[1], cpt - 1);
 	psink->EndFigure(D2D1_FIGURE_END_CLOSED);
 	psink->Close();
 	SafeRelease(&psink);
@@ -135,18 +135,18 @@ BMP* UI::PbmpFromPngRes(int idb)
  *	Constructor for the UI elements. Adds the item to the UI tree structure
  *	by connecting it to the parent.
  */
-UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcfBounds(0, 0, 0, 0), fVisible(fVisible)
+UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0), fVisible(fVisible)
 {
 	if (puiParent)
 		puiParent->AddChild(this);
 }
 
 
-UI::UI(UI* puiParent, RCF rcfBounds, bool fVisible) : puiParent(puiParent), rcfBounds(rcfBounds), fVisible(fVisible)
+UI::UI(UI* puiParent, RC rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible)
 {
 	if (puiParent) {
 		puiParent->AddChild(this);
-		this->rcfBounds.Offset(puiParent->rcfBounds.left, puiParent->rcfBounds.top);
+		this->rcBounds.Offset(puiParent->rcBounds.left, puiParent->rcBounds.top);
 	}
 }
 
@@ -237,33 +237,33 @@ void UI::Layout(void)
 }
 
 
-SIZF UI::SizfLayoutPreferred(void)
+SIZ UI::SizLayoutPreferred(void)
 {
-	return SIZF(-1.0f, -1.0f);
+	return SIZ(-1.0f, -1.0f);
 }
 
 
-/*	UI::RcfInterior
+/*	UI::RcInterior
  *
  *	Returns the interior of the given UI element, in local coordinates.
  */
-RCF UI::RcfInterior(void) const 
+RC UI::RcInterior(void) const 
 {
-	RCF rcf = rcfBounds;
-	return rcf.Offset(-rcfBounds.left, -rcfBounds.top);
+	RC rc = rcBounds;
+	return rc.Offset(-rcBounds.left, -rcBounds.top);
 }
 
 
-/*	UI::RcfBounds
+/*	UI::RcBounds
  *
  *	Returns the bounds of the item, in parent coorrdinates.
  */
-RCF UI::RcfBounds(void) const
+RC UI::RcBounds(void) const
 {
-	RCF rcf = rcfBounds;
+	RC rc = rcBounds;
 	if (puiParent)
-		rcf.Offset(-puiParent->rcfBounds.left, -puiParent->rcfBounds.top);
-	return rcf;
+		rc.Offset(-puiParent->rcBounds.left, -puiParent->rcBounds.top);
+	return rc;
 }
 
 
@@ -282,13 +282,13 @@ bool UI::FVisible(void) const
  *	Sets the bounding box for the UI element. Coordinates are relative
  *	to the parent's coordinate system
  */
-void UI::SetBounds(RCF rcfNew) 
+void UI::SetBounds(RC rcNew) 
 {
 	if (puiParent)
-		rcfNew.Offset(puiParent->rcfBounds.left, puiParent->rcfBounds.top);
-	rcfBounds.right = rcfBounds.left + rcfNew.DxfWidth();
-	rcfBounds.bottom = rcfBounds.top + rcfNew.DyfHeight();
-	OffsetBounds(rcfNew.left - rcfBounds.left, rcfNew.top - rcfBounds.top);
+		rcNew.Offset(puiParent->rcBounds.left, puiParent->rcBounds.top);
+	rcBounds.right = rcBounds.left + rcNew.DxWidth();
+	rcBounds.bottom = rcBounds.top + rcNew.DyHeight();
+	OffsetBounds(rcNew.left - rcBounds.left, rcNew.top - rcBounds.top);
 	Layout();
 }
 
@@ -297,12 +297,12 @@ void UI::SetBounds(RCF rcfNew)
  *
  *	Resizes the UI element.
  */
-void UI::Resize(PTF ptfNew) 
+void UI::Resize(PT ptNew) 
 {
-	if (ptfNew.x == rcfBounds.DxfWidth() && ptfNew.y == rcfBounds.DyfHeight())
+	if (ptNew.x == rcBounds.DxWidth() && ptNew.y == rcBounds.DyHeight())
 		return;
-	rcfBounds.right = rcfBounds.left + ptfNew.x;
-	rcfBounds.bottom = rcfBounds.top + ptfNew.y;
+	rcBounds.right = rcBounds.left + ptNew.x;
+	rcBounds.bottom = rcBounds.top + ptNew.y;
 	Layout();
 }
 
@@ -311,26 +311,26 @@ void UI::Resize(PTF ptfNew)
  *
  *	Moves the UI element to the new upper left position. In parent coordinates.
  */
-void UI::Move(PTF ptfNew) 
+void UI::Move(PT ptNew) 
 {
 	if (puiParent) {
 		/* convert to global coordinates */
-		ptfNew.x += puiParent->rcfBounds.left;
-		ptfNew.y += puiParent->rcfBounds.top;
+		ptNew.x += puiParent->rcBounds.left;
+		ptNew.y += puiParent->rcBounds.top;
 	}
-	float dxf = ptfNew.x - rcfBounds.left;
-	float dyf = ptfNew.y - rcfBounds.top;
-	OffsetBounds(dxf, dyf);
+	float dx = ptNew.x - rcBounds.left;
+	float dy = ptNew.y - rcBounds.top;
+	OffsetBounds(dx, dy);
 }
 
 
-void UI::OffsetBounds(float dxf, float dyf)
+void UI::OffsetBounds(float dx, float dy)
 {
-	if (dxf == 0 && dyf == 0)
+	if (dx == 0 && dy == 0)
 		return;
-	rcfBounds.Offset(dxf, dyf);
+	rcBounds.Offset(dx, dy);
 	for (UI* pui : vpuiChild)
-		pui->OffsetBounds(dxf, dyf);
+		pui->OffsetBounds(dx, dy);
 }
 
 
@@ -354,17 +354,17 @@ void UI::Show(bool fVisNew)
 }
 
 
-/*	UI::PuiFromPtf
+/*	UI::PuiFromPt
  *
  *	Returns the UI element the point is over. Point is in global coordinates.
  *	Returns NULL if the point is not within the UI.
  */
-UI* UI::PuiFromPtf(PTF ptf)
+UI* UI::PuiFromPt(PT pt)
 {
-	if (!fVisible || !rcfBounds.FContainsPtf(ptf))
+	if (!fVisible || !rcBounds.FContainsPt(pt))
 		return NULL;
 	for (UI* puiChild : vpuiChild) {
-		UI* pui = puiChild->PuiFromPtf(ptf);
+		UI* pui = puiChild->PuiFromPt(pt);
 		if (pui)
 			return pui;
 	}
@@ -372,29 +372,29 @@ UI* UI::PuiFromPtf(PTF ptf)
 }
 
 
-void UI::StartLeftDrag(PTF ptf)
+void UI::StartLeftDrag(PT pt)
 {
 	SetCapt(this);
 }
 
 
-void UI::EndLeftDrag(PTF ptf)
+void UI::EndLeftDrag(PT pt)
 {
 	ReleaseCapt();
 }
 
 
-void UI::LeftDrag(PTF ptf)
+void UI::LeftDrag(PT pt)
 {
 }
 
 
-void UI::MouseHover(PTF ptf, MHT mht)
+void UI::MouseHover(PT pt, MHT mht)
 {
 }
 
 
-void UI::ScrollWheel(PTF ptf, int dwheel)
+void UI::ScrollWheel(PT pt, int dwheel)
 {
 }
 
@@ -459,95 +459,95 @@ wstring UI::SzTipFromCmd(int cmd) const
 }
 
 
-/*	UI::RcfParentFromLocal
+/*	UI::RcParentFromLocal
  *
  *	Converts a rectangle from local coordinates to parent coordinates
  */
-RCF UI::RcfParentFromLocal(RCF rcf) const
+RC UI::RcParentFromLocal(RC rc) const
 {
 	if (puiParent == NULL)
-		return rcf;
-	return rcf.Offset(rcfBounds.left-puiParent->rcfBounds.left, 
-		rcfBounds.top-puiParent->rcfBounds.top);
+		return rc;
+	return rc.Offset(rcBounds.left-puiParent->rcBounds.left, 
+		rcBounds.top-puiParent->rcBounds.top);
 }
 
 
-RCF UI::RcfGlobalFromLocal(RCF rcf) const
+RC UI::RcGlobalFromLocal(RC rc) const
 {
-	return rcf.Offset(rcfBounds.left, rcfBounds.top);
+	return rc.Offset(rcBounds.left, rcBounds.top);
 }
 
 
-RCF UI::RcfLocalFromParent(RCF rcf) const
+RC UI::RcLocalFromParent(RC rc) const
 {
 	if (puiParent == NULL)
-		return rcf;
-	return rcf.Offset(puiParent->rcfBounds.left - rcfBounds.left,
-		puiParent->rcfBounds.top - rcfBounds.top);
+		return rc;
+	return rc.Offset(puiParent->rcBounds.left - rcBounds.left,
+		puiParent->rcBounds.top - rcBounds.top);
 }
 
 
-RCF UI::RcfLocalFromGlobal(RCF rcf) const
+RC UI::RcLocalFromGlobal(RC rc) const
 {
-	return rcf.Offset(-rcfBounds.left, -rcfBounds.top);
+	return rc.Offset(-rcBounds.left, -rcBounds.top);
 }
 
 
-/*	UI::PtfParentFromLocal
+/*	UI::PtParentFromLocal
  *
  *	Converts a point from loal coordinates to local coordinates of the
  *	parent UI element.
  */
-PTF UI::PtfParentFromLocal(PTF ptf) const
+PT UI::PtParentFromLocal(PT pt) const
 {
 	if (puiParent == NULL)
-		return ptf;
-	return PTF(ptf.x + rcfBounds.left - puiParent->rcfBounds.left,
-		ptf.y + rcfBounds.top - puiParent->rcfBounds.left);
+		return pt;
+	return PT(pt.x + rcBounds.left - puiParent->rcBounds.left,
+		pt.y + rcBounds.top - puiParent->rcBounds.left);
 
 }
 
 
-/*	UI::PtfGlobalFromLocal
+/*	UI::PtGlobalFromLocal
  *
  *	Converts a point from local coordinates to global (relative to the 
  *	main window) coordinates.
  */
-PTF UI::PtfGlobalFromLocal(PTF ptf) const
+PT UI::PtGlobalFromLocal(PT pt) const
 {
-	return PTF(ptf.x + rcfBounds.left, ptf.y + rcfBounds.top);
+	return PT(pt.x + rcBounds.left, pt.y + rcBounds.top);
 }
 
 
-/*	UI::PtfLocalFromGlobal
+/*	UI::PtLocalFromGlobal
  *
  *	Converts a point from global (relative to the main top-level window) to
  *	local coordinates.
  */
-PTF UI::PtfLocalFromGlobal(PTF ptf) const
+PT UI::PtLocalFromGlobal(PT pt) const
 {
-	return PTF(ptf.x - rcfBounds.left, ptf.y - rcfBounds.top);
+	return PT(pt.x - rcBounds.left, pt.y - rcBounds.top);
 }
 
 
 /*	UI::Update
  *
- *	Updates the UI element and all child elements. rcfUpdate is in
+ *	Updates the UI element and all child elements. rcUpdate is in
  *	global coordinates.
  */
-void UI::Update(RCF rcfUpdate)
+void UI::Update(RC rcUpdate)
 {
 	if (!fVisible)
 		return;
-	RCF rcf = rcfUpdate & rcfBounds;
-	if (!rcf)
+	RC rc = rcUpdate & rcBounds;
+	if (!rc)
 		return;
-	App().pdc->PushAxisAlignedClip(rcf, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	RCF rcfDraw = RcfLocalFromGlobal(rcf);
-	Draw(rcfDraw);
+	App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	RC rcDraw = RcLocalFromGlobal(rc);
+	Draw(rcDraw);
 	App().pdc->PopAxisAlignedClip();
 	for (UI* pui : vpuiChild)
-		pui->Update(rcf);
+		pui->Update(rc);
 }
 
 
@@ -557,34 +557,59 @@ void UI::Update(RCF rcfUpdate)
  */
 void UI::Redraw(void)
 {
-	Redraw(RcfInterior());
+	Redraw(RcInterior());
 }
 
 
 /*	UI::Redraw
  *
- *	Redraws the area of the UI element. rcfUpdate is in local coordinates.
+ *	Redraws the area of the UI element. rcUpdate is in local coordinates.
  */
-void UI::Redraw(RCF rcfUpdate)
+void UI::Redraw(RC rcUpdate)
 {
 	if (!fVisible)
 		return;
 	BeginDraw();
-	Update(RcfGlobalFromLocal(rcfUpdate));
+	Update(RcGlobalFromLocal(rcUpdate));
 	EndDraw();
+	RedrawOverlappedSiblings(RcGlobalFromLocal(rcUpdate));
 }
 
 
-void UI::Draw(RCF rcfDraw)
+/*	UI::RedrawOverlappedSiblings
+ *
+ *	When doing a partial redraw, we may need to redraw some sibling UI elements, like
+ *	tool tips, which overlap the update area. rcUpdate is in global coordinates. Note
+ *	that we only need to check siblings after the current UI element in the child lists,
+ *	since UI elements earlier than us will be under and are guaranteed to be overwritten.
+ */
+void UI::RedrawOverlappedSiblings(RC rcUpdate)
 {
-}
-
-
-void UI::InvalRcf(RCF rcf, bool fErase) const
-{
-	if (rcf.top >= rcf.bottom || rcf.left >= rcf.right || puiParent == NULL)
+	if (puiParent == nullptr)
 		return;
-	puiParent->InvalRcf(RcfParentFromLocal(rcf), fErase);
+	bool fFoundUs = false;
+	for (UI* pui : puiParent->vpuiChild) {
+		if (fFoundUs) {
+			if (pui->rcBounds & rcUpdate)
+				pui->Redraw(RcLocalFromGlobal(pui->rcBounds & rcUpdate));
+		}
+		else if (pui == this)
+			fFoundUs = true;
+	}
+	puiParent->RedrawOverlappedSiblings(rcUpdate);
+}
+
+
+void UI::Draw(RC rcDraw)
+{
+}
+
+
+void UI::InvalRc(RC rc, bool fErase) const
+{
+	if (rc.top >= rc.bottom || rc.left >= rc.right || puiParent == NULL)
+		return;
+	puiParent->InvalRc(RcParentFromLocal(rc), fErase);
 }
 
 
@@ -608,10 +633,12 @@ const GA& UI::Ga(void) const
 	return *App().pga;
 }
 
+
 GA& UI::Ga(void)
 {
 	return *App().pga;
 }
+
 
 void UI::BeginDraw(void)
 {
@@ -626,11 +653,13 @@ void UI::EndDraw(void)
 	puiParent->EndDraw();
 }
 
+
 bool UI::FDepthLog(LGT lgt, int& depth)
 {
 	assert(puiParent);
 	return puiParent->FDepthLog(lgt, depth);
 }
+
 
 void UI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {
@@ -639,48 +668,48 @@ void UI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szDa
 }
 
 
-/*	UI::FillRcf
+/*	UI::FillRc
  *
  *	Graphics helper for filling a rectangle with a brush. The rectangle is in
  *	local UI coordinates
  */
-void UI::FillRcf(RCF rcf, ID2D1Brush* pbr) const
+void UI::FillRc(RC rc, ID2D1Brush* pbr) const
 {
-	rcf = RcfGlobalFromLocal(rcf);
-	App().pdc->FillRectangle(&rcf, pbr);
+	rc = RcGlobalFromLocal(rc);
+	App().pdc->FillRectangle(&rc, pbr);
 }
 
 
-void UI::FillRcfBack(RCF rcf) const
+void UI::FillRcBack(RC rc) const
 {
 	if (puiParent == NULL)
-		FillRcf(rcf, pbrBack);
+		FillRc(rc, pbrBack);
 	else
-		puiParent->FillRcfBack(RcfParentFromLocal(rcf));
+		puiParent->FillRcBack(RcParentFromLocal(rc));
 }
 
 
-/*	UI::FillEllf
+/*	UI::FillEll
  *
  *	Helper function for filling an ellipse with a brush. Rectangle is in
  *	local UI coordinates
  */
-void UI::FillEllf(ELLF ellf, ID2D1Brush* pbr) const
+void UI::FillEll(ELL ell, ID2D1Brush* pbr) const
 {
-	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
-	App().pdc->FillEllipse(&ellf, pbr);
+	ell.Offset(PtGlobalFromLocal(PT(0, 0)));
+	App().pdc->FillEllipse(&ell, pbr);
 }
 
 
-/*	UI::DrawEllf
+/*	UI::DrawEll
  *
  *	Helper function for drawing an ellipse with a brush. Rectangle is in
  *	local UI coordinates
  */
-void UI::DrawEllf(ELLF ellf, ID2D1Brush* pbr) const
+void UI::DrawEll(ELL ell, ID2D1Brush* pbr) const
 {
-	ellf.Offset(PtfGlobalFromLocal(PTF(0, 0)));
-	App().pdc->DrawEllipse(&ellf, pbr);
+	ell.Offset(PtGlobalFromLocal(PT(0, 0)));
+	App().pdc->DrawEllipse(&ell, pbr);
 }
 
 
@@ -689,30 +718,29 @@ void UI::DrawEllf(ELLF ellf, ID2D1Brush* pbr) const
  *	Helper function for writing text on the screen panel. Rectangle is in
  *	local UI coordinates.
  */
-void UI::DrawSz(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
+void UI::DrawSz(const wstring& sz, TX* ptx, RC rc, ID2D1Brush* pbr) const
 {
-	rcf = RcfGlobalFromLocal(rcf);
-	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rcf, pbr==NULL ? pbrText : pbr);
+	rc = RcGlobalFromLocal(rc);
+	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rc, pbr==NULL ? pbrText : pbr);
 }
 
 
-void UI::DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, ID2D1Brush* pbr) const
+void UI::DrawSzCenter(const wstring& sz, TX* ptx, RC rc, ID2D1Brush* pbr) const
 {
 	TATX tatxSav(ptx, DWRITE_TEXT_ALIGNMENT_CENTER);
-	DrawSz(sz, ptx, rcf, pbr);
+	DrawSz(sz, ptx, rc, pbr);
 }
 
 
-SIZF UI::SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const
+SIZ UI::SizSz(const wstring& sz, TX* ptx, float dx, float dy) const
 {
 	IDWriteTextLayout* ptxl;
-	App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, dxf, dyf, &ptxl);
+	App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, dx, dy, &ptxl);
 	DWRITE_TEXT_METRICS dtm;
 	ptxl->GetMetrics(&dtm);
 	SafeRelease(&ptxl);
-	return SIZF(dtm.width, dtm.height);
+	return SIZ(dtm.width, dtm.height);
 }
-
 
 
 /*	UI::DrawRgch
@@ -720,10 +748,10 @@ SIZF UI::SizfSz(const wstring& sz, TX* ptx, float dxf, float dyf) const
  *	Helper function for drawing text on the screen panel. Rectangle is in local
  *	UI coordinates
  */
-void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr) const
+void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RC rc, BR* pbr) const
 {
-	rcf = RcfGlobalFromLocal(rcf);
-	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rcf, pbr == NULL ? pbrText : pbr);
+	rc = RcGlobalFromLocal(rc);
+	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rc, pbr == NULL ? pbrText : pbr);
 }
 
 
@@ -736,7 +764,7 @@ void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr) const
  *	is baseline aligned, which should be constant no matter what size
  *	font we eventually end up using.
  */
-void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) const
+void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
 {
 	if (pbrText == nullptr)
 		pbrText = UI::pbrText;
@@ -744,43 +772,43 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) cons
 	/* if the text fits, just blast it out */
 
 	IDWriteTextLayout* play = nullptr;
-	App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcfFit.DyfHeight(), &play);
+	App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcFit.DyHeight(), &play);
 	DWRITE_TEXT_METRICS tm;
 	play->GetMetrics(&tm);
-	if (tm.width <= rcfFit.DxfWidth() && tm.height <= rcfFit.DyfHeight()) {
-		DrawSz(sz, ptxBase, rcfFit, pbrText);
+	if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight()) {
+		DrawSz(sz, ptxBase, rcFit, pbrText);
 		SafeRelease(&play);
 		return;
 	}
 
-	RCF rcf = RcfGlobalFromLocal(rcfFit);
+	RC rc = RcGlobalFromLocal(rcFit);
 
 	/* figure out where our baseline is */
 
 	DWRITE_LINE_METRICS lm;
 	uint32_t clm;
 	play->GetLineMetrics(&lm, 1, &clm);
-	float yfBaseline = rcf.top + lm.baseline;
+	float yBaseline = rc.top + lm.baseline;
 
 	/* and loop using progressively smaller fonts until the text fits */
 
 	IDWriteTextFormat* ptx = nullptr;
-	for (float dyfFont = ptxBase->GetFontSize() - 1.0f; dyfFont > 6.0f; dyfFont--) {
+	for (float dyFont = ptxBase->GetFontSize() - 1.0f; dyFont > 6.0f; dyFont--) {
 		SafeRelease(&play);
 		SafeRelease(&ptx);
 		App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-			dyfFont, L"", &ptx);
+			dyFont, L"", &ptx);
 		App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
-			ptx, rcf.DxfWidth(), rcf.DyfHeight(), &play);
+			ptx, rc.DxWidth(), rc.DyHeight(), &play);
 		DWRITE_TEXT_METRICS tm;
 		play->GetMetrics(&tm);
-		if (tm.width <= rcfFit.DxfWidth() && tm.height <= rcfFit.DyfHeight())
+		if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight())
 			break;
 	}
 
 	play->GetLineMetrics(&lm, 1, &clm);
-	App().pdc->DrawTextLayout(Point2F(rcf.left, yfBaseline - lm.baseline), play,
+	App().pdc->DrawTextLayout(Point2F(rc.left, yBaseline - lm.baseline), play,
 			pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
 
 	SafeRelease(&play);
@@ -793,10 +821,10 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RCF rcfFit, BR* pbrText) cons
  *	Helper function for drawing part of a bitmap on the screen panel. Destination
  *	coordinates are in local UI coordinates.
  */
-void UI::DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity) const
+void UI::DrawBmp(RC rcTo, BMP* pbmp, RC rcFrom, float opacity) const
 {
-	App().pdc->DrawBitmap(pbmp, rcfTo.Offset(rcfBounds.PtfTopLeft()), 
-			opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcfFrom);
+	App().pdc->DrawBitmap(pbmp, rcTo.Offset(rcBounds.PtTopLeft()), 
+			opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcFrom);
 }
 
 
@@ -825,30 +853,30 @@ void BTN::Hilite(bool fHiliteNew)
 	Redraw();
 }
 
-void BTN::Draw(RCF rcfUpdate) 
+void BTN::Draw(RC rcUpdate) 
 {
 }
 
-void BTN::StartLeftDrag(PTF ptf)
+void BTN::StartLeftDrag(PT pt)
 {
 	SetCapt(this);
 	Track(true);
 }
 
-void BTN::EndLeftDrag(PTF ptf)
+void BTN::EndLeftDrag(PT pt)
 {
 	ReleaseCapt();
 	Track(false);
-	if (RcfInterior().FContainsPtf(ptf))
+	if (RcInterior().FContainsPt(pt))
 		DispatchCmd(cmd);
 }
 
-void BTN::LeftDrag(PTF ptf)
+void BTN::LeftDrag(PT pt)
 {
-	Hilite(RcfInterior().FContainsPtf(ptf));
+	Hilite(RcInterior().FContainsPt(pt));
 }
 
-void BTN::MouseHover(PTF ptf, MHT mht)
+void BTN::MouseHover(PT pt, MHT mht)
 {
 	if (mht == MHT::Enter) {
 		Hilite(true);
@@ -895,19 +923,19 @@ BTNCH::BTNCH(UI* puiParent, int cmd, WCHAR ch) : BTN(puiParent, cmd), ch(ch)
 }
 
 
-void BTNCH::Draw(RCF rcfUpdate)
+void BTNCH::Draw(RC rcUpdate)
 {
 	CreateRsrc();
 	WCHAR sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
-	RCF rcfChar(PTF(0, 0), SizfSz(sz, ptxButton));
-	RCF rcfTo = RcfInterior();
-	FillRcfBack(rcfTo);
+	RC rcChar(PT(0, 0), SizSz(sz, ptxButton));
+	RC rcTo = RcInterior();
+	FillRcBack(rcTo);
 	COLORBRS colorbrsSav(pbrsButton, ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
-	rcfChar += rcfTo.PtfCenter();
-	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
-	DrawSzCenter(sz, ptxButton, rcfTo, pbrsButton);
+	rcChar += rcTo.PtCenter();
+	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
+	DrawSzCenter(sz, ptxButton, rcTo, pbrsButton);
 }
 
 
@@ -922,26 +950,26 @@ BTNIMG::~BTNIMG(void)
 }
 
 
-void BTNIMG::Draw(RCF rcfUpdate)
+void BTNIMG::Draw(RC rcUpdate)
 {
 	CreateRsrc();
 	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_ALIASED);
-	RCF rcfTo = RcfInterior();
-	FillRcfBack(rcfTo);
-	rcfTo.Offset(rcfBounds.PtfTopLeft());
-	rcfTo.Inflate(PTF(-2.0f, -2.0f));
-	RCF rcfFrom = RCF(PTF(0, 0), pbmp->GetSize());
-	if (rcfFrom.DxfWidth() < rcfTo.DxfWidth()) {
-		float dxyf = (rcfTo.DxfWidth() - rcfFrom.DxfWidth()) / 2.0f;
-		rcfTo.Inflate(-dxyf, -dxyf);
+	RC rcTo = RcInterior();
+	FillRcBack(rcTo);
+	rcTo.Offset(rcBounds.PtTopLeft());
+	rcTo.Inflate(PT(-2.0f, -2.0f));
+	RC rcFrom = RC(PT(0, 0), pbmp->GetSize());
+	if (rcFrom.DxWidth() < rcTo.DxWidth()) {
+		float dxy = (rcTo.DxWidth() - rcFrom.DxWidth()) / 2.0f;
+		rcTo.Inflate(-dxy, -dxy);
 	}
-	if (rcfFrom.DyfHeight() < rcfTo.DyfHeight()) {
-		float dxyf = (rcfTo.DyfHeight() - rcfFrom.DyfHeight()) / 2.0f;
-		rcfTo.Inflate(-dxyf, -dxyf);
+	if (rcFrom.DyHeight() < rcTo.DyHeight()) {
+		float dxy = (rcTo.DyHeight() - rcFrom.DyHeight()) / 2.0f;
+		rcTo.Inflate(-dxy, -dxy);
 	}
 	COLORBRS colorbrsSav(pbrText, ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
-	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcfTo, rcfFrom);
+	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcTo, rcFrom);
 }
 
 
@@ -959,9 +987,9 @@ void BTNIMG::DiscardRsrc(void)
 }
 
 
-SIZF BTNIMG::SizfImg(void) const
+SIZ BTNIMG::SizImg(void) const
 {
-	return pbmp == NULL ? SIZF(0, 0) : pbmp->GetSize();
+	return pbmp == NULL ? SIZ(0, 0) : pbmp->GetSize();
 }
 
 
@@ -1012,15 +1040,15 @@ wstring STATIC::SzText(void) const
 }
 
 
-void STATIC::Draw(RCF rcfUpdate)
+void STATIC::Draw(RC rcUpdate)
 {
 	CreateRsrc();
-	RCF rcfChar(PTF(0, 0), SizfSz(SzText(), ptxStatic));
-	RCF rcfTo = RcfInterior();
-	FillRcfBack(rcfTo);
-	rcfChar += rcfTo.PtfCenter();
-	rcfChar.Offset(-rcfChar.DxfWidth() / 2.0f, -rcfChar.DyfHeight() / 2.0f);
-	DrawSzCenter(SzText(), ptxStatic, rcfTo, pbrsStatic);
+	RC rcChar(PT(0, 0), SizSz(SzText(), ptxStatic));
+	RC rcTo = RcInterior();
+	FillRcBack(rcTo);
+	rcChar += rcTo.PtCenter();
+	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
+	DrawSzCenter(SzText(), ptxStatic, rcTo, pbrsStatic);
 }
 
 
@@ -1033,9 +1061,9 @@ void STATIC::Draw(RCF rcfUpdate)
  */
 
 
-BTNGEOM::BTNGEOM(UI* puiParent, int cmd, PTF rgptf[], int cptf) : BTN(puiParent, cmd), pgeom(nullptr)
+BTNGEOM::BTNGEOM(UI* puiParent, int cmd, PT rgpt[], int cpt) : BTN(puiParent, cmd), pgeom(nullptr)
 {
-	pgeom = PgeomCreate(rgptf, cptf);
+	pgeom = PgeomCreate(rgpt, cpt);
 }
 
 BTNGEOM::~BTNGEOM(void)
@@ -1043,16 +1071,16 @@ BTNGEOM::~BTNGEOM(void)
 	SafeRelease(&pgeom);
 }
 
-void BTNGEOM::Draw(RCF rcfUpdate)
+void BTNGEOM::Draw(RC rcUpdate)
 {
-	float dxyfScale = RcfInterior().DxfWidth() / 2.0f;
-	FillRcf(RcfInterior(), pbrBack);
+	float dxyScale = RcInterior().DxWidth() / 2.0f;
+	FillRc(RcInterior(), pbrBack);
 	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	PTF ptfCenter = rcfBounds.PtfCenter();
+	PT ptCenter = rcBounds.PtCenter();
 	TRANSDC transdc(pdc,
-		Matrix3x2F::Scale(SizeF(dxyfScale, dxyfScale), PTF(0, 0)) *
-		Matrix3x2F::Translation(SizeF(ptfCenter.x, ptfCenter.y)));
+		Matrix3x2F::Scale(SizeF(dxyScale, dxyScale), PT(0, 0)) *
+		Matrix3x2F::Translation(SizeF(ptCenter.x, ptCenter.y)));
 	COLORBRS colorbrsSav(pbrText, ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
 	pdc->FillGeometry(pgeom, pbrText);
 }
@@ -1063,12 +1091,12 @@ void BTNGEOM::Draw(RCF rcfUpdate)
  *	SPIN ui control
  * 
  */
-static PTF rgptfLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
-static PTF rgptfRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
+static PT rgptLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
+static PT rgptRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
 
 
 SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), ptxSpin(nullptr),
-		btngeomDown(this, cmdDown, rgptfLeft, 3), btngeomUp(this, cmdUp, rgptfRight, 3)
+		btngeomDown(this, cmdDown, rgptLeft, 3), btngeomUp(this, cmdUp, rgptRight, 3)
 		
 {
 }
@@ -1093,21 +1121,21 @@ void SPIN::DiscardRsrc(void)
 
 void SPIN::Layout(void)
 {
-	float dxyfScale = RcfInterior().DyfHeight() / 2.0f;
-	RCF rcf = RcfInterior();
-	rcf.right = rcf.left + dxyfScale;
-	btngeomDown.SetBounds(rcf);
-	rcf = RcfInterior();
-	rcf.left = rcf.right - dxyfScale;
-	btngeomUp.SetBounds(rcf);
+	float dxyScale = RcInterior().DyHeight() / 2.0f;
+	RC rc = RcInterior();
+	rc.right = rc.left + dxyScale;
+	btngeomDown.SetBounds(rc);
+	rc = RcInterior();
+	rc.left = rc.right - dxyScale;
+	btngeomUp.SetBounds(rc);
 }
 
 
-void SPIN::Draw(RCF rcfUpdate)
+void SPIN::Draw(RC rcUpdate)
 {
 	wstring szValue = SzValue();
-	SIZF sizf = SizfSz(szValue, ptxSpin);
-	RCF rcf = RcfInterior();
-	rcf.Offset(PTF(0, (rcf.DyfHeight() - sizf.height) / 2));
-	DrawSzCenter(szValue, ptxSpin, rcf, pbrText);
+	SIZ siz = SizSz(szValue, ptxSpin);
+	RC rc = RcInterior();
+	rc.Offset(PT(0, (rc.DyHeight() - siz.height) / 2));
+	DrawSzCenter(szValue, ptxSpin, rc, pbrText);
 }

@@ -16,7 +16,7 @@
 class GA;
 
 
-WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch);
+WCHAR* PchDecodeInt(unsigned imv, wchar_t* pch);
 
 
 /*
@@ -141,18 +141,18 @@ protected:
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
-	GEOM* PgeomCreate(PTF rgptf[], int cptf);
+	GEOM* PgeomCreate(PT rgpt[], int cpt);
 	BMP* PbmpFromPngRes(int idb);
 
 protected:
 	UI* puiParent;
 	vector<UI*> vpuiChild;
-	RCF rcfBounds;	// rectangle is in global coordinates
+	RC rcBounds;	// rectangle is in global coordinates
 	bool fVisible;
 
 public:
 	UI(UI* puiParent, bool fVisible=true);
-	UI(UI* puiParent, RCF rcfBounds, bool fVisible=true);
+	UI(UI* puiParent, RC rcBounds, bool fVisible=true);
 	virtual ~UI(void);
 
 	void AddChild(UI* puiChild);
@@ -165,25 +165,25 @@ public:
 	const GA& Ga(void) const;
 	GA& Ga(void);
 
-	RCF RcfInterior(void) const;	// in local coordinates (top left is always {0,0})
-	RCF RcfBounds(void) const;	// in parent coordinates
+	RC RcInterior(void) const;	// in local coordinates (top left is always {0,0})
+	RC RcBounds(void) const;	// in parent coordinates
 	bool FVisible(void) const;
-	void SetBounds(RCF rcfNew);
-	void Resize(PTF ptfNew);
-	void Move(PTF ptfNew);
-	void OffsetBounds(float dxf, float dyf);
+	void SetBounds(RC rcNew);
+	void Resize(PT ptNew);
+	void Move(PT ptNew);
+	void OffsetBounds(float dx, float dy);
 	void Show(bool fShow);
 	virtual void Layout(void);
-	virtual SIZF SizfLayoutPreferred(void);
+	virtual SIZ SizLayoutPreferred(void);
 
-	UI* PuiFromPtf(PTF ptf);
+	UI* PuiFromPt(PT pt);
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);	
-	virtual void StartLeftDrag(PTF ptf);
-	virtual void EndLeftDrag(PTF ptf);
-	virtual void LeftDrag(PTF ptf);
-	virtual void MouseHover(PTF ptf, MHT mht);
-	virtual void ScrollWheel(PTF ptf, int dwheel);
+	virtual void StartLeftDrag(PT pt);
+	virtual void EndLeftDrag(PT pt);
+	virtual void LeftDrag(PT pt);
+	virtual void MouseHover(PT pt, MHT mht);
+	virtual void ScrollWheel(PT pt, int dwheel);
 
 	virtual void DispatchCmd(int cmd);
 	
@@ -195,19 +195,21 @@ public:
 	virtual wstring SzTip(void) const;
 	virtual wstring SzTipFromCmd(int cmd) const;
 
-	RCF RcfParentFromLocal(RCF rcf) const; // local to parent coordinates
-	RCF RcfGlobalFromLocal(RCF rcf) const; // local to app global coordinates
-	RCF RcfLocalFromGlobal(RCF rcf) const;
-	RCF RcfLocalFromParent(RCF rcf) const;
-	PTF PtfParentFromLocal(PTF ptf) const;
-	PTF PtfGlobalFromLocal(PTF ptf) const;
-	PTF PtfLocalFromGlobal(PTF ptf) const;
+	RC RcParentFromLocal(RC rc) const; // local to parent coordinates
+	RC RcGlobalFromLocal(RC rc) const; // local to app global coordinates
+	RC RcLocalFromGlobal(RC rc) const;
+	RC RcLocalFromParent(RC rc) const;
+	PT PtParentFromLocal(PT pt) const;
+	PT PtGlobalFromLocal(PT pt) const;
+	PT PtLocalFromGlobal(PT pt) const;
 
-	void Update(RCF rcfUpdate);
-	void Redraw(RCF rcfUpdate);
+	void Update(RC rcUpdate);
+	void Redraw(RC rcUpdate);
 	void Redraw(void);
-	virtual void InvalRcf(RCF rcf, bool fErase) const;
-	virtual void Draw(RCF rcfDraw);
+	virtual void InvalRc(RC rc, bool fErase) const;
+	virtual void Draw(RC rcDraw);
+	void RedrawOverlappedSiblings(RC rcUpdate);
+
 
 	virtual bool FDepthLog(LGT lgt, int& depth);
 	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
@@ -262,16 +264,16 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	void FillRcf(RCF rcf, BR* pbr) const;
-	virtual void FillRcfBack(RCF rcf) const;
-	void FillEllf(ELLF ellf, BR* pbr) const;
-	void DrawEllf(ELLF ellf, BR* pbr) const;
-	void DrawSz(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
-	void DrawSzCenter(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
-	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RCF rcf, BR* pbr = NULL) const;
-	SIZF SizfSz(const wstring& sz, TX* ptx, float dxf=1.0e6f, float dyf=1.0e6f) const;
-	void DrawSzFit(const wstring& sz, TX* ptx, RCF rcf, BR* pbr = NULL) const;
-	void DrawBmp(RCF rcfTo, BMP* pbmp, RCF rcfFrom, float opacity = 1.0f) const;
+	void FillRc(RC rc, BR* pbr) const;
+	virtual void FillRcBack(RC rc) const;
+	void FillEll(ELL ell, BR* pbr) const;
+	void DrawEll(ELL ell, BR* pbr) const;
+	void DrawSz(const wstring& sz, TX* ptx, RC rc, BR* pbr = NULL) const;
+	void DrawSzCenter(const wstring& sz, TX* ptx, RC rc, BR* pbr = NULL) const;
+	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RC rc, BR* pbr = NULL) const;
+	SIZ SizSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
+	void DrawSzFit(const wstring& sz, TX* ptx, RC rc, BR* pbr = NULL) const;
+	void DrawBmp(RC rcTo, BMP* pbmp, RC rcFrom, float opacity = 1.0f) const;
 };
 
 
@@ -295,12 +297,12 @@ public:
 
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 
-	virtual void StartLeftDrag(PTF ptf);
-	virtual void EndLeftDrag(PTF ptf);
-	virtual void LeftDrag(PTF ptf);
-	virtual void MouseHover(PTF ptf, MHT mht);
+	virtual void StartLeftDrag(PT pt);
+	virtual void EndLeftDrag(PT pt);
+	virtual void LeftDrag(PT pt);
+	virtual void MouseHover(PT pt, MHT mht);
 	
 	virtual wstring SzTip(void) const;
 };
@@ -318,7 +320,7 @@ public:
 
 public:
 	BTNCH(UI* puiParent, int cmd, WCHAR ch);
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 };
 
 
@@ -329,10 +331,10 @@ class BTNIMG : public BTN
 public:
 	BTNIMG(UI* puiParent, int cmd, int idb);
 	~BTNIMG(void);
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
-	SIZF SizfImg(void) const;
+	SIZ SizImg(void) const;
 };
 
 
@@ -348,9 +350,9 @@ class BTNGEOM : public BTN
 {
 	GEOM* pgeom;
 public:
-	BTNGEOM(UI* puiParent, int cmd, PTF rgptf[], int cptf);
+	BTNGEOM(UI* puiParent, int cmd, PT rgpt[], int cpt);
 	~BTNGEOM();
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 };
 
 
@@ -375,7 +377,7 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 
 	virtual wstring SzText(void) const;
 	void SetText(const wstring& sz);
@@ -412,6 +414,6 @@ public:
 	virtual void DiscardRsrc(void);
 	virtual void Layout(void);
 
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 	virtual wstring SzValue(void) const = 0;
 };

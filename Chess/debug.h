@@ -77,11 +77,11 @@ struct LGENTRY
 	TAG tag;
 	wstring szData;
 	int depth;
-	float dyfTop;	// position of the line relative to rcfCont
-	float dyfHeight;
+	float dyTop;	// position of the line relative to rcCont
+	float dyHeight;
 
 	LGENTRY(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : 
-		lgt(lgt), lgf(lgf), tag(tag), szData(szData), depth(depth), dyfTop(0.0f), dyfHeight(10.0f)
+		lgt(lgt), lgf(lgf), tag(tag), szData(szData), depth(depth), dyTop(0.0f), dyHeight(10.0f)
 	{
 	}
 };
@@ -107,7 +107,7 @@ class UIDB : public UIPS
 	TX* ptxLogBold;
 	TX* ptxLogItalic;
 	TX* ptxLogBoldItalic;
-	float dyfLine;
+	float dyLine;
 	int depthCur;
 	int depthShowSet;
 	int depthShowDefault;
@@ -118,10 +118,10 @@ public:
 	virtual void Layout(void);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
-	virtual void Draw(RCF rcfUpdate);
-	virtual void DrawContent(RCF rcfCont);
-	virtual float DyfLine(void) const;
-	size_t IlgentryFromYf(int yf) const;
+	virtual void Draw(RC rcUpdate);
+	virtual void DrawContent(RC rcCont);
+	virtual float DyLine(void) const;
+	size_t IlgentryFromY(int y) const;
 
 	virtual bool FDepthLog(LGT lgt, int& depth); 
 	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);

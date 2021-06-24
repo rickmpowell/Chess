@@ -102,45 +102,60 @@ UIP::~UIP(void)
  *	Base class for drawing a screen panel. The default implementation
  *	just fills the panel with the background brush.
  */
-void UIP::Draw(RCF rcfUpdate)
+void UIP::Draw(RC rcUpdate)
 {
-	FillRcf(RcfInterior(), pbrBack);
+	FillRc(RcInterior(), pbrBack);
 }
 
 
-/*	UIP::AdjustUIRcfBounds
+/*	UIP::AdjustUIRcBounds
  *
  *	Helper layout function for creating top/bottom strip UIs in screen panels. If the
- *	child UI in pui is visible, it moves it just below (or above) the rcf rectangle
+ *	child UI in pui is visible, it moves it just below (or above) the rc rectangle
  *	supplied, depending on fTop. We ask the child for its preferred height by calling
- *	SizfLayoutPreferred.
+ *	SizLayoutPreferred.
  */
-void UIP::AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop)
+void UIP::AdjustUIRcBounds(UI* pui, RC& rc, bool fTop)
 {
 	if (pui == NULL || !pui->FVisible())
 		return;
-	SIZF sizf = pui->SizfLayoutPreferred();
-	assert(sizf.height > 0.0f);
+	SIZ siz = pui->SizLayoutPreferred();
+	assert(siz.height > 0.0f);
 	if (fTop) {
-		rcf.top = rcf.bottom;
-		rcf.bottom = rcf.top + sizf.height;
+		rc.top = rc.bottom;
+		rc.bottom = rc.top + siz.height;
 	}
 	else {
-		rcf.bottom = rcf.top;
-		rcf.top = rcf.bottom - sizf.height;
+		rc.bottom = rc.top;
+		rc.top = rc.bottom - siz.height;
 	}
-	pui->SetBounds(rcf);
+	pui->SetBounds(rc);
 	if (fTop)
-		rcf.bottom++;
+		rc.bottom++;
 	else
-		rcf.top--;
+		rc.top--;
 }
 
+
+/*	UIP::FDepthLog
+ *
+ *	Logging helper, which adjusts the depth of our tree-structured log and returns true 
+ *	if the caller should continue to actually log the data. This is used as an optimization
+ *	so that we don't bother to actually construct the logging data if we're not going
+ *	to actually save the data in the log (the user has control over logging depth).
+ */
 bool UIP::FDepthLog(LGT lgt, int& depth)
 {
 	return ga.uidb.FDepthLog(lgt, depth);
 }
 
+
+/*	UIP::AddLog
+ *
+ *	The point where we actually log the data to the log. We have a tree-structured log,
+ *	with open/close tags for creating depth. Our structure is equivalent to XML, with
+ *	attributes on the open tag. 
+ */
 void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {
 	ga.uidb.AddLog(lgt, lgf, depth, tag, szData);
@@ -151,39 +166,55 @@ void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szD
  *
  *	UIPS
  * 
- *	Scrolling screen panel
+ *	Scrolling screen panel. Our scrolling model is designed around view and content
+ *	rectangles. The view rectangle is the area within the content rectangle that is
+ *	visible. Scrolling works by offsetting the content rectangle.
+ * 
+ *	In general, Direct2D drawing is fast enough that we don't implement actual
+ *	scrolling on screen, we just redraw the entire area and use Direct2D's frame
+ *	switching to get a flicker-free update.
  * 
  */
 
 
-UIPS::UIPS(GA* pga) : UIP(pga), rcfView(0, 0, 0, 0), rcfCont(0, 0, 0, 0)
+UIPS::UIPS(GA* pga) : UIP(pga), rcView(0, 0, 0, 0), rcCont(0, 0, 0, 0)
 {
 }
 
 
-void UIPS::SetView(const RCF& rcfView)
+void UIPS::SetView(const RC& rcView)
 {
-	this->rcfView = rcfView;
-	this->rcfView.right -= dxyfScrollBarWidth;
+	this->rcView = rcView;
+	this->rcView.right -= dxyScrollBarWidth;
 }
 
 
-void UIPS::SetContent(const RCF& rcfCont)
+void UIPS::SetContent(const RC& rcCont)
 {
-	this->rcfCont = rcfCont;
+	this->rcCont = rcCont;
 }
 
 
-RCF UIPS::RcfView(void) const
+/*	UIPS::RcView
+ *
+ *	Returns the view rectangle of the scrolling screen panel, in screen panel
+ *	coordinates.
+ */
+RC UIPS::RcView(void) const
 {
-	return rcfView;
+	return rcView;
 }
 
 
-RCF UIPS::RcfContent(void) const
+/*	UIPS::RcContent
+ *
+ *	Returns the content area of the screen panel, in screel panel coordinates. This is
+ *	the correct coordinate system to draw in, as long as we're clipped to the view
+ *	rect.
+ */
+RC UIPS::RcContent(void) const
 {
-	RCF rcf = rcfCont;
-	return rcf;
+	return rcCont;
 }
 
 
@@ -192,14 +223,14 @@ RCF UIPS::RcfContent(void) const
  *	Updates the size of the content area. Call this when you add content to
  *	the content area.
  */
-void UIPS::UpdateContSize(const SIZF& sizf)
+void UIPS::UpdateContSize(const SIZ& siz)
 {
-	rcfCont.bottom = rcfCont.top + sizf.height;
-	rcfCont.right = rcfCont.left + sizf.width;
+	rcCont.bottom = rcCont.top + siz.height;
+	rcCont.right = rcCont.left + siz.width;
 }
 
 
-/*	UIPS::AdjustRcfView
+/*	UIPS::AdjustRcView
  *
  *	Adjust the view and content rectangle based on a new view rectangle. The
  *	content rectangle is adjusted so that the width matches the view width,
@@ -210,55 +241,54 @@ void UIPS::UpdateContSize(const SIZF& sizf)
  *	all of our scrollers are full-width vertical scrolling areas, and fonts
  *	currently aren't scaling. 
  */
-void UIPS::AdjustRcfView(RCF rcfViewNew)
+void UIPS::AdjustRcView(RC rcViewNew)
 {
-	float dyf = rcfCont.top - rcfView.top;
-	RCF rcfContNew = rcfViewNew;
-	rcfContNew.bottom = rcfContNew.top + rcfCont.DyfHeight();
-	rcfContNew.Offset(0, dyf);
-	SetView(rcfViewNew);
-	SetContent(rcfContNew);
+	float dy = rcCont.top - rcView.top;
+	RC rcContNew = rcViewNew;
+	rcContNew.bottom = rcContNew.top + rcCont.DyHeight();
+	rcContNew.Offset(0, dy);
+	SetView(rcViewNew);
+	SetContent(rcContNew);
 }
 
 
-float UIPS::DyfLine(void) const
+float UIPS::DyLine(void) const
 {
 	return 5.0f;
 }
-
 
 
 /*	UIPS::ScrollTo
  *
  *	Scrolls the content rectangle by the given number of units.
  */
-void UIPS::ScrollTo(float dyf)
+void UIPS::ScrollTo(float dy)
 {
-	float yfTopNew = rcfCont.top + dyf;
-	if (yfTopNew > rcfView.top)
-		yfTopNew = rcfView.top;
-	float dyfCont = rcfCont.DyfHeight();
-	float dyfLine = DyfLine();
-	if (yfTopNew + dyfCont < rcfView.top + dyfLine)
-		yfTopNew = rcfView.top + dyfLine - dyfCont;
-	dyf = yfTopNew - rcfCont.top;
-	rcfCont.Offset(0, dyf);
+	float yTopNew = rcCont.top + dy;
+	if (yTopNew > rcView.top)
+		yTopNew = rcView.top;
+	float dyCont = rcCont.DyHeight();
+	float dyLine = DyLine();
+	if (yTopNew + dyCont < rcView.top + dyLine)
+		yTopNew = rcView.top + dyLine - dyCont;
+	dy = yTopNew - rcCont.top;
+	rcCont.Offset(0, dy);
 	Redraw();
 }
 
 
 /*	UIPS::FMakeVis
  *
- *	Makes the position yf of height dyf in the content area visible within the view
+ *	Makes the position y of height dy in the content area visible within the view
  *	rectangle. Returns true if we had to scroll to make the iteme visible, false if
  *	the item was already visible
  */
-bool UIPS::FMakeVis(float yf, float dyf)
+bool UIPS::FMakeVis(float y, float dy)
 {
-	if (yf < rcfView.top)
-		rcfCont.Offset(0, rcfView.top - yf);
-	else if (yf + dyf > rcfView.bottom)
-		rcfCont.Offset(0, rcfView.bottom - (yf + dyf));
+	if (y < rcView.top)
+		rcCont.Offset(0, rcView.top - y);
+	else if (y + dy > rcView.bottom)
+		rcCont.Offset(0, rcView.bottom - (y + dy));
 	else
 		return false;
 	Redraw();
@@ -266,59 +296,61 @@ bool UIPS::FMakeVis(float yf, float dyf)
 }
 
 
-void UIPS::Draw(RCF rcfUpdate)
+/*	UIPS::Draw
+ *
+ *	A scrolling panel draw, which draws the content area and scrollbar
+ */
+void UIPS::Draw(RC rcUpdate)
 {
 	/* just redraw the entire content area clipped to the view */
 	APP& app = App();
-	app.pdc->PushAxisAlignedClip(RcfGlobalFromLocal(rcfView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	FillRcf(rcfView, pbrBack);
-	DrawContent(rcfCont);
+	app.pdc->PushAxisAlignedClip(RcGlobalFromLocal(rcView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	FillRc(rcView, pbrBack);
+	DrawContent(rcCont);
 	app.pdc->PopAxisAlignedClip();
 	DrawScrollBar();
 }
 
 
-void UIPS::DrawContent(RCF rcf)
+void UIPS::DrawContent(RC rc)
 {
 }
 
 
 void UIPS::DrawScrollBar(void)
 {
-	RCF rcfScroll = rcfView;
-	rcfScroll.left = rcfView.right;
-	rcfScroll.right = rcfScroll.left + dxyfScrollBarWidth;
-	FillRcf(rcfScroll, pbrAltBack);
-	RCF rcfThumb = rcfScroll;
-	if (rcfCont.DyfHeight() > 0) {
-		rcfThumb.top = rcfScroll.top + rcfScroll.DyfHeight() * (rcfView.top - rcfCont.top) / rcfCont.DyfHeight();
-		rcfThumb.bottom = rcfScroll.top + rcfScroll.DyfHeight() * (rcfView.bottom - rcfCont.top) / rcfCont.DyfHeight();
+	RC rcScroll = rcView;
+	rcScroll.left = rcView.right;
+	rcScroll.right = rcScroll.left + dxyScrollBarWidth;
+	FillRc(rcScroll, pbrAltBack);
+	RC rcThumb = rcScroll;
+	if (rcCont.DyHeight() > 0) {
+		rcThumb.top = rcScroll.top + rcScroll.DyHeight() * (rcView.top - rcCont.top) / rcCont.DyHeight();
+		rcThumb.bottom = rcScroll.top + rcScroll.DyHeight() * (rcView.bottom - rcCont.top) / rcCont.DyHeight();
 	}
-	if (rcfThumb.top < rcfScroll.top)
-		rcfThumb.top = rcfScroll.top;
-	if (rcfThumb.bottom > rcfScroll.bottom)
-		rcfThumb.bottom = rcfScroll.bottom;
-	FillRcf(rcfThumb, pbrBack);
-	FillRcf(RCF(rcfThumb.left, rcfThumb.top - 1, rcfThumb.right, rcfThumb.top), pbrGridLine);
-	FillRcf(RCF(rcfThumb.left, rcfThumb.bottom, rcfThumb.right, rcfThumb.bottom + 1), pbrGridLine);
-	FillRcf(RCF(rcfThumb.left, rcfThumb.top, rcfThumb.left + 1, rcfThumb.bottom), pbrGridLine);
+	rcThumb.top = max(rcThumb.top, rcScroll.top);
+	rcThumb.bottom = min(rcThumb.bottom, rcScroll.bottom);
+	FillRc(rcThumb, pbrBack);
+	FillRc(RC(rcThumb.left, rcThumb.top - 1, rcThumb.right, rcThumb.top), pbrGridLine);
+	FillRc(RC(rcThumb.left, rcThumb.bottom, rcThumb.right, rcThumb.bottom + 1), pbrGridLine);
+	FillRc(RC(rcThumb.left, rcThumb.top, rcThumb.left + 1, rcThumb.bottom), pbrGridLine);
 
 }
 
 
-void UIPS::MouseHover(PTF ptf, MHT mht)
+void UIPS::MouseHover(PT pt, MHT mht)
 {
-	if (RcfView().FContainsPtf(ptf))
+	if (RcView().FContainsPt(pt))
 		::SetCursor(App().hcurUpDown);
 	else
 		::SetCursor(App().hcurArrow);
 }
 
 
-void UIPS::ScrollWheel(PTF ptf, int dwheel)
+void UIPS::ScrollWheel(PT pt, int dwheel)
 {
 	float dlifScroll = (float)dwheel / (float)WHEEL_DELTA;
-	ScrollTo(DyfLine() * dlifScroll);
+	ScrollTo(DyLine() * dlifScroll);
 }
 
 
@@ -339,23 +371,23 @@ void UIBB::Layout(void)
 	/* TODO: do a standard layout of some kind */
 }
 
-SIZF UIBB::SizfLayoutPreferred(void)
+SIZ UIBB::SizLayoutPreferred(void)
 {
-	return SIZF(-1.0f, 32.0f);
+	return SIZ(-1.0f, 32.0f);
 }
 
-void UIBB::Draw(RCF rcfUpdate)
+void UIBB::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrBack);
+	FillRc(rcUpdate, pbrBack);
 }
 
-void UIBB::AdjustBtnRcfBounds(UI* pui, RCF& rcf, float dxfWidth)
+void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
 {
 	if (pui == NULL || !pui->FVisible())
 		return;
-	rcf.left = rcf.right + 10.0f;
-	rcf.right = rcf.left + dxfWidth;
-	pui->SetBounds(rcf);
+	rc.left = rc.right + 10.0f;
+	rc.right = rc.left + dxWidth;
+	pui->SetBounds(rc);
 }
 
 
@@ -373,40 +405,45 @@ UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(NULL)
 }
 
 
-void UITIP::Draw(RCF rcfUpdate)
+void UITIP::Draw(RC rcUpdate)
 {
-	RCF rcf = RcfInterior();
-	FillRcf(rcf, pbrText);
-	rcf.Inflate(PTF(-1.0, -1.0));
-	FillRcf(rcf, pbrTip);
+	RC rc = RcInterior();
+	FillRc(rc, pbrText);
+	rc.Inflate(PT(-1.0, -1.0));
+	FillRc(rc, pbrTip);
 	if (puiOwner) {
 		wstring sz = puiOwner->SzTip();
 		if (!sz.empty())
-			DrawSz(sz, ptxTip, rcf.Inflate(PTF(-5.0f, -3.0f)), pbrText);
+			DrawSz(sz, ptxTip, rc.Inflate(PT(-5.0f, -3.0f)), pbrText);
 	}
 }
 
 
+/*	UITIP::AttachOwner
+ *
+ *	Attach the tip UI elemennt to the specified UI element. Positions the tip UI near
+ *	the owner.
+ */
 void UITIP::AttachOwner(UI* pui)
 {
 	puiOwner = pui;
 	if (!puiOwner)
 		return;
-	RCF rcfOwner = puiOwner->RcfInterior();
-	rcfOwner = puiOwner->RcfGlobalFromLocal(rcfOwner);
+	RC rcOwner = puiOwner->RcInterior();
+	rcOwner = puiOwner->RcGlobalFromLocal(rcOwner);
 	wstring szTip = puiOwner->SzTip();
-	SIZF sizfTip = SizfSz(szTip, ptxTip, 1000.0f, 1000.0f);
-	sizfTip.height += 8.0f;
-	sizfTip.width += 14.0f;
-	RCF rcfTip = RCF(PTF(rcfOwner.XCenter(), rcfOwner.top - sizfTip.height - 1.0f), sizfTip);
-	RCF rcfDesk = puiParent->RcfInterior();
-	if (rcfTip.top < rcfDesk.top)
-		rcfTip.Offset(PTF(0.0f, sizfTip.height + rcfOwner.DyfHeight() + 1.0f));
-	if (rcfTip.left < rcfDesk.left)
-		rcfTip.Offset(PTF(sizfTip.width + rcfOwner.DxfWidth() + 1.0f, 0.0f));
-	if (rcfTip.bottom > rcfDesk.bottom)
-		rcfTip.Offset(PTF(0.0f, -(sizfTip.height + rcfOwner.DyfHeight() + 1.0f)));
-	if (rcfTip.right > rcfDesk.right)
-		rcfTip.Offset(PTF(-(sizfTip.width + rcfOwner.DxfWidth() + 1.0f), 0.0f));
-	SetBounds(rcfTip);
+	SIZ sizTip = SizSz(szTip, ptxTip, 1000.0f, 1000.0f);
+	sizTip.height += 8.0f;
+	sizTip.width += 14.0f;
+	RC rcTip = RC(PT(rcOwner.XCenter(), rcOwner.top - sizTip.height - 1.0f), sizTip);
+	RC rcDesk = puiParent->RcInterior();
+	if (rcTip.top < rcDesk.top)
+		rcTip.Offset(PT(0.0f, sizTip.height + rcOwner.DyHeight() + 1.0f));
+	if (rcTip.left < rcDesk.left)
+		rcTip.Offset(PT(sizTip.width + rcOwner.DxWidth() + 1.0f, 0.0f));
+	if (rcTip.bottom > rcDesk.bottom)
+		rcTip.Offset(PT(0.0f, -(sizTip.height + rcOwner.DyHeight() + 1.0f)));
+	if (rcTip.right > rcDesk.right)
+		rcTip.Offset(PT(-(sizTip.width + rcOwner.DxWidth() + 1.0f), 0.0f));
+	SetBounds(rcTip);
 }

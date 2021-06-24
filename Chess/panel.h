@@ -36,9 +36,9 @@ protected:
 public:
 	UIP(GA* pga);
 	virtual ~UIP(void);
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 	void SetShadow(void);
-	void AdjustUIRcfBounds(UI* pui, RCF& rcf, bool fTop);
+	void AdjustUIRcBounds(UI* pui, RC& rc, bool fTop);
 
 	virtual bool FDepthLog(LGT lgt, int& depth);
 	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
@@ -57,30 +57,30 @@ public:
 class UIPS : public UIP
 {
 private:
-	RCF rcfView;	/* relative to the UI */
-	RCF rcfCont;
+	RC rcView;	/* relative to the UI */
+	RC rcCont;
 protected:
-	const float dxyfScrollBarWidth = 10.0f;
+	const float dxyScrollBarWidth = 10.0f;
 	void DrawScrollBar(void);
 public:
 	UIPS(GA* pga);
 	
-	void SetView(const RCF& rcfView);
-	void SetContent(const RCF& rcfCont);
-	RCF RcfView(void) const;
-	RCF RcfContent(void) const;
-	void UpdateContSize(const SIZF& sizf);
-	void AdjustRcfView(RCF rcf);
-	virtual float DyfLine(void) const;
+	void SetView(const RC& rcView);
+	void SetContent(const RC& rcCont);
+	RC RcView(void) const;
+	RC RcContent(void) const;
+	void UpdateContSize(const SIZ& siz);
+	void AdjustRcView(RC rc);
+	virtual float DyLine(void) const;
 		
-	virtual void Draw(RCF rcfUpdate);
-	virtual void DrawContent(RCF rcf);
+	virtual void Draw(RC rcUpdate);
+	virtual void DrawContent(RC rc);
 
-	virtual void MouseHover(PTF ptf, MHT mht);
-	virtual void ScrollWheel(PTF ptf, int dwheel);
+	virtual void MouseHover(PT pt, MHT mht);
+	virtual void ScrollWheel(PT pt, int dwheel);
 
-	void ScrollTo(float yfTop);
-	bool FMakeVis(float yf, float dyf);
+	void ScrollTo(float yTop);
+	bool FMakeVis(float y, float dy);
 };
 
 
@@ -100,7 +100,7 @@ protected:
 
 public:
 	UITIP(UI* puiParent);
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 	void AttachOwner(UI* pui);
 };
 
@@ -118,7 +118,7 @@ class UIBB : public UI
 public:
 	UIBB(UIPS* puiParent);
 	virtual void Layout(void);
-	virtual SIZF SizfLayoutPreferred(void);
-	virtual void Draw(RCF rcfUpdate);
-	void AdjustBtnRcfBounds(UI* pui, RCF& rcf, float dxfWidth);
+	virtual SIZ SizLayoutPreferred(void);
+	virtual void Draw(RC rcUpdate);
+	void AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth);
 };

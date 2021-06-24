@@ -89,20 +89,20 @@ void GA::SetPl(CPC cpc, PL* ppl)
  *	Draws the full game on the screen. For now, we have plenty of speed
  *	to do full redraws, so there's no attempt to optimize this.
  */
-void GA::Draw(RCF rcfUpdate)
+void GA::Draw(RC rcUpdate)
 {
-	FillRcf(rcfUpdate, pbrDesktop);
+	FillRc(rcUpdate, pbrDesktop);
 }
 
 
-void GA::InvalRcf(RCF rcf, bool fErase) const
+void GA::InvalRc(RC rc, bool fErase) const
 {
-	RECT rc;
-	rc.left = (int)(rcf.left - rcfBounds.left);
-	rc.top = (int)(rcf.top - rcfBounds.top);
-	rc.right = (int)(rcf.right - rcfBounds.left);
-	rc.bottom = (int)(rcf.bottom - rcfBounds.top);
-	::InvalidateRect(app.hwnd, &rc, fErase);
+	RECT rect;
+	rect.left = (int)(rc.left - rcBounds.left);
+	rect.top = (int)(rc.top - rcBounds.top);
+	rect.right = (int)(rc.right - rcBounds.left);
+	rect.bottom = (int)(rc.bottom - rcBounds.top);
+	::InvalidateRect(app.hwnd, &rect, fErase);
 }
 
 
@@ -140,29 +140,29 @@ void GA::PresentSwch(void) const
  */
 void GA::Layout(void)
 {
-	float dxyfMargin = 10.0f;
+	float dxyMargin = 10.0f;
 
-	RCF rcf(dxyfMargin, dxyfMargin, dxyfMargin+210.0f, dxyfMargin+240.0f);
-	uiti.SetBounds(rcf);
+	RC rc(dxyMargin, dxyMargin, dxyMargin+210.0f, dxyMargin+240.0f);
+	uiti.SetBounds(rc);
 
-	rcf.left = rcf.right + dxyfMargin;
-	rcf.bottom = rcfBounds.bottom - 100.0f;
+	rc.left = rc.right + dxyMargin;
+	rc.bottom = rcBounds.bottom - 100.0f;
 	/* make board a multiple of 8 pixels wide, so we don't get weird */
-	if ((int)rcf.bottom & 7)
-		rcf.bottom -= (int)rcf.bottom & 7;
-	if (rcf.DyfHeight() < 180.0f)
-		rcf.bottom = rcf.top + 180.0f;
-	rcf.right = rcf.left + rcf.DyfHeight();
-	uibd.SetBounds(rcf);
+	if ((int)rc.bottom & 7)
+		rc.bottom -= (int)rc.bottom & 7;
+	if (rc.DyHeight() < 180.0f)
+		rc.bottom = rc.top + 180.0f;
+	rc.right = rc.left + rc.DyHeight();
+	uibd.SetBounds(rc);
 
-	rcf.left = rcf.right + dxyfMargin;
-	SIZF sizf = uiml.SizfLayoutPreferred();
-	rcf.right = rcf.left + sizf.width;
-	uiml.SetBounds(rcf);
+	rc.left = rc.right + dxyMargin;
+	SIZ siz = uiml.SizLayoutPreferred();
+	rc.right = rc.left + siz.width;
+	uiml.SetBounds(rc);
 
-	rcf.left = rcf.right + dxyfMargin;
-	rcf.right = rcf.left + 240.0f;
-	uidb.SetBounds(rcf);
+	rc.left = rc.right + dxyMargin;
+	rc.right = rc.left + 240.0f;
+	uidb.SetBounds(rc);
 }
 
 
@@ -220,17 +220,17 @@ UI* GA::PuiFocus(void) const
 }
 
 
-UI* GA::PuiHitTest(PTF* pptf, int x, int y)
+UI* GA::PuiHitTest(PT* ppt, int x, int y)
 {
-	PTF ptf((float)x, (float)y);
+	PT pt((float)x, (float)y);
 	UI* pui;
 	if (puiCapt)
 		pui = puiCapt;
 	else
-		pui = PuiFromPtf(ptf);
+		pui = PuiFromPt(pt);
 	if (pui)
-		ptf = pui->PtfLocalFromGlobal(ptf);
-	*pptf = ptf;
+		pt = pui->PtLocalFromGlobal(pt);
+	*ppt = pt;
 	return pui;
 }
 

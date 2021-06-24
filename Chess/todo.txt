@@ -1,3 +1,6 @@
+  Should do const references instead of by-value calls for RCF and PTF
+  Choosing the player picker while the AI is running crashes
+  When player picker is up, clicking outside the picker should make it cancel.
   Ticking clock overwrites popup tips
   Log: Should we hash tags?
   With board rotated black point of view, animations are messed up
@@ -11,7 +14,6 @@
   AI: Communicate best continuation back
   Use UCI (universal chess interface) to communicate to UI from AI
   AI: Starting AI with black-to-move lets white move first
-  AI: Should we do move/undo instead of duplicating boards? 
   Hash boards
   AI: Quitting the app while AI is running sometimes crashes in PresentSwch
   UI: Move as many drawing objects into classes as possible
@@ -64,7 +66,6 @@
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   AI: build and keep lookahead tree 
-  AI: Add debug ability to pause and step through eval tree
   UIBD: Hilite last made move on board
   Feature: Add a UI for setting up a board
   AI: Play through until no checks before evaluation
@@ -93,6 +94,8 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area?)
+* Rename PTF and RCF to PT and RC, and all other f suffixes. 
+* AI: Should we do move/undo instead of duplicating boards? 
 * Log: second game screws up the log content/view
 * Log: Add properties to tag 
 * Log: Logging gets really slow when a lot of log entries start piling up.

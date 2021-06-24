@@ -169,7 +169,7 @@ private:
 	void InitCmdList(void);
 
 	void Redraw(void);
-	void Redraw(RCF rcf);
+	void Redraw(RC rc);
 
 	void OnPaint(void);
 	void OnSize(UINT dx, UINT dy);

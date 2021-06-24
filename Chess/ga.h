@@ -72,19 +72,19 @@ public:
 	GA(APP& app);
 	~GA(void);
 
-	virtual void Draw(RCF rcfUpdate);
+	virtual void Draw(RC rcUpdate);
 	virtual void PresentSwch(void) const;
 	virtual APP& App(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
-	virtual void InvalRcf(RCF rcf, bool fErase) const;
+	virtual void InvalRc(RC rc, bool fErase) const;
 	virtual void Layout(void);
 
 	virtual void DispatchCmd(int cmd);
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTipFromCmd(int cmd) const;
 
-	UI* PuiHitTest(PTF* pptf, int x, int y);
+	UI* PuiHitTest(PT* ppt, int x, int y);
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);
 	virtual void SetHover(UI* pui);

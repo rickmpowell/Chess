@@ -26,27 +26,27 @@ BRS* UIBD::pbrBlack;
 BRS* UIBD::pbrAnnotation;
 BRS* UIBD::pbrHilite;
 
-const float dxyfCrossFull = 20.0f;
-const float dxyfCrossCenter = 4.0f;
-PTF rgptfCross[] = {
-	{-dxyfCrossCenter, -dxyfCrossFull},
-	{dxyfCrossCenter, -dxyfCrossFull},
-	{dxyfCrossCenter, -dxyfCrossCenter},
-	{dxyfCrossFull, -dxyfCrossCenter},
-	{dxyfCrossFull, dxyfCrossCenter},
-	{dxyfCrossCenter, dxyfCrossCenter},
-	{dxyfCrossCenter, dxyfCrossFull},
-	{-dxyfCrossCenter, dxyfCrossFull},
-	{-dxyfCrossCenter, dxyfCrossCenter},
-	{-dxyfCrossFull, dxyfCrossCenter},
-	{-dxyfCrossFull, -dxyfCrossCenter},
-	{-dxyfCrossCenter, -dxyfCrossCenter},
-	{-dxyfCrossCenter, -dxyfCrossFull} };
+const float dxyCrossFull = 20.0f;
+const float dxyCrossCenter = 4.0f;
+PT rgptCross[] = {
+	{-dxyCrossCenter, -dxyCrossFull},
+	{dxyCrossCenter, -dxyCrossFull},
+	{dxyCrossCenter, -dxyCrossCenter},
+	{dxyCrossFull, -dxyCrossCenter},
+	{dxyCrossFull, dxyCrossCenter},
+	{dxyCrossCenter, dxyCrossCenter},
+	{dxyCrossCenter, dxyCrossFull},
+	{-dxyCrossCenter, dxyCrossFull},
+	{-dxyCrossCenter, dxyCrossCenter},
+	{-dxyCrossFull, dxyCrossCenter},
+	{-dxyCrossFull, -dxyCrossCenter},
+	{-dxyCrossCenter, -dxyCrossCenter},
+	{-dxyCrossCenter, -dxyCrossFull} };
 
-PTF rgptfArrowHead[] = {
+PT rgptArrowHead[] = {
 	{0, 0},
-	{dxyfCrossFull * 0.5f, dxyfCrossFull * 0.86f},
-	{-dxyfCrossFull * 0.5f, dxyfCrossFull * 0.86f},
+	{dxyCrossFull * 0.5f, dxyCrossFull * 0.86f},
+	{-dxyCrossFull * 0.5f, dxyCrossFull * 0.86f},
 	{0, 0}
 };
 
@@ -94,7 +94,7 @@ void UIBD::CreateRsrc(void)
 
 	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		dxyfSquare/4.0f, L"",
+		dxySquare/4.0f, L"",
 		&ptxLabel);
 
 	/* bitmaps */
@@ -104,9 +104,9 @@ void UIBD::CreateRsrc(void)
 	/* geometries */
 
 	/* capture X, which is created as a cross that is rotated later */
-	pgeomCross = PgeomCreate(rgptfCross, CArray(rgptfCross));
+	pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
 	/* arrow head */
-	pgeomArrowHead = PgeomCreate(rgptfArrowHead, CArray(rgptfArrowHead));
+	pgeomArrowHead = PgeomCreate(rgptArrowHead, CArray(rgptArrowHead));
 }
 
 void UIBD::DiscardRsrc(void)
@@ -126,7 +126,7 @@ UIBD::UIBD(GA* pga) : UIP(pga),
 		pbmpPieces(nullptr), pgeomCross(nullptr), pgeomArrowHead(nullptr), ptxLabel(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(CPC::White), 
-		rcfSquares(0, 0, 640.0f, 640.0f), dxyfSquare(80.0f), dxyfBorder(2.0f), dxyfMargin(50.0f), dxyfOutline(4.0f), dyfLabel(0), angle(0.0f),
+		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
 		sqDragInit(sqNil), sqHover(sqNil)
 {
 }
@@ -149,36 +149,36 @@ void UIBD::Layout(void)
 {
 	DiscardRsrc();
 
-	rcfSquares = RcfInterior();
+	rcSquares = RcInterior();
 
-	dxyfSquare = roundf(rcfSquares.DxfWidth() / 9.5f);
+	dxySquare = roundf(rcSquares.DxWidth() / 9.5f);
 
-	dxyfBorder = dxyfSquare / 32.0f;
-	if (dxyfBorder < 1.0f) {
-		dxyfBorder = 0;
-		dxyfOutline = 0;
-		dxyfMargin = 0;
-		dxyfSquare = rcfSquares.DxfWidth() / 8.0f;
+	dxyBorder = dxySquare / 32.0f;
+	if (dxyBorder < 1.0f) {
+		dxyBorder = 0;
+		dxyOutline = 0;
+		dxyMargin = 0;
+		dxySquare = rcSquares.DxWidth() / 8.0f;
 	}
 	else {
-		dxyfOutline = roundf(2.0f * dxyfBorder);
-		dxyfBorder = roundf(dxyfBorder);
-		dxyfMargin = (RcfInterior().DxfWidth() - 2 * (dxyfBorder + dxyfOutline) - 8 * dxyfSquare) / 2.0f;
+		dxyOutline = roundf(2.0f * dxyBorder);
+		dxyBorder = roundf(dxyBorder);
+		dxyMargin = (RcInterior().DxWidth() - 2 * (dxyBorder + dxyOutline) - 8 * dxySquare) / 2.0f;
 	}
 
-	float dxyf = dxyfMargin + dxyfOutline + dxyfBorder;
-	rcfSquares.Inflate(-dxyf, -dxyf);
+	float dxy = dxyMargin + dxyOutline + dxyBorder;
+	rcSquares.Inflate(-dxy, -dxy);
 	
 	CreateRsrc();
-	dyfLabel = SizfSz(L"8", ptxLabel).height;
+	dyLabel = SizSz(L"8", ptxLabel).height;
 
 	/* position the rotation button */
 
-	RCF rcf = RcfInterior().Inflate(-dxyfBorder, -dxyfBorder);
-	float dxyfBtn = dxyfSquare * 0.375f;
-	rcf.top = rcf.bottom - dxyfBtn;
-	rcf.right = rcf.left + dxyfBtn;
-	btnRotateBoard.SetBounds(rcf);
+	RC rc = RcInterior().Inflate(-dxyBorder, -dxyBorder);
+	float dxyBtn = dxySquare * 0.375f;
+	rc.top = rc.bottom - dxyBtn;
+	rc.right = rc.left + dxyBtn;
+	btnRotateBoard.SetBounds(rc);
 }
 
 
@@ -258,15 +258,15 @@ void UIBD::RedoMv(SPMV spmv)
  *	in response to user input, which simplifies drawing quite a bit. We
  *	just handle all dragging drawing in here.
  */
-void UIBD::Draw(RCF rcfUpdate)
+void UIBD::Draw(RC rcUpdate)
 {
 	DC* pdc = App().pdc;
-	int rankFirst = (int)floor((rcfUpdate.top - rcfSquares.top) / dxyfSquare);
-	float dyf = (rcfUpdate.bottom - rcfSquares.top) / dxyfSquare;
-	int rankLast = (int)floor(dyf) - (int)(floor(dyf) == dyf);
-	int fileFirst = (int)floor((rcfUpdate.left - rcfSquares.left) / dxyfSquare);
-	float dxf = (rcfUpdate.right - rcfSquares.left) / dxyfSquare;
-	int fileLast = (int)floor(dxf) - (int)(floor(dxf) == dxf);
+	int rankFirst = (int)floor((rcUpdate.top - rcSquares.top) / dxySquare);
+	float dy = (rcUpdate.bottom - rcSquares.top) / dxySquare;
+	int rankLast = (int)floor(dy) - (int)(floor(dy) == dy);
+	int fileFirst = (int)floor((rcUpdate.left - rcSquares.left) / dxySquare);
+	float dx = (rcUpdate.right - rcSquares.left) / dxySquare;
+	int fileLast = (int)floor(dx) - (int)(floor(dx) == dx);
 	rankFirst = peg(rankFirst, 0, rankMax - 1);
 	rankLast = peg(rankLast, 0, rankMax - 1);
 	fileFirst = peg(fileFirst, 0, fileMax - 1);
@@ -278,8 +278,8 @@ void UIBD::Draw(RCF rcfUpdate)
 	}
 
 	{
-	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcfBounds.PtfCenter()));
-	DrawMargins(rcfUpdate, rankFirst, rankLast, fileFirst, fileLast);
+	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcBounds.PtCenter()));
+	DrawMargins(rcUpdate, rankFirst, rankLast, fileFirst, fileLast);
 	DrawSquares(rankFirst, rankLast, fileFirst, fileLast);
 	DrawHilites();
 	DrawAnnotations();
@@ -287,7 +287,7 @@ void UIBD::Draw(RCF rcfUpdate)
 	}
 
 	if (!sqDragInit.fIsNil())
-		DrawDragPc(rcfDragPc);
+		DrawDragPc(rcDragPc);
 }
 
 
@@ -297,16 +297,16 @@ void UIBD::Draw(RCF rcfUpdate)
  *	with a thin green line just outside the square grid. Also draws
  *	the file and rank labels along the edge of the board.
  */
-void UIBD::DrawMargins(RCF rcfUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
+void UIBD::DrawMargins(RC rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
-	FillRcf(rcfUpdate, pbrLight);
-	if (dxyfMargin <= 0.0f)
+	FillRc(rcUpdate, pbrLight);
+	if (dxyMargin <= 0.0f)
 		return;
-	RCF rcf = RcfInterior();
-	rcf.Inflate(PTF(-dxyfMargin, -dxyfMargin));
-	FillRcf(rcf & rcfUpdate, pbrDark);
-	rcf.Inflate(PTF(-dxyfOutline, -dxyfOutline));
-	FillRcf(rcf & rcfUpdate, pbrLight);
+	RC rc = RcInterior();
+	rc.Inflate(PT(-dxyMargin, -dxyMargin));
+	FillRc(rc & rcUpdate, pbrDark);
+	rc.Inflate(PT(-dxyOutline, -dxyOutline));
+	FillRc(rc & rcUpdate, pbrLight);
 	DrawFileLabels(rankFirst, rankLast);
 	DrawRankLabels(fileFirst, fileLast);
 }
@@ -327,7 +327,7 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 		for (int file = fileFirst; file <= fileLast; file++) {
 			SQ sq(rank, file);
 			if ((rank + file) % 2 == 0)
-				FillRcf(RcfFromSq(sq), pbrDark);
+				FillRc(RcFromSq(sq), pbrDark);
 			MV mv;
 			if (FHoverSq(sq, mv))
 				DrawHoverMv(mv);
@@ -346,11 +346,11 @@ void UIBD::DrawFileLabels(int fileFirst, int fileLast)
 	wchar_t szLabel[2];
 	szLabel[0] = L'a' + fileFirst;
 	szLabel[1] = 0;
-	float yfTop = rcfSquares.bottom + dxyfBorder+dxyfOutline + dxyfBorder;
-	float yfBot = yfTop + dyfLabel;
+	float yTop = rcSquares.bottom + dxyBorder+dxyOutline + dxyBorder;
+	float yBot = yTop + dyLabel;
 	for (int file = 0; file <= fileLast; file++) {
-		RCF rcf(RcfFromSq(SQ(0, file)));
-		DrawSzCenter(wstring(szLabel), ptxLabel, RCF(rcf.left, yfTop, rcf.right, yfBot), pbrDark);
+		RC rc(RcFromSq(SQ(0, file)));
+		DrawSzCenter(wstring(szLabel), ptxLabel, RC(rc.left, yTop, rc.right, yBot), pbrDark);
 		szLabel[0]++;
 	}
 }
@@ -366,13 +366,13 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 	wchar_t szLabel[2];
 	szLabel[0] = L'1' + rankFirst;
 	szLabel[1] = 0;
-	float dxfLabel = SizfSz(L"8", ptxLabel).width;
-	float dxfRight = rcfSquares.left - (dxyfBorder + dxyfOutline + dxyfBorder) - dxfLabel/2.0f;
-	float dxfLeft = dxfRight - dxfLabel;
+	float dxLabel = SizSz(L"8", ptxLabel).width;
+	float dxRight = rcSquares.left - (dxyBorder + dxyOutline + dxyBorder) - dxLabel/2.0f;
+	float dxLeft = dxRight - dxLabel;
 	for (int rank = rankFirst; rank <= rankLast; rank++) {
-		RCF rcf = RcfFromSq(SQ(rank, 0));
+		RC rc = RcFromSq(SQ(rank, 0));
 		DrawSzCenter(wstring(szLabel), ptxLabel,
-			RCF(dxfLeft, (rcf.top + rcf.bottom - dyfLabel) / 2, dxfRight, rcf.bottom),
+			RC(dxLeft, (rc.top + rc.bottom - dyLabel) / 2, dxRight, rc.bottom),
 			pbrDark);
 		szLabel[0]++;
 	}
@@ -399,11 +399,11 @@ void UIBD::DrawGameState(void)
 }
 
 
-/*	UIBD::RcfFromSq
+/*	UIBD::RcFromSq
  *
  *	Returns the rectangle of the given square on the screen
  */
-RCF UIBD::RcfFromSq(SQ sq) const
+RC UIBD::RcFromSq(SQ sq) const
 {
 	assert(!sq.fIsOffBoard());
 	int rank = sq.rank(), file = sq.file();
@@ -411,9 +411,9 @@ RCF UIBD::RcfFromSq(SQ sq) const
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
-	RCF rcf(0, 0, dxyfSquare, dxyfSquare);
-	rcf.Offset(rcfSquares.left + dxyfSquare * file, rcfSquares.top + dxyfSquare * rank);
-	return rcf;
+	RC rc(0, 0, dxySquare, dxySquare);
+	rc.Offset(rcSquares.left + dxySquare * file, rcSquares.top + dxySquare * rank);
+	return rc;
 }
 
 
@@ -447,23 +447,23 @@ void UIBD::DrawHoverMv(MV mv)
 {
 	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
-	RCF rcf = RcfFromSq(mv.sqTo());
+	RC rc = RcFromSq(mv.sqTo());
 	if (!ga.bdg.FMvIsCapture(mv)) {
 		/* moving to an empty square - draw a circle */
-		ELLF ellf(PTF((rcf.right + rcf.left) / 2, (rcf.top + rcf.bottom) / 2),
-			PTF(dxyfSquare / 5, dxyfSquare / 5));
-		FillEllf(ellf, pbrBlack);
+		ELL ell(PT((rc.right + rc.left) / 2, (rc.top + rc.bottom) / 2),
+			PT(dxySquare / 5, dxySquare / 5));
+		FillEll(ell, pbrBlack);
 	}
 	else {
 		/* taking an opponent piece - draw an X */
 		DC* pdc = App().pdc;
 		TRANSDC transdcSav(pdc, 	
-			Matrix3x2F::Rotation(45.0f, PTF(0.0f, 0.0f)) *
-			Matrix3x2F::Scale(SizeF(dxyfSquare / (2.0f * dxyfCrossFull),
-				dxyfSquare / (2.0f * dxyfCrossFull)),
-				PTF(0.0, 0.0)) *
-			Matrix3x2F::Translation(SizeF(rcfBounds.left + (rcf.right + rcf.left) / 2,
-				rcfBounds.top + (rcf.top + rcf.bottom) / 2)));
+			Matrix3x2F::Rotation(45.0f, PT(0.0f, 0.0f)) *
+			Matrix3x2F::Scale(SizeF(dxySquare / (2.0f * dxyCrossFull),
+				dxySquare / (2.0f * dxyCrossFull)),
+				PT(0.0, 0.0)) *
+			Matrix3x2F::Translation(SizeF(rcBounds.left + (rc.right + rc.left) / 2,
+				rcBounds.top + (rc.top + rc.bottom) / 2)));
 		pdc->FillGeometry(pgeomCross, pbrBlack);
 	}
 }
@@ -478,48 +478,48 @@ void UIBD::DrawPieceSq(SQ sq)
 	if (sq.fIsNil())
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-	DrawPc(RcfFromSq(sq), opacity, ga.bdg(sq));
+	DrawPc(RcFromSq(sq), opacity, ga.bdg(sq));
 }
 
 
 /*	UIBD::DrawDragPc
  *
  *	Draws the piece we're currently dragging, as specified by
- *	phtDragInit, on the screen, in the location at rcf. rcf should
+ *	phtDragInit, on the screen, in the location at rc. rc should
  *	track the mouse location.
  */
-void UIBD::DrawDragPc(const RCF& rcf)
+void UIBD::DrawDragPc(const RC& rc)
 {
 	assert(!sqDragInit.fIsNil());
-	DrawPc(rcf, 1.0f, ga.bdg(sqDragInit));
+	DrawPc(rc, 1.0f, ga.bdg(sqDragInit));
 }
 
 
-void UIBD::FillRcfBack(RCF rcf) const
+void UIBD::FillRcBack(RC rc) const
 {
-	FillRcf(rcf, pbrLight);
+	FillRc(rc, pbrLight);
 }
 
 
-/*	UIBD::RcfGetDrag
+/*	UIBD::RcGetDrag
  *
  *	Gets the current screen rectangle the piece we're dragging
  */
-RCF UIBD::RcfGetDrag(void)
+RC UIBD::RcGetDrag(void)
 {
-	RCF rcfInit = RcfFromSq(sqDragInit);
-	RCF rcf(0, 0, dxyfSquare, dxyfSquare);
-	float dxfInit = ptfDragInit.x - rcfInit.left;
-	float dyfInit = ptfDragInit.y - rcfInit.top;
-	return rcf.Offset(ptfDragCur.x - dxfInit, ptfDragCur.y - dyfInit);
+	RC rcInit = RcFromSq(sqDragInit);
+	RC rc(0, 0, dxySquare, dxySquare);
+	float dxInit = ptDragInit.x - rcInit.left;
+	float dyInit = ptDragInit.y - rcInit.top;
+	return rc.Offset(ptDragCur.x - dxInit, ptDragCur.y - dyInit);
 }
 
 
 /*	UIBD::DrawPc
  *
- *	Draws the chess piece on the square at rcf.
+ *	Draws the chess piece on the square at rc.
  */
-void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
+void UIBD::DrawPc(RC rc, float opacity, IPC ipc)
 {
 	if (ipc == ipcEmpty)
 		return;
@@ -529,12 +529,12 @@ void UIBD::DrawPc(RCF rcf, float opacity, IPC ipc)
 	 *   BK BQ BN BR BB BP
 	 */
 	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
-	D2D1_SIZE_F ptf = pbmpPieces->GetSize();
-	float dxfPiece = ptf.width / 6.0f;
-	float dyfPiece = ptf.height / 2.0f;
-	float xfPiece = mpapcxBitmap[ipc.apc()] * dxfPiece;
-	float yfPiece = (int)ipc.cpc() * dyfPiece;
-	DrawBmp(rcf, pbmpPieces, RCF(xfPiece, yfPiece, xfPiece + dxfPiece, yfPiece + dyfPiece), opacity);
+	D2D1_SIZE_F pt = pbmpPieces->GetSize();
+	float dxPiece = pt.width / 6.0f;
+	float dyPiece = pt.height / 2.0f;
+	float xPiece = mpapcxBitmap[ipc.apc()] * dxPiece;
+	float yPiece = (int)ipc.cpc() * dyPiece;
+	DrawBmp(rc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
 }
 
 
@@ -548,17 +548,17 @@ void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe)
 {
 	float framefMax = (float)dframe;
 	sqDragInit = sqFrom;
-	RCF rcfFrom = RcfFromSq(sqDragInit);
-	ptfDragInit = rcfFrom.PtfTopLeft();
-	RCF rcfTo = RcfFromSq(sqTo);
-	RCF rcfFrame = rcfFrom;
+	RC rcFrom = RcFromSq(sqDragInit);
+	ptDragInit = rcFrom.PtTopLeft();
+	RC rcTo = RcFromSq(sqTo);
+	RC rcFrame = rcFrom;
 	for (float framef = 0.0f; framef < framefMax; framef++) {
-		rcfDragPc = rcfFrom;
+		rcDragPc = rcFrom;
 		float framefRem = framefMax - framef;
-		rcfDragPc.Offset((rcfFrom.left*framefRem + rcfTo.left*framef) / framefMax - rcfFrom.left,
-			(rcfFrom.top*framefRem + rcfTo.top*framef) / framefMax - rcfFrom.top);
-		Redraw(rcfFrame|rcfDragPc);
-		rcfFrame = rcfDragPc;
+		rcDragPc.Offset((rcFrom.left*framefRem + rcTo.left*framef) / framefMax - rcFrom.left,
+			(rcFrom.top*framefRem + rcTo.top*framef) / framefMax - rcFrom.top);
+		Redraw(rcFrame|rcDragPc);
+		rcFrame = rcDragPc;
 	}
 	sqDragInit = sqNil;
 }
@@ -620,14 +620,14 @@ void UIBD::FlipBoard(CPC cpcNew)
  *
  *	The point is in global coordinates.
  */
-HTBD UIBD::HtbdHitTest(PTF ptf, SQ* psq) const
+HTBD UIBD::HtbdHitTest(PT pt, SQ* psq) const
 {
-	if (!RcfInterior().FContainsPtf(ptf))
+	if (!RcInterior().FContainsPt(pt))
 		return HTBD::None;
-	if (!rcfSquares.FContainsPtf(ptf))
+	if (!rcSquares.FContainsPt(pt))
 		return HTBD::Static;
-	int rank = (int)((ptf.y - rcfSquares.top) / dxyfSquare);
-	int file = (int)((ptf.x - rcfSquares.left) / dxyfSquare);
+	int rank = (int)((pt.y - rcSquares.top) / dxySquare);
+	int file = (int)((pt.x - rcSquares.left) / dxySquare);
 	if (cpcPointOfView == CPC::White)
 		rank = rankMax - 1 - rank;
 	else
@@ -664,18 +664,18 @@ bool UIBD::FMoveablePc(SQ sq) const
  *
  *	Starts the mouse left button down drag operation on the board panel.
  */
-void UIBD::StartLeftDrag(PTF ptf)
+void UIBD::StartLeftDrag(PT pt)
 {
 	SQ sq;
-	HTBD htbd = HtbdHitTest(ptf, &sq);
+	HTBD htbd = HtbdHitTest(pt, &sq);
 	sqHover = sqNil;
 	SetCapt(this);
 
 	if (htbd == HTBD::MoveablePc) {
-		ptfDragInit = ptf;
+		ptDragInit = pt;
 		sqDragInit = sq;
-		ptfDragCur = ptf;
-		rcfDragPc = RcfGetDrag();
+		ptDragCur = pt;
+		rcDragPc = RcGetDrag();
 		Redraw();
 	}
 	else {
@@ -684,7 +684,7 @@ void UIBD::StartLeftDrag(PTF ptf)
 }
 
 
-void UIBD::EndLeftDrag(PTF ptf)
+void UIBD::EndLeftDrag(PT pt)
 {
 	ReleaseCapt();
 	if (sqDragInit.fIsNil())
@@ -692,7 +692,7 @@ void UIBD::EndLeftDrag(PTF ptf)
 	SQ sqFrom = sqDragInit;
 	sqDragInit = sqNil;
 	SQ sqTo;
-	HtbdHitTest(ptf, &sqTo);
+	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
 		for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
 			MV mv = gmvDrag[imv];
@@ -706,7 +706,7 @@ void UIBD::EndLeftDrag(PTF ptf)
 	   screen dragging */
 	Redraw();
 Done:
-	InvalOutsideRcf(rcfDragPc);
+	InvalOutsideRc(rcDragPc);
 }
 
 
@@ -718,17 +718,17 @@ Done:
  *	We use this for users to drag pieces around while they are trying to
  *	move.
  */
-void UIBD::LeftDrag(PTF ptf)
+void UIBD::LeftDrag(PT pt)
 {
 	SQ sq;
-	HtbdHitTest(ptf, &sq);
+	HtbdHitTest(pt, &sq);
 	if (sqDragInit.fIsNil()) {
-		EndLeftDrag(ptf);
+		EndLeftDrag(pt);
 		return;
 	}
-	ptfDragCur = ptf;
-	InvalOutsideRcf(rcfDragPc);
-	rcfDragPc = RcfGetDrag();
+	ptDragCur = pt;
+	InvalOutsideRc(rcDragPc);
+	rcDragPc = RcGetDrag();
 	Redraw();
 }
 
@@ -740,10 +740,10 @@ void UIBD::LeftDrag(PTF ptf)
  *	class for the mouse location. It is guaranteed to be a HTBD
  *	for hit testing over the UIBD.
  */
-void UIBD::MouseHover(PTF ptf, MHT mht)
+void UIBD::MouseHover(PT pt, MHT mht)
 {
 	SQ sq;
-	HTBD htbd = HtbdHitTest(ptf, &sq);
+	HTBD htbd = HtbdHitTest(pt, &sq);
 	HiliteLegalMoves(htbd == HTBD::MoveablePc ? sq : sqNil);
 	switch (htbd) {
 	case HTBD::MoveablePc:
@@ -776,7 +776,7 @@ void UIBD::HiliteLegalMoves(SQ sq)
 }
 
 
-/*	UIBD::InvalOutsideRcf
+/*	UIBD::InvalOutsideRc
  *
  *	While we're tracking piece dragging, it's possible for a piece
  *	to be drawn outside the bounding box of the board. Any drawing
@@ -784,13 +784,13 @@ void UIBD::HiliteLegalMoves(SQ sq)
  *	we handle these outside parts by just invalidating the area so
  *	they'll get picked off eventually by normal update paints.
  */
-void UIBD::InvalOutsideRcf(RCF rcf) const
+void UIBD::InvalOutsideRc(RC rc) const
 {
-	RCF rcfInt = RcfInterior();
-	InvalRcf(RCF(rcf.left, rcf.top, rcf.right, rcfInt.top), false);
-	InvalRcf(RCF(rcf.left, rcfInt.bottom, rcf.right, rcf.bottom), false);
-	InvalRcf(RCF(rcf.left, rcf.top, rcfInt.left, rcf.bottom), false);
-	InvalRcf(RCF(rcfInt.right, rcf.top, rcf.right, rcf.bottom), false);
+	RC rcInt = RcInterior();
+	InvalRc(RC(rc.left, rc.top, rc.right, rcInt.top), false);
+	InvalRc(RC(rc.left, rcInt.bottom, rc.right, rc.bottom), false);
+	InvalRc(RC(rc.left, rc.top, rcInt.left, rc.bottom), false);
+	InvalRc(RC(rcInt.right, rc.top, rc.right, rc.bottom), false);
 }
 
 
