@@ -147,7 +147,7 @@ void GA::Layout(void)
 
 	rc.left = rc.right + dxyMargin;
 	rc.bottom = rcBounds.bottom - 100.0f;
-	/* make board a multiple of 8 pixels wide, so we don't get weird */
+	/* make board a multiple of 8 pixels wide, so we don't get weird scaling */
 	if ((int)rc.bottom & 7)
 		rc.bottom -= (int)rc.bottom & 7;
 	if (rc.DyHeight() < 180.0f)
@@ -246,9 +246,9 @@ void GA::SetCapt(UI* pui)
 
 void GA::ReleaseCapt(void)
 {
-	if (puiCapt == NULL)
+	if (puiCapt == nullptr)
 		return;
-	puiCapt = NULL;
+	puiCapt = nullptr;
 	::ReleaseCapture();
 }
 
@@ -260,6 +260,7 @@ void GA::SetHover(UI* pui)
 	puiHover = pui;
 }
 
+
 void GA::ShowTip(UI* puiAttach, bool fShow)
 {
 	uitip.AttachOwner(puiAttach);
@@ -269,6 +270,7 @@ void GA::ShowTip(UI* puiAttach, bool fShow)
 	else
 		Redraw();
 }
+
 
 wstring GA::SzTipFromCmd(int cmd) const
 {
@@ -375,11 +377,7 @@ void GA::RedoMv(void)
  */
 void GA::MoveToImv(int imv)
 {
-	/* peg imv to legal sizes */
-	if (imv < -1)
-		imv = -1;
-	if (imv > (int)bdg.vmvGame.size() - 1)
-		imv = (int)bdg.vmvGame.size() - 1;
+	imv = peg(imv, -1, (int)bdg.vmvGame.size() - 1);
 	SPMV spmvSav = spmv;
 	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
 		spmv = SPMV::AnimateFast;
@@ -424,7 +422,7 @@ int GA::Play(void)
 		} while (bdg.gs == GS::Playing);
 	}
 	catch (int err) {
-		::MessageBoxW(app.hwnd, L"Game play has been aborted.", NULL, MB_OK);
+		::MessageBoxW(app.hwnd, L"Game play has been aborted.", nullptr, MB_OK);
 		return err;
 	}
 	LogClose(L"Game", L"", LGF::Normal);
@@ -450,10 +448,13 @@ void GA::PumpMsg(void)
 		case WM_QUIT:
 			throw -1;
 		default:
-			if (::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE))
-				::DispatchMessage(&msg);
+			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
 			break;
 		}
+	if (::TranslateAccelerator(msg.hwnd, app.haccel, &msg))
+		continue;
+	::TranslateMessage(&msg);
+	::DispatchMessageW(&msg);
 	}
 }
 

@@ -13,7 +13,7 @@
 
 
 
-UIICON::UIICON(UI* puiParent, int idb) : UI(puiParent), idb(idb), pbmp(NULL)
+UIICON::UIICON(UI* puiParent, int idb) : UI(puiParent), idb(idb), pbmp(nullptr)
 {
 }
 
@@ -114,29 +114,8 @@ void UIGTM::Draw(RC rcUpdate)
  */
 
 
-/*	SPATI::CreateRsrcClass
- *
- *	Creates the drawing resources for displaying the title screen
- *	panel. Note that this is a static routine working on global static
- *	resources that are shared by all instances of this class.
- */
-void UITI::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-}
-
-
-/*	UITI::DiscardRsrcClass
- *
- *	Deletes all resources associated with this screen panel. This is a
- *	static routine, and works on static class globals.
- */
-void UITI::DiscardRsrcClass(void)
-{
-}
-
-
 UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbSqChessLogo), uilocale(this), uigt(this), uigtm(this),
-		uiplWhite(this, CPC::White), uiplBlack(this, CPC::Black), szText(L"")
+		uiplWhite(this, CPC::White), uiplBlack(this, CPC::Black)
 {
 }
 
@@ -175,22 +154,6 @@ void UITI::Layout(void)
 void UITI::Draw(RC rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
-
-	RC rc = RcInterior();
-	rc.top = rc.bottom - 36.0f;
-	RC rcLine = rc;
-	rcLine.bottom = rcLine.top + 1;
-	FillRc(rcLine, pbrGridLine);
-
-	if (szText.size() > 0)
-		DrawSz(szText, ptxTextSm, rc);
-}
-
-
-void UITI::SetText(const wstring& sz)
-{
-	szText = sz;
-	Redraw();
 }
 
 

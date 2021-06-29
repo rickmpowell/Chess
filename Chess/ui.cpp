@@ -46,15 +46,15 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.85f), &pbrTip);
 	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.5f), &pbrHilite);
 
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		16.0f, L"",
 		&ptxText);
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxList);
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		13.0f, L"",
 		&ptxTip);
@@ -77,6 +77,10 @@ void UI::DiscardRsrcClass(void)
 }
 
 
+/*	UI::PgeomCreate
+ *
+ *	Creates a geometry object from the array of points.
+ */
 ID2D1PathGeometry* UI::PgeomCreate(PT rgpt[], int cpt)
 {
 	/* capture X, which is created as a cross that is rotated later */
@@ -93,33 +97,38 @@ ID2D1PathGeometry* UI::PgeomCreate(PT rgpt[], int cpt)
 }
 
 
+/*	UI::PbmpFromPngRes
+ *
+ *	Creates a bitmap object from a resource file in PNG format. The PNG format resources
+ *	will use the "IMAGE" resource type.
+ */
 BMP* UI::PbmpFromPngRes(int idb)
 {
 	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
-	if (hres == NULL)
-		return NULL;
+	if (!hres)
+		return nullptr;
 	ULONG cbRes = ::SizeofResource(NULL, hres);
 	HGLOBAL hresLoad = ::LoadResource(NULL, hres);
-	if (hresLoad == NULL)
-		return NULL;
+	if (!hresLoad)
+		return nullptr;
 	BYTE* pbRes = (BYTE*)::LockResource(hresLoad);
-	if (pbRes == NULL)
-		return NULL;
+	if (!pbRes)
+		return nullptr;
 
 	HRESULT hr;
-	IWICStream* pstm = NULL;
+	IWICStream* pstm = nullptr;
 	hr = App().pfactwic->CreateStream(&pstm);
 	hr = pstm->InitializeFromMemory(pbRes, cbRes);
-	IWICBitmapDecoder* pdec = NULL;
-	hr = App().pfactwic->CreateDecoderFromStream(pstm, NULL, WICDecodeMetadataCacheOnLoad, &pdec);
-	IWICBitmapFrameDecode* pframe = NULL;
+	IWICBitmapDecoder* pdec = nullptr;
+	hr = App().pfactwic->CreateDecoderFromStream(pstm, nullptr, WICDecodeMetadataCacheOnLoad, &pdec);
+	IWICBitmapFrameDecode* pframe = nullptr;
 	hr = pdec->GetFrame(0, &pframe);
-	IWICFormatConverter* pconv = NULL;
+	IWICFormatConverter* pconv = nullptr;
 	hr = App().pfactwic->CreateFormatConverter(&pconv);
 	hr = pconv->Initialize(pframe, GUID_WICPixelFormat32bppPBGRA,
-		WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut);
+		WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeMedianCut);
 	ID2D1Bitmap1* pbmp;
-	hr = App().pdc->CreateBitmapFromWicBitmap(pconv, NULL, &pbmp);
+	hr = App().pdc->CreateBitmapFromWicBitmap(pconv, nullptr, &pbmp);
 
 	SafeRelease(&pframe);
 	SafeRelease(&pconv);
@@ -157,7 +166,7 @@ UI::~UI(void)
 		delete vpuiChild[0];
 	if (puiParent) {
 		puiParent->RemoveChild(this);
-		puiParent = NULL;
+		puiParent = nullptr;
 	}
 }
 
@@ -194,27 +203,31 @@ void UI::RemoveChild(UI* puiChild)
  */
 UI* UI::PuiPrevSib(void) const
 {
-	if (puiParent == NULL)
-		return NULL;
-	UI* puiPrev = NULL;
+	if (puiParent == nullptr)
+		return nullptr;
+	UI* puiPrev = nullptr;
 	for (UI* pui : puiParent->vpuiChild) {
 		if (pui == this)
 			return puiPrev;
 		puiPrev = pui;
 	}
 	assert(false);
-	return NULL;
+	return nullptr;
 }
 
 
+/*	UI::PuiNextSib
+ *
+ *	Gets the next sibling window of the given UI element.
+ */
 UI* UI::PuiNextSib(void) const
 {
-	if (puiParent == NULL)
-		return NULL;
+	if (puiParent == nullptr)
+		return nullptr;
 	for (int ipui = 0; ipui < (int)puiParent->vpuiChild.size() - 1; ipui++)
 		if (puiParent->vpuiChild[ipui] == this)
 			return puiParent->vpuiChild[ipui + 1];
-	return NULL;
+	return nullptr;
 }
 
 
@@ -357,12 +370,12 @@ void UI::Show(bool fVisNew)
 /*	UI::PuiFromPt
  *
  *	Returns the UI element the point is over. Point is in global coordinates.
- *	Returns NULL if the point is not within the UI.
+ *	Returns nullptr if the point is not within the UI.
  */
 UI* UI::PuiFromPt(PT pt)
 {
 	if (!fVisible || !rcBounds.FContainsPt(pt))
-		return NULL;
+		return nullptr;
 	for (UI* puiChild : vpuiChild) {
 		UI* pui = puiChild->PuiFromPt(pt);
 		if (pui)
@@ -465,7 +478,7 @@ wstring UI::SzTipFromCmd(int cmd) const
  */
 RC UI::RcParentFromLocal(RC rc) const
 {
-	if (puiParent == NULL)
+	if (puiParent == nullptr)
 		return rc;
 	return rc.Offset(rcBounds.left-puiParent->rcBounds.left, 
 		rcBounds.top-puiParent->rcBounds.top);
@@ -480,7 +493,7 @@ RC UI::RcGlobalFromLocal(RC rc) const
 
 RC UI::RcLocalFromParent(RC rc) const
 {
-	if (puiParent == NULL)
+	if (puiParent == nullptr)
 		return rc;
 	return rc.Offset(puiParent->rcBounds.left - rcBounds.left,
 		puiParent->rcBounds.top - rcBounds.top);
@@ -500,7 +513,7 @@ RC UI::RcLocalFromGlobal(RC rc) const
  */
 PT UI::PtParentFromLocal(PT pt) const
 {
-	if (puiParent == NULL)
+	if (puiParent == nullptr)
 		return pt;
 	return PT(pt.x + rcBounds.left - puiParent->rcBounds.left,
 		pt.y + rcBounds.top - puiParent->rcBounds.left);
@@ -607,7 +620,7 @@ void UI::Draw(RC rcDraw)
 
 void UI::InvalRc(RC rc, bool fErase) const
 {
-	if (rc.top >= rc.bottom || rc.left >= rc.right || puiParent == NULL)
+	if (rc.top >= rc.bottom || rc.left >= rc.right || puiParent == nullptr)
 		return;
 	puiParent->InvalRc(RcParentFromLocal(rc), fErase);
 }
@@ -615,7 +628,7 @@ void UI::InvalRc(RC rc, bool fErase) const
 
 void UI::PresentSwch(void) const
 {
-	if (puiParent == NULL)
+	if (puiParent == nullptr)
 		return;
 	puiParent->PresentSwch();
 }
@@ -682,7 +695,7 @@ void UI::FillRc(RC rc, ID2D1Brush* pbr) const
 
 void UI::FillRcBack(RC rc) const
 {
-	if (puiParent == NULL)
+	if (puiParent == nullptr)
 		FillRc(rc, pbrBack);
 	else
 		puiParent->FillRcBack(RcParentFromLocal(rc));
@@ -721,7 +734,7 @@ void UI::DrawEll(ELL ell, ID2D1Brush* pbr) const
 void UI::DrawSz(const wstring& sz, TX* ptx, RC rc, ID2D1Brush* pbr) const
 {
 	rc = RcGlobalFromLocal(rc);
-	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rc, pbr==NULL ? pbrText : pbr);
+	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rc, pbr ? pbr : pbrText);
 }
 
 
@@ -751,7 +764,7 @@ SIZ UI::SizSz(const wstring& sz, TX* ptx, float dx, float dy) const
 void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RC rc, BR* pbr) const
 {
 	rc = RcGlobalFromLocal(rc);
-	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rc, pbr == NULL ? pbrText : pbr);
+	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rc, pbr ? pbr : pbrText);
 }
 
 
@@ -796,7 +809,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
 	for (float dyFont = ptxBase->GetFontSize() - 1.0f; dyFont > 6.0f; dyFont--) {
 		SafeRelease(&play);
 		SafeRelease(&ptx);
-		App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+		App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 			dyFont, L"", &ptx);
 		App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
@@ -904,7 +917,7 @@ void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 		return;
 
 	pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsButton);
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		20.0f, L"",
 		&ptxButton);
@@ -939,7 +952,7 @@ void BTNCH::Draw(RC rcUpdate)
 }
 
 
-BTNIMG::BTNIMG(UI* puiParent, int cmd, int idb) : BTN(puiParent, cmd), idb(idb), pbmp(NULL)
+BTNIMG::BTNIMG(UI* puiParent, int cmd, int idb) : BTN(puiParent, cmd), idb(idb), pbmp(nullptr)
 {
 }
 
@@ -989,7 +1002,7 @@ void BTNIMG::DiscardRsrc(void)
 
 SIZ BTNIMG::SizImg(void) const
 {
-	return pbmp == NULL ? SIZ(0, 0) : pbmp->GetSize();
+	return pbmp ? pbmp->GetSize() : SIZ(0, 0);
 }
 
 
@@ -1014,7 +1027,7 @@ void STATIC::CreateRsrc(void)
 		return;
 
 	App().pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsStatic);
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		20.0f, L"",
 		&ptxStatic);
@@ -1107,7 +1120,7 @@ void SPIN::CreateRsrc(void)
 	if (ptxSpin)
 		return;
 
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		14.0f, L"",
 		&ptxSpin);

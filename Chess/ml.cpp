@@ -222,7 +222,7 @@ void UIGC::CreateRsrc(void)
 	UI::CreateRsrc();
 	if (ptxScore)
 		return;
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
 		&ptxScore);
 }
@@ -357,7 +357,7 @@ void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxClock)
 		return;
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 40.0f, L"",
 		&ptxClock);
 }
@@ -520,7 +520,7 @@ void UIML::CreateRsrc(void)
 
 	/* fonts */
 
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
 		&ptxList);
 }

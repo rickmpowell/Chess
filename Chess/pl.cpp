@@ -161,9 +161,14 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
  *	This is a computer AI implementation.
  */
 
-const float evalInf = 10000.0f;
-const float evalMate = 9999.0f;
+const float evalInf = 10000.0f;	/* infinity */
+const float evalMate = 9999.0f;	/* checkmates are given evals of evalMate minus moves to mate */
 const float evalMateMin = evalMate - 80.0f;
+
+bool FEvalIsMate(float eval)
+{
+	return eval >= evalMateMin;
+}
 
 MV PLAI::MvGetNext(SPMV& spmv)
 {
@@ -206,11 +211,8 @@ MV PLAI::MvGetNext(SPMV& spmv)
 			lgf = LGF::Bold;
 			evalAlpha = eval;
 			mvBest = mvev.mv;
-			if (eval > evalMateMin) {
-				int depthMate = (int)roundf(evalMate - eval);
-				if (depthMate < depthMax)
-					depthMax = depthMate;
-			}
+			if (FEvalIsMate(eval))
+				depthMax = min(depthMax, (int)roundf(evalMate - eval));
 		}
 		LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval), lgf);
 	}
@@ -283,11 +285,8 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
 			evalBest = eval;
 			if (eval > evalAlpha) {
 				evalAlpha = eval;
-				if (eval > evalMateMin) {
-					int depthMate = (int)roundf(evalMate - eval);
-					if (depthMate < depthMax)
-						depthMax = depthMate;
-				}
+				if (FEvalIsMate(eval))
+					depthMax = min(depthMax, (int)roundf(evalMate - eval));
 				lgf = LGF::Bold;
 			}
 		}
@@ -304,6 +303,7 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
 	}
 
 	/* checkmates were detected already, so GsTestGameOver can only return draws */
+
 	GS gs = bdg.GsTestGameOver(mvevEval.gmvReplyAll, *ga.prule);
 	assert(gs != GS::BlackCheckMated && gs != GS::WhiteCheckMated);
 	if (gs != GS::Playing)
@@ -320,7 +320,9 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
  */
 float PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, float evalAlpha, float evalBeta)
 {
-	/* we need to evaluate the board before we remove moves from the move list */
+	/* we need to evaluate the board before we remove moves from the move list, because the
+	   un-processed move list is used to compute mobility */
+
 	float eval = EvalBdg(bdg, mvevEval, true);
 	
 	bdg.RemoveInCheckMoves(mvevEval.gmvReplyAll, bdg.cpcToMove);
@@ -328,7 +330,7 @@ float PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, float evalAlph
 		if (bdg.FInCheck(bdg.cpcToMove))
 			return -(evalMate - (float)depth);
 		else
-			return 0.0;
+			return 0.0;	/* must be a stalemate */
 	}
 
 	bdg.RemoveQuiescentMoves(mvevEval.gmvReplyAll, bdg.cpcToMove);
@@ -708,6 +710,7 @@ MV PLHUMAN::MvGetNext(SPMV& spmv)
  * 
  */
 
+
 RGINFOPL::RGINFOPL(void) 
 {
 	vinfopl.push_back(INFOPL(IDCLASSPL::AI, TPL::AI, L"SQ Mobly", 4));
@@ -716,9 +719,11 @@ RGINFOPL::RGINFOPL(void)
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"My Dog Is the Best Dog"));
 }
 
+
 RGINFOPL::~RGINFOPL(void) 
 {
 }
+
 
 PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
 {
@@ -740,6 +745,7 @@ PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
 	ppl->SetLevel(vinfopl[iinfopl].level);
 	return ppl;
 }
+
 
 int RGINFOPL::IdbFromInfopl(const INFOPL& infopl) const
 {

@@ -1,3 +1,4 @@
+  Review code for using min/max/peg
   Should do const references instead of by-value calls for RCF and PTF
   Choosing the player picker while the AI is running crashes
   When player picker is up, clicking outside the picker should make it cancel.

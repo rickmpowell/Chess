@@ -70,17 +70,9 @@ class UITI : public UIP
 	UIPL uiplWhite;
 	UIPL uiplBlack;
 
-	wstring szText;
-
-public:
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
-	static TX* ptxPlayers;
-
 public:
 	UITI(GA* pga);
 	void SetPl(CPC cpc, PL* ppl);
 	virtual void Layout(void);
 	virtual void Draw(RC rcUpdate);
-	void SetText(const wstring& sz);
 };

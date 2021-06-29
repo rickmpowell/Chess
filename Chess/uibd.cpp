@@ -92,7 +92,7 @@ void UIBD::CreateRsrc(void)
 	if (ptxLabel)
 		return;
 
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		dxySquare/4.0f, L"",
 		&ptxLabel);
@@ -371,9 +371,7 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 	float dxLeft = dxRight - dxLabel;
 	for (int rank = rankFirst; rank <= rankLast; rank++) {
 		RC rc = RcFromSq(SQ(rank, 0));
-		DrawSzCenter(wstring(szLabel), ptxLabel,
-			RC(dxLeft, (rc.top + rc.bottom - dyLabel) / 2, dxRight, rc.bottom),
-			pbrDark);
+		DrawSzCenter(wstring(szLabel), ptxLabel, RC(dxLeft, (rc.top + rc.bottom - dyLabel) / 2, dxRight, rc.bottom), pbrDark);
 		szLabel[0]++;
 	}
 }
@@ -412,8 +410,7 @@ RC UIBD::RcFromSq(SQ sq) const
 	else
 		file = fileMax - 1 - file;
 	RC rc(0, 0, dxySquare, dxySquare);
-	rc.Offset(rcSquares.left + dxySquare * file, rcSquares.top + dxySquare * rank);
-	return rc;
+	return rc.Offset(rcSquares.left + dxySquare * file, rcSquares.top + dxySquare * rank);
 }
 
 
@@ -457,7 +454,7 @@ void UIBD::DrawHoverMv(MV mv)
 	else {
 		/* taking an opponent piece - draw an X */
 		DC* pdc = App().pdc;
-		TRANSDC transdcSav(pdc, 	
+		TRANSDC transdc(pdc, 	
 			Matrix3x2F::Rotation(45.0f, PT(0.0f, 0.0f)) *
 			Matrix3x2F::Scale(SizeF(dxySquare / (2.0f * dxyCrossFull),
 				dxySquare / (2.0f * dxyCrossFull)),
@@ -529,9 +526,9 @@ void UIBD::DrawPc(RC rc, float opacity, IPC ipc)
 	 *   BK BQ BN BR BB BP
 	 */
 	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
-	D2D1_SIZE_F pt = pbmpPieces->GetSize();
-	float dxPiece = pt.width / 6.0f;
-	float dyPiece = pt.height / 2.0f;
+	SIZ siz = pbmpPieces->GetSize();
+	float dxPiece = siz.width / 6.0f;
+	float dyPiece = siz.height / 2.0f;
 	float xPiece = mpapcxBitmap[ipc.apc()] * dxPiece;
 	float yPiece = (int)ipc.cpc() * dyPiece;
 	DrawBmp(rc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
@@ -612,7 +609,7 @@ void UIBD::FlipBoard(CPC cpcNew)
 /*	UIBD::HtbdHitTest
  *
  *	Hit tests the given mouse coordinate and returns a HT implementation
- *	if it belongs to this panel. Returns NULL if there is no hit.
+ *	if it belongs to this panel. Returns None if there is no hit.
  *
  *	If we return non-null, we are guaranteed to return a HTBD hit test
  *	structure from here, which means other mouse tracking notifications
