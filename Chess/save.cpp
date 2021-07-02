@@ -168,8 +168,8 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	SQ sqTo = mv.sqTo();
 	SQ sqCapture = sqTo;
 
-	WCHAR sz[16];
-	WCHAR* pch = sz;
+	wchar_t sz[16];
+	wchar_t* pch = sz;
 
 	switch (apc) {
 	case APC::Pawn:

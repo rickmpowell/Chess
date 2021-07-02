@@ -1,3 +1,4 @@
+  Use C++ exception class to throw exceptions
   Review code for using min/max/peg
   Should do const references instead of by-value calls for RCF and PTF
   Choosing the player picker while the AI is running crashes

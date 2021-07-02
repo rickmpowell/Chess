@@ -1014,7 +1014,7 @@ public:
 
 public:
 	BDG(void);
-	BDG(const WCHAR* szFEN);
+	BDG(const wchar_t* szFEN);
 	void NewGame(void);
 
 	/* 

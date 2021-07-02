@@ -155,19 +155,17 @@ void UIBD::Layout(void)
 
 	dxyBorder = dxySquare / 32.0f;
 	if (dxyBorder < 1.0f) {
-		dxyBorder = 0;
-		dxyOutline = 0;
-		dxyMargin = 0;
+		/* if board is too small don't display the margin of the board */
+		dxyBorder = dxyOutline = dxyMargin = 0;
 		dxySquare = rcSquares.DxWidth() / 8.0f;
 	}
 	else {
 		dxyOutline = roundf(2.0f * dxyBorder);
 		dxyBorder = roundf(dxyBorder);
 		dxyMargin = (RcInterior().DxWidth() - 2 * (dxyBorder + dxyOutline) - 8 * dxySquare) / 2.0f;
+		float dxy = dxyMargin + dxyOutline + dxyBorder;
+		rcSquares.Inflate(-dxy, -dxy);
 	}
-
-	float dxy = dxyMargin + dxyOutline + dxyBorder;
-	rcSquares.Inflate(-dxy, -dxy);
 	
 	CreateRsrc();
 	dyLabel = SizSz(L"8", ptxLabel).height;

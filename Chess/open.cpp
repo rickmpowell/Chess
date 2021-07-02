@@ -10,7 +10,7 @@
 #include <streambuf>
 
 
-void GA::OpenPGNFile(const WCHAR szFile[])
+void GA::OpenPGNFile(const wchar_t szFile[])
 {
 	this->spmv = SPMV::Hidden;
 	ifstream is(szFile, ifstream::in);
@@ -627,7 +627,7 @@ TK* ISTKPGN::PtkNext(void)
 {
 	if (ptkPrev) {
 		TK* ptk = ptkPrev;
-		ptkPrev = NULL;
+		ptkPrev = nullptr;
 		return ptk;
 	}
 
@@ -765,7 +765,7 @@ Retry:
 	}
 
 	assert(false);
-	return NULL;
+	return nullptr;
 }
 
 
@@ -779,7 +779,7 @@ Retry:
  */
 
 
-ISTK::ISTK(istream& is) : li(1), is(is), ptkPrev(NULL)
+ISTK::ISTK(istream& is) : li(1), is(is), ptkPrev(nullptr)
 {
 }
 

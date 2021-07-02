@@ -16,7 +16,7 @@
 class GA;
 
 
-WCHAR* PchDecodeInt(unsigned imv, wchar_t* pch);
+wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch);
 
 
 /*
@@ -143,6 +143,8 @@ public:
 	static void DiscardRsrcClass(void);
 	GEOM* PgeomCreate(PT rgpt[], int cpt);
 	BMP* PbmpFromPngRes(int idb);
+	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic);
+
 
 protected:
 	UI* puiParent;
@@ -268,11 +270,11 @@ public:
 	virtual void FillRcBack(RC rc) const;
 	void FillEll(ELL ell, BR* pbr) const;
 	void DrawEll(ELL ell, BR* pbr) const;
-	void DrawSz(const wstring& sz, TX* ptx, RC rc, BR* pbr = NULL) const;
-	void DrawSzCenter(const wstring& sz, TX* ptx, RC rc, BR* pbr = NULL) const;
-	void DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RC rc, BR* pbr = NULL) const;
+	void DrawSz(const wstring& sz, TX* ptx, RC rc, BR* pbr = nullptr) const;
+	void DrawSzCenter(const wstring& sz, TX* ptx, RC rc, BR* pbr = nullptr) const;
+	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, RC rc, BR* pbr = nullptr) const;
 	SIZ SizSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
-	void DrawSzFit(const wstring& sz, TX* ptx, RC rc, BR* pbr = NULL) const;
+	void DrawSzFit(const wstring& sz, TX* ptx, RC rc, BR* pbr = nullptr) const;
 	void DrawBmp(RC rcTo, BMP* pbmp, RC rcFrom, float opacity = 1.0f) const;
 };
 
@@ -310,7 +312,7 @@ public:
 
 class BTNCH : public BTN
 {
-	WCHAR ch;
+	wchar_t ch;
 protected:
 	static TX* ptxButton;
 	static BRS* pbrsButton;
@@ -319,7 +321,7 @@ public:
 	static void DiscardRsrcClass(void);
 
 public:
-	BTNCH(UI* puiParent, int cmd, WCHAR ch);
+	BTNCH(UI* puiParent, int cmd, wchar_t ch);
 	virtual void Draw(RC rcUpdate);
 };
 

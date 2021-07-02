@@ -35,7 +35,7 @@ void UIP::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 	if (pbrTextSel)
 		return;
 	pdc->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
-	pfactdwr->CreateTextFormat(szFontFamily, NULL,
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxTextSm);
@@ -117,7 +117,7 @@ void UIP::Draw(RC rcUpdate)
  */
 void UIP::AdjustUIRcBounds(UI* pui, RC& rc, bool fTop)
 {
-	if (pui == NULL || !pui->FVisible())
+	if (pui == nullptr || !pui->FVisible())
 		return;
 	SIZ siz = pui->SizLayoutPreferred();
 	assert(siz.height > 0.0f);
@@ -383,7 +383,7 @@ void UIBB::Draw(RC rcUpdate)
 
 void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
 {
-	if (pui == NULL || !pui->FVisible())
+	if (pui == nullptr || !pui->FVisible())
 		return;
 	rc.left = rc.right + 10.0f;
 	rc.right = rc.left + dxWidth;
@@ -400,7 +400,7 @@ void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
  */
 
 
-UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(NULL)
+UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(nullptr)
 {
 }
 

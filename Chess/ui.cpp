@@ -9,7 +9,7 @@
 #include "ui.h"
 
 
-WCHAR* PchDecodeInt(unsigned imv, WCHAR* pch)
+wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch)
 {
 	if (imv / 10 != 0)
 		pch = PchDecodeInt(imv / 10, pch);
@@ -104,11 +104,11 @@ ID2D1PathGeometry* UI::PgeomCreate(PT rgpt[], int cpt)
  */
 BMP* UI::PbmpFromPngRes(int idb)
 {
-	HRSRC hres = ::FindResource(NULL, MAKEINTRESOURCE(idb), L"IMAGE");
+	HRSRC hres = ::FindResource(nullptr, MAKEINTRESOURCE(idb), L"IMAGE");
 	if (!hres)
 		return nullptr;
-	ULONG cbRes = ::SizeofResource(NULL, hres);
-	HGLOBAL hresLoad = ::LoadResource(NULL, hres);
+	ULONG cbRes = ::SizeofResource(nullptr, hres);
+	HGLOBAL hresLoad = ::LoadResource(nullptr, hres);
 	if (!hresLoad)
 		return nullptr;
 	BYTE* pbRes = (BYTE*)::LockResource(hresLoad);
@@ -136,6 +136,18 @@ BMP* UI::PbmpFromPngRes(int idb)
 	SafeRelease(&pstm);
 
 	return pbmp;
+}
+
+
+TX* UI::PtxCreate(float dyHeight, bool fBold, bool fItalic)
+{
+	TX* ptx = nullptr;
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+		fBold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
+		fItalic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
+		DWRITE_FONT_STRETCH_NORMAL,
+		dyHeight, L"", &ptx);
+	return ptx;
 }
 
 
@@ -761,7 +773,7 @@ SIZ UI::SizSz(const wstring& sz, TX* ptx, float dx, float dy) const
  *	Helper function for drawing text on the screen panel. Rectangle is in local
  *	UI coordinates
  */
-void UI::DrawRgch(const WCHAR* rgch, int cch, TX* ptx, RC rc, BR* pbr) const
+void UI::DrawRgch(const wchar_t* rgch, int cch, TX* ptx, RC rc, BR* pbr) const
 {
 	rc = RcGlobalFromLocal(rc);
 	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rc, pbr ? pbr : pbrText);
@@ -931,7 +943,7 @@ void BTNCH::DiscardRsrcClass(void)
 }
 
 
-BTNCH::BTNCH(UI* puiParent, int cmd, WCHAR ch) : BTN(puiParent, cmd), ch(ch)
+BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
 {
 }
 
@@ -939,7 +951,7 @@ BTNCH::BTNCH(UI* puiParent, int cmd, WCHAR ch) : BTN(puiParent, cmd), ch(ch)
 void BTNCH::Draw(RC rcUpdate)
 {
 	CreateRsrc();
-	WCHAR sz[2];
+	wchar_t sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
 	RC rcChar(PT(0, 0), SizSz(sz, ptxButton));

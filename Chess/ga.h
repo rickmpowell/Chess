@@ -125,17 +125,17 @@ public:
 	virtual void InitLog(int depth);
 
 	void Test(SPMV spmv);
-	void ValidateFEN(const WCHAR* szFEN) const;
-	void ValidatePieces(const WCHAR*& sz) const;
-	void ValidateMoveColor(const WCHAR*& sz) const;
-	void ValidateCastle(const WCHAR*& sz) const;
-	void ValidateEnPassant(const WCHAR*& sz) const;
-	void SkipWhiteSpace(const WCHAR*& sz) const;
-	void SkipToWhiteSpace(const WCHAR*& sz) const;
+	void ValidateFEN(const wchar_t* szFEN) const;
+	void ValidatePieces(const wchar_t*& sz) const;
+	void ValidateMoveColor(const wchar_t*& sz) const;
+	void ValidateCastle(const wchar_t*& sz) const;
+	void ValidateEnPassant(const wchar_t*& sz) const;
+	void SkipWhiteSpace(const wchar_t*& sz) const;
+	void SkipToWhiteSpace(const wchar_t*& sz) const;
 
-	void OpenPGNFile(const WCHAR szFile[]);
-	void PlayPGNFiles(const WCHAR szPath[]);
-	int PlayPGNFile(const WCHAR szFile[]);
+	void OpenPGNFile(const wchar_t szFile[]);
+	void PlayPGNFiles(const wchar_t szPath[]);
+	int PlayPGNFile(const wchar_t szFile[]);
 	void Deserialize(istream& is);
 	int DeserializeGame(ISTKPGN& istkpgn);
 	int DeserializeHeaders(ISTKPGN& istkpgn);
@@ -155,6 +155,6 @@ public:
 	void WriteSzLine80(ostream& os, string& szLine, const string& szAdd);
 
 	void UndoTest(void);
-	int PlayUndoPGNFile(const WCHAR* szFile);
+	int PlayUndoPGNFile(const wchar_t* szFile);
 	void UndoFullGame(void);
 };

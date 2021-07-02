@@ -34,7 +34,7 @@ void GA::Test(SPMV spmv)
 }
 
 
-void GA::PlayPGNFiles(const WCHAR szPath[])
+void GA::PlayPGNFiles(const wchar_t szPath[])
 {
 	WIN32_FIND_DATA ffd;
 	wstring szSpec(szPath);
@@ -60,9 +60,9 @@ void GA::PlayPGNFiles(const WCHAR szPath[])
  *	Verifies the board matches the board state in the FEN string. Note that we very
  *	specifically do our own FEN parsing here.
  */
-void GA::ValidateFEN(const WCHAR* szFEN) const
+void GA::ValidateFEN(const wchar_t* szFEN) const
 {
-	const WCHAR* sz = szFEN;
+	const wchar_t* sz = szFEN;
 	ValidatePieces(sz);
 	ValidateMoveColor(sz);
 	ValidateCastle(sz);
@@ -70,7 +70,7 @@ void GA::ValidateFEN(const WCHAR* szFEN) const
 }
 
 
-void GA::ValidatePieces(const WCHAR*& sz) const
+void GA::ValidatePieces(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int rank = 7;
@@ -112,7 +112,7 @@ Done:
 }
 
 
-void GA::ValidateMoveColor(const WCHAR*& sz) const
+void GA::ValidateMoveColor(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	for (; *sz && *sz != L' '; sz++) {
@@ -128,7 +128,7 @@ Done:
 }
 
 
-void GA::ValidateCastle(const WCHAR*& sz) const
+void GA::ValidateCastle(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int cs = 0;
@@ -148,7 +148,7 @@ Done:
 }
 
 
-void GA::ValidateEnPassant(const WCHAR*& sz) const
+void GA::ValidateEnPassant(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	if (*sz == L'-') {
@@ -176,14 +176,14 @@ Done:
 }
 
 
-void GA::SkipWhiteSpace(const WCHAR*& sz) const
+void GA::SkipWhiteSpace(const wchar_t*& sz) const
 {
 	for (; *sz && *sz == L' '; sz++)
 		;
 }
 
 
-void GA::SkipToWhiteSpace(const WCHAR*& sz) const
+void GA::SkipToWhiteSpace(const wchar_t*& sz) const
 {
 	for (; *sz && *sz != L' '; sz++)
 		;
@@ -194,7 +194,7 @@ void GA::SkipToWhiteSpace(const WCHAR*& sz) const
  *
  *	Plays the games in the PGN file given by szFile
  */
-int GA::PlayPGNFile(const WCHAR szFile[])
+int GA::PlayPGNFile(const wchar_t szFile[])
 {
 	ifstream is(szFile, ifstream::in);
 
@@ -212,9 +212,9 @@ int GA::PlayPGNFile(const WCHAR szFile[])
 	catch (int err)
 	{
 		if (err == 1) {
-			WCHAR sz[100];
+			wchar_t sz[100];
 			::wsprintf(sz, L"Error Line %d", err);
-			::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
+			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);
 		}
 		LogClose(szFileBase, L"Failed", LGF::Normal);
 		return err;
@@ -242,7 +242,7 @@ void GA::UndoTest(void)
 }
 
 
-int GA::PlayUndoPGNFile(const WCHAR* szFile)
+int GA::PlayUndoPGNFile(const wchar_t* szFile)
 {
 	ifstream is(szFile, ifstream::in);
 
@@ -261,9 +261,9 @@ int GA::PlayUndoPGNFile(const WCHAR* szFile)
 	}
 	catch (int err) {
 		if (err == 1) {
-			WCHAR sz[58];
+			wchar_t sz[58];
 			::wsprintf(sz, L"Error Line %d", err);
-			::MessageBox(NULL, sz, L"PGN File Error", MB_OK);
+			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);
 		}
 		LogClose(szFileBase, L"Failed", LGF::Normal);
 		return err;

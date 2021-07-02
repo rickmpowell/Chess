@@ -16,7 +16,7 @@
 class CO
 {
 public:
-	CO(void) { int err;  if ((err = CoInitialize(NULL)) != S_OK) throw err; }
+	CO(void) { int err;  if ((err = CoInitialize(nullptr)) != S_OK) throw err; }
 	~CO(void) { CoUninitialize(); }
 };
 
@@ -28,7 +28,7 @@ public:
 	FACTWIC* pfactwic;
 	FACTDWR* pfactdwr;
 public:
-	D2(void) : pfactd2(NULL), pfactwic(NULL), pfactdwr(NULL)
+	D2(void) : pfactd2(nullptr), pfactwic(nullptr), pfactdwr(nullptr)
 	{
 		try {
 			int err;
@@ -37,7 +37,7 @@ public:
 			if ((err = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opt,
 				reinterpret_cast<void**>(&pfactd2))) != S_OK)
 				throw err;
-			if ((err = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory,
+			if ((err = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory,
 				reinterpret_cast<void**>(&pfactwic))) != S_OK)
 				throw err;
 			if ((err = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(pfactdwr),
@@ -208,7 +208,7 @@ class CLIPB
 	void* pdata;
 
 public:
-	CLIPB(APP& app) : app(app), fClipOpen(false), hdata(NULL), hdataGet(NULL), pdata(NULL)
+	CLIPB(APP& app) : app(app), fClipOpen(false), hdata(nullptr), hdataGet(nullptr), pdata(nullptr)
 	{
 		Open();
 	}
@@ -237,10 +237,10 @@ public:
 
 	void* PLock(void)
 	{
-		assert(pdata == NULL);
-		assert(hdata != NULL);
+		assert(!pdata);
+		assert(hdata);
 		pdata = ::GlobalLock(hdata);
-		if (pdata == NULL)
+		if (!pdata)
 			throw 1;
 		return pdata;
 	}
@@ -250,7 +250,7 @@ public:
 		if (!pdata)
 			return;
 		::GlobalUnlock(hdata);
-		pdata = NULL;
+		pdata = nullptr;
 	}
 
 	void Empty(void)
@@ -261,7 +261,7 @@ public:
 	void* PAlloc(int cb)
 	{
 		hdata = ::GlobalAlloc(GMEM_MOVEABLE, cb);
-		if (hdata == NULL)
+		if (!hdata)
 			throw 1;
 		return PLock();
 	}
@@ -269,7 +269,7 @@ public:
 	void SetData(int cf, void* pv, int cb)
 	{
 		PAlloc(cb);
-		assert(pdata != NULL);
+		assert(pdata);
 		memcpy(pdata, pv, cb);
 		Unlock();
 		assert(hdata);
@@ -279,25 +279,24 @@ public:
 
 	void Free(void)
 	{
-		if (hdata == NULL)
+		if (!hdata)
 			return;
 		if (hdataGet) {
 			assert(hdata == hdataGet);
 		}
 		else {
 			::GlobalFree(hdata);
-			hdata = NULL;
+			hdata = nullptr;
 		}
 	}
 
 	void* PGetData(int cf)
 	{
 		hdataGet = ::GetClipboardData(cf);
-		if (hdataGet == NULL)
+		if (!hdataGet)
 			throw 1;
 		hdata = hdataGet;
 		return PLock();
 	}
-		
 };
 

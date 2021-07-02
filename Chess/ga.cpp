@@ -146,22 +146,21 @@ void GA::Layout(void)
 	uiti.SetBounds(rc);
 
 	rc.left = rc.right + dxyMargin;
+	/* make board a multiple of 8 pixels wide, which makes squares an even number of pixels
+	   in size, so we get consistent un-antialiased square borders */
 	rc.bottom = rcBounds.bottom - 100.0f;
-	/* make board a multiple of 8 pixels wide, so we don't get weird scaling */
-	if ((int)rc.bottom & 7)
-		rc.bottom -= (int)rc.bottom & 7;
-	if (rc.DyHeight() < 180.0f)
-		rc.bottom = rc.top + 180.0f;
+	rc.bottom = rc.top + max(176.0f, rc.DyHeight());
+	if ((int)rc.DyHeight() & 7)
+		rc.bottom = rc.top + ((int)rc.DyHeight() & ~7);
 	rc.right = rc.left + rc.DyHeight();
 	uibd.SetBounds(rc);
 
 	rc.left = rc.right + dxyMargin;
-	SIZ siz = uiml.SizLayoutPreferred();
-	rc.right = rc.left + siz.width;
+	rc.right = rc.left + uiml.SizLayoutPreferred().width;
 	uiml.SetBounds(rc);
 
 	rc.left = rc.right + dxyMargin;
-	rc.right = rc.left + 240.0f;
+	rc.right = rc.left + uidb.SizLayoutPreferred().width;
 	uidb.SetBounds(rc);
 }
 
@@ -400,6 +399,10 @@ void GA::GenRgmv(GMV& gmv)
 }
 
 
+/*	GA::Play
+ *
+ *	Starts playing the game with the current game state.
+ */
 int GA::Play(void)
 {
 	struct INPLAY
@@ -438,7 +441,7 @@ int GA::Play(void)
 void GA::PumpMsg(void)
 {
 	MSG msg;
-	while (::PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE|PM_NOYIELD)) {
+	while (::PeekMessageW(&msg, nullptr, 0, 0, PM_NOREMOVE|PM_NOYIELD)) {
 		switch (msg.message) {
 		case WM_KEYDOWN:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
@@ -458,10 +461,12 @@ void GA::PumpMsg(void)
 	}
 }
 
+
 bool GA::FDepthLog(LGT lgt, int& depth)
 {
 	return uidb.FDepthLog(lgt, depth);
 }
+
 
 void GA::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {

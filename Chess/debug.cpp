@@ -55,6 +55,7 @@ void UIBBDB::Layout(void)
  * 
  */
 
+
 UIBBDBLOG::UIBBDBLOG(UIDB* puiParent) : UIBB(puiParent), uidb(*puiParent),
 		btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk), spindepth(this)
 {
@@ -99,22 +100,11 @@ void UIDB::CreateRsrc(void)
 {
 	if (ptxLog)
 		return;
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxLog);
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxLogBold);
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxLogItalic);
-	App().pfactdwr->CreateTextFormat(szFontFamily, NULL,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_ITALIC, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxLogBoldItalic);
+	ptxLog = PtxCreate(12.0f, false, false);
+	ptxLogBold = PtxCreate(12.0f, true, false);
+	ptxLogItalic = PtxCreate(12.0f, false, true);
+	ptxLogBoldItalic = PtxCreate(12.0f, true, true);
+	dyLine = SizSz(L"0", ptxLog).height;
 	UI::CreateRsrc();
 }
 
@@ -136,6 +126,7 @@ void UIDB::DiscardRsrc(void)
 void UIDB::Layout(void)
 {
 	/* position top items */
+	
 	RC rc = RcInterior();
 	RC rcView = rc;
 	rc.bottom = rc.top;
@@ -143,6 +134,7 @@ void UIDB::Layout(void)
 	rcView.top = rc.bottom;
 
 	/* positon bottom items */
+	
 	rc = RcInterior();
 	rc.top = rc.bottom;
 	AdjustUIRcBounds(&uibbdblog, rc, false);
@@ -150,10 +142,13 @@ void UIDB::Layout(void)
 
 	/* move list content is whatever is left */
 
-	dyLine = SizSz(L"0", ptxLog).height;
 	AdjustRcView(rcView);
 }
 
+SIZ UIDB::SizLayoutPreferred(void)
+{
+	return SIZ(-1.0f, 240.0f);
+}
 
 void UIDB::Draw(RC rcUpdate)
 {
@@ -226,6 +221,7 @@ size_t UIDB::IlgentryFromY(int y) const
 	size_t ilgentryFirst = 0; 
 	size_t ilgentryLast = vlgentry.size()-1;
 	if (y < yContentTop + vlgentry[ilgentryFirst].dyTop)
+		return ilgentryFirst;
 	if (y >= yContentTop + vlgentry[ilgentryLast].dyTop + vlgentry[ilgentryLast].dyHeight)
 		return ilgentryLast;
 
@@ -263,6 +259,12 @@ float UIDB::DyLine(void) const
 }
 
 
+/*	UIDB::FDepthLog
+ *
+ *	Returns true if the item should be logged. Keeps track of the depth of our
+ *	structured log in the Open/Close. This function is used as an optimization
+ *	so we don't construct logging data if the data isn't going to be logged.
+ */
 bool UIDB::FDepthLog(LGT lgt, int& depth)
 {
 	if (lgt == LGT::Close)
@@ -318,7 +320,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 void UIDB::ClearLog(void)
 {
 	vlgentry.clear();
-	UpdateContSize(SIZ(0,0));
+	UpdateContSize(SIZ(0, 0));
 	FMakeVis(RcContent().top, RcContent().left);
 }
 
@@ -328,10 +330,17 @@ void UIDB::SetDepthLog(int depth)
 	depthShowSet = depth;
 }
 
+
+/*	UIDB::SetDepthLogDefault
+ *
+ *	Sets the default log depth, which is the log depth we use if no depth is set
+ *	by SetDepthLog.
+ */
 void UIDB::SetDepthLogDefault(int depth)
 {
 	depthShowDefault = depth;
 }
+
 
 void UIDB::InitLog(int depth)
 {
@@ -343,6 +352,12 @@ void UIDB::InitLog(int depth)
 }
 
 
+/*	UIDB::DepthLog
+ *
+ *	Returns the depth we're currently logging to. The depth is whatever has been
+ *	set by SetDepthLog, or, if SetDepthLog has never been called, the default log
+ *	depth.
+ */
 int UIDB::DepthLog(void) const
 {
 	if (depthShowSet == -1)
@@ -367,6 +382,11 @@ void UIDB::EnableLogFile(bool fEnable)
 	}
 }
 
+
+/*	UIDB::FLogFIleEnabled
+ *
+ *	Returns true if we're logging stuff to a file.
+ */
 bool UIDB::FLogFileEnabled(void) const
 {
 	return posLog != nullptr;

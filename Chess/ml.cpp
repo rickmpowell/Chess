@@ -327,8 +327,8 @@ void UIGC::Draw(RC rcUpdate)
 		break;
 	}
 
-	const WCHAR* szResult = L"Draw";
-	const WCHAR* szScore = L"\x00bd-\x00bd";	/* 1/2-1/2 */
+	const wchar_t* szResult = L"Draw";
+	const wchar_t* szScore = L"\x00bd-\x00bd";	/* 1/2-1/2 */
 	if (cpcWin == CPC::White) {
 		szResult = L"White Wins";
 		szScore = L"1-0";
@@ -415,7 +415,7 @@ void UICLOCK::Draw(RC rcUpdate)
 
 	/* convert into text */
 
-	WCHAR sz[20], * pch;
+	wchar_t sz[20], * pch;
 	pch = sz;
 	pch = PchDecodeInt(hr, pch);
 	*pch++ = ':';
@@ -730,8 +730,8 @@ void UIML::DrawMoveNumber(RC rc, int imv)
 	rc.top += dyCellMarg;
 	rc.bottom -= dyCellMarg;
 	rc.right -= dxCellMarg;
-	WCHAR sz[8];
-	WCHAR* pch = PchDecodeInt(imv, sz);
+	wchar_t sz[8];
+	wchar_t* pch = PchDecodeInt(imv, sz);
 	*pch++ = L'.';
 	*pch = 0;
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);

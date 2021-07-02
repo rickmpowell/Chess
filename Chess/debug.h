@@ -115,17 +115,19 @@ class UIDB : public UIPS
 public:
 	UIDB(GA* pga);
 	~UIDB(void);
-	virtual void Layout(void);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
+
+	virtual void Layout(void);
+	virtual SIZ SizLayoutPreferred(void);
+
 	virtual void Draw(RC rcUpdate);
 	virtual void DrawContent(RC rcCont);
 	virtual float DyLine(void) const;
 	size_t IlgentryFromY(int y) const;
 
 	virtual bool FDepthLog(LGT lgt, int& depth); 
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
-	
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);	
 	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const;
 	void InitLog(int depth);
 	void ClearLog(void);

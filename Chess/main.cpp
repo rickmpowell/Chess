@@ -10,7 +10,9 @@
 #include "ga.h"
 #include "Resources/Resource.h"
 
+
 mt19937 rgen(0);
+
 
 /*  AboutDlgProc
  *
@@ -32,7 +34,6 @@ INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
 }
 
 
-
 /*  wWinMain
  *
  *  The main entry point for Windows applications. 
@@ -44,7 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
         return app.MessagePump();
     }
     catch (int err) {
-        ::MessageBox(NULL,
+        ::MessageBox(nullptr,
             L"Could not initialize application", L"Fatal Error",
             MB_OK);
         return err;
@@ -69,23 +70,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
  * 
  *  Throws an exception if something fails.
  */
-APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL), 
+APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr), 
         pdevd3(nullptr), pdcd3(nullptr), pdevd2(nullptr), pswch(nullptr), pbmpBackBuf(nullptr), pdc(nullptr),
         cmdlist()
 {
-    hcurArrow = ::LoadCursor(NULL, IDC_ARROW);
-    hcurMove = ::LoadCursor(NULL, IDC_SIZEALL);
-    hcurNo = ::LoadCursor(NULL, IDC_NO);
-    hcurUpDown = ::LoadCursor(NULL, IDC_SIZENS);
-    hcurHand = ::LoadCursor(NULL, IDC_HAND);
-    hcurCrossHair = ::LoadCursor(NULL, IDC_CROSS);
-    hcurUp = ::LoadCursor(NULL, IDC_UPARROW);
-    assert(hcurArrow != NULL);  /* these cursors are system cursors and loading them can't fail */
-    assert(hcurMove != NULL);
-    assert(hcurNo != NULL);
-    assert(hcurUpDown != NULL);
-    assert(hcurHand != NULL);
-    assert(hcurCrossHair != NULL);
+    hcurArrow = ::LoadCursor(nullptr, IDC_ARROW);
+    hcurMove = ::LoadCursor(nullptr, IDC_SIZEALL);
+    hcurNo = ::LoadCursor(nullptr, IDC_NO);
+    hcurUpDown = ::LoadCursor(nullptr, IDC_SIZENS);
+    hcurHand = ::LoadCursor(nullptr, IDC_HAND);
+    hcurCrossHair = ::LoadCursor(nullptr, IDC_CROSS);
+    hcurUp = ::LoadCursor(nullptr, IDC_UPARROW);
+    assert(hcurArrow);  /* these cursors are system cursors and loading them can't fail */
+    assert(hcurMove);
+    assert(hcurNo);
+    assert(hcurUpDown);
+    assert(hcurHand);
+    assert(hcurCrossHair);
 
     const TCHAR szWndClassMain[] = L"ChessMain";
 
@@ -99,7 +100,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL),
     wcex.cbWndExtra = sizeof(this);
     wcex.hInstance = hinst;
     wcex.hIcon = ::LoadIcon(hinst, MAKEINTRESOURCE(idiApp));
-    wcex.hCursor = NULL;
+    wcex.hCursor = nullptr;
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(idmApp);
     wcex.lpszClassName = szWndClassMain;
@@ -126,9 +127,9 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(NULL), haccel(NULL),
     if (!::LoadString(hinst, idsApp, szTitle, CArray(szTitle)))
         throw 1;
     hwnd = ::CreateWindowW(szWndClassMain, szTitle, WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0,
-        NULL, NULL, hinst, this);
-    if (hwnd == NULL)
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        nullptr, nullptr, hinst, this);
+    if (!hwnd)
         throw 1;    // BUG: cleanup haccel
     ::ShowWindow(hwnd, sw);
 }
@@ -148,7 +149,7 @@ APP::~APP(void)
 int APP::MessagePump(void)
 {
     MSG msg;
-    while (::GetMessage(&msg, NULL, 0, 0)) {
+    while (::GetMessage(&msg, nullptr, 0, 0)) {
         if (::TranslateAccelerator(msg.hwnd, haccel, &msg))
             continue;
         ::TranslateMessage(&msg);
@@ -261,7 +262,7 @@ void APP::DiscardRsrc(void)
 
 wstring APP::SzLoad(int ids) const
 {
-    WCHAR sz[1024];
+    wchar_t sz[1024];
     ::LoadString(hinst, ids, sz, CArray(sz));
     return wstring(sz);
 }
@@ -277,7 +278,7 @@ wstring APP::SzLoad(int ids) const
 wstring APP::SzAppDataPath(void) const
 {
     wchar_t szPath[1024];
-    ::SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szPath);
+    ::SHGetFolderPath(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, szPath);
     return wstring(szPath) + L"\\" + L"SQ" + L"\\" + L"Chess";
 }
 
@@ -291,6 +292,7 @@ void APP::Redraw(void)
     ::InvalidateRect(hwnd, nullptr, true);
     ::UpdateWindow(hwnd);
 }
+
 
 void APP::Redraw(RC rc)
 {
@@ -307,7 +309,7 @@ void APP::Redraw(RC rc)
  */
 void APP::CreateTimer(UINT tid, DWORD dtm)
 {
-    ::SetTimer(hwnd, tid, dtm, NULL);
+    ::SetTimer(hwnd, tid, dtm, nullptr);
 }
 
 
@@ -393,6 +395,10 @@ bool APP::OnLeftDown(int x, int y)
 }
 
 
+/*  APP::OnLeftUp
+ *
+ *  Left mouse button up handler
+ */
 bool APP::OnLeftUp(int x, int y)
 {
     PT pt;
@@ -448,6 +454,9 @@ bool APP::OnTimer(UINT tid)
  *
  *  CMDLIST
  * 
+ *  This is the collection of commands the application handles.
+ * 
+ * 
  */
 
 
@@ -466,6 +475,11 @@ CMDLIST::~CMDLIST(void)
 }
 
 
+/*  CMDLIST::Add
+ *
+ *  Adds the given command to the command list. The command list takes
+ *  ownership of the command.
+ */
 void CMDLIST::Add(CMD* pcmd)
 {
     int ccmd = (int)vpcmd.size();
@@ -479,6 +493,10 @@ void CMDLIST::Add(CMD* pcmd)
 }
 
 
+/*  CMDLIST::Execute
+ *
+ *  Executes the given command.
+ */
 int CMDLIST::Execute(int icmd)
 {
     assert(icmd < vpcmd.size());
@@ -487,6 +505,11 @@ int CMDLIST::Execute(int icmd)
 }
 
 
+/*  CMDLIST::InitMenu
+ *
+ *  Called before the given menu drops something down, so that variable menu text
+ *  can be set up.
+ */
 void CMDLIST::InitMenu(HMENU hmenu)
 {
     for (size_t icmd = 0; icmd < vpcmd.size(); icmd++)
@@ -495,10 +518,23 @@ void CMDLIST::InitMenu(HMENU hmenu)
 }
 
 
+/*  CMDLIST::SzTip
+ *
+ *  Returns the tip text for the given command.
+ */
 wstring CMDLIST::SzTip(int icmd)
 {
     return vpcmd[icmd]->SzTip();
 }
+
+
+/*
+ *
+ *  CMD base class
+ * 
+ *  Base class for all commands.
+ * 
+ */
 
 
 CMD::CMD(APP& app, int icmd) : app(app), icmd(icmd)
@@ -595,6 +631,15 @@ public:
         return 1;
     }
 };
+
+
+/*
+ *
+ *  CMDPLAY command
+ * 
+ *  Starts playing a game with the current game state set up.
+ * 
+ */
 
 
 class CMDPLAY : public CMD
@@ -785,7 +830,7 @@ public:
 
     virtual int Execute(void)
     {
-        WCHAR szFileName[1024] = L"game.pgn";
+        wchar_t szFileName[1024] = L"game.pgn";
         OPENFILENAME ofn = { 0 };
 
         ofn.lStructSize = sizeof(OPENFILENAME);
@@ -820,7 +865,7 @@ public:
     
     virtual int Execute(void)
     {
-        WCHAR szFileName[1024] = { 0 };
+        wchar_t szFileName[1024] = { 0 };
         OPENFILENAME ofn = { 0 };
         ofn.lStructSize = sizeof(OPENFILENAME);
         ofn.hwndOwner = app.hwnd;

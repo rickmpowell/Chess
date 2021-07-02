@@ -84,7 +84,7 @@ bool BD::operator!=(const BD& bd) const
  *	table should start at szFEN. Returns the character after the last
  *	piece character, which will probably be the space character.
  */
-void BD::InitFENPieces(const WCHAR*& szFEN)
+void BD::InitFENPieces(const wchar_t*& szFEN)
 {
 	SetEmpty();
 
@@ -92,7 +92,7 @@ void BD::InitFENPieces(const WCHAR*& szFEN)
 
 	int rank = rankMax - 1;
 	SQ sq = SQ(rank, 0);
-	const WCHAR* pch;
+	const wchar_t* pch;
 	for (pch = szFEN; *pch != L' ' && *pch != L'\0'; pch++) {
 		switch (*pch) {
 		case 'p': AddPieceFEN(sq++, tpcPawnFirst, CPC::Black, APC::Pawn); break;
@@ -131,43 +131,46 @@ void BD::InitFENPieces(const WCHAR*& szFEN)
 /*	BD::AddPieceFEN
  *
  *	Adds a piece from the FEN piece stream to the board. Makes sure both
- *	board mappings are correct. Makes an attempt to set unmoved bits
- *	correctly.
+ *	board mappings are correct. 
  * 
  *	Promoted pawns are the real can of worms with this process.
  */
 void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 {
-	if (mptpcsq[cpc][tpc] != sqNil) {
+	/* if piece is already on the board, we need to go to work to find a place for 
+	 * this piece */
+
+	if (!SqFromTpc(tpc, cpc).fIsNil()) {
 		switch (apc) {
 		/* TODO: two kings is an error */
 		case APC::King: assert(false); return;
 		default:
-			/* try piece on other side; otherwise it's a promoted pawn */
-			if (mptpcsq[cpc][tpc = TpcOpposite(tpc)] == sqNil)
+			/* try king-side/queen-side */
+			if (SqFromTpc(tpc = TpcOpposite(tpc), cpc).fIsNil())
 				break;
 			[[fallthrough]];
 		case APC::Pawn:
 		case APC::Queen:
+			/* this must be a promoted pawn, so find an unused pawn location */
 			tpc = TpcUnusedPawn(cpc);
 			break;
 		}
 	}
 
-	mpsqipc[sq] = IPC(tpc, cpc, apc);
-	mptpcsq[cpc][tpc] = sq;
+	(*this)(sq) = IPC(tpc, cpc, apc);
+	SqFromTpc(tpc, cpc) = sq;
 	SetBB((*this)(sq), sq);
 }
 
 
-void BD::SkipToSpace(const WCHAR*& sz)
+void BD::SkipToSpace(const wchar_t*& sz)
 {
 	while (*sz && *sz != L' ')
 		sz++;
 }
 
 
-void BD::SkipToNonSpace(const WCHAR*& sz)
+void BD::SkipToNonSpace(const wchar_t*& sz)
 {
 	while (*sz && *sz == L' ')
 		sz++;
@@ -270,9 +273,9 @@ void BD::MakeMvSq(MV& mv)
 
 	/* move the pieces */
 
-	mpsqipc[sqFrom] = ipcEmpty;
+	(*this)(sqFrom) = ipcEmpty;
 	ClearBB(ipcFrom, sqFrom);
-	mpsqipc[sqTo] = ipcFrom;
+	(*this)(sqTo) = ipcFrom;
 	SqFromIpc(ipcFrom) = sqTo;
 	SetBB(ipcFrom, sqTo);
 
@@ -287,12 +290,12 @@ void BD::MakeMvSq(MV& mv)
 		if (sqTo == sqEnPassant) {
 			/* take en passant - this is the case where we need to clear the taken piece
 			   instead of just replacing it */
-			mpsqipc[sqTake] = ipcEmpty;
+			(*this)(sqTake) = ipcEmpty;
 		}
 		else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
 			/* pawn promotion on last rank */
 			IPC ipcPromote = IPC(ipcFrom.tpc(), ipcFrom.cpc(), mv.apcPromote());
-			mpsqipc[sqTo] = ipcPromote;
+			(*this)(sqTo) = ipcPromote;
 			ClearBB(ipcFrom, sqTo);
 			SetBB(ipcPromote, sqTo);
 		} 
@@ -314,9 +317,9 @@ void BD::MakeMvSq(MV& mv)
 				sqRookTo = sqTo + 1;
 			}
 			IPC ipcRook = (*this)(sqRookFrom);
-			mpsqipc[sqRookFrom] = ipcEmpty;
+			(*this)(sqRookFrom) = ipcEmpty;
 			ClearBB(ipcRook, sqRookFrom);
-			mpsqipc[sqRookTo] = ipcRook;
+			(*this)(sqRookTo) = ipcRook;
 			SqFromIpc(ipcRook) = sqRookTo;
 			SetBB(ipcRook, sqRookTo);
 		}
@@ -368,7 +371,7 @@ void BD::UndoMvSq(MV mv)
 		ClearBB(ipcMove, sqTo);
 		ipcMove = IpcSetApc(ipcMove, APC::Pawn);
 	}
-	mpsqipc[sqFrom] = ipcMove;
+	(*this)(sqFrom) = ipcMove;
 	SetBB(ipcMove, sqFrom);
 	ClearBB(ipcMove, sqTo);
 	SqFromIpc(ipcMove) = sqFrom;
@@ -379,7 +382,7 @@ void BD::UndoMvSq(MV mv)
 
 	APC apcCapt = mv.apcCapture();
 	if (apcCapt == APC::Null) 
-		mpsqipc[sqTo] = ipcEmpty;
+		(*this)(sqTo) = ipcEmpty;
 	else {
 		IPC ipcTake = IPC(mv.tpcCapture(), ~cpcMove, apcCapt);
 		SQ sqTake = sqTo;
@@ -388,9 +391,9 @@ void BD::UndoMvSq(MV mv)
 			   pawn x pawn */
 			assert(ApcFromSq(sqTo) == APC::Pawn && apcCapt == APC::Pawn);
 			sqTake = SQ(sqEnPassant.rank() + cpcMove*2 - 1, sqEnPassant.file());
-			mpsqipc[sqTo] = ipcEmpty;
+			(*this)(sqTo) = ipcEmpty;
 		}
-		mpsqipc[sqTake] = ipcTake;
+		(*this)(sqTake) = ipcTake;
 		SqFromIpc(ipcTake) = sqTake;
 		SetBB(ipcTake, sqTake);
 	}
@@ -403,16 +406,16 @@ void BD::UndoMvSq(MV mv)
 			IPC ipcRook = (*this)(sqTo + 1);
 			ClearBB(ipcRook, sqTo + 1);
 			SetBB(ipcRook, sqTo - 2);
-			mpsqipc[sqTo - 2] = ipcRook;
-			mpsqipc[sqTo + 1] = ipcEmpty;
+			(*this)(sqTo - 2) = ipcRook;
+			(*this)(sqTo + 1) = ipcEmpty;
 			SqFromIpc(ipcRook) = sqTo - 2;
 		}
 		else if (dfile > 1) { /* king side castle */
 			IPC ipcRook = (*this)(sqTo - 1);
 			ClearBB(ipcRook, sqTo - 1);
 			SetBB(ipcRook, sqTo + 1);
-			mpsqipc[sqTo + 1] = ipcRook;
-			mpsqipc[sqTo - 1] = ipcEmpty;
+			(*this)(sqTo + 1) = ipcRook;
+			(*this)(sqTo - 1) = ipcEmpty;
 			SqFromIpc(ipcRook) = sqTo + 1;
 		}
 	}
@@ -484,7 +487,7 @@ void BD::RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const
 bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
 {
 	return FIsEmpty(mv.sqTo()) ||
-		VpcFromSq(mv.sqFrom()) + 0.5 >= VpcFromSq(mv.sqTo());
+		VpcFromSq(mv.sqFrom()) + 50.0f >= VpcFromSq(mv.sqTo());
 }
 
 
@@ -583,7 +586,7 @@ void BD::GenRgmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const
 	/* go through each piece */
 
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SQ sqFrom = mptpcsq[cpcMove][tpc];
+		SQ sqFrom = SqFromTpc(tpc, cpcMove);
 		if (sqFrom == sqNil)
 			continue;
 		assert(!FIsEmpty(sqFrom));
@@ -698,9 +701,15 @@ void BD::GenRgmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const
  */
 void BD::GenRgmvKnight(GMV& gmv, SQ sqFrom) const
 {
-	static int rgdsq[] = { 33, 31, 18, 14, -14, -18, -31, -33 };
-	for (int idsq = 0; idsq < CArray(rgdsq); idsq++)
-		FGenRgmvDsq(gmv, sqFrom, sqFrom, (*this)(sqFrom), rgdsq[idsq]);
+	IPC ipcKnight = (*this)(sqFrom);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, 33);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, 31);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, 18);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, 14);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, -14);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, -18);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, -31);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKnight, -33);
 }
 
 
@@ -753,12 +762,17 @@ void BD::GenRgmvQueen(GMV& gmv, SQ sqFrom) const
  */
 void BD::GenRgmvKing(GMV& gmv, SQ sqFrom) const
 {
+	IPC ipcKing = (*this)(sqFrom);
 	assert(ApcFromSq(sqFrom) == APC::King);
-	static int rgdsq[] = { 17, 16, 15, 1, -1, -15, -16, -17 };
-	for (int idsq = 0; idsq < CArray(rgdsq); idsq++)
-		FGenRgmvDsq(gmv, sqFrom, sqFrom, (*this)(sqFrom), rgdsq[idsq]);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, 17);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, 16);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, 15);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, 1);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, -1);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, -15);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, -16);
+	FGenRgmvDsq(gmv, sqFrom, sqFrom, ipcKing, -17);
 }
-
 
 
 /*	BD::GenRgmvCastle
@@ -941,7 +955,7 @@ BDG::BDG(void) : gs(GS::Playing), cpcToMove(CPC::White), imvCur(-1), imvPawnOrTa
  *
  *	Constructor for initializing a board with a FEN board state string.
  */
-BDG::BDG(const WCHAR* szFEN)
+BDG::BDG(const wchar_t* szFEN)
 {
 	InitFEN(szFEN);
 }
@@ -1153,9 +1167,8 @@ wstring BDG::SzMoveAndDecode(MV mv)
 	wstring sz = SzDecodeMv(mv, true);
 	CPC cpc = CpcFromSq(mv.sqFrom());
 	MakeMv(mv);
-	if (FSqAttacked(cpc, mptpcsq[~cpc][tpcKing])) {
+	if (FSqAttacked(cpc, (*this)(tpcKing, ~cpc)))
 		sz += L'+';
-	}
 	return sz;
 }
 
