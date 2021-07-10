@@ -135,12 +135,12 @@ void GA::WriteSzLine80(ostream& os, string& szLine, const string& szAdd)
 	szLine += szAdd;
 }
 
+
 /*
  *
  *	Move decoding
  * 
  */
-
 
 
 /*	BDG::SzDecodeMv
@@ -150,11 +150,11 @@ void GA::WriteSzLine80(ostream& os, string& szLine, const string& szAdd)
  *	include postfix marks for check or checkmate (+ or #).
  */
 
-const wchar_t mpapcch[] = { L' ', L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
+const wchar_t mpapcch[] = { chSpace, L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
 const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
 {
-	{ L' ', L'\x2659', L'\x2658', L'\x2657', L'\x2656', L'\x2655', L'\x2654' },
-	{ L' ', L'\x265f', L'\x265e', L'\x265d', L'\x265c', L'\x265b', L'\x265a' }
+	{ chSpace, chWhitePawn, chWhiteKnight, chWhiteBishop, chWhiteRook, chWhiteQueen, chWhiteKing },
+	{ chSpace, chBlackPawn, chBlackKnight, chBlackBishop, chBlackRook, chBlackQueen, chBlackKing }
 };
 
 wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
@@ -183,10 +183,10 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 				goto FinishCastle;
 			if (sqTo.file() == fileQueenBishop) {
 				*pch++ = L'O';
-				*pch++ = L'-';
-			FinishCastle:
+				*pch++ = chMinus;
+FinishCastle:
 				*pch++ = L'O';
-				*pch++ = L'-';
+				*pch++ = chMinus;
 				*pch++ = L'O';
 				goto FinishMove;
 			}
@@ -227,13 +227,13 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
 	if (!FIsEmpty(sqCapture))
-		*pch++ = fPretty ? L'\x00d7' : 'x';
+		*pch++ = fPretty ? chMultiply : 'x';
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
 	if (apc == APC::Pawn && sqTo == sqEnPassant) {
 		if (fPretty)
-			*pch++ = L'\x202f';
+			*pch++ = chNonBreakingSpace;	
 		*pch++ = L'e';
 		*pch++ = L'.';
 		*pch++ = L'p';
@@ -241,11 +241,11 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	}
 
 	{
-		APC apcPromote = mv.apcPromote();
-		if (apcPromote != APC::Null) {
-			*pch++ = L'=';
-			*pch++ = mpapcch[apcPromote];
-		}
+	APC apcPromote = mv.apcPromote();
+	if (apcPromote != APC::Null) {
+		*pch++ = chEqual;
+		*pch++ = mpapcch[apcPromote];
+	}
 	}
 
 FinishMove:
@@ -304,13 +304,13 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
 	string sz;
 	for (int ich = 0; wsz[ich]; ich++) {
 		switch (wsz[ich]) {
-		case L'\x00a0':
+		case chNonBreakingSpace:
 			sz += ' ';
 			break;
-		case L'\x00d7':
+		case chMultiply:
 			sz += 'x';
 			break;
-		case L'\x2013':
+		case chEnDash:
 			sz += '-';
 			break;
 		default:
@@ -340,7 +340,7 @@ wstring BDG::SzDecodeMvPost(MV mv) const
 	sz += L'a' + sqTo.file();
 	sz += to_wstring(sqTo.rank() + 1);
 	if (mv.apcPromote() != APC::Null) {
-		sz += L'=';
+		sz += chEqual;
 		sz += mpapcch[mv.apcPromote()];
 	}
 	return sz;

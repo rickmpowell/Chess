@@ -147,7 +147,7 @@ void UIDB::Layout(void)
 
 SIZ UIDB::SizLayoutPreferred(void)
 {
-	return SIZ(-1.0f, 240.0f);
+	return SIZ(240.0f, -1.0f);
 }
 
 void UIDB::Draw(RC rcUpdate)

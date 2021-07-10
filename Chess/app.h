@@ -1,5 +1,17 @@
 /*
  *
+ *	app.h
+ * 
+ *	Application classes, for Windows apps.
+ * 
+ */
+
+#pragma once
+#include "framework.h"
+
+
+/*
+ *
  *	class CO and D2
  *
  *	Application base classes that initialize and shutdown COM and Direct2D
@@ -9,58 +21,28 @@
  *
  */
 
-#pragma once
-#include "framework.h"
-
 
 class CO
 {
 public:
-	CO(void) { int err;  if ((err = CoInitialize(nullptr)) != S_OK) throw err; }
-	~CO(void) { CoUninitialize(); }
+	CO(void);
+	~CO(void);
 };
 
 
 class D2 : public CO
 {
+protected:
+	void Cleanup(void);
+
 public:
 	FACTD2* pfactd2;
 	FACTWIC* pfactwic;
 	FACTDWR* pfactdwr;
+
 public:
-	D2(void) : pfactd2(nullptr), pfactwic(nullptr), pfactdwr(nullptr)
-	{
-		try {
-			int err;
-			D2D1_FACTORY_OPTIONS opt;
-			memset(&opt, 0, sizeof(opt));
-			if ((err = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory1), &opt,
-				reinterpret_cast<void**>(&pfactd2))) != S_OK)
-				throw err;
-			if ((err = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory,
-				reinterpret_cast<void**>(&pfactwic))) != S_OK)
-				throw err;
-			if ((err = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(pfactdwr),
-				reinterpret_cast<IUnknown**>(&pfactdwr))) != S_OK)
-				throw err;
-		}
-		catch (int err) {
-			Cleanup();
-			throw err;
-		}
-	}
-
-	~D2(void)
-	{
-		Cleanup();
-	}
-
-	void Cleanup(void)
-	{
-		SafeRelease(&pfactdwr);
-		SafeRelease(&pfactwic);
-		SafeRelease(&pfactd2);
-	}
+	D2(void);
+	~D2(void);
 };
 
 
@@ -68,8 +50,9 @@ public:
  *
  *  CMD class
  *
- *  Little class for wrapping together and organiziong top-level
- *  commands
+ *  Little class for wrapping together and organiziong top-level commands. Useful for
+ *	common interface for dispatching commands, getting tip text, initializing menus, 
+ *	enable states, etc.
  *
  */
 
@@ -79,9 +62,11 @@ class APP;
 class CMD
 {
 	friend class CMDLIST;
+
 protected:
 	APP& app;
 	int icmd;
+
 public:
 	CMD(APP& app, int icmd);
 	virtual ~CMD(void) { }
@@ -99,7 +84,7 @@ public:
  *
  *	CMDLIST
  *
- *	The command list, used for dispatching to handlers
+ *	The command list, used for dispatching to command handlers.
  *
  */
 
@@ -122,7 +107,8 @@ public:
  *	APP class
  *
  *	Base application class, which simply initiaizes the app and creates the top-level
- *	window
+ *	window. This includes the WndProc for the top application window, which dispatches
+ *	to virtual "On" function to handle the messages.
  *
  */
 
@@ -130,6 +116,7 @@ public:
 class APP : public D2
 {
 	friend class GA;
+
 public:
 	HINSTANCE hinst;
 	HWND hwnd;
@@ -149,14 +136,17 @@ public:
 	HCURSOR hcurHand;
 	HCURSOR hcurCrossHair;
 	HCURSOR hcurUp;
-	class GA* pga;
+	
+	GA* pga;
 	CMDLIST cmdlist;
 
 public:
 	APP(HINSTANCE hinst, int sw);
 	~APP(void);
+
 	int MessagePump(void);
 	DWORD TmMessage(void);
+
 	wstring SzLoad(int ids) const;
 	wstring SzAppDataPath(void) const;
 
@@ -199,6 +189,7 @@ private:
  *
  */
 
+
 class CLIPB
 {
 	APP& app;
@@ -208,95 +199,17 @@ class CLIPB
 	void* pdata;
 
 public:
-	CLIPB(APP& app) : app(app), fClipOpen(false), hdata(nullptr), hdataGet(nullptr), pdata(nullptr)
-	{
-		Open();
-	}
+	CLIPB(APP& app);
+	~CLIPB(void);
 
-	~CLIPB(void)
-	{
-		Unlock();
-		Free();
-		Close();
-	}
-
-	void Open(void)
-	{
-		if (!::OpenClipboard(app.hwnd))
-			throw 1;
-		fClipOpen = true;
-	}
-
-	void Close(void)
-	{
-		if (!fClipOpen)
-			return;
-		::CloseClipboard();
-		fClipOpen = false;
-	}
-
-	void* PLock(void)
-	{
-		assert(!pdata);
-		assert(hdata);
-		pdata = ::GlobalLock(hdata);
-		if (!pdata)
-			throw 1;
-		return pdata;
-	}
-
-	void Unlock(void)
-	{
-		if (!pdata)
-			return;
-		::GlobalUnlock(hdata);
-		pdata = nullptr;
-	}
-
-	void Empty(void)
-	{
-		::EmptyClipboard();
-	}
-
-	void* PAlloc(int cb)
-	{
-		hdata = ::GlobalAlloc(GMEM_MOVEABLE, cb);
-		if (!hdata)
-			throw 1;
-		return PLock();
-	}
-
-	void SetData(int cf, void* pv, int cb)
-	{
-		PAlloc(cb);
-		assert(pdata);
-		memcpy(pdata, pv, cb);
-		Unlock();
-		assert(hdata);
-		::SetClipboardData(cf, hdata);
-		Free();
-	}
-
-	void Free(void)
-	{
-		if (!hdata)
-			return;
-		if (hdataGet) {
-			assert(hdata == hdataGet);
-		}
-		else {
-			::GlobalFree(hdata);
-			hdata = nullptr;
-		}
-	}
-
-	void* PGetData(int cf)
-	{
-		hdataGet = ::GetClipboardData(cf);
-		if (!hdataGet)
-			throw 1;
-		hdata = hdataGet;
-		return PLock();
-	}
+	void Open(void);
+	void Close(void);
+	void Empty(void);
+	void* PLock(void);
+	void Unlock(void);
+	void* PAlloc(int cb);
+	void Free(void);
+	void SetData(int cf, void* pv, int cb);
+	void* PGetData(int cf);
 };
 

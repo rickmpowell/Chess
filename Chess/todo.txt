@@ -96,6 +96,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area?)
+* Debug panel isn't showing on boot
 * Rename PTF and RCF to PT and RC, and all other f suffixes. 
 * AI: Should we do move/undo instead of duplicating boards? 
 * Log: second game screws up the log content/view

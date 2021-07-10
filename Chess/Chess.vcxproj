@@ -179,6 +179,7 @@
     <ClInclude Include="uibd.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="app.cpp" />
     <ClCompile Include="bd.cpp" />
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="main.cpp" />

@@ -418,13 +418,13 @@ void UICLOCK::Draw(RC rcUpdate)
 	wchar_t sz[20], * pch;
 	pch = sz;
 	pch = PchDecodeInt(hr, pch);
-	*pch++ = ':';
+	*pch++ = chColon;
 	*pch++ = L'0' + min / 10;
 	*pch++ = L'0' + min % 10;
-	*pch++ = L':';
+	*pch++ = chColon;
 	*pch++ = L'0' + sec / 10;
 	*pch++ = L'0' + sec % 10;
-	*pch++ = L'.';
+	*pch++ = chPeriod;
 	*pch++ = L'0' + frac / 100;
 	*pch = 0;
 
@@ -732,7 +732,7 @@ void UIML::DrawMoveNumber(RC rc, int imv)
 	rc.right -= dxCellMarg;
 	wchar_t sz[8];
 	wchar_t* pch = PchDecodeInt(imv, sz);
-	*pch++ = L'.';
+	*pch++ = chPeriod;
 	*pch = 0;
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);
 	DrawSz(wstring(sz), ptxList, rc);

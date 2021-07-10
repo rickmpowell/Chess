@@ -15,6 +15,8 @@
 #include <CommCtrl.h>
 #include <commdlg.h>
 #include <shlobj_core.h>
+#include <shlwapi.h>
+#include <libloaderapi.h>
 
 #include <d2d1_1.h>
 #include <d2d1_1helper.h>
@@ -23,23 +25,22 @@
 #include <wincodec.h>
 #include <d2d1effects.h>
 #include <d2d1effecthelpers.h>
+#include <d2d1_3.h>
 
-using namespace D2D1;
-
+#include <assert.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
 #include <commctrl.h>
 #include <string.h>
-
 #define _USE_MATH_DEFINES
 #include <math.h>
+
 #include <cmath>
 #include <algorithm>
 #include <random>
 #include <chrono>
-#include <assert.h>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -47,12 +48,19 @@ using namespace D2D1;
 #include <iomanip>
 #include <fstream>
 #include <filesystem>
-#include <shlwapi.h>
-#include <d2d1_3.h>
-#include <libloaderapi.h>
 
+
+using namespace D2D1;
 using namespace std;
 using namespace chrono;
+
+
+/*
+ *
+ *	Turn on/off validation by setting fValidate, which speeds up debug versions 
+ *	a bit, which almost makes the debug version fast enough to play, but not quite.
+ * 
+ */
 
 
 #ifndef NDEBUG
@@ -69,29 +77,40 @@ extern bool fValidate;
  */
 
 
-struct PT : public D2D1_POINT_2F {
-	inline PT() { }
-	inline PT(float x, float y) { this->x = x; this->y = y; }
+struct PT : public D2D1_POINT_2F 
+{
+	inline PT() 
+	{ 
+	}
 
-	inline PT& Offset(float dx, float dy) {
+	inline PT(float x, float y) 
+	{ 
+		this->x = x; 
+		this->y = y; 
+	}
+
+	inline PT& Offset(float dx, float dy)
+	{
 		x += dx;
 		y += dy;
 		return *this;
 	}
 
-	inline PT& Offset(const PT& pt) {
+	inline PT& Offset(const PT& pt) 
+	{
 		return Offset(pt.x, pt.y);
 	}
 
-	inline PT operator+(const PT& pt) const {
+	inline PT operator+(const PT& pt) const 
+	{
 		PT ptT(*this);
 		return ptT.Offset(pt);
 	}
 
-	inline PT operator-(void) const {
+	inline PT operator-(void) const 
+	{
 		return PT(-x, -y);
 	}
-
 };
 
 
@@ -107,11 +126,18 @@ struct PT : public D2D1_POINT_2F {
 struct SIZ : public D2D1_SIZE_F
 {
 public:
-	inline SIZ(void) { }
-	inline SIZ(const D2D1_SIZE_F& siz) {
+
+	inline SIZ(void) 
+	{ 
+	}
+
+	inline SIZ(const D2D1_SIZE_F& siz) 
+	{
 		width = siz.width; height = siz.height;
 	}
-	inline SIZ(float dx, float dy) {
+
+	inline SIZ(float dx, float dy) 
+	{
 		width = dx;
 		height = dy;
 	}
@@ -127,9 +153,15 @@ public:
  */
 
 
-struct RC : public D2D1_RECT_F {
+struct RC : public D2D1_RECT_F 
+{
+
 public:
-	inline RC(void) { }
+
+	inline RC(void) 
+	{ 
+	}
+
 	inline RC(float xLeft, float yTop, float xRight, float yBot)
 	{
 		left = xLeft;
@@ -138,7 +170,8 @@ public:
 		bottom = yBot;
 	}
 
-	inline RC(const PT& ptTopLeft, const SIZ& siz) {
+	inline RC(const PT& ptTopLeft, const SIZ& siz) 
+	{
 		left = ptTopLeft.x;
 		top = ptTopLeft.y;
 		right = left + siz.width;
@@ -209,15 +242,18 @@ public:
 		return pt.x >= left && pt.x < right && pt.y >= top && pt.y < bottom;
 	}
 
-	inline float DxWidth(void) const {
+	inline float DxWidth(void) const 
+	{
 		return right - left;
 	}
 
-	inline float DyHeight(void) const {
+	inline float DyHeight(void) const 
+	{
 		return bottom - top;
 	}
 
-	inline float XCenter(void) const {
+	inline float XCenter(void) const 
+	{
 		return (left + right) / 2.0f;
 	}
 
@@ -230,65 +266,79 @@ public:
 		return PT(XCenter(), YCenter());
 	}
 
-	inline SIZ Siz(void) const {
+	inline SIZ Siz(void) const 
+	{
 		return SIZ(DxWidth(), DyHeight());
 	}
 
-	inline PT PtTopLeft(void) const {
+	inline PT PtTopLeft(void) const 
+	{
 		return PT(left, top);
 	}
 
-	inline RC& SetSize(const SIZ& siz) {
+	inline RC& SetSize(const SIZ& siz) 
+	{
 		right = left + siz.width;
 		bottom = top + siz.height;
 		return *this;
 	}
 
-	inline RC& Move(const PT& ptTopLeft) {
+	inline RC& Move(const PT& ptTopLeft) 
+	{
 		return Offset(ptTopLeft.x - left, ptTopLeft.y - top);
 	}
 
-	inline RC operator+(const PT& pt) const {
+	inline RC operator+(const PT& pt) const 
+	{
 		RC rc = *this;
 		return rc.Offset(pt);
 	}
 
-	inline RC& operator+=(const PT& pt) {
+	inline RC& operator+=(const PT& pt) 
+	{
 		return Offset(pt);
 	}
 	
-	inline RC operator-(const PT& pt) const {
+	inline RC operator-(const PT& pt) const 
+	{
 		RC rc(*this);
 		return rc.Offset(-pt);
 	}
 
-	inline RC& operator-=(const PT& pt) {
+	inline RC& operator-=(const PT& pt) 
+	{
 		return Offset(-pt);
 	}
 
-	inline RC operator|(const RC& rc) const {		
+	inline RC operator|(const RC& rc) const 
+	{		
 		RC rcT = *this;
 		return rcT.Union(rc);
 	}
 
-	inline RC& operator|=(const RC& rc) {
+	inline RC& operator|=(const RC& rc) 
+	{
 		return Union(rc);
 	}
 	
-	inline RC operator&(const RC& rc) const {
+	inline RC operator&(const RC& rc) const 
+	{
 		RC rcT = *this;
 		return rcT.Intersect(rc);
 	}
 
-	inline RC& operator&=(const RC& rc) {
+	inline RC& operator&=(const RC& rc) 
+	{
 		return Intersect(rc);
 	}
 
-	inline operator int() const {
+	inline operator int() const 
+	{
 		return !FEmpty();
 	}
 	
-	inline bool operator!() const {
+	inline bool operator!() const 
+	{
 		return FEmpty();
 	}
 };
@@ -306,7 +356,10 @@ public:
 class ELL : public D2D1_ELLIPSE
 {
 public:
-	ELL(void) { }
+	ELL(void) 
+	{ 
+	}
+
 	ELL(const PT& ptCenter, const PT& ptRadius)
 	{
 		point.x = ptCenter.x;
@@ -399,82 +452,171 @@ template<class T> inline T peg(const T& t, const T& tFirst, const T& tLast)
  * 
  */
 
-/*	DC antialias mode */
 
-struct AADC {
+/*
+ *	DC antialias mode 
+ */
+
+
+struct AADC 
+{
 	DC* pdc;
 	D2D1_ANTIALIAS_MODE dcaaSav;
-	AADC(DC* pdc, D2D1_ANTIALIAS_MODE aa) : pdc(pdc), dcaaSav(pdc->GetAntialiasMode()) {
+
+	AADC(DC* pdc, D2D1_ANTIALIAS_MODE aa) : pdc(pdc), dcaaSav(pdc->GetAntialiasMode()) 
+	{
 		Set(aa);
 	}
-	void Set(D2D1_ANTIALIAS_MODE aa) {
+
+	void Set(D2D1_ANTIALIAS_MODE aa) 
+	{
 		pdc->SetAntialiasMode(aa);
 	}
-	~AADC(void) { 
+
+	~AADC(void) 
+	{ 
 		Set(dcaaSav); 
 	}
 };
 
-/*	solid brush color */
 
-struct COLORBRS {
+/*
+ *	solid brush color 
+ */
+
+
+struct COLORBRS 
+{
 	BRS* pbrs;
 	D2D1_COLOR_F colorSav;
-	COLORBRS(BRS* pbrs, D2D1_COLOR_F color) : pbrs(pbrs), colorSav(pbrs->GetColor()) {
+
+	COLORBRS(BRS* pbrs, D2D1_COLOR_F color) : pbrs(pbrs), colorSav(pbrs->GetColor()) 
+	{
 		Set(color); 
 	}
-	void Set(D2D1_COLOR_F color) { 
+
+	void Set(D2D1_COLOR_F color) 
+	{ 
 		pbrs->SetColor(color);
 	}
-	~COLORBRS(void) { 
+
+	~COLORBRS(void) 
+	{ 
 		Set(colorSav); 
 	}
 };
 
-/*	text format text alignment */
 
-struct TATX {
+/*
+ *	text format text alignment 
+ */
+
+
+struct TATX 
+{
 	TX* ptx;
 	DWRITE_TEXT_ALIGNMENT taSav;
-	TATX(TX* ptx, DWRITE_TEXT_ALIGNMENT ta) : ptx(ptx), taSav(ptx->GetTextAlignment()) {
+
+	TATX(TX* ptx, DWRITE_TEXT_ALIGNMENT ta) : ptx(ptx), taSav(ptx->GetTextAlignment()) 
+	{
 		Set(ta);
 	}
-	void Set(DWRITE_TEXT_ALIGNMENT ta) {
+
+	void Set(DWRITE_TEXT_ALIGNMENT ta) 
+	{
 		ptx->SetTextAlignment(ta);
 	}
-	~TATX(void) {
+
+	~TATX(void) 
+	{
 		ptx->SetTextAlignment(taSav);
 	}
 };
 
-/*	Brush opacity */
 
-struct OPACITYBR {
+/*
+ *	Brush opacity 
+ */
+
+
+struct OPACITYBR 
+{
 	BR* pbr;
 	float opacitySav;
-	OPACITYBR(BR* pbr, float opacity) : pbr(pbr), opacitySav(pbr->GetOpacity()) {
+
+	OPACITYBR(BR* pbr, float opacity) : pbr(pbr), opacitySav(pbr->GetOpacity()) 
+	{
 		Set(opacity);
 	}
-	void Set(float opacity) {
+
+	void Set(float opacity) 
+	{
 		pbr->SetOpacity(opacity);
 	}
-	~OPACITYBR(void) {
+
+	~OPACITYBR(void) 
+	{
 		Set(opacitySav);
 	}
 };
 
-/*	DC transform - note that this assigns back to the identity, it does
-    not save and restore */
 
-struct TRANSDC {
+/*	
+ *	DC transform - note that this assigns back to the identity, it does
+ *  not save and restore 
+ */
+
+
+struct TRANSDC 
+{
 	DC* pdc;
-	TRANSDC(DC* pdc, const D2D1_MATRIX_3X2_F& trans) : pdc(pdc) {
+
+	TRANSDC(DC* pdc, const D2D1_MATRIX_3X2_F& trans) : pdc(pdc) 
+	{
 		Set(trans);
 	}
-	void Set(const D2D1_MATRIX_3X2_F& trans) {
+
+	void Set(const D2D1_MATRIX_3X2_F& trans) 
+	{
 		pdc->SetTransform(trans);
 	}
-	~TRANSDC(void) {
+
+	~TRANSDC(void) 
+	{
 		Set(Matrix3x2F::Identity());
 	}
 };
+
+
+/*
+ *
+ *	Some handy-dandy unicode characters
+ * 
+ */
+
+
+const wchar_t chNull = L'\0';
+const wchar_t chSpace = L' ';
+const wchar_t chPound = L'#';
+const wchar_t chPlus = L'+';
+const wchar_t chMinus = L'-';
+const wchar_t chEqual = L'=';
+const wchar_t chColon = L':';
+const wchar_t chPeriod = L'.';
+const wchar_t chQuestion = L'?';
+const wchar_t chExclamation = L'!';
+const wchar_t chMultiply = L'\x00d7';
+const wchar_t chEnDash = L'\x2013'; 
+const wchar_t chNonBreakingSpace = L'\x202f';
+const wchar_t chWhiteKing = L'\x2654';
+const wchar_t chWhiteQueen = L'\x2655';
+const wchar_t chWhiteRook = L'\x2656';
+const wchar_t chWhiteBishop = L'\x2657';
+const wchar_t chWhiteKnight = L'\x2658';
+const wchar_t chWhitePawn = L'\x2659';
+const wchar_t chBlackKing = L'\x265a';
+const wchar_t chBlackQueen = L'\x265b'; 
+const wchar_t chBlackRook = L'\x265c'; 
+const wchar_t chBlackBishop = L'\x265d'; 
+const wchar_t chBlackKnight = L'\x265e'; 
+const wchar_t chBlackPawn = L'\x265f';
