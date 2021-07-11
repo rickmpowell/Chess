@@ -170,9 +170,9 @@ public:
 	RC RcInterior(void) const;	// in local coordinates (top left is always {0,0})
 	RC RcBounds(void) const;	// in parent coordinates
 	bool FVisible(void) const;
-	void SetBounds(RC rcNew);
-	void Resize(PT ptNew);
-	void Move(PT ptNew);
+	void SetBounds(const RC& rcNew);
+	void Resize(const PT& ptNew);
+	void Move(const PT& ptNew);
 	void OffsetBounds(float dx, float dy);
 	void Show(bool fShow);
 	virtual void Layout(void);
@@ -181,11 +181,11 @@ public:
 	UI* PuiFromPt(PT pt);
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);	
-	virtual void StartLeftDrag(PT pt);
-	virtual void EndLeftDrag(PT pt);
-	virtual void LeftDrag(PT pt);
-	virtual void MouseHover(PT pt, MHT mht);
-	virtual void ScrollWheel(PT pt, int dwheel);
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
+	virtual void MouseHover(const PT& pt, MHT mht);
+	virtual void ScrollWheel(const PT& pt, int dwheel);
 
 	virtual void DispatchCmd(int cmd);
 	
@@ -197,20 +197,20 @@ public:
 	virtual wstring SzTip(void) const;
 	virtual wstring SzTipFromCmd(int cmd) const;
 
-	RC RcParentFromLocal(RC rc) const; // local to parent coordinates
-	RC RcGlobalFromLocal(RC rc) const; // local to app global coordinates
-	RC RcLocalFromGlobal(RC rc) const;
-	RC RcLocalFromParent(RC rc) const;
-	PT PtParentFromLocal(PT pt) const;
-	PT PtGlobalFromLocal(PT pt) const;
-	PT PtLocalFromGlobal(PT pt) const;
+	RC RcParentFromLocal(const RC& rc) const; // local to parent coordinates
+	RC RcGlobalFromLocal(const RC& rc) const; // local to app global coordinates
+	RC RcLocalFromGlobal(const RC& rc) const;
+	RC RcLocalFromParent(const RC& rc) const;
+	PT PtParentFromLocal(const PT& pt) const;
+	PT PtGlobalFromLocal(const PT& pt) const;
+	PT PtLocalFromGlobal(const PT& pt) const;
 
-	void Update(RC rcUpdate);
-	void Redraw(RC rcUpdate);
+	void Update(const RC& rcUpdate);
+	void Redraw(const RC& rcUpdate);
 	void Redraw(void);
-	virtual void InvalRc(RC rc, bool fErase) const;
-	virtual void Draw(RC rcDraw);
-	void RedrawOverlappedSiblings(RC rcUpdate);
+	virtual void InvalRc(const RC& rc, bool fErase) const;
+	virtual void Draw(const RC& rcDraw);
+	void RedrawOverlappedSiblings(const RC& rcUpdate);
 
 
 	virtual bool FDepthLog(LGT lgt, int& depth);
@@ -299,12 +299,12 @@ public:
 
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 
-	virtual void StartLeftDrag(PT pt);
-	virtual void EndLeftDrag(PT pt);
-	virtual void LeftDrag(PT pt);
-	virtual void MouseHover(PT pt, MHT mht);
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
+	virtual void MouseHover(const PT& pt, MHT mht);
 	
 	virtual wstring SzTip(void) const;
 };
@@ -322,7 +322,7 @@ public:
 
 public:
 	BTNCH(UI* puiParent, int cmd, wchar_t ch);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };
 
 
@@ -333,7 +333,7 @@ class BTNIMG : public BTN
 public:
 	BTNIMG(UI* puiParent, int cmd, int idb);
 	~BTNIMG(void);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	SIZ SizImg(void) const;
@@ -354,7 +354,7 @@ class BTNGEOM : public BTN
 public:
 	BTNGEOM(UI* puiParent, int cmd, PT rgpt[], int cpt);
 	~BTNGEOM();
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };
 
 
@@ -379,7 +379,7 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 
 	virtual wstring SzText(void) const;
 	void SetText(const wstring& sz);
@@ -416,6 +416,6 @@ public:
 	virtual void DiscardRsrc(void);
 	virtual void Layout(void);
 
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	virtual wstring SzValue(void) const = 0;
 };

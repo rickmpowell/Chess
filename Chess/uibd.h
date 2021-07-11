@@ -82,8 +82,8 @@ public:
 
 	virtual void Layout(void);
 
-	virtual void Draw(RC rcUpdate);
-	void DrawMargins(RC rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
+	virtual void Draw(const RC& rcUpdate);
+	void DrawMargins(const RC& rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
@@ -101,7 +101,7 @@ public:
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	void DrawDragPc(const RC& rc);
 	RC RcGetDrag(void);
-	void InvalOutsideRc(RC rc) const;
+	void InvalOutsideRc(const RC& rc) const;
 	void HiliteLegalMoves(SQ sq);
 	RC RcFromSq(SQ sq) const;
 
@@ -109,11 +109,11 @@ public:
 
 	void FlipBoard(CPC cpcNew);
 
-	HTBD HtbdHitTest(PT pt, SQ* psq) const;
-	virtual void StartLeftDrag(PT pt);
-	virtual void EndLeftDrag(PT pt);
-	virtual void LeftDrag(PT pt);
-	virtual void MouseHover(PT pt, MHT mht);
+	HTBD HtbdHitTest(const PT& pt, SQ* psq) const;
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
+	virtual void MouseHover(const PT& pt, MHT mht);
 
 	bool FMoveablePc(SQ sq) const;
 };
@@ -135,5 +135,5 @@ public:
 	UIPCP(GA* pga);
 	~UIPCP(void);
 
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };

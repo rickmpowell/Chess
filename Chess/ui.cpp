@@ -307,13 +307,14 @@ bool UI::FVisible(void) const
  *	Sets the bounding box for the UI element. Coordinates are relative
  *	to the parent's coordinate system
  */
-void UI::SetBounds(RC rcNew) 
+void UI::SetBounds(const RC& rcNew) 
 {
+	RC rc = rcNew;
 	if (puiParent)
-		rcNew.Offset(puiParent->rcBounds.left, puiParent->rcBounds.top);
-	rcBounds.right = rcBounds.left + rcNew.DxWidth();
-	rcBounds.bottom = rcBounds.top + rcNew.DyHeight();
-	OffsetBounds(rcNew.left - rcBounds.left, rcNew.top - rcBounds.top);
+		rc.Offset(puiParent->rcBounds.left, puiParent->rcBounds.top);
+	rcBounds.right = rcBounds.left + rc.DxWidth();
+	rcBounds.bottom = rcBounds.top + rc.DyHeight();
+	OffsetBounds(rc.left - rcBounds.left, rc.top - rcBounds.top);
 	Layout();
 }
 
@@ -322,7 +323,7 @@ void UI::SetBounds(RC rcNew)
  *
  *	Resizes the UI element.
  */
-void UI::Resize(PT ptNew) 
+void UI::Resize(const PT& ptNew) 
 {
 	if (ptNew.x == rcBounds.DxWidth() && ptNew.y == rcBounds.DyHeight())
 		return;
@@ -336,15 +337,16 @@ void UI::Resize(PT ptNew)
  *
  *	Moves the UI element to the new upper left position. In parent coordinates.
  */
-void UI::Move(PT ptNew) 
+void UI::Move(const PT& ptNew) 
 {
+	PT pt = ptNew;
 	if (puiParent) {
 		/* convert to global coordinates */
-		ptNew.x += puiParent->rcBounds.left;
-		ptNew.y += puiParent->rcBounds.top;
+		pt.x += puiParent->rcBounds.left;
+		pt.y += puiParent->rcBounds.top;
 	}
-	float dx = ptNew.x - rcBounds.left;
-	float dy = ptNew.y - rcBounds.top;
+	float dx = pt.x - rcBounds.left;
+	float dy = pt.y - rcBounds.top;
 	OffsetBounds(dx, dy);
 }
 
@@ -397,29 +399,29 @@ UI* UI::PuiFromPt(PT pt)
 }
 
 
-void UI::StartLeftDrag(PT pt)
+void UI::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
 }
 
 
-void UI::EndLeftDrag(PT pt)
+void UI::EndLeftDrag(const PT& pt)
 {
 	ReleaseCapt();
 }
 
 
-void UI::LeftDrag(PT pt)
+void UI::LeftDrag(const PT& pt)
 {
 }
 
 
-void UI::MouseHover(PT pt, MHT mht)
+void UI::MouseHover(const PT& pt, MHT mht)
 {
 }
 
 
-void UI::ScrollWheel(PT pt, int dwheel)
+void UI::ScrollWheel(const PT& pt, int dwheel)
 {
 }
 
@@ -488,7 +490,7 @@ wstring UI::SzTipFromCmd(int cmd) const
  *
  *	Converts a rectangle from local coordinates to parent coordinates
  */
-RC UI::RcParentFromLocal(RC rc) const
+RC UI::RcParentFromLocal(const RC& rc) const
 {
 	if (puiParent == nullptr)
 		return rc;
@@ -497,13 +499,13 @@ RC UI::RcParentFromLocal(RC rc) const
 }
 
 
-RC UI::RcGlobalFromLocal(RC rc) const
+RC UI::RcGlobalFromLocal(const RC& rc) const
 {
 	return rc.Offset(rcBounds.left, rcBounds.top);
 }
 
 
-RC UI::RcLocalFromParent(RC rc) const
+RC UI::RcLocalFromParent(const RC& rc) const
 {
 	if (puiParent == nullptr)
 		return rc;
@@ -512,7 +514,7 @@ RC UI::RcLocalFromParent(RC rc) const
 }
 
 
-RC UI::RcLocalFromGlobal(RC rc) const
+RC UI::RcLocalFromGlobal(const RC& rc) const
 {
 	return rc.Offset(-rcBounds.left, -rcBounds.top);
 }
@@ -523,7 +525,7 @@ RC UI::RcLocalFromGlobal(RC rc) const
  *	Converts a point from loal coordinates to local coordinates of the
  *	parent UI element.
  */
-PT UI::PtParentFromLocal(PT pt) const
+PT UI::PtParentFromLocal(const PT& pt) const
 {
 	if (puiParent == nullptr)
 		return pt;
@@ -538,7 +540,7 @@ PT UI::PtParentFromLocal(PT pt) const
  *	Converts a point from local coordinates to global (relative to the 
  *	main window) coordinates.
  */
-PT UI::PtGlobalFromLocal(PT pt) const
+PT UI::PtGlobalFromLocal(const PT& pt) const
 {
 	return PT(pt.x + rcBounds.left, pt.y + rcBounds.top);
 }
@@ -549,7 +551,7 @@ PT UI::PtGlobalFromLocal(PT pt) const
  *	Converts a point from global (relative to the main top-level window) to
  *	local coordinates.
  */
-PT UI::PtLocalFromGlobal(PT pt) const
+PT UI::PtLocalFromGlobal(const PT& pt) const
 {
 	return PT(pt.x - rcBounds.left, pt.y - rcBounds.top);
 }
@@ -560,7 +562,7 @@ PT UI::PtLocalFromGlobal(PT pt) const
  *	Updates the UI element and all child elements. rcUpdate is in
  *	global coordinates.
  */
-void UI::Update(RC rcUpdate)
+void UI::Update(const RC& rcUpdate)
 {
 	if (!fVisible)
 		return;
@@ -590,7 +592,7 @@ void UI::Redraw(void)
  *
  *	Redraws the area of the UI element. rcUpdate is in local coordinates.
  */
-void UI::Redraw(RC rcUpdate)
+void UI::Redraw(const RC& rcUpdate)
 {
 	if (!fVisible)
 		return;
@@ -608,7 +610,7 @@ void UI::Redraw(RC rcUpdate)
  *	that we only need to check siblings after the current UI element in the child lists,
  *	since UI elements earlier than us will be under and are guaranteed to be overwritten.
  */
-void UI::RedrawOverlappedSiblings(RC rcUpdate)
+void UI::RedrawOverlappedSiblings(const RC& rcUpdate)
 {
 	if (puiParent == nullptr)
 		return;
@@ -625,12 +627,12 @@ void UI::RedrawOverlappedSiblings(RC rcUpdate)
 }
 
 
-void UI::Draw(RC rcDraw)
+void UI::Draw(const RC& rcDraw)
 {
 }
 
 
-void UI::InvalRc(RC rc, bool fErase) const
+void UI::InvalRc(const RC& rc, bool fErase) const
 {
 	if (rc.top >= rc.bottom || rc.left >= rc.right || puiParent == nullptr)
 		return;
@@ -878,17 +880,17 @@ void BTN::Hilite(bool fHiliteNew)
 	Redraw();
 }
 
-void BTN::Draw(RC rcUpdate) 
+void BTN::Draw(const RC& rcUpdate) 
 {
 }
 
-void BTN::StartLeftDrag(PT pt)
+void BTN::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
 	Track(true);
 }
 
-void BTN::EndLeftDrag(PT pt)
+void BTN::EndLeftDrag(const PT& pt)
 {
 	ReleaseCapt();
 	Track(false);
@@ -896,12 +898,12 @@ void BTN::EndLeftDrag(PT pt)
 		DispatchCmd(cmd);
 }
 
-void BTN::LeftDrag(PT pt)
+void BTN::LeftDrag(const PT& pt)
 {
 	Hilite(RcInterior().FContainsPt(pt));
 }
 
-void BTN::MouseHover(PT pt, MHT mht)
+void BTN::MouseHover(const PT& pt, MHT mht)
 {
 	if (mht == MHT::Enter) {
 		Hilite(true);
@@ -948,7 +950,7 @@ BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
 }
 
 
-void BTNCH::Draw(RC rcUpdate)
+void BTNCH::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
 	wchar_t sz[2];
@@ -975,7 +977,7 @@ BTNIMG::~BTNIMG(void)
 }
 
 
-void BTNIMG::Draw(RC rcUpdate)
+void BTNIMG::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
 	DC* pdc = App().pdc;
@@ -1065,7 +1067,7 @@ wstring STATIC::SzText(void) const
 }
 
 
-void STATIC::Draw(RC rcUpdate)
+void STATIC::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
 	RC rcChar(PT(0, 0), SizSz(SzText(), ptxStatic));
@@ -1096,7 +1098,7 @@ BTNGEOM::~BTNGEOM(void)
 	SafeRelease(&pgeom);
 }
 
-void BTNGEOM::Draw(RC rcUpdate)
+void BTNGEOM::Draw(const RC& rcUpdate)
 {
 	float dxyScale = RcInterior().DxWidth() / 2.0f;
 	FillRc(RcInterior(), pbrBack);
@@ -1156,7 +1158,7 @@ void SPIN::Layout(void)
 }
 
 
-void SPIN::Draw(RC rcUpdate)
+void SPIN::Draw(const RC& rcUpdate)
 {
 	wstring szValue = SzValue();
 	SIZ siz = SizSz(szValue, ptxSpin);

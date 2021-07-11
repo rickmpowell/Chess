@@ -102,7 +102,7 @@ UIP::~UIP(void)
  *	Base class for drawing a screen panel. The default implementation
  *	just fills the panel with the background brush.
  */
-void UIP::Draw(RC rcUpdate)
+void UIP::Draw(const RC& rcUpdate)
 {
 	FillRc(RcInterior(), pbrBack);
 }
@@ -241,7 +241,7 @@ void UIPS::UpdateContSize(const SIZ& siz)
  *	all of our scrollers are full-width vertical scrolling areas, and fonts
  *	currently aren't scaling. 
  */
-void UIPS::AdjustRcView(RC rcViewNew)
+void UIPS::AdjustRcView(const RC& rcViewNew)
 {
 	float dy = rcCont.top - rcView.top;
 	RC rcContNew = rcViewNew;
@@ -300,7 +300,7 @@ bool UIPS::FMakeVis(float y, float dy)
  *
  *	A scrolling panel draw, which draws the content area and scrollbar
  */
-void UIPS::Draw(RC rcUpdate)
+void UIPS::Draw(const RC& rcUpdate)
 {
 	/* just redraw the entire content area clipped to the view */
 	APP& app = App();
@@ -312,7 +312,7 @@ void UIPS::Draw(RC rcUpdate)
 }
 
 
-void UIPS::DrawContent(RC rc)
+void UIPS::DrawContent(const RC& rc)
 {
 }
 
@@ -338,7 +338,7 @@ void UIPS::DrawScrollBar(void)
 }
 
 
-void UIPS::MouseHover(PT pt, MHT mht)
+void UIPS::MouseHover(const PT& pt, MHT mht)
 {
 	if (RcView().FContainsPt(pt))
 		::SetCursor(App().hcurUpDown);
@@ -347,7 +347,7 @@ void UIPS::MouseHover(PT pt, MHT mht)
 }
 
 
-void UIPS::ScrollWheel(PT pt, int dwheel)
+void UIPS::ScrollWheel(const PT& pt, int dwheel)
 {
 	float dlifScroll = (float)dwheel / (float)WHEEL_DELTA;
 	ScrollTo(DyLine() * dlifScroll);
@@ -376,7 +376,7 @@ SIZ UIBB::SizLayoutPreferred(void)
 	return SIZ(-1.0f, 32.0f);
 }
 
-void UIBB::Draw(RC rcUpdate)
+void UIBB::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
 }
@@ -405,7 +405,7 @@ UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(nullptr)
 }
 
 
-void UITIP::Draw(RC rcUpdate)
+void UITIP::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
 	FillRc(rc, pbrText);

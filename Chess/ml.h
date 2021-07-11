@@ -55,16 +55,16 @@ public:
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 	
-	virtual void Draw(RC rcUpdate);
-	void DrawChooser(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
+	void DrawChooser(const RC& rcUpdate);
 	void DrawChooserItem(const INFOPL& infopl, RC& rc);
 
 	void SetPl(PL* pplNew);
 
-	virtual void MouseHover(PT pt, MHT mht);
-	virtual void StartLeftDrag(PT pt);
-	virtual void EndLeftDrag(PT pt);
-	virtual void LeftDrag(PT pt);
+	virtual void MouseHover(const PT& pt, MHT mht);
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
 };
 
 
@@ -96,7 +96,7 @@ public:
 public:
 	UICLOCK(UIML* puiml, CPC cpc);
 	virtual SIZ SizLayoutPreferred(void);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	void DrawColon(RC& rc, unsigned frac) const;
 	bool FTimeOutWarning(DWORD tm) const;
 };
@@ -127,7 +127,7 @@ public:
 
 public:
 	UIGC(UIML* puiml);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 };
@@ -193,11 +193,11 @@ public:
 	virtual SIZ SizLayoutPreferred(void);
 	void ShowClocks(bool fTimed);
 	
-	virtual void Draw(RC rcUpdate);
-	virtual void DrawContent(RC rcCont);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawContent(const RC& rcCont);
 
-	void DrawAndMakeMv(RC rc, BDG& bdg, MV mv);
-	void DrawMoveNumber(RC rc, int imv);
+	void DrawAndMakeMv(const RC& rc, BDG& bdg, MV mv);
+	void DrawMoveNumber(const RC& rc, int imv);
 	void DrawSel(int imv);
 	void SetSel(int imv, SPMV spmv);
 
@@ -205,10 +205,10 @@ public:
 	void UpdateContSize(void);
 	virtual float DyLine(void) const;
 
-	HTML HtmlHitTest(PT pt, int* pimv);
-	virtual void StartLeftDrag(PT pt);
-	virtual void EndLeftDrag(PT pt);
-	virtual void LeftDrag(PT pt);
+	HTML HtmlHitTest(const PT& pt, int* pimv);
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
 
 	virtual void KeyDown(int vk);
 };

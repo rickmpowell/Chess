@@ -21,7 +21,7 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	SIZ Siz(void) const;
 };
 
@@ -30,7 +30,7 @@ class UILOCALE : public UI
 {
 public:
 	UILOCALE(UI* puiParent);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };
 
 
@@ -38,7 +38,7 @@ class UIGT : public UI
 {
 public:
 	UIGT(UI* puiParent);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };
 
 
@@ -46,7 +46,7 @@ class UIGTM : public UI
 {
 public:
 	UIGTM(UI* puiParent);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };
 
 
@@ -74,5 +74,5 @@ public:
 	UITI(GA* pga);
 	void SetPl(CPC cpc, PL* ppl);
 	virtual void Layout(void);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 };

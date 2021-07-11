@@ -36,7 +36,7 @@ void UIICON::DiscardRsrc(void)
 }
 
 
-void UIICON::Draw(RC rcUpdate)
+void UIICON::Draw(const RC& rcUpdate)
 {
 	D2D1_SIZE_F siz = Siz();
 	DrawBmp(RcInterior(), pbmp, RC(0, 0, siz.width, siz.height), 1.0f);
@@ -63,7 +63,7 @@ UIGT::UIGT(UI* puiParent) : UI(puiParent)
 }
 
 
-void UIGT::Draw(RC rcUpdate)
+void UIGT::Draw(const RC& rcUpdate)
 {
 	DrawSz(L"Casual", ptxList, RcInterior());
 }
@@ -81,7 +81,7 @@ UILOCALE::UILOCALE(UI* puiParent) : UI(puiParent)
 {
 }
 
-void UILOCALE::Draw(RC rcUpdate)
+void UILOCALE::Draw(const RC& rcUpdate)
 {
 	DrawSz(L"Local Machine", ptxList, RcInterior());
 }
@@ -99,7 +99,7 @@ UIGTM::UIGTM(UI* puiParent) : UI(puiParent)
 {
 }
 
-void UIGTM::Draw(RC rcUpdate)
+void UIGTM::Draw(const RC& rcUpdate)
 {
 	DrawSz(L"Rapid \x2022 10+0", ptxList, RcInterior());
 }
@@ -151,7 +151,7 @@ void UITI::Layout(void)
 }
 
 
-void UITI::Draw(RC rcUpdate)
+void UITI::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
 }

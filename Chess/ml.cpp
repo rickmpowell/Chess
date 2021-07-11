@@ -88,7 +88,7 @@ SIZ UIPL::SizLayoutPreferred(void)
  *	Draws the player UI element, which is just a circle to indicate the
  *	color the player is playing, and their name.
  */
-void UIPL::Draw(RC rcUpdate)
+void UIPL::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
 
@@ -124,7 +124,7 @@ void UIPL::Draw(RC rcUpdate)
 }
 
 
-void UIPL::DrawChooser(RC rcUpdate)
+void UIPL::DrawChooser(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
 	for (INFOPL& infopl : rginfopl.vinfopl)
@@ -164,7 +164,7 @@ void UIPL::SetPl(PL* pplNew)
 }
 
 
-void UIPL::MouseHover(PT pt, MHT mht)
+void UIPL::MouseHover(const PT& pt, MHT mht)
 {
 	if (fChooser)
 		::SetCursor(App().hcurArrow);
@@ -173,7 +173,7 @@ void UIPL::MouseHover(PT pt, MHT mht)
 }
 
 
-void UIPL::StartLeftDrag(PT pt)
+void UIPL::StartLeftDrag(const PT& pt)
 {
 	SetFocus(this);
 	if (fChooser)
@@ -181,7 +181,7 @@ void UIPL::StartLeftDrag(PT pt)
 }
 
 
-void UIPL::EndLeftDrag(PT pt)
+void UIPL::EndLeftDrag(const PT& pt)
 {
 	SetFocus(nullptr);
 	if (fChooser) {
@@ -195,7 +195,7 @@ void UIPL::EndLeftDrag(PT pt)
 }
 
 
-void UIPL::LeftDrag(PT pt)
+void UIPL::LeftDrag(const PT& pt)
 {
 }
 
@@ -262,7 +262,7 @@ SIZ UIGC::SizLayoutPreferred(void)
 	return siz;
 }
 
-void UIGC::Draw(RC rcUpdate)
+void UIGC::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
 	if (ga.bdg.gs == GS::Playing)
@@ -393,7 +393,7 @@ SIZ UICLOCK::SizLayoutPreferred(void)
 }
 
 
-void UICLOCK::Draw(RC rcUpdate)
+void UICLOCK::Draw(const RC& rcUpdate)
 {
 	DWORD tm = ga.mpcpctmClock[cpc];
 
@@ -628,7 +628,7 @@ float UIML::DyLine(void) const
  *	Draws the move list screen panel, which includes a top header box and
  *	a scrollable move list
  */
-void UIML::Draw(RC rcUpdate)
+void UIML::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrGridLine);
 	UIPS::Draw(rcUpdate); // draws content area of the scrollable area
@@ -660,7 +660,7 @@ RC UIML::RcFromImv(int imv) const
  *	Draws the content of the scrollable part of the move list screen
  *	panel.
  */
-void UIML::DrawContent(RC rcCont)
+void UIML::DrawContent(const RC& rcCont)
 {
 	BDG bdgT(bdgInit);
 	float yCont = RcContent().top;
@@ -709,14 +709,15 @@ void UIML::DrawSel(int imv)
  *	the text of the decoded move is dependent on the board to take advantage
  *	of shorter text when there are no ambiguities.
  */
-void UIML::DrawAndMakeMv(RC rc, BDG& bdg, MV mv)
+void UIML::DrawAndMakeMv(const RC& rc, BDG& bdg, MV mv)
 {
 	wstring sz = bdg.SzMoveAndDecode(mv);
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_LEADING);
-	rc.top += dyCellMarg;
-	rc.bottom -= dyCellMarg;
-	rc.left += dxCellMarg;
-	DrawSz(sz, ptxList, rc);
+	RC rcText = rc;
+	rcText.top += dyCellMarg;
+	rcText.bottom -= dyCellMarg;
+	rcText.left += dxCellMarg;
+	DrawSz(sz, ptxList, rcText);
 }
 
 
@@ -725,17 +726,18 @@ void UIML::DrawAndMakeMv(RC rc, BDG& bdg, MV mv)
  *	Draws the move number in the move list. Followed by a period. Rectangle
  *	to draw the text within is supplied by caller.
  */
-void UIML::DrawMoveNumber(RC rc, int imv)
+void UIML::DrawMoveNumber(const RC& rc, int imv)
 {
-	rc.top += dyCellMarg;
-	rc.bottom -= dyCellMarg;
-	rc.right -= dxCellMarg;
+	RC rcText = rc;
+	rcText.top += dyCellMarg;
+	rcText.bottom -= dyCellMarg;
+	rcText.right -= dxCellMarg;
 	wchar_t sz[8];
 	wchar_t* pch = PchDecodeInt(imv, sz);
 	*pch++ = chPeriod;
 	*pch = 0;
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);
-	DrawSz(wstring(sz), ptxList, rc);
+	DrawSz(wstring(sz), ptxList, rcText);
 }
 
 
@@ -785,7 +787,7 @@ bool UIML::FMakeVis(int imv)
 	return UIPS::FMakeVis(RcContent().top + 4.0f + (imv / 2) * dyList, dyList);
 }
 
-HTML UIML::HtmlHitTest(PT pt, int* pimv)
+HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
 {
 	if (pt.x < 0 || pt.x >= RcContent().right)
 		return HTML::Miss;
@@ -810,7 +812,7 @@ HTML UIML::HtmlHitTest(PT pt, int* pimv)
 	return HTML::List;
 }
 
-void UIML::StartLeftDrag(PT pt)
+void UIML::StartLeftDrag(const PT& pt)
 {
 	int imv;
 	HTML html = HtmlHitTest(pt, &imv);
@@ -820,11 +822,11 @@ void UIML::StartLeftDrag(PT pt)
 	ga.MoveToImv(imv);
 }
 
-void UIML::EndLeftDrag(PT pt)
+void UIML::EndLeftDrag(const PT& pt)
 {
 }
 
-void UIML::LeftDrag(PT pt)
+void UIML::LeftDrag(const PT& pt)
 {
 }
 

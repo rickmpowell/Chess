@@ -36,7 +36,7 @@ protected:
 public:
 	UIP(GA* pga);
 	virtual ~UIP(void);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	void SetShadow(void);
 	void AdjustUIRcBounds(UI* pui, RC& rc, bool fTop);
 
@@ -70,14 +70,14 @@ public:
 	RC RcView(void) const;
 	RC RcContent(void) const;
 	void UpdateContSize(const SIZ& siz);
-	void AdjustRcView(RC rc);
+	void AdjustRcView(const RC& rc);
 	virtual float DyLine(void) const;
 		
-	virtual void Draw(RC rcUpdate);
-	virtual void DrawContent(RC rc);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawContent(const RC& rc);
 
-	virtual void MouseHover(PT pt, MHT mht);
-	virtual void ScrollWheel(PT pt, int dwheel);
+	virtual void MouseHover(const PT& pt, MHT mht);
+	virtual void ScrollWheel(const PT& pt, int dwheel);
 
 	void ScrollTo(float yTop);
 	bool FMakeVis(float y, float dy);
@@ -100,7 +100,7 @@ protected:
 
 public:
 	UITIP(UI* puiParent);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	void AttachOwner(UI* pui);
 };
 
@@ -119,6 +119,6 @@ public:
 	UIBB(UIPS* puiParent);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	void AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth);
 };

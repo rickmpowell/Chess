@@ -93,12 +93,12 @@ public:
 	 *	Drawing
 	 */
 
-	virtual void Draw(RC rcUpdate);
+	virtual void Draw(const RC& rcUpdate);
 	virtual void PresentSwch(void) const;
 	virtual APP& App(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
-	virtual void InvalRc(RC rc, bool fErase) const;
+	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Layout(void);
 
 	/*

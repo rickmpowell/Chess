@@ -170,7 +170,7 @@ SIZ UIDB::SizLayoutPreferred(void)
  *
  *	Draws the debug UI element
  */
-void UIDB::Draw(RC rcUpdate)
+void UIDB::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrGridLine);
 	UIPS::Draw(rcUpdate); // draws content area of the scrollable area
@@ -181,7 +181,7 @@ void UIDB::Draw(RC rcUpdate)
  *
  *	Displays the content area of the debug UI element, which is the log information
  */
-void UIDB::DrawContent(RC rcCont)
+void UIDB::DrawContent(const RC& rcCont)
 {
 	if (vlgentry.size() == 0)
 		return;

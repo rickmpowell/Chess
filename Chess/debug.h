@@ -121,8 +121,8 @@ public:
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 
-	virtual void Draw(RC rcUpdate);
-	virtual void DrawContent(RC rcCont);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawContent(const RC& rcCont);
 	virtual float DyLine(void) const;
 	size_t IlgentryFromY(int y) const;
 

@@ -256,14 +256,14 @@ void UIBD::RedoMv(SPMV spmv)
  *	in response to user input, which simplifies drawing quite a bit. We
  *	just handle all dragging drawing in here.
  */
-void UIBD::Draw(RC rcUpdate)
+void UIBD::Draw(const RC& rcDraw)
 {
 	DC* pdc = App().pdc;
-	int rankFirst = (int)floor((rcUpdate.top - rcSquares.top) / dxySquare);
-	float dy = (rcUpdate.bottom - rcSquares.top) / dxySquare;
+	int rankFirst = (int)floor((rcDraw.top - rcSquares.top) / dxySquare);
+	float dy = (rcDraw.bottom - rcSquares.top) / dxySquare;
 	int rankLast = (int)floor(dy) - (int)(floor(dy) == dy);
-	int fileFirst = (int)floor((rcUpdate.left - rcSquares.left) / dxySquare);
-	float dx = (rcUpdate.right - rcSquares.left) / dxySquare;
+	int fileFirst = (int)floor((rcDraw.left - rcSquares.left) / dxySquare);
+	float dx = (rcDraw.right - rcSquares.left) / dxySquare;
 	int fileLast = (int)floor(dx) - (int)(floor(dx) == dx);
 	rankFirst = peg(rankFirst, 0, rankMax - 1);
 	rankLast = peg(rankLast, 0, rankMax - 1);
@@ -277,7 +277,7 @@ void UIBD::Draw(RC rcUpdate)
 
 	{
 	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcBounds.PtCenter()));
-	DrawMargins(rcUpdate, rankFirst, rankLast, fileFirst, fileLast);
+	DrawMargins(rcDraw, rankFirst, rankLast, fileFirst, fileLast);
 	DrawSquares(rankFirst, rankLast, fileFirst, fileLast);
 	DrawHilites();
 	DrawAnnotations();
@@ -295,7 +295,7 @@ void UIBD::Draw(RC rcUpdate)
  *	with a thin green line just outside the square grid. Also draws
  *	the file and rank labels along the edge of the board.
  */
-void UIBD::DrawMargins(RC rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
+void UIBD::DrawMargins(const RC& rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
 	FillRc(rcUpdate, pbrLight);
 	if (dxyMargin <= 0.0f)
@@ -614,7 +614,7 @@ void UIBD::FlipBoard(CPC cpcNew)
  *
  *	The point is in global coordinates.
  */
-HTBD UIBD::HtbdHitTest(PT pt, SQ* psq) const
+HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 {
 	if (!RcInterior().FContainsPt(pt))
 		return HTBD::None;
@@ -658,7 +658,7 @@ bool UIBD::FMoveablePc(SQ sq) const
  *
  *	Starts the mouse left button down drag operation on the board panel.
  */
-void UIBD::StartLeftDrag(PT pt)
+void UIBD::StartLeftDrag(const PT& pt)
 {
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
@@ -678,7 +678,7 @@ void UIBD::StartLeftDrag(PT pt)
 }
 
 
-void UIBD::EndLeftDrag(PT pt)
+void UIBD::EndLeftDrag(const PT& pt)
 {
 	ReleaseCapt();
 	if (sqDragInit.fIsNil())
@@ -712,7 +712,7 @@ Done:
  *	We use this for users to drag pieces around while they are trying to
  *	move.
  */
-void UIBD::LeftDrag(PT pt)
+void UIBD::LeftDrag(const PT& pt)
 {
 	SQ sq;
 	HtbdHitTest(pt, &sq);
@@ -734,7 +734,7 @@ void UIBD::LeftDrag(PT pt)
  *	class for the mouse location. It is guaranteed to be a HTBD
  *	for hit testing over the UIBD.
  */
-void UIBD::MouseHover(PT pt, MHT mht)
+void UIBD::MouseHover(const PT& pt, MHT mht)
 {
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
@@ -778,13 +778,13 @@ void UIBD::HiliteLegalMoves(SQ sq)
  *	we handle these outside parts by just invalidating the area so
  *	they'll get picked off eventually by normal update paints.
  */
-void UIBD::InvalOutsideRc(RC rc) const
+void UIBD::InvalOutsideRc(const RC& rcInval) const
 {
 	RC rcInt = RcInterior();
-	InvalRc(RC(rc.left, rc.top, rc.right, rcInt.top), false);
-	InvalRc(RC(rc.left, rcInt.bottom, rc.right, rc.bottom), false);
-	InvalRc(RC(rc.left, rc.top, rcInt.left, rc.bottom), false);
-	InvalRc(RC(rcInt.right, rc.top, rc.right, rc.bottom), false);
+	InvalRc(RC(rcInval.left, rcInval.top, rcInval.right, rcInt.top), false);
+	InvalRc(RC(rcInval.left, rcInt.bottom, rcInval.right, rcInval.bottom), false);
+	InvalRc(RC(rcInval.left, rcInval.top, rcInt.left, rcInval.bottom), false);
+	InvalRc(RC(rcInt.right, rcInval.top, rcInval.right, rcInval.bottom), false);
 }
 
 

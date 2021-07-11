@@ -216,6 +216,11 @@ public:
 		return *this;
 	}
 
+	inline RC Offset(float dx, float dy) const
+	{
+		return RC(left + dx, top + dy, right + dx, bottom + dy);
+	}
+
 	inline RC& Offset(const PT& pt)
 	{
 		return Offset(pt.x, pt.y);
