@@ -163,7 +163,7 @@ UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0
 }
 
 
-UI::UI(UI* puiParent, RC rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible)
+UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible)
 {
 	if (puiParent) {
 		puiParent->AddChild(this);
@@ -386,7 +386,7 @@ void UI::Show(bool fVisNew)
  *	Returns the UI element the point is over. Point is in global coordinates.
  *	Returns nullptr if the point is not within the UI.
  */
-UI* UI::PuiFromPt(PT pt)
+UI* UI::PuiFromPt(const PT& pt)
 {
 	if (!fVisible || !rcBounds.FContainsPt(pt))
 		return nullptr;

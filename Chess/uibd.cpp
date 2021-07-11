@@ -513,7 +513,7 @@ RC UIBD::RcGetDrag(void)
  *
  *	Draws the chess piece on the square at rc.
  */
-void UIBD::DrawPc(RC rc, float opacity, IPC ipc)
+void UIBD::DrawPc(const RC& rcPc, float opacity, IPC ipc)
 {
 	if (ipc == ipcEmpty)
 		return;
@@ -528,7 +528,7 @@ void UIBD::DrawPc(RC rc, float opacity, IPC ipc)
 	float dyPiece = siz.height / 2.0f;
 	float xPiece = mpapcxBitmap[ipc.apc()] * dxPiece;
 	float yPiece = (int)ipc.cpc() * dyPiece;
-	DrawBmp(rc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
+	DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
 }
 
 

@@ -2,7 +2,6 @@
   When AIs are playing each other, making human moves should be allowed until we start the game
   AI: I think when we're ahead, we permit 3-fold draws too easily
   Use C++ exception class to throw exceptions
-  Should do const references instead of by-value calls for RCF and PTF
   Choosing the player picker while the AI is running crashes
   When player picker is up, clicking outside the picker should make it cancel.
   Ticking clock overwrites popup tips
@@ -97,6 +96,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* Should do const references instead of by-value calls for RCF and PTF
 * AI: Starting AI with black-to-move lets white move first
 * Review code for using min/max/peg
 * Debug panel isn't showing on boot

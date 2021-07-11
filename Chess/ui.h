@@ -154,7 +154,7 @@ protected:
 
 public:
 	UI(UI* puiParent, bool fVisible=true);
-	UI(UI* puiParent, RC rcBounds, bool fVisible=true);
+	UI(UI* puiParent, const RC& rcBounds, bool fVisible=true);
 	virtual ~UI(void);
 
 	void AddChild(UI* puiChild);
@@ -178,7 +178,7 @@ public:
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 
-	UI* PuiFromPt(PT pt);
+	UI* PuiFromPt(const PT& pt);
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);	
 	virtual void StartLeftDrag(const PT& pt);

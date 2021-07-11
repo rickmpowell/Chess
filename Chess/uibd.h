@@ -96,7 +96,7 @@ public:
 
 	void DrawHilites(void);
 	void DrawGameState(void);
-	void DrawPc(RC rc, float opacity, IPC ipc);
+	void DrawPc(const RC& rc, float opacity, IPC ipc);
 	void AnimateMv(MV mv, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	void DrawDragPc(const RC& rc);
