@@ -44,6 +44,7 @@ class GA : public UI
 
 protected:
 	static BRS* pbrDesktop;
+
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
@@ -72,6 +73,26 @@ public:
 	GA(APP& app);
 	~GA(void);
 
+	/*
+	 *	Players
+	 */
+
+	inline PL*& PlFromCpc(CPC cpc) 
+	{
+		return mpcpcppl[cpc]; 
+	}
+	
+	inline PL* PplFromCpc(CPC cpc) 
+	{
+		return PlFromCpc(cpc); 
+	}
+
+	void SetPl(CPC cpc, PL* ppl);
+
+	/*
+	 *	Drawing
+	 */
+
 	virtual void Draw(RC rcUpdate);
 	virtual void PresentSwch(void) const;
 	virtual APP& App(void) const;
@@ -80,24 +101,34 @@ public:
 	virtual void InvalRc(RC rc, bool fErase) const;
 	virtual void Layout(void);
 
+	/*
+	 *	Commands
+	 */
 	virtual void DispatchCmd(int cmd);
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTipFromCmd(int cmd) const;
+
+	/*
+	 *	Mouse and keyboard interface
+	 */
 
 	UI* PuiHitTest(PT* ppt, int x, int y);
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);
 	virtual void SetHover(UI* pui);
-
 	virtual void SetFocus(UI* pui);
 	UI* PuiFocus(void) const;
 
-	inline PL*& PlFromCpc(CPC cpc) { return mpcpcppl[cpc]; }
-	inline PL* PplFromCpc(CPC cpc) { return PlFromCpc(cpc); }
-	void SetPl(CPC cpc, PL* ppl);
-
+	/*
+	 *	Modal game loop
+	 */
+	
 	void Timer(UINT tid, DWORD tm);
 	void PumpMsg(void);
+
+	/*
+	 *	Game control
+	 */
 
 	int Play(void);
 	void NewGame(RULE* prule);
@@ -119,19 +150,13 @@ public:
 
 	virtual bool FDepthLog(LGT lgt, int& depth);
 	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
-
 	virtual void ClearLog(void);
 	virtual void SetDepthLog(int depth);
 	virtual void InitLog(int depth);
 
-	void Test(SPMV spmv);
-	void ValidateFEN(const wchar_t* szFEN) const;
-	void ValidatePieces(const wchar_t*& sz) const;
-	void ValidateMoveColor(const wchar_t*& sz) const;
-	void ValidateCastle(const wchar_t*& sz) const;
-	void ValidateEnPassant(const wchar_t*& sz) const;
-	void SkipWhiteSpace(const wchar_t*& sz) const;
-	void SkipToWhiteSpace(const wchar_t*& sz) const;
+	/*
+	 *	Deserializing 
+	 */
 
 	void OpenPGNFile(const wchar_t szFile[]);
 	void PlayPGNFiles(const wchar_t szPath[]);
@@ -147,12 +172,29 @@ public:
 	void ProcessTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
 
+	/*
+	 *	Serialization
+	 */
+
 	void SavePGNFile(const wstring& szFile);
 	void Serialize(ostream& os);
 	void SerializeHeaders(ostream& os);
 	void SerializeHeader(ostream& os, const string& szTag, const string& szVal);
 	void SerializeMoveList(ostream& os);
 	void WriteSzLine80(ostream& os, string& szLine, const string& szAdd);
+
+	/*
+	 *	Tests and validation
+	 */
+
+	void Test(SPMV spmv);
+	void ValidateFEN(const wchar_t* szFEN) const;
+	void ValidatePieces(const wchar_t*& sz) const;
+	void ValidateMoveColor(const wchar_t*& sz) const;
+	void ValidateCastle(const wchar_t*& sz) const;
+	void ValidateEnPassant(const wchar_t*& sz) const;
+	void SkipWhiteSpace(const wchar_t*& sz) const;
+	void SkipToWhiteSpace(const wchar_t*& sz) const;
 
 	void UndoTest(void);
 	int PlayUndoPGNFile(const wchar_t* szFile);

@@ -70,6 +70,31 @@ extern bool fValidate;
 
 /*
  *
+ *	EX class
+ * 
+ *	Exception wrapper class
+ *
+ */
+
+class EX : public exception
+{
+	string szWhat;
+
+public:
+	EX(const wstring& sz)
+	{
+		
+	}
+
+	virtual const char* what(void) const
+	{
+		return szWhat.c_str();
+	}
+};
+
+
+/*
+ *
  *	PT class
  * 
  *	D2D1 floating point point class, with convenience features added on
@@ -101,10 +126,14 @@ struct PT : public D2D1_POINT_2F
 		return Offset(pt.x, pt.y);
 	}
 
+	inline PT Offset(const PT& pt) const
+	{
+		return PT(x + pt.x, y + pt.y);
+	}
+
 	inline PT operator+(const PT& pt) const 
 	{
-		PT ptT(*this);
-		return ptT.Offset(pt);
+		return PT(x + pt.x, y + pt.y);
 	}
 
 	inline PT operator-(void) const 
@@ -190,6 +219,11 @@ public:
 	inline RC& Offset(const PT& pt)
 	{
 		return Offset(pt.x, pt.y);
+	}
+
+	inline RC Offset(const PT& pt) const
+	{
+		return RC(left + pt.x, top + pt.y, right + pt.x, bottom + pt.y);
 	}
 
 	RC& Inflate(float dx, float dy)
@@ -290,8 +324,7 @@ public:
 
 	inline RC operator+(const PT& pt) const 
 	{
-		RC rc = *this;
-		return rc.Offset(pt);
+		return Offset(pt);
 	}
 
 	inline RC& operator+=(const PT& pt) 
@@ -301,8 +334,7 @@ public:
 	
 	inline RC operator-(const PT& pt) const 
 	{
-		RC rc(*this);
-		return rc.Offset(-pt);
+		return Offset(-pt);
 	}
 
 	inline RC& operator-=(const PT& pt) 
@@ -346,7 +378,7 @@ public:
 
 /*
  *
- *	ELLF convenience class
+ *	ELL convenience class
  * 
  *	D2D1 ellipse class with some convenience features
  * 
@@ -378,6 +410,14 @@ public:
 	ELL& Offset(const PT& pt)
 	{
 		return Offset(pt.x, pt.y);
+	}
+
+	ELL Offset(const PT& pt) const
+	{
+		ELL ell = *this;
+		ell.point.x += pt.x;
+		ell.point.y += pt.y;
+		return ell;
 	}
 };
 

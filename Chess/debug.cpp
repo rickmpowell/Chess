@@ -13,6 +13,14 @@
 bool fValidate = true;
 
 
+/*
+ *
+ *	SPINDEPTH control
+ *
+ *	Spin control to display the debug log depth
+ *
+ */
+
 
 SPINDEPTH::SPINDEPTH(UIBBDBLOG* puiParent) : SPIN(puiParent, cmdLogDepthUp, cmdLogDepthDown), 
 		ga(puiParent->uidb.ga)
@@ -38,6 +46,7 @@ UIBBDB::UIBBDB(UIDB* puiParent) : UIBB(puiParent),
 	btnTest(this, cmdTest, L'\x2713')
 {
 }
+
 
 void UIBBDB::Layout(void)
 {
@@ -85,6 +94,7 @@ UIDB::UIDB(GA* pga) : UIPS(pga), uibbdb(this), uibbdblog(this),
 		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
 }
+
 
 UIDB::~UIDB()
 {
@@ -145,11 +155,21 @@ void UIDB::Layout(void)
 	AdjustRcView(rcView);
 }
 
+
+/*	UIDB::SizLayoutPreferred
+ *
+ *	Tell our owner what our preferred size is.
+ */
 SIZ UIDB::SizLayoutPreferred(void)
 {
 	return SIZ(240.0f, -1.0f);
 }
 
+
+/*	UIDB::Draw
+ *
+ *	Draws the debug UI element
+ */
 void UIDB::Draw(RC rcUpdate)
 {
 	FillRc(rcUpdate, pbrGridLine);
@@ -157,6 +177,10 @@ void UIDB::Draw(RC rcUpdate)
 }
 
 
+/*	UIDB::DrawContent
+ *
+ *	Displays the content area of the debug UI element, which is the log information
+ */
 void UIDB::DrawContent(RC rcCont)
 {
 	if (vlgentry.size() == 0)
@@ -277,6 +301,15 @@ bool UIDB::FDepthLog(LGT lgt, int& depth)
 }
 
 
+/*	UIDB::AddLog
+ *
+ *	Adds a log entry to the log. lgt is the type (open, close, or data), lgf is formatting,
+ *	depth is the depth of the structured log (count of open opens), tag is the name of the
+ *	open item (with attributes), and szData is the data in the entry.
+ *
+ *	Log entries correspond to the features of an XML document, and logs should easily be
+ *	transformed into XML.
+ */
 void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {
 	LGENTRY lgentry(lgt, lgf, depth, tag, szData);
@@ -325,6 +358,11 @@ void UIDB::ClearLog(void)
 }
 
 
+/*	UIDB::SetDepthLog
+ *
+ *	User-set depth of the log that we show/save. If this value is not set, then
+ *	the default log depth is used.
+ */
 void UIDB::SetDepthLog(int depth)
 {
 	depthShowSet = depth;

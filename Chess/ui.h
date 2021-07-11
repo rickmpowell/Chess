@@ -266,16 +266,16 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	void FillRc(RC rc, BR* pbr) const;
-	virtual void FillRcBack(RC rc) const;
-	void FillEll(ELL ell, BR* pbr) const;
-	void DrawEll(ELL ell, BR* pbr) const;
-	void DrawSz(const wstring& sz, TX* ptx, RC rc, BR* pbr = nullptr) const;
-	void DrawSzCenter(const wstring& sz, TX* ptx, RC rc, BR* pbr = nullptr) const;
-	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, RC rc, BR* pbr = nullptr) const;
+	void FillRc(const RC& rc, BR* pbr) const;
+	virtual void FillRcBack(const RC& rc) const;
+	void FillEll(const ELL& ell, BR* pbr) const;
+	void DrawEll(const ELL& ell, BR* pbr) const;
+	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
+	void DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
+	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	SIZ SizSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
-	void DrawSzFit(const wstring& sz, TX* ptx, RC rc, BR* pbr = nullptr) const;
-	void DrawBmp(RC rcTo, BMP* pbmp, RC rcFrom, float opacity = 1.0f) const;
+	void DrawSzFit(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
+	void DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity = 1.0f) const;
 };
 
 

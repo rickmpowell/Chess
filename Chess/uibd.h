@@ -105,7 +105,7 @@ public:
 	void HiliteLegalMoves(SQ sq);
 	RC RcFromSq(SQ sq) const;
 
-	virtual void FillRcBack(RC rc) const;
+	virtual void FillRcBack(const RC& rc) const;
 
 	void FlipBoard(CPC cpcNew);
 

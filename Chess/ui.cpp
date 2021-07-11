@@ -698,14 +698,14 @@ void UI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szDa
  *	Graphics helper for filling a rectangle with a brush. The rectangle is in
  *	local UI coordinates
  */
-void UI::FillRc(RC rc, ID2D1Brush* pbr) const
+void UI::FillRc(const RC& rc, ID2D1Brush* pbr) const
 {
-	rc = RcGlobalFromLocal(rc);
-	App().pdc->FillRectangle(&rc, pbr);
+	RC rcGlobal = RcGlobalFromLocal(rc);
+	App().pdc->FillRectangle(&rcGlobal, pbr);
 }
 
 
-void UI::FillRcBack(RC rc) const
+void UI::FillRcBack(const RC& rc) const
 {
 	if (puiParent == nullptr)
 		FillRc(rc, pbrBack);
@@ -719,10 +719,10 @@ void UI::FillRcBack(RC rc) const
  *	Helper function for filling an ellipse with a brush. Rectangle is in
  *	local UI coordinates
  */
-void UI::FillEll(ELL ell, ID2D1Brush* pbr) const
+void UI::FillEll(const ELL& ell, ID2D1Brush* pbr) const
 {
-	ell.Offset(PtGlobalFromLocal(PT(0, 0)));
-	App().pdc->FillEllipse(&ell, pbr);
+	ELL ellGlobal = ell.Offset(PtGlobalFromLocal(PT(0, 0)));
+	App().pdc->FillEllipse(&ellGlobal, pbr);
 }
 
 
@@ -731,10 +731,10 @@ void UI::FillEll(ELL ell, ID2D1Brush* pbr) const
  *	Helper function for drawing an ellipse with a brush. Rectangle is in
  *	local UI coordinates
  */
-void UI::DrawEll(ELL ell, ID2D1Brush* pbr) const
+void UI::DrawEll(const ELL& ell, ID2D1Brush* pbr) const
 {
-	ell.Offset(PtGlobalFromLocal(PT(0, 0)));
-	App().pdc->DrawEllipse(&ell, pbr);
+	ELL ellGlobal = ell.Offset(PtGlobalFromLocal(PT(0, 0)));
+	App().pdc->DrawEllipse(&ellGlobal, pbr);
 }
 
 
@@ -743,14 +743,14 @@ void UI::DrawEll(ELL ell, ID2D1Brush* pbr) const
  *	Helper function for writing text on the screen panel. Rectangle is in
  *	local UI coordinates.
  */
-void UI::DrawSz(const wstring& sz, TX* ptx, RC rc, ID2D1Brush* pbr) const
+void UI::DrawSz(const wstring& sz, TX* ptx, const RC& rc, ID2D1Brush* pbr) const
 {
-	rc = RcGlobalFromLocal(rc);
-	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rc, pbr ? pbr : pbrText);
+	RC rcGlobal = RcGlobalFromLocal(rc);
+	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rcGlobal, pbr ? pbr : pbrText);
 }
 
 
-void UI::DrawSzCenter(const wstring& sz, TX* ptx, RC rc, ID2D1Brush* pbr) const
+void UI::DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, ID2D1Brush* pbr) const
 {
 	TATX tatxSav(ptx, DWRITE_TEXT_ALIGNMENT_CENTER);
 	DrawSz(sz, ptx, rc, pbr);
@@ -773,10 +773,10 @@ SIZ UI::SizSz(const wstring& sz, TX* ptx, float dx, float dy) const
  *	Helper function for drawing text on the screen panel. Rectangle is in local
  *	UI coordinates
  */
-void UI::DrawRgch(const wchar_t* rgch, int cch, TX* ptx, RC rc, BR* pbr) const
+void UI::DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr) const
 {
-	rc = RcGlobalFromLocal(rc);
-	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rc, pbr ? pbr : pbrText);
+	RC rcGlobal = RcGlobalFromLocal(rc);
+	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rcGlobal, pbr ? pbr : pbrText);
 }
 
 
@@ -789,7 +789,7 @@ void UI::DrawRgch(const wchar_t* rgch, int cch, TX* ptx, RC rc, BR* pbr) const
  *	is baseline aligned, which should be constant no matter what size
  *	font we eventually end up using.
  */
-void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
+void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText) const
 {
 	if (pbrText == nullptr)
 		pbrText = UI::pbrText;
@@ -806,14 +806,14 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
 		return;
 	}
 
-	RC rc = RcGlobalFromLocal(rcFit);
+	RC rcGlobal = RcGlobalFromLocal(rcFit);
 
 	/* figure out where our baseline is */
 
 	DWRITE_LINE_METRICS lm;
 	uint32_t clm;
 	play->GetLineMetrics(&lm, 1, &clm);
-	float yBaseline = rc.top + lm.baseline;
+	float yBaseline = rcGlobal.top + lm.baseline;
 
 	/* and loop using progressively smaller fonts until the text fits */
 
@@ -825,7 +825,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
 			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 			dyFont, L"", &ptx);
 		App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
-			ptx, rc.DxWidth(), rc.DyHeight(), &play);
+			ptx, rcGlobal.DxWidth(), rcGlobal.DyHeight(), &play);
 		DWRITE_TEXT_METRICS tm;
 		play->GetMetrics(&tm);
 		if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight())
@@ -833,7 +833,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
 	}
 
 	play->GetLineMetrics(&lm, 1, &clm);
-	App().pdc->DrawTextLayout(Point2F(rc.left, yBaseline - lm.baseline), play,
+	App().pdc->DrawTextLayout(Point2F(rcGlobal.left, yBaseline - lm.baseline), play,
 			pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
 
 	SafeRelease(&play);
@@ -846,7 +846,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, RC rcFit, BR* pbrText) const
  *	Helper function for drawing part of a bitmap on the screen panel. Destination
  *	coordinates are in local UI coordinates.
  */
-void UI::DrawBmp(RC rcTo, BMP* pbmp, RC rcFrom, float opacity) const
+void UI::DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity) const
 {
 	App().pdc->DrawBitmap(pbmp, rcTo.Offset(rcBounds.PtTopLeft()), 
 			opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcFrom);

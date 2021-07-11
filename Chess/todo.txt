@@ -1,22 +1,23 @@
+  Test: add a move gen test and validate some hard cases
+  When AIs are playing each other, making human moves should be allowed until we start the game
+  AI: I think when we're ahead, we permit 3-fold draws too easily
   Use C++ exception class to throw exceptions
-  Review code for using min/max/peg
   Should do const references instead of by-value calls for RCF and PTF
   Choosing the player picker while the AI is running crashes
   When player picker is up, clicking outside the picker should make it cancel.
   Ticking clock overwrites popup tips
   Log: Should we hash tags?
-  With board rotated black point of view, animations are messed up
-  Help box icon looks like shit
-  Move level control in UIPL into the chooser
+  UIBD: With board rotated black point of view, animations are messed up
+  Help: Help box icon looks like shit
+  UIPL: Move level control into the chooser
   Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
-  I don't think move list is baseline aligned - problem with descenders? 
+  ML: I don't think move list is baseline aligned - problem with descenders? 
   Can we make things like Undo work while AI is thinking?
-  Take advantage of DrawSzFit in move list, etc. to  make move list narrower
+  ML: Take advantage of DrawSzFit in move list, etc. to  make move list narrower
   AI: Communicate best continuation back
   Use UCI (universal chess interface) to communicate to UI from AI
-  AI: Starting AI with black-to-move lets white move first
-  Hash boards
+  AI: Hash boards
   AI: Quitting the app while AI is running sometimes crashes in PresentSwch
   UI: Move as many drawing objects into classes as possible
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
@@ -25,27 +26,27 @@
   Log: File logging and UIDB logging need to have their own depth
   Test: Don't show player names in UITI during test runs
   AI: spin off AI into its own thread
-  Need a visual indication of where focus is
-  Improve visuals for scrollbar
-  Peg scrollbar thumb at minimum size
-  Add mouse support for clicking scrollbar pages
-  Add mouse support for dragging scrollbar thumb
-  Add support for multi-line log entries in db panel
+  UI:Need a visual indication of where focus is
+  UI: Improve visuals for scrollbar
+  UI: Peg scrollbar thumb at minimum size
+  UI: Add mouse support for clicking scrollbar pages
+  UI: Add mouse support for dragging scrollbar thumb
+  UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
   Add ability to paste FEN format
-  Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
-  Beef up error handling in deserialize
+  Open: Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
+  Open: Beef up error handling in deserialize
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
   Test: if no pgn files in a directory, file enumeration crashes
-  Size icons in move list slightly larger than text
-  Consider a different board evaluation for pre-sorting alpha-beta pruning
+  ML: Size icons in move list slightly larger than text
+  AI: Consider a different board evaluation for pre-sorting alpha-beta pruning
   Can we search for already evaluated board positions? Could save a lot of time in end game.
-  If text in move list gets too small, replace icons with letters
-  Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
-  Scale buttons to size of window
-  UITI Layout using font metrics
-  Test with alternate fonts
+  ML: If text in move list gets too small, replace icons with letters
+  Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
+  UI: Scale buttons to size of window
+  UITI: Layout using font metrics
+  UI: Test with alternate fonts
   UIBD: Dragging pieces outside board clips the dragged piece
   UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
   Add canceled game-over state
@@ -95,7 +96,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-  ML: Optimize redraw (cache BDG with first visible line in the view area?)
+  ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* AI: Starting AI with black-to-move lets white move first
+* Review code for using min/max/peg
 * Debug panel isn't showing on boot
 * Rename PTF and RCF to PT and RC, and all other f suffixes. 
 * AI: Should we do move/undo instead of duplicating boards? 

@@ -445,8 +445,7 @@ void UIBD::DrawHoverMv(MV mv)
 	RC rc = RcFromSq(mv.sqTo());
 	if (!ga.bdg.FMvIsCapture(mv)) {
 		/* moving to an empty square - draw a circle */
-		ELL ell(PT((rc.right + rc.left) / 2, (rc.top + rc.bottom) / 2),
-			PT(dxySquare / 5, dxySquare / 5));
+		ELL ell(rc.PtCenter(), PT(dxySquare / 5, dxySquare / 5));
 		FillEll(ell, pbrBlack);
 	}
 	else {
@@ -490,7 +489,7 @@ void UIBD::DrawDragPc(const RC& rc)
 }
 
 
-void UIBD::FillRcBack(RC rc) const
+void UIBD::FillRcBack(const RC& rc) const
 {
 	FillRc(rc, pbrLight);
 }
