@@ -217,7 +217,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 		LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval), lgf);
 	}
 
-	chrono::time_point tpEnd = chrono::high_resolution_clock::now();
+	time_point tpEnd = chrono::high_resolution_clock::now();
 
 	/* log some stats */
 

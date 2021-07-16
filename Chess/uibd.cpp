@@ -180,11 +180,11 @@ void UIBD::Layout(void)
 }
 
 
-/*	UIBD::NewGame
+/*	UIBD::InitGame
  *
  *	Starts a new game on the screen board
  */
-void UIBD::NewGame(void)
+void UIBD::InitGame(void)
 {
 	ga.bdg.GenRgmv(gmvDrag, RMCHK::Remove);
 }

@@ -119,6 +119,7 @@ enum APC {
 	King = 6,
 	ActMax = 7,
 	Bishop2 = 7,	// only used for draw detection computation to keep track of bishop square color
+	RookCastleable = 7,	// only used in MV.apcCapt when capturing rooks that are eligible for castle 
 	ActMax2 = 8
 };
 
@@ -220,14 +221,12 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
  *	
  *	The high word is mostly used for undo information. On captures
  *	the tpc of the captured piece is in the bottom 4 bits, and
- *	the next 3 bits are the 1pc of the captured piece. If the capture
+ *	the next 3 bits are the apc of the captured piece. If the capture
  *	apc is apcNull, then the move was not a capture. The next bit
- *	is 1 if en passant capture ws possible in previous position. 
+ *	is 1 if en passant capture was possible in previous position. 
  *	The next three bits are the file of the en passant piece if en
  *	passant is true. The next two bits are the previous castle bits.
  *	The top 3 bits are the apc of the new piece on pawn promotions. 
- * 
- *	There are opportunities to compress the upper word of the move.
  * 
  *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
  *  +-----------+-----------+-----------+-----------+

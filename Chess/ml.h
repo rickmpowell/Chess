@@ -186,7 +186,7 @@ public:
 
 	void SetPl(CPC cpc, PL* ppl);
 
-	void NewGame(void);
+	void InitGame(void);
 	void EndGame(void);
 
 	virtual void Layout(void);

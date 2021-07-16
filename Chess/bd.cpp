@@ -256,7 +256,12 @@ void BD::MakeMvSq(MV& mv)
 
 	IPC ipcTake = (*this)(sqTake);
 	if (!ipcTake.fIsEmpty()) {
-		mv.SetCapture(ApcFromSq(sqTake), TpcFromSq(sqTake));
+		TPC tpcTake = TpcFromSq(sqTake);
+		APC apcTake = ApcFromSq(sqTake);
+		if ((tpcTake == tpcQueenRook && (cs & (csQueen << ipcTake.cpc()))) ||
+				(tpcTake == tpcKingRook && (cs & (csKing << ipcTake.cpc()))))
+			apcTake = APC::RookCastleable;
+		mv.SetCapture(apcTake, tpcTake);
 		SqFromIpc(ipcTake) = sqNil;
 		ClearBB(ipcTake, sqTake);
 		switch (ipcTake.tpc()) {
@@ -359,6 +364,13 @@ void BD::UndoMvSq(MV mv)
 	   (due to lack of available bits in the MV). */
 
 	cs |= CsUnpackColor(mv.csPrev(), cpcMove);
+	APC apcCapt = mv.apcCapture();
+	if (mv.apcCapture() == APC::RookCastleable) {
+		assert(mv.tpcCapture() == tpcKingRook || mv.tpcCapture() == tpcQueenRook);
+		SetCastle(~cpcMove, mv.tpcCapture() == tpcKingRook ? csKing : csQueen);
+		apcCapt = APC::Rook;
+	}
+
 	if (mv.fEpPrev())
 		sqEnPassant = SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev());
 	else
@@ -380,7 +392,6 @@ void BD::UndoMvSq(MV mv)
 	/* if move was a capture, put the captured piece back on the board; otherwise
 	   the destination square becomes empty */
 
-	APC apcCapt = mv.apcCapture();
 	if (apcCapt == APC::Null) 
 		(*this)(sqTo) = ipcEmpty;
 	else {
@@ -964,10 +975,6 @@ BDG::BDG(const wchar_t* szFEN)
 void BDG::NewGame(void)
 {
 	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	vmvGame.clear();
-	imvCur = -1;
-	imvPawnOrTakeLast = -1;
-	SetGs(GS::Playing);
 }
 
 
@@ -980,6 +987,11 @@ void BDG::InitFEN(const wchar_t* szFEN)
 	InitFENEnPassant(sz);
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
+
+	vmvGame.clear();
+	imvCur = -1;
+	imvPawnOrTakeLast = -1;
+	SetGs(GS::Playing);
 }
 
 

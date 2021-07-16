@@ -75,7 +75,7 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	void NewGame(void);
+	void InitGame(void);
 	void MakeMv(MV mv, SPMV spmv);
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);

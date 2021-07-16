@@ -741,7 +741,7 @@ void UIML::DrawMoveNumber(const RC& rc, int imv)
 }
 
 
-void UIML::NewGame(void)
+void UIML::InitGame(void)
 {
 	ShowClocks(ga.prule->TmGame() != 0);
 	bdgInit = ga.bdg;
@@ -819,7 +819,7 @@ void UIML::StartLeftDrag(const PT& pt)
 	if (html != HTML::List)
 		return;
 	SetSel(imv, SPMV::Fast);
-	ga.MoveToImv(imv);
+	ga.MoveToImv(imv, ga.spmvCur);
 }
 
 void UIML::EndLeftDrag(const PT& pt)
@@ -836,23 +836,23 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		ga.MoveToImv(ga.bdg.imvCur - 1);
+		ga.MoveToImv(ga.bdg.imvCur - 1, ga.spmvCur);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		ga.MoveToImv(ga.bdg.imvCur + 1);
+		ga.MoveToImv(ga.bdg.imvCur + 1, ga.spmvCur);
 		break;
 	case VK_HOME:
-		ga.MoveToImv(0);
+		ga.MoveToImv(0, ga.spmvCur);
 		break;
 	case VK_END:
-		ga.MoveToImv((int)ga.bdg.vmvGame.size() - 1);
+		ga.MoveToImv((int)ga.bdg.vmvGame.size() - 1, ga.spmvCur);
 		break;
 	case VK_PRIOR:
-		ga.MoveToImv(ga.bdg.imvCur - 5*2);
+		ga.MoveToImv(ga.bdg.imvCur - 5*2, ga.spmvCur);
 		break;
 	case VK_NEXT:
-		ga.MoveToImv(ga.bdg.imvCur + 5*2);
+		ga.MoveToImv(ga.bdg.imvCur + 5*2, ga.spmvCur);
 		break;
 	default:
 		break;

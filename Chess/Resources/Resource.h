@@ -48,7 +48,8 @@
 #define cmdPlayerLvlUpBlack	22
 #define cmdPlayerLvlDown	23
 #define cmdPlayerLvlDownBlack	24
-#define cmdMax				21
+#define cmdPerftDivide      25
+#define cmdMax				26
 
 #define idiApp			1
 #define idiSmall		2

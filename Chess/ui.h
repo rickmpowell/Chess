@@ -212,51 +212,50 @@ public:
 	virtual void Draw(const RC& rcDraw);
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
 
-
 	virtual bool FDepthLog(LGT lgt, int& depth);
 	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
 
 	inline void XLogOpen(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal)
 	{
-		int depth;
-		if (FDepthLog(LGT::Open, depth))
-			AddLog(LGT::Open, lgf, depth, tag, szData);
+		int depthLog;
+		if (FDepthLog(LGT::Open, depthLog))
+			AddLog(LGT::Open, lgf, depthLog, tag, szData);
 	}
 
 #define LogOpen(tag, szData) \
-	{ int depth; \
-		if (FDepthLog(LGT::Open, depth)) \
-			AddLog(LGT::Open, LGF::Normal, depth, tag, szData); }
+	{ int depthLog; \
+		if (FDepthLog(LGT::Open, depthLog)) \
+			AddLog(LGT::Open, LGF::Normal, depthLog, tag, szData); }
 
 	inline void XLogClose(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal)
 	{
-		int depth;
-		if (FDepthLog(LGT::Close, depth))
-			AddLog(LGT::Close, lgf, depth, tag, szData);
+		int depthLog;
+		if (FDepthLog(LGT::Close, depthLog))
+			AddLog(LGT::Close, lgf, depthLog, tag, szData);
 	}
 
 #define LogClose(szTag, szData, lgf) \
-	{ int depth; \
-		if (FDepthLog(LGT::Close, depth)) \
-			AddLog(LGT::Close, lgf, depth, szTag, szData); }
+	{ int depthLog; \
+		if (FDepthLog(LGT::Close, depthLog)) \
+			AddLog(LGT::Close, lgf, depthLog, szTag, szData); }
 
 	inline void XLogData(const wstring& szData)
 	{
-		int depth;
-		if (FDepthLog(LGT::Data, depth))
-			AddLog(LGT::Data, LGF::Normal, depth, L"", szData);
+		int depthLog;
+		if (FDepthLog(LGT::Data, depthLog))
+			AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData);
 	}
 
 #define LogData(szData) \
-	{ int depth; \
-		if (FDepthLog(LGT::Data, depth)) \
-			AddLog(LGT::Data, LGF::Normal, depth, L"", szData); }
+	{ int depthLog; \
+		if (FDepthLog(LGT::Data, depthLog)) \
+			AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData); }
 
 	inline void LogTemp(const wstring& szData)
 	{
-		int depth;
-		if (FDepthLog(LGT::Temp, depth))
-			AddLog(LGT::Temp, LGF::Normal, depth, L"", szData);
+		int depthLog;
+		if (FDepthLog(LGT::Temp, depthLog))
+			AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
 	}
 
 
@@ -294,12 +293,13 @@ protected:
 	bool fHilite;
 	bool fTrack;
 	int cmd;
+
 public:
 	BTN(UI* puiParent, int cmd);
 
+	virtual void Draw(const RC& rcUpdate);
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
-	virtual void Draw(const RC& rcUpdate);
 
 	virtual void StartLeftDrag(const PT& pt);
 	virtual void EndLeftDrag(const PT& pt);
@@ -345,12 +345,14 @@ public:
  *	BTNGEOM
  * 
  *	Geomtries are assumed to be scaled from a ...
+ *
  */
 
 
 class BTNGEOM : public BTN
 {
 	GEOM* pgeom;
+
 public:
 	BTNGEOM(UI* puiParent, int cmd, PT rgpt[], int cpt);
 	~BTNGEOM();
@@ -395,13 +397,6 @@ public:
  * 
  */
 
-enum SPDIR
-{
-	spdirNil = -1,
-	spdirUp = 0,
-	spdirDown = 1,
-	spdirMax = 2
-};
 
 class SPIN : public UI
 {
@@ -412,6 +407,27 @@ protected:
 
 public:
 	SPIN(UI* puiParent, int cmdUp, int cmdDown);
+	virtual void CreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	virtual void Layout(void);
+
+	virtual void Draw(const RC& rcUpdate);
+	virtual wstring SzValue(void) const = 0;
+};
+
+
+/*
+ *
+ *	CYCLE control
+ * 
+ *	Displays a value that cycles through on mouse clicks
+ * 
+ */
+
+class CYCLE : public BTN
+{
+public:
+	CYCLE(UI* puiParent, int cmdCycle);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	virtual void Layout(void);

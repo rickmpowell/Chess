@@ -112,6 +112,7 @@ public:
  *
  */
 
+class GA;
 
 class APP : public D2
 {

@@ -532,7 +532,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv();
+        app.pga->UndoMv(app.pga->spmvCur);
         return 1;
     }
 
@@ -559,7 +559,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv();
+        app.pga->RedoMv(app.pga->spmvCur);
         return 1;
     }
 
@@ -671,6 +671,43 @@ public:
     virtual wstring SzTip(void) const
     {
         return app.SzLoad(idsTipTest);
+    }
+};
+
+
+/*
+ *
+ *  CMDPERFTDIVIDE
+ * 
+ *  Runs the perft test on the current board position. Output is sent to 
+ *  debug panel.
+ * 
+ */
+
+
+class CMDPERFTDIVIDE : public CMD
+{
+    int depthPerft;
+
+public:
+    CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd), depthPerft(2) { }
+
+    virtual int Execute(void)
+    {
+        app.pga->XLogOpen(L"perft", to_wstring(depthPerft));
+        uint64_t cmv = app.pga->CmvPerftDivide(depthPerft);
+        app.pga->XLogClose(L"perft", to_wstring(cmv), LGF::Normal);
+        return 1;
+    }
+
+    virtual bool FCustomSzMenu(void) const
+    {
+        return true;
+    }
+
+    virtual wstring SzMenu(void) const
+    {
+        return wstring(L"perft ") + to_wstring(depthPerft);
     }
 };
 
@@ -800,8 +837,15 @@ public:
             return 0;
         CLIPB clipb(app);
         istringstream is;
-        is.str((char*)clipb.PGetData(CF_TEXT));
-        app.pga->Deserialize(is);
+        char* pch = (char*)clipb.PGetData(CF_TEXT);
+        if (app.pga->FIsPgnData(pch)) {
+            is.str(pch);
+            app.pga->Deserialize(is);
+        }
+        else {
+            app.pga->DeserializeFEN(WszWidenSz(pch));
+            app.pga->Redraw();
+        }
         return 1;
     }
 };
@@ -1059,6 +1103,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUpBlack));
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDown));
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDownBlack));
+    cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivide));
 }
 
 
@@ -1172,4 +1217,11 @@ string SzFlattenWsz(const wstring& wsz)
         cch = sizeof(sz) - 1;
     sz[::WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
     return sz;
+}
+
+
+wstring WszWidenSz(const string& sz)
+{
+    wstring wsz(sz.begin(), sz.end());
+    return wsz;
 }

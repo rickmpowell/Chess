@@ -12,14 +12,37 @@
 
 void GA::OpenPGNFile(const wchar_t szFile[])
 {
-	this->spmv = SPMV::Hidden;
+	spmvCur = SPMV::Hidden;
 	ifstream is(szFile, ifstream::in);
 	Deserialize(is);
 	uiml.UpdateContSize();
-	uiml.SetSel((int)bdg.vmvGame.size() - 1, spmv);
-	this->spmv = SPMV::Animate;
+	uiml.SetSel((int)bdg.vmvGame.size() - 1, spmvCur);
+	spmvCur = SPMV::Animate;
 	uiml.FMakeVis(bdg.imvCur);
 	Redraw();
+}
+
+
+/*	GA::FIsPgnData
+ *
+ *	Returns true if the beginning looks like a PGN file. As opposed to 
+ *	a FEN string
+ */
+bool GA::FIsPgnData(const char* pch) const
+{
+	while (*pch == ' ' || *pch == '\n' || *pch == '\r')
+		pch++;
+	return *pch == '[';
+}
+
+
+void GA::DeserializeFEN(const wstring& sz)
+{
+	InitClocks();
+	bdg.InitFEN(sz.c_str());
+	uibd.InitGame();
+	uiml.InitGame();
+	StartGame();
 }
 
 
@@ -202,7 +225,7 @@ void GA::ProcessMove(const string& szMove)
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
-	MakeMv(mv, spmv);
+	MakeMv(mv, spmvCur);
 }
 
 

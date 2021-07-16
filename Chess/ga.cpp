@@ -50,7 +50,7 @@ void GA::DiscardRsrcClass(void)
 
 GA::GA(APP& app) : UI(nullptr), app(app), 
 	uiti(this), uibd(this), uiml(this), uidb(this), uitip(this), 
-	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr), spmv(SPMV::Animate), fInPlay(false), prule(nullptr)
+	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr), spmvCur(SPMV::Animate), fInPlay(false), prule(nullptr)
 
 {
 	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = nullptr;
@@ -178,8 +178,8 @@ void GA::NewGame(RULE* prule)
 	
 	InitClocks();
 	bdg.NewGame();
-	uibd.NewGame();
-	uiml.NewGame();
+	uibd.InitGame();
+	uiml.InitGame();
 	StartGame();
 }
 
@@ -202,7 +202,7 @@ void GA::EndGame(void)
 {
 	if (prule->TmGame())
 		app.DestroyTimer(tidClock);
-	if (spmv != SPMV::Hidden)
+	if (spmvCur != SPMV::Hidden)
 		uiml.EndGame();	
 }
 
@@ -351,9 +351,9 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
  *	Moves the current move pointer back one through the move list and undoes
  *	the last move on the game board.
  */
-void GA::UndoMv(void)
+void GA::UndoMv(SPMV spmv)
 {
-	MoveToImv(bdg.imvCur - 1);
+	MoveToImv(bdg.imvCur - 1, spmv);
 }
 
 
@@ -362,9 +362,9 @@ void GA::UndoMv(void)
  *	Moves the current move pointer forward through the move list and remakes
  *	the next move on the game board.
  */
-void GA::RedoMv(void)
+void GA::RedoMv(SPMV spmv)
 {
-	MoveToImv(bdg.imvCur + 1);
+	MoveToImv(bdg.imvCur + 1, spmv);
 }
 
 
@@ -374,10 +374,9 @@ void GA::RedoMv(void)
  *	current game speed mode. imv can be -1 to go to the start of the game, up to
  *	the last move the game.
  */
-void GA::MoveToImv(int imv)
+void GA::MoveToImv(int imv, SPMV spmv)
 {
 	imv = peg(imv, -1, (int)bdg.vmvGame.size() - 1);
-	SPMV spmvSav = spmv;
 	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
 		spmv = SPMV::AnimateFast;
 		if (abs(bdg.imvCur - imv) > 5)
@@ -387,7 +386,6 @@ void GA::MoveToImv(int imv)
 		uibd.UndoMv(spmv);
 	while (bdg.imvCur < imv)
 		uibd.RedoMv(spmv);
-	spmv = spmvSav;
 	uiml.Layout();	// in case game over state changed
 	uiml.SetSel(bdg.imvCur, spmv);
 }
@@ -417,10 +415,9 @@ int GA::Play(void)
 	try {
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
-			SPMV spmvT = spmv;
-			MV mv = ppl->MvGetNext(spmvT);
+			MV mv = ppl->MvGetNext(spmvCur);
 			assert(!mv.fIsNil());
-			MakeMv(mv, spmvT);
+			MakeMv(mv, spmvCur);
 			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
 		} while (bdg.gs == GS::Playing);
 	}

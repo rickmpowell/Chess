@@ -335,7 +335,7 @@ wstring BDG::SzDecodeMvPost(MV mv) const
 	wstring sz;
 	sz += L'a' + sqFrom.file();
 	sz += to_wstring(sqFrom.rank() + 1);
-	if (mv.apcCapture() != APC::Null)
+	if (mv.fIsCapture())
 		sz += L'x';
 	sz += L'a' + sqTo.file();
 	sz += to_wstring(sqTo.rank() + 1);

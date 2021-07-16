@@ -464,6 +464,7 @@ inline void SafeRelease(Interface** ppi)
 }
 
 string SzFlattenWsz(const wstring& wsz);
+wstring WszWidenSz(const string& sz);
 
 
 /*

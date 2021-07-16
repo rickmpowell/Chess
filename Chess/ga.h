@@ -59,7 +59,7 @@ public:
 	UI* puiCapt;
 	UI* puiFocus;
 	UI* puiHover;
-	SPMV spmv;
+	SPMV spmvCur;
 	bool fInPlay;
 
 public:
@@ -104,6 +104,7 @@ public:
 	/*
 	 *	Commands
 	 */
+
 	virtual void DispatchCmd(int cmd);
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTipFromCmd(int cmd) const;
@@ -139,9 +140,9 @@ public:
 	void SwitchClock(DWORD tmCur);
 	void StartClock(CPC cpc, DWORD tmCur);
 	void PauseClock(CPC cpc, DWORD tmCur);
-	void UndoMv(void);
-	void RedoMv(void);
-	void MoveToImv(int imv);
+	void UndoMv(SPMV spmv);
+	void RedoMv(SPMV spmv);
+	void MoveToImv(int imv, SPMV spmv);
 	void GenRgmv(GMV& gmv);
 
 	/*	
@@ -171,6 +172,8 @@ public:
 	void ProcessTag(const string& szTag, const string& szVal);
 	void ProcessTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
+	bool FIsPgnData(const char* pch) const;
+	void DeserializeFEN(const wstring& sz);
 
 	/*
 	 *	Serialization
@@ -199,4 +202,9 @@ public:
 	void UndoTest(void);
 	int PlayUndoPGNFile(const wchar_t* szFile);
 	void UndoFullGame(void);
+
+	void PerftTest(void);
+	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdepthcmv[], int depthMax, bool fDivide);
+	uint64_t CmvPerft(int depth);
+	uint64_t CmvPerftDivide(int depth);
 };
