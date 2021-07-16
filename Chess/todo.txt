@@ -1,6 +1,4 @@
-  Test: add perft test
   UIPL: on hover, change background color when we can change the player
-  Test: add a move gen test and validate some hard cases
   When AIs are playing each other, making human moves should be allowed until we start the game
   AI: I think when we're ahead, we permit 3-fold draws too easily
   Use C++ exception class to throw exceptions
@@ -98,6 +96,8 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* Test: add a move gen test and validate some hard cases
+* Test: add perft test
 * Should do const references instead of by-value calls for RCF and PTF
 * AI: Starting AI with black-to-move lets white move first
 * Review code for using min/max/peg
