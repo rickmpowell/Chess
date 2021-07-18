@@ -690,7 +690,7 @@ class CMDPERFTDIVIDE : public CMD
     int depthPerft;
 
 public:
-    CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd), depthPerft(2) { }
+    CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd), depthPerft(3) { }
 
     virtual int Execute(void)
     {

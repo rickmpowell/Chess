@@ -241,11 +241,12 @@ void BD::MakeMvSq(MV& mv)
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	IPC ipcFrom = (*this)(sqFrom);
+	CPC cpcFrom = ipcFrom.cpc();
 	APC apcFrom = ipcFrom.apc();
 
 	/* store undo information in the mv */
 
-	mv.SetCsEp(CsPackColor(cs, ipcFrom.cpc()), sqEnPassant);
+	mv.SetCsEp(CsPackColor(cs, cpcFrom), sqEnPassant);
 	SQ sqTake = sqTo;
 	if (apcFrom == APC::Pawn) {
 		if (sqTake == sqEnPassant)
@@ -258,18 +259,18 @@ void BD::MakeMvSq(MV& mv)
 	if (!ipcTake.fIsEmpty()) {
 		TPC tpcTake = TpcFromSq(sqTake);
 		APC apcTake = ApcFromSq(sqTake);
-		if ((tpcTake == tpcQueenRook && (cs & (csQueen << ipcTake.cpc()))) ||
-				(tpcTake == tpcKingRook && (cs & (csKing << ipcTake.cpc()))))
+		if ((tpcTake == tpcQueenRook && (cs & (csQueen << ~cpcFrom))) ||
+				(tpcTake == tpcKingRook && (cs & (csKing << ~cpcFrom))))
 			apcTake = APC::RookCastleable;
 		mv.SetCapture(apcTake, tpcTake);
 		SqFromIpc(ipcTake) = sqNil;
 		ClearBB(ipcTake, sqTake);
 		switch (ipcTake.tpc()) {
 		case tpcKingRook: 
-			ClearCastle(ipcTake.cpc(), csKing); 
+			ClearCastle(~cpcFrom, csKing); 
 			break;
 		case tpcQueenRook: 
-			ClearCastle(ipcTake.cpc(), csQueen); 
+			ClearCastle(~cpcFrom, csQueen); 
 			break;
 		default: 
 			break;
@@ -299,7 +300,7 @@ void BD::MakeMvSq(MV& mv)
 		}
 		else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
 			/* pawn promotion on last rank */
-			IPC ipcPromote = IPC(ipcFrom.tpc(), ipcFrom.cpc(), mv.apcPromote());
+			IPC ipcPromote = IPC(ipcFrom.tpc(), cpcFrom, mv.apcPromote());
 			(*this)(sqTo) = ipcPromote;
 			ClearBB(ipcFrom, sqTo);
 			SetBB(ipcPromote, sqTo);
@@ -307,7 +308,7 @@ void BD::MakeMvSq(MV& mv)
 		break;
 
 	case APC::King:
-		ClearCastle(ipcFrom.cpc(), csKing|csQueen);
+		ClearCastle(cpcFrom, csKing|csQueen);
 		if (sqFrom.file() - sqTo.file() > 1 || sqFrom.file() - sqTo.file() < -1) {
 			/* castle moves */
 			int fileDst = sqTo.file();
@@ -331,7 +332,11 @@ void BD::MakeMvSq(MV& mv)
 		break;
 
 	case APC::Rook:
-		ClearCastle(ipcFrom.cpc(), ipcFrom.tpc() == tpcQueenRook ? csQueen : csKing);
+		/* be careful! promoted rooks don't affect castle rights */
+		if (ipcFrom.tpc() == tpcQueenRook)
+			ClearCastle(cpcFrom, csQueen);
+		else if (ipcFrom.tpc() == tpcKingRook)
+			ClearCastle(cpcFrom, csKing);
 		break;
 
 	default:
