@@ -82,21 +82,21 @@ void GA::SerializeHeader(ostream& os, const string& szTag, const string& szVal)
 
 void GA::SerializeMoveList(ostream& os)
 {
-	BDG bdgSave;
-	bdgSave.NewGame();
+	BDG bdgSav;
+	bdgSav.InitGame(szInitFEN);
 	string szLine;
 	for (unsigned imv = 0; imv < (unsigned)bdg.vmvGame.size(); imv++) {
 		MV mv = bdg.vmvGame[imv];
 		if (imv % 2 == 0)
 			WriteSzLine80(os, szLine, to_string(imv/2 + 1) + ". ");
-		wstring wsz = bdgSave.SzDecodeMv(mv, false);
-		WriteSzLine80(os, szLine, bdgSave.SzFlattenMvSz(wsz) + " ");
-		bdgSave.MakeMv(mv);
+		wstring wsz = bdgSav.SzDecodeMv(mv, false);
+		WriteSzLine80(os, szLine, bdgSav.SzFlattenMvSz(wsz) + " ");
+		bdgSav.MakeMv(mv);
 	}
 
 	/* when we're done, write result */
 
-	switch (bdgSave.gs) {
+	switch (bdgSav.gs) {
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:

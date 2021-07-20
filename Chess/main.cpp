@@ -843,7 +843,7 @@ public:
             app.pga->Deserialize(is);
         }
         else {
-            app.pga->DeserializeFEN(WszWidenSz(pch));
+            app.pga->InitGame(WszWidenSz(pch).c_str());
             app.pga->Redraw();
         }
         return 1;

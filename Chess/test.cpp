@@ -328,7 +328,7 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 	if (depthPerft == 1)
 		return gmv.cmv();
 	uint64_t cmv = 0;
-	BDG bdgInit = bdg;
+	//BDG bdgInit = bdg;
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		bdg.MakeMv(gmv[imv]);
 		LogOpen(TAG(bdg.SzDecodeMvPost(gmv[imv]), ATTR(L"FEN", (wstring)bdg)), L"");
@@ -381,12 +381,7 @@ void GA::PerftTest(void)
 void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
 	LogOpen(tag, L"");
-	/* TODO: share code with NewGame? */
-	bdg.InitFEN(szFEN);
-	InitClocks();
-	uibd.InitGame();
-	uiml.InitGame();
-	StartGame();
+	InitGame(szFEN);
 	uibd.Redraw();
 
 	bool fPassed = false;

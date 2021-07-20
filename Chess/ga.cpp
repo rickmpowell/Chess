@@ -11,6 +11,9 @@
 #include "ga.h"
 
 
+const wchar_t GA::szInitFEN[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+
 /*
  *
  *	GA class
@@ -174,10 +177,16 @@ void GA::NewGame(RULE* prule)
 {
 	if (this->prule)
 		delete this->prule;
-	this->prule = prule;
+	this->prule = prule;	
+	InitGame(szInitFEN);
 	
+}
+
+
+void GA::InitGame(const wchar_t* szFEN)
+{
 	InitClocks();
-	bdg.NewGame();
+	bdg.InitGame(szFEN);
 	uibd.InitGame();
 	uiml.InitGame();
 	StartGame();

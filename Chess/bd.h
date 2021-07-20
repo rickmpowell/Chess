@@ -1014,7 +1014,7 @@ public:
 public:
 	BDG(void);
 	BDG(const wchar_t* szFEN);
-	void NewGame(void);
+	//void NewGame(void);
 
 	/* 
 	 *	move generation 
@@ -1073,7 +1073,7 @@ public:
 	 *	importing FEN strings 
 	 */
 
-	void InitFEN(const wchar_t* szFen);
+	void InitGame(const wchar_t* szFen);
 	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENHalfmoveClock(const wchar_t*& sz);
 	void InitFENFullmoveCounter(const wchar_t*& sz);

@@ -131,8 +131,10 @@ public:
 	 *	Game control
 	 */
 
+	static const wchar_t szInitFEN[];
 	int Play(void);
 	void NewGame(RULE* prule);
+	void InitGame(const wchar_t* szFEN);
 	void InitClocks(void);
 	void StartGame(void);
 	void EndGame(void);
@@ -173,7 +175,6 @@ public:
 	void ProcessTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
 	bool FIsPgnData(const char* pch) const;
-	void DeserializeFEN(const wstring& sz);
 
 	/*
 	 *	Serialization

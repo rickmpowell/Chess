@@ -973,17 +973,11 @@ BDG::BDG(void) : gs(GS::Playing), cpcToMove(CPC::White), imvCur(-1), imvPawnOrTa
  */
 BDG::BDG(const wchar_t* szFEN)
 {
-	InitFEN(szFEN);
+	InitGame(szFEN);
 }
 
 
-void BDG::NewGame(void)
-{
-	InitFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-}
-
-
-void BDG::InitFEN(const wchar_t* szFEN)
+void BDG::InitGame(const wchar_t* szFEN)
 {
 	const wchar_t* sz = szFEN;
 	InitFENPieces(sz);

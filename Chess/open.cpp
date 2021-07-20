@@ -36,16 +36,6 @@ bool GA::FIsPgnData(const char* pch) const
 }
 
 
-void GA::DeserializeFEN(const wstring& sz)
-{
-	InitClocks();
-	bdg.InitFEN(sz.c_str());
-	uibd.InitGame();
-	uiml.InitGame();
-	StartGame();
-}
-
-
 void GA::Deserialize(istream& is)
 {
 	ISTKPGN istkpgn(is);
