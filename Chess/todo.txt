@@ -27,7 +27,6 @@
   AI: spin off AI into its own thread
   UI: Need a visual indication of where focus is
   UI: Improve visuals for scrollbar
-  UI: Peg scrollbar thumb at minimum size
   UI: Add mouse support for clicking scrollbar pages
   UI: Add mouse support for dragging scrollbar thumb
   UIDB: Add support for multi-line log entries in db panel
@@ -96,6 +95,8 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* UI: Peg scrollbar thumb at minimum size
+* Implement scrollbars as a control ui element
 * Test: add a move gen test and validate some hard cases
 * Test: add perft test
 * Should do const references instead of by-value calls for RCF and PTF

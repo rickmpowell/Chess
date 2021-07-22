@@ -599,9 +599,15 @@ void UIML::Layout(void)
 	/* move list content is whatever is left */
 	
 	AdjustRcView(rcView);
+
+	UIPS::Layout();
 }
 
 
+/*	UIML::SizLayoutPreferred
+ *
+ *	Returns the preferred size of the move list. We only care about the width.
+ */
 SIZ UIML::SizLayoutPreferred(void)
 {
 	/* I think this is the longest possible move text */

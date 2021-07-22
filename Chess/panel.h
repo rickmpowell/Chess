@@ -47,6 +47,33 @@ public:
 
 /*
  *
+ *	SBAR class
+ * 
+ *	Scrollbar class. UI element for implementing a scrollbar.
+ *
+ */
+
+class UIPS;
+
+class SBAR : public UI
+{
+private:
+	float yTopCont, yBotCont;
+	float yTopView, yBotView;
+	static constexpr float dyThumbMin = 15.0f;
+
+public:
+	SBAR(UIPS* puiParent);
+
+	void SetRange(float yTop, float yBot);
+	void SetRangeView(float yTop, float yBot);
+
+	virtual void Draw(const RC& rcUpdate);
+};
+
+
+/*
+ *
  *	UIPS class
  *
  *	A scrolling screen panel base class.
@@ -59,12 +86,15 @@ class UIPS : public UIP
 private:
 	RC rcView;	/* relative to the UI */
 	RC rcCont;
+	SBAR sbarVert;
+
 protected:
 	const float dxyScrollBarWidth = 10.0f;
-	void DrawScrollBar(void);
+
 public:
 	UIPS(GA* pga);
-	
+
+	virtual void Layout(void);
 	void SetView(const RC& rcView);
 	void SetContent(const RC& rcCont);
 	RC RcView(void) const;

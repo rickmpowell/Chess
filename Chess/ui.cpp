@@ -426,6 +426,15 @@ void UI::ScrollWheel(const PT& pt, int dwheel)
 }
 
 
+/*	UI::SetCapture
+ *
+ *	Sets the mouse capture UI element. Note that capture is a global state, and is
+ *	not really an attribute tracked by individual UI element. By convention we keep
+ *	track of these types of global elements in the root UI element. These child UI
+ *	elements just propagate the capture towards the root of the tree, and it is 
+ *	the root elements responsibility to actually keep track of capture and do something
+ *	with it. 
+ */
 void UI::SetCapt(UI* pui)
 {
 	if (puiParent)
@@ -433,6 +442,12 @@ void UI::SetCapt(UI* pui)
 }
 
 
+/*	UI::ReleaseCapt
+ *
+ *	Releases capture, i.e., sets is to zero. Note that capture is not a nestable
+ *	attribute - release always completely clears the global capture state, it does
+ *	not restore it.
+ */
 void UI::ReleaseCapt(void)
 {
 	if (puiParent)
@@ -443,7 +458,7 @@ void UI::ReleaseCapt(void)
 void UI::SetFocus(UI* pui)
 {
 	if (puiParent)
-		puiParent->ReleaseCapt();
+		puiParent->SetFocus(pui);
 }
 
 
@@ -782,8 +797,6 @@ void UI::DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr) 
 }
 
 
-
-
 /*	UI::DrawSzFit
  *
  *	Draws the text in the rectangle, sizing the font smaller to make it
@@ -800,6 +813,8 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 
 	IDWriteTextLayout* play = nullptr;
 	App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcFit.DyHeight(), &play);
+	if (play == nullptr)
+		throw 1;
 	DWRITE_TEXT_METRICS tm;
 	play->GetMetrics(&tm);
 	if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight()) {
@@ -826,8 +841,12 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 		App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 			dyFont, L"", &ptx);
+		if (ptx == nullptr)
+			throw 1;
 		App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
 			ptx, rcGlobal.DxWidth(), rcGlobal.DyHeight(), &play);
+		if (play == nullptr)
+			throw 1;
 		DWRITE_TEXT_METRICS tm;
 		play->GetMetrics(&tm);
 		if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight())

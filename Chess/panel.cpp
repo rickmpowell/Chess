@@ -173,25 +173,44 @@ void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szD
  *	In general, Direct2D drawing is fast enough that we don't implement actual
  *	scrolling on screen, we just redraw the entire area and use Direct2D's frame
  *	switching to get a flicker-free update.
+ *
+ *	Implementations of UIPS should implement DrawContent instead of Draw.
  * 
  */
 
 
-UIPS::UIPS(GA* pga) : UIP(pga), rcView(0, 0, 0, 0), rcCont(0, 0, 0, 0)
+UIPS::UIPS(GA* pga) : UIP(pga), rcView(0, 0, 0, 0), rcCont(0, 0, 0, 0), sbarVert(this)
 {
 }
 
 
+void UIPS::Layout(void)
+{
+	RC rc = rcView;
+	rc.left = rc.right;
+	rc.right = rc.left + dxyScrollBarWidth;
+	sbarVert.SetBounds(rc);
+}
+
+
+/*	UIPS::SetView
+ *
+ *	Sets the view rectangle, in local (relative to the UI) coordinates.
+ */
 void UIPS::SetView(const RC& rcView)
 {
 	this->rcView = rcView;
 	this->rcView.right -= dxyScrollBarWidth;
+	sbarVert.SetRangeView(rcView.top, rcView.bottom);
+	UIPS::Layout();
 }
 
 
 void UIPS::SetContent(const RC& rcCont)
 {
 	this->rcCont = rcCont;
+	sbarVert.SetRange(rcCont.top, rcCont.bottom);
+	UIPS::Layout();
 }
 
 
@@ -218,7 +237,7 @@ RC UIPS::RcContent(void) const
 }
 
 
-/*	UpdateContSize
+/*	UIPS::UpdateContSize
  *
  *	Updates the size of the content area. Call this when you add content to
  *	the content area.
@@ -227,6 +246,8 @@ void UIPS::UpdateContSize(const SIZ& siz)
 {
 	rcCont.bottom = rcCont.top + siz.height;
 	rcCont.right = rcCont.left + siz.width;
+	sbarVert.SetRange(rcCont.top, rcCont.bottom);
+	UIPS::Layout();
 }
 
 
@@ -273,6 +294,8 @@ void UIPS::ScrollTo(float dy)
 		yTopNew = rcView.top + dyLine - dyCont;
 	dy = yTopNew - rcCont.top;
 	rcCont.Offset(0, dy);
+	sbarVert.SetRange(rcCont.top, rcCont.bottom);
+	Layout();
 	Redraw();
 }
 
@@ -291,6 +314,8 @@ bool UIPS::FMakeVis(float y, float dy)
 		rcCont.Offset(0, rcView.bottom - (y + dy));
 	else
 		return false;
+	sbarVert.SetRange(rcCont.top, rcCont.bottom);
+	Layout();
 	Redraw();
 	return true;
 }
@@ -308,33 +333,16 @@ void UIPS::Draw(const RC& rcUpdate)
 	FillRc(rcView, pbrBack);
 	DrawContent(rcCont);
 	app.pdc->PopAxisAlignedClip();
-	DrawScrollBar();
 }
 
 
+/*	UIPS::DrawContent
+ *
+ *	Virutal function for drawing the actual content area. This should be overriden
+ *	by all implementations to provide the actual drawing code.
+ */
 void UIPS::DrawContent(const RC& rc)
 {
-}
-
-
-void UIPS::DrawScrollBar(void)
-{
-	RC rcScroll = rcView;
-	rcScroll.left = rcView.right;
-	rcScroll.right = rcScroll.left + dxyScrollBarWidth;
-	FillRc(rcScroll, pbrAltBack);
-	RC rcThumb = rcScroll;
-	if (rcCont.DyHeight() > 0) {
-		rcThumb.top = rcScroll.top + rcScroll.DyHeight() * (rcView.top - rcCont.top) / rcCont.DyHeight();
-		rcThumb.bottom = rcScroll.top + rcScroll.DyHeight() * (rcView.bottom - rcCont.top) / rcCont.DyHeight();
-	}
-	rcThumb.top = max(rcThumb.top, rcScroll.top);
-	rcThumb.bottom = min(rcThumb.bottom, rcScroll.bottom);
-	FillRc(rcThumb, pbrBack);
-	FillRc(RC(rcThumb.left, rcThumb.top - 1, rcThumb.right, rcThumb.top), pbrGridLine);
-	FillRc(RC(rcThumb.left, rcThumb.bottom, rcThumb.right, rcThumb.bottom + 1), pbrGridLine);
-	FillRc(RC(rcThumb.left, rcThumb.top, rcThumb.left + 1, rcThumb.bottom), pbrGridLine);
-
 }
 
 
@@ -356,11 +364,77 @@ void UIPS::ScrollWheel(const PT& pt, int dwheel)
 
 /*
  *
+ *	SBAR implementation
+ * 
+ *	Scrollbar control
+ * 
+ */
+
+
+SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0)
+{
+}
+
+
+void SBAR::Draw(const RC& rcUpdate)
+{
+	RC rcInt = RcInterior();
+	
+	/* calculate size of proportional thumb */
+	
+	float dyThumb = dyThumbMin;
+	if (yBotCont - yTopCont > 0)
+		dyThumb = rcInt.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
+	dyThumb = min(max(dyThumb, dyThumbMin), rcInt.DyHeight());
+
+	/* calculate min and max range of midpoints for the content area and the 
+	   scrollbar area */
+
+	float yTopContHalf = yTopCont + (yBotView - yTopView) / 2.0f;
+	float yBotContHalf = yBotCont - (yBotView - yTopView) / 2.0f;
+	float yTopIntHalf = rcInt.top + dyThumb / 2.0f;
+	float yBotIntHalf = rcInt.bottom - dyThumb / 2.0f;
+
+	/* find  mid-point of the thumb, and position the thumb around it */
+
+	float yMidView = (yBotView + yTopView) / 2.0f;
+	float yMidThumb = yTopIntHalf + (yBotIntHalf - yTopIntHalf) * (yMidView - yTopContHalf) / (yBotContHalf - yTopContHalf);
+	RC rcThumb = rcInt;
+	rcThumb.top = max(yMidThumb - dyThumb / 2.0f, rcInt.top);
+	rcThumb.bottom = min(rcThumb.top + dyThumb, rcInt.bottom);
+
+	/* and draw the scrollbar */
+
+	FillRc(rcInt, pbrAltBack);
+	FillRc(rcThumb, pbrBack);
+	FillRc(RC(rcThumb.left, rcThumb.top - 1, rcThumb.right, rcThumb.top), pbrGridLine);
+	FillRc(RC(rcThumb.left, rcThumb.bottom, rcThumb.right, rcThumb.bottom + 1), pbrGridLine);
+	FillRc(RC(rcThumb.left, rcThumb.top, rcThumb.left + 1, rcThumb.bottom), pbrGridLine);
+}
+
+
+void SBAR::SetRange(float yTop, float yBot)
+{
+	yTopCont = yTop;
+	yBotCont = yBot;
+}
+
+
+void SBAR::SetRangeView(float yTop, float yBot)
+{
+	yTopView = yTop;
+	yBotView = yBot;
+}
+
+
+/*
+ *
  *	UIBB
  * 
  *	Button bar in a scrolling panel
  * 
  */
+
 
 UIBB::UIBB(UIPS* puiParent) : UI(puiParent)
 {
