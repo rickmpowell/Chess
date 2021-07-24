@@ -267,6 +267,8 @@ public:
 
 	void FillRc(const RC& rc, BR* pbr) const;
 	virtual void FillRcBack(const RC& rc) const;
+	void FillRr(const RR& rr, BR* pbr) const;
+	void DrawRr(const RR& rr, BR* pbr) const;
 	void FillEll(const ELL& ell, BR* pbr) const;
 	void DrawEll(const ELL& ell, BR* pbr) const;
 	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;

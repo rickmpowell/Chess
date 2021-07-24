@@ -362,6 +362,18 @@ void UIPS::ScrollWheel(const PT& pt, int dwheel)
 }
 
 
+void UIPS::ScrollLine(int dline)
+{
+	ScrollTo(dline * DyLine());
+}
+
+
+void UIPS::ScrollPage(int dpage)
+{
+	ScrollTo((RcView().DyHeight() - DyLine()) * dpage);
+}
+
+
 /*
  *
  *	SBAR implementation
@@ -371,23 +383,21 @@ void UIPS::ScrollWheel(const PT& pt, int dwheel)
  */
 
 
-SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0)
+SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), puips(puipsParent), 
+		yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0)
 {
 }
 
 
-void SBAR::Draw(const RC& rcUpdate)
+RC SBAR::RcThumb(void) const
 {
 	RC rcInt = RcInterior();
-	
-	/* calculate size of proportional thumb */
-	
 	float dyThumb = dyThumbMin;
 	if (yBotCont - yTopCont > 0)
 		dyThumb = rcInt.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
 	dyThumb = min(max(dyThumb, dyThumbMin), rcInt.DyHeight());
 
-	/* calculate min and max range of midpoints for the content area and the 
+	/* calculate min and max range of midpoints for the content area and the
 	   scrollbar area */
 
 	float yTopContHalf = yTopCont + (yBotView - yTopView) / 2.0f;
@@ -400,16 +410,27 @@ void SBAR::Draw(const RC& rcUpdate)
 	float yMidView = (yBotView + yTopView) / 2.0f;
 	float yMidThumb = yTopIntHalf + (yBotIntHalf - yTopIntHalf) * (yMidView - yTopContHalf) / (yBotContHalf - yTopContHalf);
 	RC rcThumb = rcInt;
+	rcThumb.left += 1.0f;
+	rcThumb.right -= 0.75f;
 	rcThumb.top = max(yMidThumb - dyThumb / 2.0f, rcInt.top);
 	rcThumb.bottom = min(rcThumb.top + dyThumb, rcInt.bottom);
+	
+	return rcThumb;
+}
+
+
+void SBAR::Draw(const RC& rcUpdate)
+{
+	RC rcInt = RcInterior();
+	RC rcThumb = RcThumb();
 
 	/* and draw the scrollbar */
 
 	FillRc(rcInt, pbrAltBack);
-	FillRc(rcThumb, pbrBack);
-	FillRc(RC(rcThumb.left, rcThumb.top - 1, rcThumb.right, rcThumb.top), pbrGridLine);
-	FillRc(RC(rcThumb.left, rcThumb.bottom, rcThumb.right, rcThumb.bottom + 1), pbrGridLine);
-	FillRc(RC(rcThumb.left, rcThumb.top, rcThumb.left + 1, rcThumb.bottom), pbrGridLine);
+	RR rrThumb(rcThumb);
+	rrThumb.radiusX = rrThumb.radiusY = rcInt.DxWidth() / 2.0f;
+	COLORBRS colorbrs(pbrGridLine, ColorF(0.67f, 0.67f, 0.67f));
+	FillRr(rrThumb, pbrGridLine);
 }
 
 
@@ -424,6 +445,60 @@ void SBAR::SetRangeView(float yTop, float yBot)
 {
 	yTopView = yTop;
 	yBotView = yBot;
+}
+
+
+HTSBAR SBAR::HitTest(const PT& pt)
+{
+	RC rcInt = RcInterior();
+	if (!rcInt.FContainsPt(pt))
+		return HTSBAR::None;
+	RC rcThumb = RcThumb();
+	if (pt.y < rcThumb.top)
+		return HTSBAR::PageUp;
+	if (pt.y < rcThumb.bottom)
+		return HTSBAR::Thumb;
+	if (pt.y < rcInt.bottom)
+		return HTSBAR::PageDown;
+	return HTSBAR::None;
+}
+
+
+void SBAR::StartLeftDrag(const PT& pt)
+{
+	SetCapt(this);
+
+	HTSBAR htsbar;
+	switch (htsbar = HitTest(pt)) {
+	case HTSBAR::PageUp:
+		puips->ScrollPage(1);
+		break;
+	case HTSBAR::PageDown:
+		puips->ScrollPage(-1);
+		break;
+	case HTSBAR::LineUp:
+		puips->ScrollLine(1);
+		break;
+	case HTSBAR::LineDown:
+		puips->ScrollLine(-1);
+		break;
+	case HTSBAR::Thumb:
+		break;
+	default:
+		ReleaseCapt();
+		break;
+	}
+}
+
+
+void SBAR::EndLeftDrag(const PT& pt)
+{
+	ReleaseCapt();
+}
+
+
+void SBAR::LeftDrag(const PT& pt)
+{
 }
 
 

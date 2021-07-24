@@ -191,6 +191,14 @@ public:
 	{ 
 	}
 
+	inline RC(const D2D1_RECT_F& rect)
+	{
+		left = rect.left;
+		top = rect.top;
+		right = rect.right;
+		bottom = rect.bottom;
+	}
+
 	inline RC(float xLeft, float yTop, float xRight, float yBot)
 	{
 		left = xLeft;
@@ -377,6 +385,25 @@ public:
 	inline bool operator!() const 
 	{
 		return FEmpty();
+	}
+};
+
+
+/*
+ *
+ *	D2D1 rounded rectangle class with convenience features.
+ * 
+ */
+
+
+class RR : public D2D1_ROUNDED_RECT
+{
+public:
+	RR(const RC& rc)
+	{
+		rect = rc;
+		radiusX = 0.0f;
+		radiusY = 0.0f;
 	}
 };
 

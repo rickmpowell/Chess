@@ -20,7 +20,7 @@
  */
 
 const UINT tidClock = 1;
-
+const UINT tidScrollRepeat = 2;
 
 
 /*

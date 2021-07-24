@@ -731,6 +731,24 @@ void UI::FillRcBack(const RC& rc) const
 }
 
 
+void UI::DrawRr(const RR& rr, BR* pbr) const
+{
+	RR rrGlobal(RcGlobalFromLocal(RC(rr.rect)));
+	rrGlobal.radiusX = rr.radiusX;
+	rrGlobal.radiusY = rr.radiusY;
+	App().pdc->DrawRoundedRectangle(rrGlobal, pbr);
+}
+
+
+void UI::FillRr(const RR& rr, BR* pbr) const
+{
+	RR rrGlobal(RcGlobalFromLocal(rr.rect));
+	rrGlobal.radiusX = rr.radiusX;
+	rrGlobal.radiusY = rr.radiusY;
+	App().pdc->FillRoundedRectangle(rrGlobal, pbr);
+}
+
+
 /*	UI::FillEll
  *
  *	Helper function for filling an ellipse with a brush. Rectangle is in
@@ -887,11 +905,13 @@ BTN::BTN(UI* puiParent, int cmd) : UI(puiParent), cmd(cmd)
 	this->fTrack = false;
 }
 
+
 void BTN::Track(bool fTrackNew) 
 {
 	fTrack = fTrackNew;
 	Redraw();
 }
+
 
 void BTN::Hilite(bool fHiliteNew) 
 {
@@ -899,15 +919,18 @@ void BTN::Hilite(bool fHiliteNew)
 	Redraw();
 }
 
+
 void BTN::Draw(const RC& rcUpdate) 
 {
 }
+
 
 void BTN::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
 	Track(true);
 }
+
 
 void BTN::EndLeftDrag(const PT& pt)
 {
@@ -917,10 +940,12 @@ void BTN::EndLeftDrag(const PT& pt)
 		DispatchCmd(cmd);
 }
 
+
 void BTN::LeftDrag(const PT& pt)
 {
 	Hilite(RcInterior().FContainsPt(pt));
 }
+
 
 void BTN::MouseHover(const PT& pt, MHT mht)
 {

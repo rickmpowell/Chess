@@ -294,17 +294,19 @@ void GA::DispatchCmd(int cmd)
 
 void GA::Timer(UINT tid, DWORD tmCur)
 {
-	if (prule->TmGame() == 0)
-		return;
-	DWORD dtm = tmCur - tmLast;
-	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
-		dtm = mpcpctmClock[bdg.cpcToMove];
-		bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
-		EndGame();
+	if (tid == tidClock) {
+		if (prule->TmGame() == 0)
+			return;
+		DWORD dtm = tmCur - tmLast;
+		if (dtm > mpcpctmClock[bdg.cpcToMove]) {
+			dtm = mpcpctmClock[bdg.cpcToMove];
+			bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
+			EndGame();
+		}
+		mpcpctmClock[bdg.cpcToMove] -= dtm;
+		tmLast = tmCur;
+		uiml.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
 	}
-	mpcpctmClock[bdg.cpcToMove] -= dtm;
-	tmLast = tmCur;
-	uiml.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
 }
 
 

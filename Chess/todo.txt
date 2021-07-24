@@ -1,3 +1,5 @@
+  UI: Add repeater on scrollbar hold down
+  Test: Add perft level option
   UIPL: on hover, change background color when we can change the player
   When AIs are playing each other, making human moves should be allowed until we start the game
   AI: I think when we're ahead, we permit 3-fold draws too easily
@@ -26,8 +28,6 @@
   Test: Don't show player names in UITI during test runs
   AI: spin off AI into its own thread
   UI: Need a visual indication of where focus is
-  UI: Improve visuals for scrollbar
-  UI: Add mouse support for clicking scrollbar pages
   UI: Add mouse support for dragging scrollbar thumb
   UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
@@ -83,7 +83,7 @@
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
   GA: Break the UI out of the GA
-  Official game has slightly different rules for some draw situation5s
+  Official game has slightly different rules for some draw situations
   Playing test PGN files in Fast mode should display result in game over panel
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
@@ -95,6 +95,8 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* UI: Improve visuals for scrollbar
+* UI: Add mouse support for clicking scrollbar pages
 * UI: Peg scrollbar thumb at minimum size
 * Implement scrollbars as a control ui element
 * Test: add a move gen test and validate some hard cases

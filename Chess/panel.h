@@ -53,14 +53,26 @@ public:
  *
  */
 
+
+enum class HTSBAR {
+	None,
+	LineUp,
+	LineDown,
+	PageUp,
+	PageDown,
+	Thumb
+};
+
+
 class UIPS;
 
 class SBAR : public UI
 {
 private:
+	UIPS* puips;
 	float yTopCont, yBotCont;
 	float yTopView, yBotView;
-	static constexpr float dyThumbMin = 15.0f;
+	static constexpr float dyThumbMin = 10.0f;
 
 public:
 	SBAR(UIPS* puiParent);
@@ -69,6 +81,13 @@ public:
 	void SetRangeView(float yTop, float yBot);
 
 	virtual void Draw(const RC& rcUpdate);
+
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
+
+	RC RcThumb(void) const;
+	HTSBAR HitTest(const PT& pt);
 };
 
 
@@ -108,6 +127,8 @@ public:
 
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);
+	virtual void ScrollLine(int dline);
+	virtual void ScrollPage(int dpage);
 
 	void ScrollTo(float yTop);
 	bool FMakeVis(float y, float dy);
