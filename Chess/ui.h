@@ -193,6 +193,13 @@ public:
 	virtual void KeyUp(int vk);
 	virtual void KeyDown(int vk);
 
+	TID StartTimer(UINT dtm);
+	void StopTimer(TID tid);
+	virtual TID StartTimer(UI* pui, UINT dtm);
+	virtual void StopTimer(UI* pui, TID tid);
+	virtual void TickTimer(TID tid, UINT tmCur);
+
+
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTip(void) const;
 	virtual wstring SzTipFromCmd(int cmd) const;

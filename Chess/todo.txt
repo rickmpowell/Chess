@@ -1,4 +1,5 @@
-  UI: Add repeater on scrollbar hold down
+  SBAR: thumb dragging is slightly off
+  UI: try to pixel align as many borders as possible
   Test: Add perft level option
   UIPL: on hover, change background color when we can change the player
   When AIs are playing each other, making human moves should be allowed until we start the game
@@ -28,7 +29,6 @@
   Test: Don't show player names in UITI during test runs
   AI: spin off AI into its own thread
   UI: Need a visual indication of where focus is
-  UI: Add mouse support for dragging scrollbar thumb
   UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
   Add ability to paste FEN format
@@ -95,6 +95,9 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* UI: Add mouse support for dragging scrollbar thumb
+* UI: add timer dispatching to UIs
+* UI: Add repeater on scrollbar hold down
 * UI: Improve visuals for scrollbar
 * UI: Add mouse support for clicking scrollbar pages
 * UI: Peg scrollbar thumb at minimum size

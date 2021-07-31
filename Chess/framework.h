@@ -114,6 +114,21 @@ struct PT : public D2D1_POINT_2F
 		this->y = y; 
 	}
 
+
+	inline PT(POINT pt)
+	{
+		this->x = (float)pt.x;
+		this->y = (float)pt.y;
+	}
+
+
+	inline PT(DWORD pt)
+	{
+		this->x = GET_X_LPARAM(pt);
+		this->y = GET_Y_LPARAM(pt);
+	}
+
+
 	inline PT& Offset(float dx, float dy)
 	{
 		x += dx;
@@ -471,6 +486,7 @@ typedef IDWriteTextFormat TX;
 typedef ID2D1Bitmap1 BMP;
 typedef ID2D1PathGeometry GEOM;
 typedef IDXGISwapChain1 SWCH;
+typedef UINT_PTR TID;
 
 
 /*

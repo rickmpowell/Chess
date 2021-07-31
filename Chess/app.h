@@ -147,6 +147,7 @@ public:
 
 	int MessagePump(void);
 	DWORD TmMessage(void);
+	POINT PtMessage(void);
 
 	wstring SzLoad(int ids) const;
 	wstring SzAppDataPath(void) const;
@@ -174,8 +175,9 @@ private:
 	bool OnKeyDown(int vk);
 	bool OnKeyUp(int vk);
 
-	void CreateTimer(UINT tid, DWORD dtm);
-	void DestroyTimer(UINT tid);
+	TID StartTimer(UINT dtm);
+	void StopTimer(TID tid);
+	void DispatchTimer(TID tid, UINT dtm);
 
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam);
 };

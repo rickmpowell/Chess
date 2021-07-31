@@ -279,20 +279,30 @@ float UIPS::DyLine(void) const
 }
 
 
-/*	UIPS::ScrollTo
+/*	UIPS::ScrollBy
  *
  *	Scrolls the content rectangle by the given number of units.
  */
-void UIPS::ScrollTo(float dy)
+void UIPS::ScrollBy(float dy)
 {
 	float yTopNew = rcCont.top + dy;
+	ScrollTo(yTopNew);
+}
+
+
+/*	UIPS::ScrollTo
+ *
+ *	Scrolls the content rectangle so that yTopNew is its new top coordinate.
+ */
+void UIPS::ScrollTo(float yTopNew)
+{
 	if (yTopNew > rcView.top)
 		yTopNew = rcView.top;
 	float dyCont = rcCont.DyHeight();
 	float dyLine = DyLine();
 	if (yTopNew + dyCont < rcView.top + dyLine)
 		yTopNew = rcView.top + dyLine - dyCont;
-	dy = yTopNew - rcCont.top;
+	float dy = yTopNew - rcCont.top;
 	rcCont.Offset(0, dy);
 	sbarVert.SetRange(rcCont.top, rcCont.bottom);
 	Layout();
@@ -358,19 +368,19 @@ void UIPS::MouseHover(const PT& pt, MHT mht)
 void UIPS::ScrollWheel(const PT& pt, int dwheel)
 {
 	float dlifScroll = (float)dwheel / (float)WHEEL_DELTA;
-	ScrollTo(DyLine() * dlifScroll);
+	ScrollBy(DyLine() * dlifScroll);
 }
 
 
 void UIPS::ScrollLine(int dline)
 {
-	ScrollTo(dline * DyLine());
+	ScrollBy(dline * DyLine());
 }
 
 
 void UIPS::ScrollPage(int dpage)
 {
-	ScrollTo((RcView().DyHeight() - DyLine()) * dpage);
+	ScrollBy((RcView().DyHeight() - DyLine()) * dpage);
 }
 
 
@@ -383,15 +393,16 @@ void UIPS::ScrollPage(int dpage)
  */
 
 
-SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), puips(puipsParent), 
-		yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0)
+SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), puips(puipsParent),
+		yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0),
+		tidScroll(0), fScrollDelay(false), htsbarTrack(HTSBAR::None), ptTrackInit(0, 0), ptThumbInit(0, 0)
 {
 }
 
 
 RC SBAR::RcThumb(void) const
 {
-	RC rcInt = RcInterior();
+	RC rcInt = RcInterior().Inflate(0.0, -3.0f);
 	float dyThumb = dyThumbMin;
 	if (yBotCont - yTopCont > 0)
 		dyThumb = rcInt.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
@@ -410,8 +421,8 @@ RC SBAR::RcThumb(void) const
 	float yMidView = (yBotView + yTopView) / 2.0f;
 	float yMidThumb = yTopIntHalf + (yBotIntHalf - yTopIntHalf) * (yMidView - yTopContHalf) / (yBotContHalf - yTopContHalf);
 	RC rcThumb = rcInt;
-	rcThumb.left += 1.0f;
-	rcThumb.right -= 0.75f;
+	rcThumb.left += 2.5f;
+	rcThumb.right -= 2.0f;
 	rcThumb.top = max(yMidThumb - dyThumb / 2.0f, rcInt.top);
 	rcThumb.bottom = min(rcThumb.top + dyThumb, rcInt.bottom);
 	
@@ -428,8 +439,8 @@ void SBAR::Draw(const RC& rcUpdate)
 
 	FillRc(rcInt, pbrAltBack);
 	RR rrThumb(rcThumb);
-	rrThumb.radiusX = rrThumb.radiusY = rcInt.DxWidth() / 2.0f;
-	COLORBRS colorbrs(pbrGridLine, ColorF(0.67f, 0.67f, 0.67f));
+	rrThumb.radiusX = rrThumb.radiusY = rcThumb.DxWidth() / 2.0f;
+	COLORBRS colorbrs(pbrGridLine, ColorF(0.75f, 0.75f, 0.75f));
 	FillRr(rrThumb, pbrGridLine);
 }
 
@@ -464,41 +475,155 @@ HTSBAR SBAR::HitTest(const PT& pt)
 }
 
 
+/*	SBAR::StartLeftDrag
+ *
+ *	Starts left-mouse button tracking in the scrollbar. Our interface does
+ *	this: on line/page areas, starts a timer and auto-scrolls for as long as
+ *	we keep the button down in the line/page area. For thumbing, we track
+ *	the mouse for the new thumb position.
+ */
 void SBAR::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
 
-	HTSBAR htsbar;
-	switch (htsbar = HitTest(pt)) {
+	switch (htsbarTrack = HitTest(ptTrackInit = pt)) {
+
 	case HTSBAR::PageUp:
+		StartScroll();
 		puips->ScrollPage(1);
 		break;
 	case HTSBAR::PageDown:
+		StartScroll();
 		puips->ScrollPage(-1);
 		break;
+
 	case HTSBAR::LineUp:
+		StartScroll();
 		puips->ScrollLine(1);
 		break;
 	case HTSBAR::LineDown:
+		StartScroll();
 		puips->ScrollLine(-1);
 		break;
+
 	case HTSBAR::Thumb:
+		ptThumbInit = RcThumb().PtTopLeft();
 		break;
+
 	default:
+		htsbarTrack = HTSBAR::None;
 		ReleaseCapt();
 		break;
 	}
 }
 
 
+/*	SBAR::EndLeftDrag
+ *
+ *	Stop the end left-mouse button dragging in the scrollbar. For paging/line
+ *	scrolling, this just stops the scroll timer. For thumbing, it finishes
+ *	up the thumb scroll.
+ */
 void SBAR::EndLeftDrag(const PT& pt)
 {
+	StopScroll();
+	if (htsbarTrack == HTSBAR::Thumb)	// one last thumb positioning when thumbing
+		LeftDrag(pt);
+	htsbarTrack = HTSBAR::None;
 	ReleaseCapt();
 }
 
 
+/*	SBAR::LeftDrag
+ *
+ *	Mouse dragging in the scrollbar. The only dragging we do is moving the
+ *	thumb around, so this basically handles the drag thumbing.
+ */
 void SBAR::LeftDrag(const PT& pt)
 {
+	if (htsbarTrack != HTSBAR::Thumb)
+		return;
+	HTSBAR htsbar = HitTest(pt);
+	if (htsbar == HTSBAR::None)
+		return;
+
+	RC rcThumb = RcThumb();
+	float yThumbMin = RcInterior().top + 3.0f;
+	float yThumbMax = RcInterior().bottom - 3.0f - rcThumb.DyHeight();
+	float yThumbNew = peg(ptThumbInit.y - ptTrackInit.y + pt.y, yThumbMin, yThumbMax);
+	float pct = (yThumbNew - yThumbMin) / (yThumbMax - yThumbMin);
+
+	/* convert pct to content-relative offset */
+
+	float yTopContNew = yTopView - pct * (yBotCont - yTopCont);
+	
+	/* and notify parent where new thumb is */
+
+	puips->ScrollTo(yTopContNew);
+}
+
+
+/*	SBAR::TickTimer
+ *
+ *	The only scrollbar timer is used to auto-repeat line and page scrolling
+ *	while mousing down in the scrollbar.
+ */
+void SBAR::TickTimer(TID tid, UINT dtm)
+{
+	if (tid != tidScroll)
+		return;
+	HTSBAR htsbar = HitTest(PtLocalFromGlobal(PT(App().PtMessage())));
+	if (htsbar != htsbarTrack)
+		return;
+	
+	ContinueScroll();
+	switch (htsbar) {
+	case HTSBAR::LineUp:
+		puips->ScrollLine(1);
+		break;
+	case HTSBAR::LineDown:
+		puips->ScrollLine(-1);
+		break;
+	case HTSBAR::PageUp:
+		puips->ScrollPage(1);
+		break;
+	case HTSBAR::PageDown:
+		puips->ScrollPage(-1);
+		break;
+	default:
+		assert(false);
+		break;
+	}
+}
+
+
+void SBAR::StartScroll(void)
+{
+	StopScroll();
+	tidScroll = StartTimer(300);
+	fScrollDelay = true;
+}
+
+
+void SBAR::ContinueScroll(void)
+{
+	if (!fScrollDelay)
+		return;
+	
+	StopScroll();
+	tidScroll = StartTimer(100);
+	fScrollDelay = false;
+}
+
+
+void SBAR::StopScroll(void)
+{
+	if (!tidScroll)
+		return;
+
+	StopTimer(tidScroll);
+	tidScroll = 0;
+	fScrollDelay = false;
 }
 
 

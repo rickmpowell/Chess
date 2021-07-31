@@ -15,13 +15,6 @@
 #include "debug.h"
 
 
-/*
- *	Timer IDs. Must be unique per application.
- */
-
-const UINT tidClock = 1;
-const UINT tidScrollRepeat = 2;
-
 
 /*
  *
@@ -61,11 +54,13 @@ public:
 	UI* puiHover;
 	SPMV spmvCur;
 	bool fInPlay;
+	map<TID, UI*> mptidpui;
 
 public:
 	BDG bdg;	// board
 	PL* mpcpcppl[CPC::ColorMax];	// players
 	RULE* prule;
+	TID tidClock;
 	DWORD mpcpctmClock[CPC::ColorMax];	// player clocks
 	DWORD tmLast;	// time of last move
 
@@ -121,10 +116,18 @@ public:
 	UI* PuiFocus(void) const;
 
 	/*
+	 *	Timers
+	 */
+
+	virtual TID StartTimer(UI* pui, UINT dtm);
+	virtual void StopTimer(UI* pui, TID tid);
+	virtual void TickTimer(TID tid, UINT dtm);
+	void DispatchTimer(TID tid, UINT tm);
+
+	/*
 	 *	Modal game loop
 	 */
 	
-	void Timer(UINT tid, DWORD tm);
 	void PumpMsg(void);
 
 	/*

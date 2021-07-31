@@ -150,6 +150,10 @@ int APP::MessagePump(void)
 {
     MSG msg;
     while (::GetMessage(&msg, nullptr, 0, 0)) {
+        if (msg.message == WM_TIMER) {
+            DispatchTimer(msg.wParam, msg.time);
+            continue;
+        }
         if (::TranslateAccelerator(msg.hwnd, haccel, &msg))
             continue;
         ::TranslateMessage(&msg);
@@ -162,6 +166,17 @@ int APP::MessagePump(void)
 DWORD APP::TmMessage(void)
 {
     return ::GetMessageTime();
+}
+
+
+POINT APP::PtMessage(void)
+{
+    DWORD dw = ::GetMessagePos();
+    POINT pt;
+    pt.x = GET_X_LPARAM(dw);
+    pt.y = GET_Y_LPARAM(dw);
+    ::ScreenToClient(hwnd, &pt);
+    return pt;
 }
 
 
@@ -303,23 +318,29 @@ void APP::Redraw(RC rc)
 }
 
 
-/*  APP::CreateTimer
+/*  APP::StartTimer
  *
  *  Creates a timer that goes every dtm milliseconds.
  */
-void APP::CreateTimer(UINT tid, DWORD dtm)
+TID APP::StartTimer(UINT dtm)
 {
-    ::SetTimer(hwnd, tid, dtm, nullptr);
+    return ::SetTimer(nullptr, 0, dtm, nullptr);
 }
 
 
-/*  APP::DestroyTimer
+/*  APP::StopTimer
  *
  *  Kills the timer
  */
-void APP::DestroyTimer(UINT tid)
+void APP::StopTimer(TID tid)
 {
-    ::KillTimer(hwnd, tid);
+    ::KillTimer(nullptr, tid);
+}
+
+
+void APP::DispatchTimer(TID tid, UINT dtm)
+{
+    pga->DispatchTimer(tid, dtm);
 }
 
 
@@ -441,10 +462,13 @@ bool APP::OnKeyUp(int vk)
  *
  *  Handles the WM_TIMER message from the wndproc. Returns false if
  *  the default processing should still happen.
+ * 
+ *  (I don't think this gets called currently, because we only use nullptr
+ *  window timers which are not dispatched to WndProcs).
  */
 bool APP::OnTimer(UINT tid)
 {
-    pga->Timer(tid, TmMessage());
+    DispatchTimer(tid, TmMessage());
     return true;
 }
 

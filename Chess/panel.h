@@ -68,11 +68,16 @@ class UIPS;
 
 class SBAR : public UI
 {
+	static constexpr float dyThumbMin = 14.0f;
+
 private:
 	UIPS* puips;
 	float yTopCont, yBotCont;
 	float yTopView, yBotView;
-	static constexpr float dyThumbMin = 10.0f;
+	TID tidScroll;
+	bool fScrollDelay;
+	HTSBAR htsbarTrack;
+	PT ptTrackInit, ptThumbInit;
 
 public:
 	SBAR(UIPS* puiParent);
@@ -88,6 +93,11 @@ public:
 
 	RC RcThumb(void) const;
 	HTSBAR HitTest(const PT& pt);
+	void StartScroll(void);
+	void ContinueScroll(void);
+	void StopScroll(void);
+	virtual void TickTimer(TID tid, UINT dtm);
+
 };
 
 
@@ -130,7 +140,8 @@ public:
 	virtual void ScrollLine(int dline);
 	virtual void ScrollPage(int dpage);
 
-	void ScrollTo(float yTop);
+	void ScrollBy(float dy);
+	void ScrollTo(float yTopNew);
 	bool FMakeVis(float y, float dy);
 };
 

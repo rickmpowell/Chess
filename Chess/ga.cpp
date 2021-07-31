@@ -210,7 +210,7 @@ void GA::InitClocks(void)
 void GA::EndGame(void)
 {
 	if (prule->TmGame())
-		app.DestroyTimer(tidClock);
+		app.StopTimer(tidClock);
 	if (spmvCur != SPMV::Hidden)
 		uiml.EndGame();	
 }
@@ -292,21 +292,42 @@ void GA::DispatchCmd(int cmd)
 }
 
 
-void GA::Timer(UINT tid, DWORD tmCur)
+TID GA::StartTimer(UI* pui, UINT dtm)
 {
-	if (tid == tidClock) {
-		if (prule->TmGame() == 0)
-			return;
-		DWORD dtm = tmCur - tmLast;
-		if (dtm > mpcpctmClock[bdg.cpcToMove]) {
-			dtm = mpcpctmClock[bdg.cpcToMove];
-			bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
-			EndGame();
-		}
-		mpcpctmClock[bdg.cpcToMove] -= dtm;
-		tmLast = tmCur;
-		uiml.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
+	TID tid = App().StartTimer(dtm);
+	mptidpui[tid] = pui;
+	return tid;
+}
+
+
+void GA::StopTimer(UI* pui, TID tid)
+{
+	App().StopTimer(tid);
+	mptidpui.erase(mptidpui.find(tid));
+}
+
+
+void GA::DispatchTimer(TID tid, UINT tmCur)
+{
+	if (mptidpui.find(tid) == mptidpui.end())
+		return;
+	mptidpui[tid]->TickTimer(tid, tmCur);
+}
+
+
+void GA::TickTimer(TID tid, UINT tmCur)
+{
+	if (prule->TmGame() == 0)
+		return;
+	DWORD dtm = tmCur - tmLast;
+	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
+		dtm = mpcpctmClock[bdg.cpcToMove];
+		bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
+		EndGame();
 	}
+	mpcpctmClock[bdg.cpcToMove] -= dtm;
+	tmLast = tmCur;
+	uiml.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
 }
 
 
@@ -336,7 +357,7 @@ void GA::SwitchClock(DWORD tmCur)
 		mpcpctmClock[bdg.cpcToMove] += prule->DtmMove();
 	}
 	else {
-		app.CreateTimer(tidClock, 10);
+		tidClock = UI::StartTimer(10);
 	}
 	tmLast = tmCur;
 	StartClock(~bdg.cpcToMove, tmCur);
@@ -456,6 +477,10 @@ void GA::PumpMsg(void)
 			if (msg.wParam == VK_ESCAPE)
 				throw -1;
 			break;
+		case WM_TIMER:
+			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
+			DispatchTimer(msg.wParam, msg.time);
+			continue;
 		case WM_QUIT:
 			throw -1;
 		default:

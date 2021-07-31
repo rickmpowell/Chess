@@ -472,6 +472,38 @@ void UI::KeyUp(int vk)
 }
 
 
+TID UI::StartTimer(UINT dtm)
+{
+	return StartTimer(this, dtm);
+}
+
+
+void UI::StopTimer(TID tid)
+{
+	return StopTimer(this, tid);
+}
+
+
+TID UI::StartTimer(UI* pui, UINT dtm)
+{
+	if (puiParent)
+		return puiParent->StartTimer(pui, dtm);
+	return 0;
+}
+
+
+void UI::StopTimer(UI* pui, TID tid)
+{
+	if (puiParent)
+		puiParent->StopTimer(pui, tid);
+}
+
+
+void UI::TickTimer(TID tid, UINT tmCur)
+{
+}
+
+
 void UI::DispatchCmd(int cmd)
 {
 	if (puiParent)
