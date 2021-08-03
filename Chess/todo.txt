@@ -1,4 +1,4 @@
-  SBAR: thumb dragging is slightly off
+  SBAR: thumb dragging is slightly off - does not adjust for location of initial mouse click within the thumb
   UI: try to pixel align as many borders as possible
   Test: Add perft level option
   UIPL: on hover, change background color when we can change the player
@@ -9,7 +9,6 @@
   When player picker is up, clicking outside the picker should make it cancel.
   Ticking clock overwrites popup tips
   Log: Should we hash tags?
-  UIBD: With board rotated black point of view, animations are messed up
   Help: Help box icon looks like shit
   UIPL: Move level control into the chooser
   Move all localizable strings into resources
@@ -70,6 +69,7 @@
   UIBD: Hilite last made move on board
   Feature: Add a UI for setting up a board
   AI: Play through until no checks before evaluation
+  SBAR: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
   Test: PGN games should feed moves through a PL
   ML: Checkmates should have a # instead of a +
   ML: With small windows, need to do something about the move list. Or limit window size?
@@ -95,6 +95,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* UIBD: With board rotated black point of view, animations are messed up
 * UI: Add mouse support for dragging scrollbar thumb
 * UI: add timer dispatching to UIs
 * UI: Add repeater on scrollbar hold down

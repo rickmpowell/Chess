@@ -274,6 +274,11 @@ void UIBD::Draw(const RC& rcDraw)
 		rankLast = rankMax - rankLast - 1;
 		swap(rankFirst, rankLast);
 	}
+	else {
+		fileFirst = fileMax - fileFirst - 1;
+		fileLast = fileMax - fileLast - 1;
+		swap(fileFirst, fileLast);
+	}
 
 	{
 	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcBounds.PtCenter()));
@@ -538,19 +543,18 @@ void UIBD::AnimateMv(MV mv, unsigned dframe)
 }
 
 
-void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe)
+void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned framefMax)
 {
-	float framefMax = (float)dframe;
 	sqDragInit = sqFrom;
 	RC rcFrom = RcFromSq(sqDragInit);
-	ptDragInit = rcFrom.PtTopLeft();
 	RC rcTo = RcFromSq(sqTo);
+	ptDragInit = rcFrom.PtTopLeft();
 	RC rcFrame = rcFrom;
-	for (float framef = 0.0f; framef < framefMax; framef++) {
+	for (unsigned framef = 0; framef < framefMax; framef++) {
 		rcDragPc = rcFrom;
-		float framefRem = framefMax - framef;
-		rcDragPc.Offset((rcFrom.left*framefRem + rcTo.left*framef) / framefMax - rcFrom.left,
-			(rcFrom.top*framefRem + rcTo.top*framef) / framefMax - rcFrom.top);
+		unsigned framefRem = framefMax - framef;
+		rcDragPc.Move(PT((rcFrom.left*(float)framefRem + rcTo.left*(float)framef) / (float)framefMax,
+						 (rcFrom.top*(float)framefRem + rcTo.top*(float)framef) / (float)framefMax));
 		Redraw(rcFrame|rcDragPc);
 		rcFrame = rcDragPc;
 	}
