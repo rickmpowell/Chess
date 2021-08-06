@@ -11,6 +11,16 @@
 #include "bd.h"
 
 
+/*
+ *
+ *	MVEV structure
+ * 
+ *	Just a little holder of move evaluation information which is used for 
+ *	generating AI move lists and alpha-beta pruning.
+ * 
+ */
+
+
 class MVEV 
 {
 public:
@@ -24,7 +34,7 @@ public:
 	{
 		bdg.MakeMv(mv);
 		gmvReplyAll.Reserve(50);
-		bdg.GenRgmvColor(gmvReplyAll, bdg.cpcToMove, false);
+		bdg.GenGmvColor(gmvReplyAll, bdg.cpcToMove, false);
 	}
 
 	bool operator<(const MVEV& mvev) const
@@ -32,7 +42,6 @@ public:
 		return eval < mvev.eval;
 	}
 };
-
 
 
 /*
@@ -109,6 +118,9 @@ class PLAI : public PL
 protected:
 	float rgfAICoeff[3];
 	uint16_t cYield;
+
+	/* logging */
+	time_point<high_resolution_clock> tpStart;
 	size_t cmvevEval;
 	size_t cmvevGen;
 	size_t cmvevPrune;
@@ -122,13 +134,15 @@ public:
 protected:
 	float EvalBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
 	float EvalBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, float evalAlpha, float evalBeta);
-	void PreSortMoves(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
-	void FillRgbdgmv(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
+	void PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
+	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
 	virtual float EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
 	float CmvFromLevel(int level) const;
 
+	void StartMoveLog(void);
+	void EndMoveLog(void);
 
 	float VpcFromCpc(const BDG& bdg, CPC cpcMove) const;
 	float VpcOpening(const BDG& bdg, CPC cpcMove) const;

@@ -423,9 +423,9 @@ void GA::MoveToImv(int imv, SPMV spmv)
 }
 
 
-void GA::GenRgmv(GMV& gmv)
+void GA::GenGmv(GMV& gmv)
 {
-	bdg.GenRgmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, RMCHK::Remove);
 }
 
 

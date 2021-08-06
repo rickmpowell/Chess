@@ -686,7 +686,7 @@ inline int DsqPawnFromCpc(CPC cpc)
  */
 
 
-enum class RMCHK {	// GenRgmv Option to optionally remove checks
+enum class RMCHK {	// GenGmv Option to optionally remove checks
 	Remove,
 	NoRemove
 };
@@ -723,22 +723,22 @@ public:
 
 	/* move generation */
 	
-	void GenRgmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenRgmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const;
-	void GenRgmvPawn(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvKnight(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvBishop(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvRook(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvQueen(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvKing(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvCastle(GMV& gmv, SQ sqFrom) const;
-	void GenRgmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const;
-	void AddRgmvMvPromotions(GMV& gmv, MV mv) const;
-	void GenRgmvEnPassant(GMV& gmv, SQ sqFrom) const;
+	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenGmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenGmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const;
+	void GenGmvPawn(GMV& gmv, SQ sqFrom) const;
+	void GenGmvKnight(GMV& gmv, SQ sqFrom) const;
+	void GenGmvBishop(GMV& gmv, SQ sqFrom) const;
+	void GenGmvRook(GMV& gmv, SQ sqFrom) const;
+	void GenGmvQueen(GMV& gmv, SQ sqFrom) const;
+	void GenGmvKing(GMV& gmv, SQ sqFrom) const;
+	void GenGmvCastle(GMV& gmv, SQ sqFrom) const;
+	void GenGmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const;
+	void AddGmvMvPromotions(GMV& gmv, MV mv) const;
+	void GenGmvEnPassant(GMV& gmv, SQ sqFrom) const;
 
 
-	/*	BD::FGenRgmvDsq
+	/*	BD::FGenGmvDsq
 	 *
 	 *	Checks the square in the direction given by dsq for a valid
 	 *	destination square. Adds the move to gmv if it is valid.
@@ -746,7 +746,7 @@ public:
 	 *	false if it's not a legal square or there is a piece in the
 	 *	square.
 	 */
-	inline bool FGenRgmvDsq(GMV& gmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
+	inline bool FGenGmvDsq(GMV& gmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
 	{
 		SQ sqTo = sq + dsq;
 		if (sqTo.fIsOffBoard())
@@ -765,16 +765,16 @@ public:
 	}
 
 
-	/*	BD::GenRgmvSlide
+	/*	BD::GenGmvSlide
 	 *
 	 *	Generates all straight-line moves in the direction dsq starting at sqFrom.
 	 *	Stops when the piece runs into a piece of its own color, or a capture of
 	 *	an enemy piece, or it reaches the end of the board.
 	 */
-	inline void GenRgmvSlide(GMV& gmv, SQ sqFrom, int dsq) const
+	inline void GenGmvSlide(GMV& gmv, SQ sqFrom, int dsq) const
 	{
 		IPC ipcFrom = (*this)(sqFrom);
-		for (int sq = sqFrom; FGenRgmvDsq(gmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
+		for (int sq = sqFrom; FGenGmvDsq(gmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
 			;
 	}
 	
@@ -1020,8 +1020,8 @@ public:
 	 *	move generation 
 	 */
 
-	void GenRgmv(GMV& gmv, RMCHK rmchk) const;
-	void GenRgmvQuiescent(GMV& gmv, RMCHK rmchk) const;
+	void GenGmv(GMV& gmv, RMCHK rmchk) const;
+	void GenGmvQuiescent(GMV& gmv, RMCHK rmchk) const;
 	bool FMvIsQuiescent(MV mv) const;
 	
 	/* 

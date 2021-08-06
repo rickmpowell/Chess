@@ -306,7 +306,7 @@ uint64_t GA::CmvPerft(int depth)
 	if (depth == 0)
 		return 1;
 	GMV gmv;
-	bdg.GenRgmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, RMCHK::Remove);
 	if (depth == 1)
 		return gmv.cmv();
 	uint64_t cmv = 0;
@@ -324,7 +324,7 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 		return 1;
 	assert(depthPerft >= 1);
 	GMV gmv;
-	bdg.GenRgmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, RMCHK::Remove);
 	if (depthPerft == 1)
 		return gmv.cmv();
 	uint64_t cmv = 0;
@@ -386,22 +386,31 @@ void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdep
 
 	bool fPassed = false;
 	int depthFirst = fDivide ? 2 : 1;
+
 	for (int depth = depthFirst; depth <= depthLast; depth++) {
+
+		/* what we expect to happen */
+
 		LogOpen(L"Depth", to_wstring(depth));
 		uint64_t cmvExp = mpdepthcmv[depth];
 		LogData(L"Expected: " + to_wstring(cmvExp));
-		time_point tpStart = high_resolution_clock::now();
-		uint64_t cmvAct;
-		if (fDivide)
-			cmvAct = CmvPerftDivide(depth);
-		else
-			cmvAct = CmvPerft(depth);
-		time_point tpEnd = chrono::high_resolution_clock::now();
+		
+		/* time the perft */
+		
+		time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
+		uint64_t cmvAct = fDivide ? CmvPerftDivide(depth) : CmvPerft(depth);
+		time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
+		
+		/* display the results */
+
 		LogData(L"Actual: " + to_wstring(cmvAct));
 		duration dtp = tpEnd - tpStart;
 		microseconds us = duration_cast<microseconds>(dtp);
 		float sp = 1000.0f * (float)cmvAct / (float)us.count();
 		LogData(L"Speed: " + to_wstring((int)round(sp)) + L" moves/ms");
+		
+		/* and handle success/failure */
+		
 		if (cmvExp != cmvAct) {
 			LogClose(L"Depth", L"Failed", LGF::Normal);
 			goto Done;
@@ -409,6 +418,7 @@ void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdep
 		LogClose(L"Depth", L"Passed", LGF::Normal);
 	}
 	fPassed = true;
+
 Done:
 	LogClose(tag, fPassed ? L"Passed" : L"Failed", LGF::Normal);
 }

@@ -247,7 +247,7 @@ bool GA::FIsMoveNumber(TK* ptk, int& w) const
 int BDG::ParseMv(const char*& pch, MV& mv) const
 {
 	GMV gmv;
-	GenRgmv(gmv, RMCHK::Remove);
+	GenGmv(gmv, RMCHK::Remove);
 
 	int rank, file;
 	SQ sq1;

@@ -148,7 +148,7 @@ public:
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);
 	void MoveToImv(int imv, SPMV spmv);
-	void GenRgmv(GMV& gmv);
+	void GenGmv(GMV& gmv);
 
 	/*	
 	 *	Logging
