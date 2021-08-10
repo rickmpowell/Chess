@@ -764,7 +764,7 @@ float PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 	float eval;
 	eval = PLAI::EvalBdg(bdg, mvev, fFull);
 	if (fFull) {
-		normal_distribution<float> flDist(0.0, 50.0f);
+		normal_distribution<float> flDist(0.0, 25.0f);
 		eval += flDist(rgen);
 	}
 	return eval;

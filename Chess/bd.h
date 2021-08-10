@@ -81,6 +81,26 @@ inline TPC TpcOpposite(TPC tpc)
 	return (TPC)((int)tpc ^ 0x07);
 }
 
+inline TPC TpcQueenSide(TPC tpc)
+{
+	return !((int)tpc & 0x4) ? tpc : TpcOpposite(tpc);
+}
+
+inline TPC TpcKingSide(TPC tpc)
+{
+	return ((int)tpc & 0x4) ? tpc : TpcOpposite(tpc);
+}
+
+
+/*
+ *
+ *	CPC enumeration
+ * 
+ *	Color of a piece. White or black, generally
+ * 
+ */
+
+
 enum CPC {
 	NoColor = -1,
 	White = 0,
@@ -107,6 +127,7 @@ inline CPC operator++(CPC& cpc)
  *	Actual piece types
  *
  */
+
 
 enum APC {
 	Error = -1,
@@ -932,6 +953,7 @@ public:
 	void InitFENCastle(const wchar_t*& sz);
 	void InitFENEnPassant(const wchar_t*& sz);
 	TPC TpcUnusedPawn(CPC cpc) const;
+	void EnsureCastleRook(CPC cpc, TPC tpcRook);
 
 	/*
 	 *	debug and validation

@@ -142,17 +142,45 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 
 	if (!SqFromTpc(tpc, cpc).fIsNil()) {
 		switch (apc) {
-		/* TODO: two kings is an error */
-		case APC::King: assert(false); return;
+			/* TODO: two kings is an error */
+		case APC::King:
+			assert(false);
+			return;
 		default:
+		{
 			/* try king-side/queen-side */
-			if (SqFromTpc(tpc = TpcOpposite(tpc), cpc).fIsNil())
+			TPC tpcOpp = TpcOpposite(tpc);
+			if (SqFromTpc(tpcOpp, cpc).fIsNil()) {
+				tpc = tpcOpp;
 				break;
-			[[fallthrough]];
+			}
+		}
+		[[fallthrough]];
 		case APC::Pawn:
 		case APC::Queen:
 			/* this must be a promoted pawn, so find an unused pawn location */
 			tpc = TpcUnusedPawn(cpc);
+			break;
+		}
+	}
+	else {
+		switch (apc) {
+		default:
+		case APC::Pawn:
+			/* if the pawn tpc that corresponds to this file is available, try to put 
+			   it there; this doesn't actually matter for any real purpose, which is why 
+			   I haven't implemented it */
+			break;
+		case APC::Bishop:
+		case APC::Knight:
+		case APC::Rook:
+			/* try to put the piece in the correct king-side/queen-side slot; this
+			   is only important for clearing castle state */
+			TPC tpcPref = tpc;
+			if (sq.rank() == RankBackFromCpc(cpc))
+				tpcPref = sq.file() <= fileQueen ? TpcQueenSide(tpc) : TpcKingSide(tpc);
+			if (SqFromTpc(tpcPref, cpc).fIsNil())
+				tpc = tpcPref;
 			break;
 		}
 	}
@@ -184,16 +212,44 @@ void BD::InitFENCastle(const wchar_t*& sz)
 	ClearCastle(CPC::Black, csKing | csQueen);
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case 'K': SetCastle(CPC::White, csKing); break;
-		case 'Q': SetCastle(CPC::White, csQueen); break;
-		case 'k': SetCastle(CPC::Black, csKing); break;
-		case 'q': SetCastle(CPC::Black, csQueen); break;
+		case 'K': SetCastle(CPC::White, csKing); EnsureCastleRook(CPC::White, tpcKingRook); break;
+		case 'Q': SetCastle(CPC::White, csQueen); EnsureCastleRook(CPC::White, tpcQueenRook); break;
+		case 'k': SetCastle(CPC::Black, csKing); EnsureCastleRook(CPC::Black, tpcKingRook);  break;
+		case 'q': SetCastle(CPC::Black, csQueen); EnsureCastleRook(CPC::Black, tpcQueenRook);  break;
 		case '-': break;
 		default: goto Done;
 		}
 	}
 Done:
 	SkipToSpace(sz);
+}
+
+
+/*	BD::EnsureCastleRook
+ *
+ *	If castling is legal, then our move generation assumes the tpc of the rook
+ *	that can be castled with must be in its original slot. When loading files,
+ *	it's possible to get rooks in the wrong queen-side/king-side slots.
+ */
+void BD::EnsureCastleRook(CPC cpc, TPC tpcCorner)
+{
+	/* check if rook is already correct */
+
+	SQ sqRook = SqFromTpc(tpcCorner, cpc);
+	SQ sqCorner = SQ(RankBackFromCpc(cpc), tpcCorner);
+	if (sqRook == sqCorner)
+		return;
+	
+	assert(ApcFromSq(sqCorner) == APC::Rook);
+	
+	/* swap the rooks so the correct one is in castle position */
+
+	TPC tpcRook = (*this)(sqCorner).tpc();
+	IPC ipcT = (*this)(sqRook);
+	(*this)(sqRook) = (*this)(sqCorner);
+	(*this)(sqCorner) = ipcT;
+	SqFromTpc(tpcCorner, cpc) = sqCorner;
+	SqFromTpc(tpcRook, cpc) = sqRook; 
 }
 
 

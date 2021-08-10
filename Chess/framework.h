@@ -531,6 +531,11 @@ template<class T> inline T peg(const T& t, const T& tFirst, const T& tLast)
 	return min(max(t, tFirst), tLast);
 }
 
+template<class T> inline bool in_range(const T& t, const T& tFirst, const T& tLast)
+{
+	return t >= tFirst && t <= tLast;
+}
+
 
 /*
  *
