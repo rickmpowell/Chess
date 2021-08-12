@@ -395,41 +395,56 @@ void UIPS::ScrollPage(int dpage)
 
 SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), puips(puipsParent),
 		yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0),
-		tidScroll(0), fScrollDelay(false), htsbarTrack(HTSBAR::None), ptTrackInit(0, 0), ptThumbInit(0, 0)
+		tidScroll(0), fScrollDelay(false), htsbarTrack(HTSBAR::None), ptMouseInit(0, 0), ptThumbTopInit(0, 0)
 {
 }
 
 
+/*	SBAR::RcThumb
+ *
+ *	Returns the bounding box of the thumb
+ */
 RC SBAR::RcThumb(void) const
 {
-	RC rcInt = RcInterior().Inflate(0.0, -3.0f);
-	float dyThumb = dyThumbMin;
-	if (yBotCont - yTopCont > 0)
-		dyThumb = rcInt.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
-	dyThumb = min(max(dyThumb, dyThumbMin), rcInt.DyHeight());
+	float dyThumb = DyThumb();
+	RC rcRange = RcInterior().Inflate(0.0, -3.0f);
 
-	/* calculate min and max range of midpoints for the content area and the
-	   scrollbar area */
+	/* range within the scrollbar the top of the thumb can be within */
 
-	float yTopContHalf = yTopCont + (yBotView - yTopView) / 2.0f;
-	float yBotContHalf = yBotCont - (yBotView - yTopView) / 2.0f;
-	float yTopIntHalf = rcInt.top + dyThumb / 2.0f;
-	float yBotIntHalf = rcInt.bottom - dyThumb / 2.0f;
+	float yMinTopThumb = rcRange.top;
+	float yMaxTopThumb = rcRange.bottom - dyThumb;
 
-	/* find  mid-point of the thumb, and position the thumb around it */
+	/* thumb rectangle in inset inside the range */
 
-	float yMidView = (yBotView + yTopView) / 2.0f;
-	float yMidThumb = yTopIntHalf + (yBotIntHalf - yTopIntHalf) * (yMidView - yTopContHalf) / (yBotContHalf - yTopContHalf);
-	RC rcThumb = rcInt;
+	RC rcThumb = rcRange;
 	rcThumb.left += 2.5f;
 	rcThumb.right -= 2.0f;
-	rcThumb.top = max(yMidThumb - dyThumb / 2.0f, rcInt.top);
-	rcThumb.bottom = min(rcThumb.top + dyThumb, rcInt.bottom);
-	
+
+	/* and figure out where the top of the thumb should go */
+
+	float pctTop = (yTopView - yTopCont) / (yBotCont - yTopCont);
+	rcThumb.top = max(yMinTopThumb + (yMaxTopThumb - yMinTopThumb) * pctTop, rcRange.top);
+	rcThumb.bottom = min(rcThumb.top + dyThumb, rcRange.bottom);
+
 	return rcThumb;
 }
 
 
+float SBAR::DyThumb(void) const
+{
+	RC rcRange = RcInterior().Inflate(0.0, -3.0f);
+	float dyThumb = dyThumbMin;
+	if (yBotCont - yTopCont > 0)
+		dyThumb = rcRange.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
+	dyThumb = peg(dyThumb, dyThumbMin, rcRange.DyHeight());
+	return dyThumb;
+}
+
+
+/*	SBAR::Draw
+ *
+ *	Draws the scrollbar
+ */
 void SBAR::Draw(const RC& rcUpdate)
 {
 	RC rcInt = RcInterior();
@@ -445,6 +460,10 @@ void SBAR::Draw(const RC& rcUpdate)
 }
 
 
+/*	SBAR::SetRange
+ *
+ *	Sets the content area range of the scrollbar
+ */
 void SBAR::SetRange(float yTop, float yBot)
 {
 	yTopCont = yTop;
@@ -452,6 +471,10 @@ void SBAR::SetRange(float yTop, float yBot)
 }
 
 
+/*	SBAR::SetRangeView
+ *
+ *	Sets the view range of the scrollbar
+ */
 void SBAR::SetRangeView(float yTop, float yBot)
 {
 	yTopView = yTop;
@@ -459,6 +482,10 @@ void SBAR::SetRangeView(float yTop, float yBot)
 }
 
 
+/*	SBAR::HitTest
+ *
+ *	Hit tests the mouse point
+ */
 HTSBAR SBAR::HitTest(const PT& pt)
 {
 	RC rcInt = RcInterior();
@@ -486,28 +513,28 @@ void SBAR::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
 
-	switch (htsbarTrack = HitTest(ptTrackInit = pt)) {
+	switch (htsbarTrack = HitTest(ptMouseInit = pt)) {
 
 	case HTSBAR::PageUp:
-		StartScroll();
+		StartScrollRepeat();
 		puips->ScrollPage(1);
 		break;
 	case HTSBAR::PageDown:
-		StartScroll();
+		StartScrollRepeat();
 		puips->ScrollPage(-1);
 		break;
 
 	case HTSBAR::LineUp:
-		StartScroll();
+		StartScrollRepeat();
 		puips->ScrollLine(1);
 		break;
 	case HTSBAR::LineDown:
-		StartScroll();
+		StartScrollRepeat();
 		puips->ScrollLine(-1);
 		break;
 
 	case HTSBAR::Thumb:
-		ptThumbInit = RcThumb().PtTopLeft();
+		ptThumbTopInit = RcThumb().PtTopLeft();
 		break;
 
 	default:
@@ -526,7 +553,7 @@ void SBAR::StartLeftDrag(const PT& pt)
  */
 void SBAR::EndLeftDrag(const PT& pt)
 {
-	StopScroll();
+	EndScrollRepeat();
 	if (htsbarTrack == HTSBAR::Thumb)	// one last thumb positioning when thumbing
 		LeftDrag(pt);
 	htsbarTrack = HTSBAR::None;
@@ -539,25 +566,24 @@ void SBAR::EndLeftDrag(const PT& pt)
  *	Mouse dragging in the scrollbar. The only dragging we do is moving the
  *	thumb around, so this basically handles the drag thumbing.
  */
-void SBAR::LeftDrag(const PT& pt)
+void SBAR::LeftDrag(const PT& ptMouse)
 {
 	if (htsbarTrack != HTSBAR::Thumb)
 		return;
-	HTSBAR htsbar = HitTest(pt);
+	HTSBAR htsbar = HitTest(ptMouse);
 	if (htsbar == HTSBAR::None)
 		return;
 
+	/* compute where the top of the thumb is in the content area */
+
 	RC rcThumb = RcThumb();
-	float yThumbMin = RcInterior().top + 3.0f;
-	float yThumbMax = RcInterior().bottom - 3.0f - rcThumb.DyHeight();
-	float yThumbNew = peg(ptThumbInit.y - ptTrackInit.y + pt.y, yThumbMin, yThumbMax);
-	float pct = (yThumbNew - yThumbMin) / (yThumbMax - yThumbMin);
-
-	/* convert pct to content-relative offset */
-
+	float yThumbTopMin = RcInterior().top + 3.0f;
+	float yThumbTopMax = RcInterior().bottom - 3.0f - rcThumb.DyHeight();
+	float yThumbTopNew = peg(ptThumbTopInit.y - ptMouseInit.y + ptMouse.y, yThumbTopMin, yThumbTopMax);
+	float pct = (yThumbTopNew - yThumbTopMin) / (yThumbTopMax - yThumbTopMin);
 	float yTopContNew = yTopView - pct * (yBotCont - yTopCont);
 	
-	/* and notify parent where new thumb is */
+	/* and tell parent to do the actual scrolling */
 
 	puips->ScrollTo(yTopContNew);
 }
@@ -576,7 +602,7 @@ void SBAR::TickTimer(TID tid, UINT dtm)
 	if (htsbar != htsbarTrack)
 		return;
 	
-	ContinueScroll();
+	ContinueScrollRepeat();
 	switch (htsbar) {
 	case HTSBAR::LineUp:
 		puips->ScrollLine(1);
@@ -597,26 +623,39 @@ void SBAR::TickTimer(TID tid, UINT dtm)
 }
 
 
-void SBAR::StartScroll(void)
+/*	SBAR::StartScrollRepeat
+ *
+ *	Stars the scroll repeater timer
+ */
+void SBAR::StartScrollRepeat(void)
 {
-	StopScroll();
+	EndScrollRepeat();
 	tidScroll = StartTimer(300);
 	fScrollDelay = true;
 }
 
 
-void SBAR::ContinueScroll(void)
+/*	SBAR::ContinueScrollRepeat
+ *
+ *	Continues the scroll repeater timer. This should be called on every timer
+ *	in order to handle the repeater delay
+ */
+void SBAR::ContinueScrollRepeat(void)
 {
 	if (!fScrollDelay)
 		return;
 	
-	StopScroll();
+	EndScrollRepeat();
 	tidScroll = StartTimer(100);
 	fScrollDelay = false;
 }
 
 
-void SBAR::StopScroll(void)
+/*	SBAR::EndScrollRepeat
+ *
+ *	Stops the scroll repeater
+ */
+void SBAR::EndScrollRepeat(void)
 {
 	if (!tidScroll)
 		return;

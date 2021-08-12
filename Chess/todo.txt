@@ -1,4 +1,3 @@
-  SBAR: thumb dragging is slightly off - does not adjust for location of initial mouse click within the thumb
   UI: try to pixel align as many borders as possible
   Test: Add perft level option
   UIPL: on hover, change background color when we can change the player
@@ -95,6 +94,7 @@
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
   ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* SBAR: thumb dragging is slightly off - does not adjust for location of initial mouse click within the thumb
 * UIBD: With board rotated black point of view, animations are messed up
 * UI: Add mouse support for dragging scrollbar thumb
 * UI: add timer dispatching to UIs
