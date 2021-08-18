@@ -1,3 +1,4 @@
+  Add a new game panel
   UI: try to pixel align as many borders as possible
   Test: Add perft level option
   UIPL: on hover, change background color when we can change the player
@@ -53,6 +54,9 @@
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
   Move gen: bitboard pawns
+  Move gen: checks use bitboards for knights
+  Move gen: checks use bitboards for bishops, rooks, and queens
+  MOve gen: checks use bitboards for king
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: annotate candidate best moves on board
   AI: interruptible
@@ -93,7 +97,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-  ML: Optimize redraw (cache BDG with first visible line in the view area? or every move?)
+* Move gen: checks use bitboards for pawns
 * SBAR: thumb dragging is slightly off - does not adjust for location of initial mouse click within the thumb
 * UIBD: With board rotated black point of view, animations are messed up
 * UI: Add mouse support for dragging scrollbar thumb

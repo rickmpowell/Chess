@@ -574,6 +574,33 @@ bool BD::FInCheck(CPC cpc) const
 }
 
 
+/*	BD::FSqPawnAttacked
+ *
+ *	Checks if a pawn of the given color is attacking sqAttacked.
+ */
+bool BD::FSqPawnAttacked(CPC cpcBy, SQ sqAttacked) const
+{
+	BB bbPawn = mpapcbb[cpcBy][APC::Pawn];
+	BB bbPawnAttack = cpcBy == CPC::White ? ((bbPawn - bbFileA) << 7) + ((bbPawn - bbFileH) << 9) : 
+		((bbPawn - bbFileA) >> 9) + ((bbPawn - bbFileH) >> 7);
+	return bbPawnAttack.fSet(sqAttacked);
+
+#ifdef OLD
+	for (TPC tpc = tpcPawnFirst; tpc < tpcPawnLim; ++tpc) {
+		SQ sq = (*this)(tpc, cpcBy);
+		if (ApcFromSq(sq) != APC::Pawn)
+			continue;
+		int dsq = sq - sqAttacked;
+		if (cpcBy == CPC::White)
+			dsq = -dsq;
+		if (dsq == 17 || dsq == 15)
+			return true;
+	}
+	return false;
+#endif
+}
+
+
 /*	BD::FSqAttacked
  *
  *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
@@ -581,20 +608,17 @@ bool BD::FInCheck(CPC cpc) const
  */
 bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
 {
+	if (FSqPawnAttacked(cpcBy, sqAttacked))
+		return true;
+	
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 		SQ sq = (*this)(tpc, cpcBy);
-		if (sq.fIsNil())
+		if (sq.fIsOffBoard())
 			continue;
 		int dsq = sq - sqAttacked;
-		if (dsq == 0)
-			continue;
 		APC apc = ApcFromSq(sq);
 		switch (apc) {
 		case APC::Pawn:
-			if (cpcBy == CPC::White)
-				dsq = -dsq;
-			if (dsq == 17 || dsq == 15)
-				return true;
 			break;
 		case APC::Knight:
 			if (dsq < 0)
@@ -603,32 +627,38 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
 				return true;
 			break;
 		case APC::Queen:
+			if (dsq == 0)
+				continue;
 			if (sq.rank() == sqAttacked.rank()) {
-				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 1 : -1))
+				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 1 : -1))
 					return true;
 			}
 			else if (sq.file() == sqAttacked.file()) {
-				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 16 : -16))
+				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 16 : -16))
 					return true;
 			}
 			[[fallthrough]];
 		case APC::Bishop:
+			if (dsq == 0)
+				continue;
 			if (dsq % 17 == 0) {
-				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 17 : -17))
+				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 17 : -17))
 					return true;
 			}
 			else if (dsq % 15 == 0) {
-				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 15 : -15))
+				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 15 : -15))
 					return true;
 			}
 			break;
 		case APC::Rook:
+			if (dsq == 0)
+				continue;
 			if (sq.rank() == sqAttacked.rank()) {
-				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 1 : -1))
+				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 1 : -1))
 					return true;
 			}
 			else if (sq.file() == sqAttacked.file()) {
-				if (FDsqAttack(sqAttacked, sq, sqAttacked > sq ? 16 : -16))
+				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 16 : -16))
 					return true;
 			}
 			break;

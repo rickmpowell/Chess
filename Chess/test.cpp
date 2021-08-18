@@ -221,7 +221,7 @@ int GA::PlayPGNFile(const wchar_t szFile[])
 	}
 	catch (int err)
 	{
-		if (err == 1) {
+		if (err != 1) {
 			wchar_t sz[100];
 			::wsprintf(sz, L"Error Line %d", err);
 			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);

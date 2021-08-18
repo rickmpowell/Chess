@@ -808,6 +808,7 @@ public:
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
 	bool FSqAttacked(CPC cpc, SQ sqAttacked) const;
+	bool FSqPawnAttacked(CPC cpcBy, SQ sqAttacked) const;
 	
 	/*	BD::FDsqAttack
 	 *

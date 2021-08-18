@@ -209,8 +209,25 @@ inline int bitscan(__int64 grf)
  *
  *	BB type
  *
- *	Bitboards.
+ *	Bitboards. We implement a bunch of operators on these things for doing common
+ *	bitboard operators.
+ * 
+ *	~bb		all the squares not in bb
+ *	bb1+bb2	the union of the two bb
+ *	bb1|bbw	same as +
+ *	bb1-bb2	removes the squares in bb2 from bb1
+ *	bb1&bb2	the intersection of the two bb
+ *	bb1^bb2	the squares that are different between bb1 and bb2
+ *	bb<<num	
+ *	bb>>num
  *
+ *	We also operate on squares
+ * 
+ *	bb+sq	adds the square to the bitboard
+ *	bb|sq	same as +
+ *	bb-sq	removes the square from the bitboared
+ *	bb&sq	sets only the bitboard square that matches sq
+ *	bb^sq	toggles the sq square in the bitboard
  */
 
 
@@ -258,6 +275,26 @@ public:
 		return *this;
 	}
 
+	inline BB operator|(SQ sq) const
+	{
+		return *this + sq;
+	}
+
+	inline BB& operator|=(SQ sq)
+	{
+		return *this += sq;
+	}
+
+	inline BB operator|(BB bb) const
+	{
+		return *this + bb;
+	}
+
+	inline BB& operator|=(BB bb)
+	{
+		return *this += bb;
+	}
+
 	inline BB operator-(SQ sq) const
 	{
 		return BB(grf & ~sq.fgrf());
@@ -277,6 +314,28 @@ public:
 	inline BB& operator-=(BB bb)
 	{
 		grf &= ~bb.grf;
+		return *this;
+	}
+
+	inline BB operator&(SQ sq) const
+	{
+		return BB(grf & sq.fgrf());
+	}
+
+	inline BB operator&=(SQ sq)
+	{
+		grf &= sq.fgrf();
+		return *this;
+	}
+
+	inline BB operator&(BB bb) const
+	{
+		return BB(grf & bb.grf);
+	}
+
+	inline BB& operator&=(BB bb)
+	{
+		grf &= bb.grf;
 		return *this;
 	}
 

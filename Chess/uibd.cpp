@@ -192,21 +192,20 @@ void UIBD::InitGame(void)
 
 /*	UIBD::MakeMv
  *
- *	Makes a move on the board and echoes it to the screen board panel. We also do end of 
- *	game checking here.
+ *	Makes a move on the board and echoes it on the screen.
+ * 
+ *	Throws an exception if the move is not valid.
  */
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
-	assert(!mv.fIsNil());
-#ifndef NDEBUG
 	for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
 		MV mvDrag = gmvDrag[imv];
 		if (mvDrag.sqFrom() == mv.sqFrom() && mvDrag.sqTo() == mv.sqTo())
 			goto FoundMove;
 	}
-	assert(false);
+	throw 1;
 FoundMove:
-#endif
+
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	ga.bdg.MakeMv(mv);
