@@ -807,8 +807,13 @@ public:
 	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
-	bool FSqAttacked(CPC cpc, SQ sqAttacked) const;
-	bool FSqPawnAttacked(CPC cpcBy, SQ sqAttacked) const;
+	bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const;
+	BB BbPawnAttacked(CPC cpcBy) const;
+	bool FSqKingAttacked(SQ sqAttacked, CPC cpcBy) const;
+	BB BbKnightAttacked(CPC cpcBy) const;
+	bool FSqBishopAttacked(BB bbAttacked, CPC cpcBy) const;
+	bool FSqRookAttacked(BB bbAttacked, CPC cpcBy) const;
+	bool FSqQueenAttacked(BB bbAttacked, CPC cpcBy) const;
 	
 	/*	BD::FDsqAttack
 	 *

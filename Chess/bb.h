@@ -60,7 +60,7 @@ public:
 	{ 
 	}
 
-	inline SQ(BYTE grf) : grf(grf) 
+	inline SQ(uint8_t grf) : grf(grf) 
 	{ 
 	}
 	
@@ -113,7 +113,7 @@ public:
 	
 	inline SQ operator-(int dsq) const 
 	{
-		return SQ((BYTE)(grf - dsq)); 
+		return SQ((uint8_t)(grf - dsq)); 
 	}
 	
 	inline int operator-(const SQ& sq) const 
@@ -131,9 +131,9 @@ public:
 		return (grf & 7) | ((grf >> 1) & 0x38); 
 	}
 	
-	inline __int64 fgrf(void) const 
+	inline uint64_t fgrf(void) const 
 	{ 
-		return 1LL << shgrf(); 
+		return 1ULL << shgrf(); 
 	}
 };
 
@@ -160,14 +160,14 @@ const SQ sqNil = SQ(0xff);
  *	This is a divide-and-conquer SWAR (SIMD in a register) approach to the bit-counting 
  *	problem. 
  */
-inline int popcount(__int64 grf)
+inline int popcount(uint64_t grf)
 {
 	/* TODO: use intrinsic */
-	const __int64 k1 = 0x5555555555555555LL;
-	const __int64 k2 = 0x3333333333333333LL;
-	const __int64 k4 = 0x0f0f0f0f0f0f0f0fLL;
-	const __int64 kf = 0x0101010101010101LL;
-	__int64 grfT = grf - ((grf >> 1) & k1);
+	const uint64_t k1 = 0x5555555555555555LL;
+	const uint64_t k2 = 0x3333333333333333LL;
+	const uint64_t k4 = 0x0f0f0f0f0f0f0f0fLL;
+	const uint64_t kf = 0x0101010101010101LL;
+	uint64_t grfT = grf - ((grf >> 1) & k1);
 	grfT = (grfT & k2) + ((grfT >> 2) & k2);
 	grfT = (grfT + (grfT >> 4)) & k4;
 	return (int)((grfT * kf) >> 56);
@@ -194,9 +194,9 @@ const int rgbs64[64] = {
    25, 14, 19,  9, 13,  8,  7,  6
 };
 
-const __int64 debruijn64 = 0x03f79d71b4cb0a89LL;
+const uint64_t debruijn64 = 0x03f79d71b4cb0a89LL;
 
-inline int bitscan(__int64 grf)
+inline int bitscan(uint64_t grf)
 {
 	/* TODO: use intrinsic */
 	assert(grf);
@@ -233,13 +233,13 @@ inline int bitscan(__int64 grf)
 
 class BB
 {
-	__int64 grf;
+	uint64_t grf;
 public:
 	inline BB(void) : grf(0)
 	{
 	}
 
-	inline BB(__int64 grf) : grf(grf)
+	inline BB(uint64_t grf) : grf(grf)
 	{
 	}
 
@@ -435,6 +435,8 @@ const BB            bbFileE(0b00010000000100000001000000010000000100000001000000
 const BB            bbFileF(0b0010000000100000001000000010000000100000001000000010000000100000LL);
 const BB            bbFileG(0b0100000001000000010000000100000001000000010000000100000001000000LL);
 const BB            bbFileH(0b1000000010000000100000001000000010000000100000001000000010000000LL);
+const BB			bbFileAB(bbFileA | bbFileB);
+const BB			bbFileGH(bbFileG | bbFileH);
 
 const BB            bbRank1(0b0000000000000000000000000000000000000000000000000000000011111111LL);
 const BB            bbRank2(0b0000000000000000000000000000000000000000000000001111111100000000LL);

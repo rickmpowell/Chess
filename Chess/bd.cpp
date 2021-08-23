@@ -570,34 +570,65 @@ bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
  */
 bool BD::FInCheck(CPC cpc) const
 {
-	return FSqAttacked(~cpc, (*this)(tpcKing, cpc));
+	return FSqAttacked((*this)(tpcKing, cpc), ~cpc);
 }
 
 
-/*	BD::FSqPawnAttacked
+/*	BD::BbPawnAttacked
  *
- *	Checks if a pawn of the given color is attacking sqAttacked.
+ *	Returns bitboard of all squares pawns attack.
  */
-bool BD::FSqPawnAttacked(CPC cpcBy, SQ sqAttacked) const
+BB BD::BbPawnAttacked(CPC cpcBy) const
 {
 	BB bbPawn = mpapcbb[cpcBy][APC::Pawn];
-	BB bbPawnAttack = cpcBy == CPC::White ? ((bbPawn - bbFileA) << 7) + ((bbPawn - bbFileH) << 9) : 
-		((bbPawn - bbFileA) >> 9) + ((bbPawn - bbFileH) >> 7);
-	return bbPawnAttack.fSet(sqAttacked);
-
-#ifdef OLD
-	for (TPC tpc = tpcPawnFirst; tpc < tpcPawnLim; ++tpc) {
-		SQ sq = (*this)(tpc, cpcBy);
-		if (ApcFromSq(sq) != APC::Pawn)
-			continue;
-		int dsq = sq - sqAttacked;
-		if (cpcBy == CPC::White)
-			dsq = -dsq;
-		if (dsq == 17 || dsq == 15)
-			return true;
+	BB bbPawnAttacked;
+	if (cpcBy == CPC::White) {
+		bbPawnAttacked = (bbPawn - bbFileA) << 7;
+		bbPawnAttacked |= (bbPawn - bbFileH) << 9;
 	}
+	else {
+		bbPawnAttacked = (bbPawn - bbFileA) >> 9;
+		bbPawnAttacked |= (bbPawn - bbFileH) >> 7;
+	}
+	return bbPawnAttacked;
+}
+
+
+BB BD::BbKnightAttacked(CPC cpcBy) const
+{
+	BB bbKnights = mpapcbb[cpcBy][APC::Knight];
+	BB bbLeft1 = (bbKnights >> 1) - bbFileH;
+	BB bbLeft2 = (bbKnights >> 2) - bbFileGH;
+	BB bbRight1 = (bbKnights << 1) - bbFileA;
+	BB bbRight2 = (bbKnights << 2) - bbFileAB;
+	BB bb1 = bbLeft1 | bbRight1;
+	BB bb2 = bbLeft2 | bbRight2;
+	return (bb1 << 16) | (bb1 >> 16) | (bb2 << 8) | (bb2 >> 8);
+}
+
+bool BD::FSqBishopAttacked(BB bbAttacked, CPC cpcBy) const
+{
 	return false;
-#endif
+}
+
+
+bool BD::FSqRookAttacked(BB bbAttacked, CPC cpcBy) const
+{
+	return false;
+}
+
+
+bool BD::FSqQueenAttacked(BB bbAttacked, CPC cpcBy) const
+{
+	return false;
+}
+
+
+bool BD::FSqKingAttacked(SQ sqAttacked, CPC cpcBy) const
+{
+	SQ sqKing = mptpcsq[cpcBy][tpcKing];
+	int dsq = abs(sqKing - sqAttacked);
+	return dsq == 1 || dsq == 15 || dsq == 16 || dsq == 17;
 }
 
 
@@ -606,26 +637,24 @@ bool BD::FSqPawnAttacked(CPC cpcBy, SQ sqAttacked) const
  *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
  *	on sqAttacked is not considered to be attacking sqAttacked.
  */
-bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
+bool BD::FSqAttacked(SQ sqAttacked, CPC cpcBy) const
 {
-	if (FSqPawnAttacked(cpcBy, sqAttacked))
+	BB bbAttacked = BB(sqAttacked);
+	if (BbPawnAttacked(cpcBy) & bbAttacked)
 		return true;
-	
+	if (BbKnightAttacked(cpcBy) & bbAttacked)
+		return true;
+	if (FSqKingAttacked(sqAttacked, cpcBy))
+		return true;
+
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 		SQ sq = (*this)(tpc, cpcBy);
-		if (sq.fIsOffBoard())
+		if (sq.fIsNil())
 			continue;
+		assert(!sq.fIsOffBoard());
 		int dsq = sq - sqAttacked;
 		APC apc = ApcFromSq(sq);
 		switch (apc) {
-		case APC::Pawn:
-			break;
-		case APC::Knight:
-			if (dsq < 0)
-				dsq = -dsq;
-			if (dsq == 33 || dsq == 31 || dsq == 18 || dsq == 14)
-				return true;
-			break;
 		case APC::Queen:
 			if (dsq == 0)
 				continue;
@@ -661,12 +690,6 @@ bool BD::FSqAttacked(CPC cpcBy, SQ sqAttacked) const
 				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 16 : -16))
 					return true;
 			}
-			break;
-		case APC::King:
-			if (dsq < 0)
-				dsq = -dsq;
-			if (dsq == 17 || dsq == 16 || dsq == 15 || dsq == 1)
-				return true;
 			break;
 		default:
 			break;
@@ -892,16 +915,16 @@ void BD::GenGmvCastle(GMV& gmv, SQ sqKing) const
 	CPC cpcOpp = ~cpcKing;
 	bool fMaybeInCheck = true;	
 	if (FCanCastle(cpcKing, csKing) && FIsEmpty(sqKing+1) && FIsEmpty(sqKing+2)) {
-		if (FSqAttacked(cpcOpp, sqKing))
+		if (FSqAttacked(sqKing, cpcOpp))
 			return;
 		fMaybeInCheck = false;
-		if (!FSqAttacked(cpcOpp, sqKing+1))
+		if (!FSqAttacked(sqKing+1, cpcOpp))
 			gmv.AppendMv(sqKing, sqKing+2);
 	}
 	if (FCanCastle(cpcKing, csQueen) && FIsEmpty(sqKing-1) && FIsEmpty(sqKing-2) && FIsEmpty(sqKing-3)) {
-		if (fMaybeInCheck && FSqAttacked(cpcOpp, sqKing)) 
+		if (fMaybeInCheck && FSqAttacked(sqKing, cpcOpp)) 
 			return;
-		if (!FSqAttacked(cpcOpp, sqKing-1))
+		if (!FSqAttacked(sqKing-1, cpcOpp))
 			gmv.AppendMv(sqKing, sqKing-2);
 	}
 }
@@ -1264,7 +1287,7 @@ wstring BDG::SzMoveAndDecode(MV mv)
 	wstring sz = SzDecodeMv(mv, true);
 	CPC cpc = CpcFromSq(mv.sqFrom());
 	MakeMv(mv);
-	if (FSqAttacked(cpc, (*this)(tpcKing, ~cpc)))
+	if (FSqAttacked((*this)(tpcKing, ~cpc), cpc))
 		sz += L'+';
 	return sz;
 }

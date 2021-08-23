@@ -532,8 +532,8 @@ float PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 		   that isn't defended, which will improve alpha-beta pruning, but not something 
 		   we want to do on real board evaluation; a better heuristic would be to 
 		   exchange until quiescence */
-		if (bdg.FSqAttacked(bdg.cpcToMove, mvev.mv.sqTo()) &&
-				!bdg.FSqAttacked(~bdg.cpcToMove, mvev.mv.sqTo()))
+		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
+				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
 			vpcSelf -= bdg.VpcFromSq(mvev.mv.sqTo());
 	}
 	float evalMat = vpcSelf - vpcNext;

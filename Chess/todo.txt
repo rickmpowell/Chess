@@ -54,9 +54,8 @@
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
   Move gen: bitboard pawns
-  Move gen: checks use bitboards for knights
   Move gen: checks use bitboards for bishops, rooks, and queens
-  MOve gen: checks use bitboards for king
+  Move gen: use bitboards to test attack squares for legal castles
   Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   AI: annotate candidate best moves on board
   AI: interruptible
@@ -97,6 +96,8 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Move gen: checks use bitboards for king
+* Move gen: checks use bitboards for knights
 * Move gen: checks use bitboards for pawns
 * SBAR: thumb dragging is slightly off - does not adjust for location of initial mouse click within the thumb
 * UIBD: With board rotated black point of view, animations are messed up
