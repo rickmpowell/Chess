@@ -96,6 +96,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Keep occupied (white/black) and empty square bitboard in the BD
 * Move gen: checks use bitboards for king
 * Move gen: checks use bitboards for knights
 * Move gen: checks use bitboards for pawns

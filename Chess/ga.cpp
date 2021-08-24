@@ -179,7 +179,6 @@ void GA::NewGame(RULE* prule)
 		delete this->prule;
 	this->prule = prule;	
 	InitGame(szInitFEN);
-	
 }
 
 

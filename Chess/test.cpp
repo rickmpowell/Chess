@@ -26,9 +26,11 @@ void GA::Test(SPMV spmv)
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	LogClose(L"New Game", L"Passed", LGF::Normal);
 
+#ifdef NDEBUG
 	LogOpen(L"Perft", L"");
 	PerftTest();
 	LogClose(L"Perft", L"Passed", LGF::Normal);
+#endif
 
 	LogOpen(L"Undo", L"");
 	UndoTest();

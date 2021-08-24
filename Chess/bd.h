@@ -717,7 +717,9 @@ class BD
 	static const float mpapcvpc[];
 public:
 	uint8_t mpsqipc[64+64];	/* the board itself (maps square to piece) */
-	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards
+	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards for the pieces
+	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
+	BB bbEmpty;	// empty squares
 	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
@@ -726,11 +728,12 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) : sqEnPassant(bd.sqEnPassant), cs(bd.cs)
+	BD(const BD& bd) : bbEmpty(bd.bbEmpty), sqEnPassant(bd.sqEnPassant), cs(bd.cs)
 	{
 		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
-		memcpy(mpapcbb, bd.mpapcbb, sizeof(mpapcbb));
 		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
+		memcpy(mpapcbb, bd.mpapcbb, sizeof(mpapcbb));
+		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
 	}
 
 	void SetEmpty(void);
@@ -934,11 +937,15 @@ public:
 	inline void SetBB(IPC ipc, SQ sq)
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
+		mpcpcbb[ipc.cpc()] += sq;
+		bbEmpty -= sq;
 	}
 
 	inline void ClearBB(IPC ipc, SQ sq)
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
+		mpcpcbb[ipc.cpc()] -= sq;
+		bbEmpty += sq;
 	}
 
 	/*

@@ -10,6 +10,38 @@
 #include "bd.h"
 
 
+/*
+ *
+ *	mpsqdirbb
+ *
+ *	We keep bitboards for every square and every direction of squares that are
+ *	attacked from that square.
+ * 
+ */
+
+
+MPSQDIRBB mpsqdirbb;
+
+MPSQDIRBB::MPSQDIRBB(void)
+{
+	/* build all the attack bitboards for each square and each direction */
+
+	for (int rank = 0; rank < rankMax; rank++)
+		for (int file = 0; file < fileMax; file++) {
+			SQ sq(rank, file);
+			for (int drank = -1; drank <= 1; drank++)
+				for (int dfile = -1; dfile <= 1; dfile++) {
+					int dsq = 16 * drank + dfile;
+					if (dsq == 0)
+						continue;
+					DIR dir = DirFromDrankDfile(drank, dfile);
+					for (SQ sqNext = sq + dsq; !sqNext.fIsOffBoard(); sqNext += dsq)
+						mpsqdirbb[sq][(int)dir] |= BB(sqNext.fgrf());
+				}
+		}
+}
+
+
 
 /*
  *
@@ -47,8 +79,10 @@ void BD::SetEmpty(void)
 		for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc)
 			mptpcsq[cpc][tpc] = sqNil;
 		for (APC apc = APC::Null; apc < APC::ActMax; ++apc)
-			mpapcbb[cpc][apc] = 0;
+			mpapcbb[cpc][apc] = bbNone;
+		mpcpcbb[cpc] = bbNone;
 	}
+	bbEmpty = bbAll;
 }
 
 
@@ -319,8 +353,10 @@ void BD::MakeMvSq(MV& mv)
 				(tpcTake == tpcKingRook && (cs & (csKing << ~cpcFrom))))
 			apcTake = APC::RookCastleable;
 		mv.SetCapture(apcTake, tpcTake);
+
 		SqFromIpc(ipcTake) = sqNil;
 		ClearBB(ipcTake, sqTake);
+		
 		switch (ipcTake.tpc()) {
 		case tpcKingRook: 
 			ClearCastle(~cpcFrom, csKing); 
@@ -448,6 +484,7 @@ void BD::UndoMvSq(MV mv)
 	SetBB(ipcMove, sqFrom);
 	ClearBB(ipcMove, sqTo);
 	SqFromIpc(ipcMove) = sqFrom;
+
 	APC apcMove = ipcMove.apc();	// get the type of moved piece after we've undone promotion
 
 	/* if move was a capture, put the captured piece back on the board; otherwise
@@ -1037,21 +1074,31 @@ void BD::Validate(void) const
 		}
 	}
 
+	/* union of black, white, and empty bitboards should be all squares */
+	assert((mpcpcbb[CPC::White] | mpcpcbb[CPC::Black] | bbEmpty) == bbAll);
+	/* white, black, and empty are disjoint */
+	assert((mpcpcbb[CPC::White] & bbEmpty) == bbNone);
+	assert((mpcpcbb[CPC::Black] & bbEmpty) == bbNone);
+	assert((mpcpcbb[CPC::White] & mpcpcbb[CPC::Black]) == bbNone);
+
 	/* check for valid castle situations */
 	/* check for valid en passant situations */
 }
 
 void BD::ValidateBB(IPC ipc, SQ sq) const
 {
-	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc) 
+	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
 		for (APC apc = APC::Null; apc < APC::ActMax; ++apc) {
 			if (cpc == ipc.cpc() && apc == ipc.apc()) {
 				assert(mpapcbb[cpc][apc].fSet(sq));
+				assert(mpcpcbb[cpc].fSet(sq));
+				assert(!bbEmpty.fSet(sq));
 			}
 			else {
 				assert(!mpapcbb[cpc][apc].fSet(sq));
 			}
 		}
+
 }
 
 #endif
