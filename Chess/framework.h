@@ -36,6 +36,9 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <intrin.h>
+#include <immintrin.h>
+
 
 #include <cmath>
 #include <algorithm>

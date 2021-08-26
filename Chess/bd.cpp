@@ -82,7 +82,7 @@ void BD::SetEmpty(void)
 			mpapcbb[cpc][apc] = bbNone;
 		mpcpcbb[cpc] = bbNone;
 	}
-	bbEmpty = bbAll;
+	bbUnoccupied = bbAll;
 }
 
 
@@ -618,15 +618,8 @@ bool BD::FInCheck(CPC cpc) const
 BB BD::BbPawnAttacked(CPC cpcBy) const
 {
 	BB bbPawn = mpapcbb[cpcBy][APC::Pawn];
-	BB bbPawnAttacked;
-	if (cpcBy == CPC::White) {
-		bbPawnAttacked = (bbPawn - bbFileA) << 7;
-		bbPawnAttacked |= (bbPawn - bbFileH) << 9;
-	}
-	else {
-		bbPawnAttacked = (bbPawn - bbFileA) >> 9;
-		bbPawnAttacked |= (bbPawn - bbFileH) >> 7;
-	}
+	bbPawn = cpcBy == CPC::White ? BbNorthOne(bbPawn) : BbSouthOne(bbPawn);
+	BB bbPawnAttacked = BbEastOne(bbPawn) | BbWestOne(bbPawn);
 	return bbPawnAttacked;
 }
 
@@ -634,104 +627,116 @@ BB BD::BbPawnAttacked(CPC cpcBy) const
 BB BD::BbKnightAttacked(CPC cpcBy) const
 {
 	BB bbKnights = mpapcbb[cpcBy][APC::Knight];
-	BB bbLeft1 = (bbKnights >> 1) - bbFileH;
-	BB bbLeft2 = (bbKnights >> 2) - bbFileGH;
-	BB bbRight1 = (bbKnights << 1) - bbFileA;
-	BB bbRight2 = (bbKnights << 2) - bbFileAB;
-	BB bb1 = bbLeft1 | bbRight1;
-	BB bb2 = bbLeft2 | bbRight2;
-	return (bb1 << 16) | (bb1 >> 16) | (bb2 << 8) | (bb2 >> 8);
+	BB bb1 = BbWestOne(bbKnights) | BbEastOne(bbKnights);
+	BB bb2 = BbWestTwo(bbKnights) | BbEastTwo(bbKnights);
+	return BbNorthTwo(bb1) | BbSouthTwo(bb1) | BbNorthOne(bb2) | BbSouthOne(bb2);
 }
 
-bool BD::FSqBishopAttacked(BB bbAttacked, CPC cpcBy) const
+
+BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const
 {
-	return false;
+	assert(dir == DIR::East || dir == DIR::NorthWest || dir == DIR::North || dir == DIR::NorthEast);
+	BB bbAttacks = mpsqdirbb(sqFrom, dir);
+	/* set a bit that can't be hit to so sqLow never has to deal with an empty bitboard */
+	BB bbBlockers = (bbAttacks - bbUnoccupied) | BB(0x8000000000000000ULL);
+	return bbAttacks ^ mpsqdirbb(bbBlockers.sqLow(), dir);
 }
 
 
-bool BD::FSqRookAttacked(BB bbAttacked, CPC cpcBy) const
+BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const
 {
-	return false;
+	assert(dir == DIR::West || dir == DIR::SouthWest || dir == DIR::South || dir == DIR::SouthEast);
+	BB bbAttacks = mpsqdirbb(sqFrom, dir);
+	/* set a bit that can't be hit to so sqHigh never has to deal with an empty bitboard */
+	BB bbBlockers = (bbAttacks - bbUnoccupied) | BB(0x0000000000000001ULL);
+	return bbAttacks ^ mpsqdirbb(bbBlockers.sqHigh(), dir);
 }
 
 
-bool BD::FSqQueenAttacked(BB bbAttacked, CPC cpcBy) const
+BB BD::BbBishopAttacked(CPC cpcBy) const
 {
-	return false;
+	BB bbAttacks;
+	for (BB bbBishops = mpapcbb[cpcBy][APC::Bishop]; bbBishops; bbBishops.ClearLow()) {
+		SQ sq = bbBishops.sqLow();
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthEast, sq);
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthWest, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthEast, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthWest, sq);
+	}
+	return bbAttacks;
 }
 
 
-bool BD::FSqKingAttacked(SQ sqAttacked, CPC cpcBy) const
+BB BD::BbRookAttacked(CPC cpcBy) const
 {
-	SQ sqKing = mptpcsq[cpcBy][tpcKing];
-	int dsq = abs(sqKing - sqAttacked);
-	return dsq == 1 || dsq == 15 || dsq == 16 || dsq == 17;
+	BB bbAttacks;
+	for (BB bbRooks = mpapcbb[cpcBy][APC::Rook]; bbRooks; bbRooks.ClearLow()) {
+		SQ sq = bbRooks.sqLow();
+		bbAttacks |= BbFwdSlideAttacks(DIR::North, sq);
+		bbAttacks |= BbFwdSlideAttacks(DIR::East, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::South, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::West, sq);
+	}
+	return bbAttacks;
 }
 
 
-/*	BD::FSqAttacked
+BB BD::BbQueenAttacked(CPC cpcBy) const
+{
+	BB bbAttacks;
+	for (BB bbQueens = mpapcbb[cpcBy][APC::Queen]; bbQueens; bbQueens.ClearLow()) {
+		SQ sq = bbQueens.sqLow();
+		bbAttacks |= BbFwdSlideAttacks(DIR::North, sq);
+		bbAttacks |= BbFwdSlideAttacks(DIR::East, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::South, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::West, sq);
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthEast, sq);
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthWest, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthEast, sq);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthWest, sq);
+	}
+	return bbAttacks;
+}
+
+
+BB BD::BbKingAttacked(CPC cpcBy) const
+{
+	BB bbKing = mpapcbb[cpcBy][APC::King];
+	BB bbKingAttacked = BbEastOne(bbKing) | BbWestOne(bbKing);
+	bbKingAttacked |= BbNorthOne(bbKingAttacked|bbKing) | BbSouthOne(bbKingAttacked|bbKing);
+	return bbKingAttacked;
+}
+
+
+/*	BD::BbAttackedAll
  *
- *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
- *	on sqAttacked is not considered to be attacking sqAttacked.
+ *	Returns bitboard of all squares attacked by the color
  */
-bool BD::FSqAttacked(SQ sqAttacked, CPC cpcBy) const
+BB BD::BbAttackedAll(CPC cpcBy) const
 {
-	BB bbAttacked = BB(sqAttacked);
+	return BbQueenAttacked(cpcBy) | BbRookAttacked(cpcBy) | BbBishopAttacked(cpcBy) | 
+		BbKnightAttacked(cpcBy) | BbPawnAttacked(cpcBy) | BbKingAttacked(cpcBy);
+}
+
+
+/*	BD::FBbAttacked
+ *
+ *	Returns true if the given bitboard is attacked by someone of the color cpcBy.
+ */
+bool BD::FBbAttacked(BB bbAttacked, CPC cpcBy) const
+{
+	if (BbQueenAttacked(cpcBy) & bbAttacked)
+		return true;
+	if (BbRookAttacked(cpcBy) & bbAttacked)
+		return true;
+	if (BbBishopAttacked(cpcBy) & bbAttacked)
+		return true;
 	if (BbPawnAttacked(cpcBy) & bbAttacked)
 		return true;
 	if (BbKnightAttacked(cpcBy) & bbAttacked)
 		return true;
-	if (FSqKingAttacked(sqAttacked, cpcBy))
+	if (BbKingAttacked(cpcBy) & bbAttacked)
 		return true;
-
-	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SQ sq = (*this)(tpc, cpcBy);
-		if (sq.fIsNil())
-			continue;
-		assert(!sq.fIsOffBoard());
-		int dsq = sq - sqAttacked;
-		APC apc = ApcFromSq(sq);
-		switch (apc) {
-		case APC::Queen:
-			if (dsq == 0)
-				continue;
-			if (sq.rank() == sqAttacked.rank()) {
-				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 1 : -1))
-					return true;
-			}
-			else if (sq.file() == sqAttacked.file()) {
-				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 16 : -16))
-					return true;
-			}
-			[[fallthrough]];
-		case APC::Bishop:
-			if (dsq == 0)
-				continue;
-			if (dsq % 17 == 0) {
-				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 17 : -17))
-					return true;
-			}
-			else if (dsq % 15 == 0) {
-				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 15 : -15))
-					return true;
-			}
-			break;
-		case APC::Rook:
-			if (dsq == 0)
-				continue;
-			if (sq.rank() == sqAttacked.rank()) {
-				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 1 : -1))
-					return true;
-			}
-			else if (sq.file() == sqAttacked.file()) {
-				if (FDsqAttack(sqAttacked, sq, dsq < 0 ? 16 : -16))
-					return true;
-			}
-			break;
-		default:
-			break;
-		}
-	}
 	return false;
 }
 
@@ -745,43 +750,69 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const
 {
 	gmv.Clear();
 
-	/* go through each piece */
+	/* generate pawn moves */
 
-	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SQ sqFrom = SqFromTpc(tpc, cpcMove);
-		if (sqFrom == sqNil)
-			continue;
+	for (BB bb = mpapcbb[cpcMove][APC::Pawn]; bb; bb.ClearLow()) {
+		SQ sqFrom = bb.sqLow();
 		assert(!FIsEmpty(sqFrom));
 		assert((*this)(sqFrom).cpc() == cpcMove);
-	
-		switch (ApcFromSq(sqFrom)) {
-		case APC::Pawn:
-			GenGmvPawn(gmv, sqFrom);
-			if (sqEnPassant != sqNil)
-				GenGmvEnPassant(gmv, sqFrom);
-			break;
-		case APC::Knight:
-			GenGmvKnight(gmv, sqFrom);
-			break;
-		case APC::Bishop:
-			GenGmvBishop(gmv, sqFrom);
-			break;
-		case APC::Rook:
-			GenGmvRook(gmv, sqFrom);
-			break;
-		case APC::Queen:
-			GenGmvQueen(gmv, sqFrom);
-			break;
-		case APC::King:
-			GenGmvKing(gmv, sqFrom);
-			if (!fForAttack)
-				GenGmvCastle(gmv, sqFrom);
-			break;
-		default:
-			assert(false);
-			break;
-		}
+		assert(ApcFromSq(sqFrom) == APC::Pawn);
+		GenGmvPawn(gmv, sqFrom);
+		if (sqEnPassant != sqNil)
+			GenGmvEnPassant(gmv, sqFrom);
 	}
+
+	/* generate knight moves */
+
+	for (BB bb = mpapcbb[cpcMove][APC::Knight]; bb; bb.ClearLow()) {
+		SQ sqFrom = bb.sqLow();
+		assert(!FIsEmpty(sqFrom));
+		assert((*this)(sqFrom).cpc() == cpcMove);
+		assert(ApcFromSq(sqFrom) == APC::Knight);
+		GenGmvKnight(gmv, sqFrom);
+	}
+
+	/* generate bishop moves */
+
+	for (BB bb = mpapcbb[cpcMove][APC::Bishop]; bb; bb.ClearLow()) {
+		SQ sqFrom = bb.sqLow();
+		assert(!FIsEmpty(sqFrom));
+		assert((*this)(sqFrom).cpc() == cpcMove);
+		assert(ApcFromSq(sqFrom) == APC::Bishop);
+		GenGmvBishop(gmv, sqFrom);
+	}
+
+	/* generate rook moves */
+
+	for (BB bb = mpapcbb[cpcMove][APC::Rook]; bb; bb.ClearLow()) {
+		SQ sqFrom = bb.sqLow();
+		assert(!FIsEmpty(sqFrom));
+		assert((*this)(sqFrom).cpc() == cpcMove);
+		assert(ApcFromSq(sqFrom) == APC::Rook);
+		GenGmvRook(gmv, sqFrom);
+	}
+
+	/* generate queen moves */
+
+	for (BB bb = mpapcbb[cpcMove][APC::Queen]; bb; bb.ClearLow()) {
+		SQ sqFrom = bb.sqLow();
+		assert(!FIsEmpty(sqFrom));
+		assert((*this)(sqFrom).cpc() == cpcMove);
+		assert(ApcFromSq(sqFrom) == APC::Queen);
+		GenGmvQueen(gmv, sqFrom);
+	}
+
+	/* generate king moves - only one king per side */
+
+	BB bb = mpapcbb[cpcMove][APC::King];
+	assert(bb);
+	SQ sqFrom = bb.sqLow();
+	assert(!FIsEmpty(sqFrom));
+	assert((*this)(sqFrom).cpc() == cpcMove);
+	assert(ApcFromSq(sqFrom) == APC::King);
+	GenGmvKing(gmv, sqFrom);
+	if (!fForAttack)
+		GenGmvCastle(gmv, sqFrom);
 }
 
 
@@ -940,29 +971,24 @@ void BD::GenGmvKing(GMV& gmv, SQ sqFrom) const
 /*	BD::GenGmvCastle
  *
  *	Generates the legal castle moves for the king at sq. Checks that the king is in
- *	check and intermediate squares are not under attack, but does not check the final 
- *	king destination.
+ *	check and intermediate squares are not under attack, checks for intermediate 
+ *	squares are empty, but does not check the final king destination for in check.
  */
 void BD::GenGmvCastle(GMV& gmv, SQ sqKing) const
 {
-	/* this code is a little contorted in order to avoid calling FSqAttacked (which 
-	   is an expensive test) as much as possible. */
-
 	CPC cpcKing = (*this)(sqKing).cpc();
-	CPC cpcOpp = ~cpcKing;
-	bool fMaybeInCheck = true;	
-	if (FCanCastle(cpcKing, csKing) && FIsEmpty(sqKing+1) && FIsEmpty(sqKing+2)) {
-		if (FSqAttacked(sqKing, cpcOpp))
-			return;
-		fMaybeInCheck = false;
-		if (!FSqAttacked(sqKing+1, cpcOpp))
-			gmv.AppendMv(sqKing, sqKing+2);
+	BB bbKing = BB(sqKing);
+	BB bbAttacked;
+	if (FCanCastle(cpcKing, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
+		bbAttacked = BbAttackedAll(~cpcKing);
+		if (!(bbAttacked & (bbKing | (bbKing << 1))))
+			gmv.AppendMv(sqKing, sqKing + 2);
 	}
-	if (FCanCastle(cpcKing, csQueen) && FIsEmpty(sqKing-1) && FIsEmpty(sqKing-2) && FIsEmpty(sqKing-3)) {
-		if (fMaybeInCheck && FSqAttacked(sqKing, cpcOpp)) 
-			return;
-		if (!FSqAttacked(sqKing-1, cpcOpp))
-			gmv.AppendMv(sqKing, sqKing-2);
+	if (FCanCastle(cpcKing, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
+		if (!bbAttacked)
+			bbAttacked = BbAttackedAll(~cpcKing);
+		if (!(bbAttacked & (bbKing | (bbKing>>1)))) 
+			gmv.AppendMv(sqKing, sqKing - 2);
 	}
 }
 
@@ -1075,10 +1101,10 @@ void BD::Validate(void) const
 	}
 
 	/* union of black, white, and empty bitboards should be all squares */
-	assert((mpcpcbb[CPC::White] | mpcpcbb[CPC::Black] | bbEmpty) == bbAll);
+	assert((mpcpcbb[CPC::White] | mpcpcbb[CPC::Black] | bbUnoccupied) == bbAll);
 	/* white, black, and empty are disjoint */
-	assert((mpcpcbb[CPC::White] & bbEmpty) == bbNone);
-	assert((mpcpcbb[CPC::Black] & bbEmpty) == bbNone);
+	assert((mpcpcbb[CPC::White] & bbUnoccupied) == bbNone);
+	assert((mpcpcbb[CPC::Black] & bbUnoccupied) == bbNone);
 	assert((mpcpcbb[CPC::White] & mpcpcbb[CPC::Black]) == bbNone);
 
 	/* check for valid castle situations */
@@ -1092,7 +1118,7 @@ void BD::ValidateBB(IPC ipc, SQ sq) const
 			if (cpc == ipc.cpc() && apc == ipc.apc()) {
 				assert(mpapcbb[cpc][apc].fSet(sq));
 				assert(mpcpcbb[cpc].fSet(sq));
-				assert(!bbEmpty.fSet(sq));
+				assert(!bbUnoccupied.fSet(sq));
 			}
 			else {
 				assert(!mpapcbb[cpc][apc].fSet(sq));

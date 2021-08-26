@@ -183,7 +183,9 @@ inline int popcount(uint64_t grf)
  * 
  *	Uses De Bruijn multiplication, as devised by Lauter (1997).
  */
-const int rgbs64[64] = {
+
+#ifndef NO_INTRINSICS
+const int rgbsFwd64[64] = {
 	0,  1, 48,  2, 57, 49, 28,  3,
    61, 58, 50, 42, 38, 29, 17,  4,
    62, 55, 59, 36, 53, 51, 43, 22,
@@ -195,13 +197,51 @@ const int rgbs64[64] = {
 };
 
 const uint64_t debruijn64 = 0x03f79d71b4cb0a89LL;
+#endif
 
 inline int bitscan(uint64_t grf)
 {
-	/* TODO: use intrinsic */
 	assert(grf);
+#ifndef NO_INTRINSICS
+	unsigned long shf;
+	_BitScanForward64(&shf, grf);
+	return shf;
+#else
 	int ibs = (int)(((grf & -grf) * debruijn64) >> 58);
-	return rgbs64[ibs];
+	return rgbsFwd64[ibs];
+#endif
+}
+
+#ifndef NO_INTRINSICS
+const int rgbsRev64[64] = {
+	0, 47,  1, 56, 48, 27,  2, 60,
+   57, 49, 41, 37, 28, 16,  3, 61,
+   54, 58, 35, 52, 50, 42, 21, 44,
+   38, 32, 29, 23, 17, 11,  4, 62,
+   46, 55, 26, 59, 40, 36, 15, 53,
+   34, 51, 20, 43, 31, 22, 10, 45,
+   25, 39, 14, 33, 19, 30,  9, 24,
+   13, 18,  8, 12,  7,  6,  5, 63
+};
+#endif
+
+inline int bitscanRev(uint64_t grf)
+{
+	assert(grf);
+#ifndef NO_INTRINSICS
+	unsigned long shf;
+	_BitScanReverse64(&shf, grf);
+	return shf;
+#else
+	/* TODO: use intrinsic */
+	grf |= grf >> 1;
+	grf |= grf >> 2;
+	grf |= grf >> 4;
+	grf |= grf >> 8;
+	grf |= grf >> 16;
+	grf |= grf >> 32;
+	return rgbsRev64[(grf * debruijn64) >> 58];
+#endif
 }
 
 
@@ -405,7 +445,15 @@ public:
 
 	inline SQ sqLow(void) const
 	{
+		assert(grf);
 		int bit = bitscan(grf);
+		return SQ(bit >> 3, bit & 7);
+	}
+
+	inline SQ sqHigh(void) const
+	{
+		assert(grf);
+		int bit = bitscanRev(grf);
 		return SQ(bit >> 3, bit & 7);
 	}
 
@@ -419,6 +467,7 @@ public:
 		return (grf & sq.fgrf()) != 0;
 	}
 };
+
 
 
 /*
@@ -452,11 +501,54 @@ const BB         bbCenterEx(0b00000000000000000011110000111100001111000011110000
 const BB              bbAll(0b1111111111111111111111111111111111111111111111111111111111111111ULL);
 const BB             bbNone(0b0000000000000000000000000000000000000000000000000000000000000000ULL);
 
-const BB  bbWhiteKingCastle(0b0000000000000000000000000000000000000000000000000000000000001110ULL);
-const BB bbWhiteQueenCastle(0b0000000000000000000000000000000000000000000000000000000000111000ULL);
-const BB  bbBlackKingCastle(0b0000111000000000000000000000000000000000000000000000000000000000ULL);
-const BB bbBlackQueenCastle(0b0011100000000000000000000000000000000000000000000000000000000000ULL);
+const BB  bbWhiteKingCastleCheck(0b0000000000000000000000000000000000000000000000000000000000001110ULL);
+const BB  bbWhiteKingCastleEmpty(0b0000000000000000000000000000000000000000000000000000000000000110ULL);
+const BB bbWhiteQueenCastleCheck(0b0000000000000000000000000000000000000000000000000000000000111000ULL);
+const BB bbWhiteQueenCastleEmpty(0b0000000000000000000000000000000000000000000000000000000001110000ULL);
+const BB  bbBlackKingCastleCheck(0b0000111000000000000000000000000000000000000000000000000000000000ULL);
+const BB  bbBlackKingCastleEmpty(0b0000011000000000000000000000000000000000000000000000000000000000ULL);
+const BB bbBlackQueenCastleCheck(0b0011100000000000000000000000000000000000000000000000000000000000ULL);
+const BB bbBlackQueenCastleEmpty(0b0111000000000000000000000000000000000000000000000000000000000000ULL);
 
+inline BB BbEastOne(const BB& bb)
+{
+	return (bb - bbFileH) << 1;
+}
+
+inline BB BbEastTwo(const BB& bb)
+{
+	return (bb - bbFileGH) << 2;
+}
+
+inline BB BbWestOne(const BB& bb)
+{
+	return (bb - bbFileA) >> 1;
+}
+
+inline BB BbWestTwo(const BB& bb)
+{
+	return (bb - bbFileAB) >> 2;
+}
+
+inline BB BbNorthOne(const BB& bb)
+{
+	return bb << 8;
+}
+
+inline BB BbNorthTwo(const BB& bb)
+{
+	return bb << 16;
+}
+
+inline BB BbSouthOne(const BB& bb)
+{
+	return bb >> 8;
+}
+
+inline BB BbSouthTwo(const BB& bb)
+{
+	return bb >> 16;
+}
 
 /*
  *

@@ -104,12 +104,6 @@ PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cmvevEval(0), cmvevGen(0), 
 	rgfAICoeff[1] = 2.0f;
 }
 
-PLAI2::PLAI2(GA& ga) : PLAI(ga)
-{
-	rgfAICoeff[1] = 0.1f;
-	SetName(L"SQ Mathilda");
-}
-
 
 /*	PLAI::FHasLevel
  *
@@ -164,18 +158,6 @@ int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
 	return depthMax;
 }
-
-int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
-{
-	static GMV gmvOpp;
-	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove, false);
-	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
-	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return depthMax;
-}
-
 
 /*	PLAI::StartMoveLog
  *
@@ -759,6 +741,25 @@ float PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const float mpapcsqeval[
  */
 
 
+PLAI2::PLAI2(GA& ga) : PLAI(ga)
+{
+	rgfAICoeff[1] = 0.1f;
+	SetName(L"SQ Mathilda");
+}
+
+
+int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
+{
+	static GMV gmvOpp;
+	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
+	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
+	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
+	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return depthMax;
+}
+
+
 float PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 {
 	float eval;
@@ -813,6 +814,8 @@ RGINFOPL::RGINFOPL(void)
 	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"SQ Mathilda", 2));
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Rick Powell"));
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Hazel the Dog"));
+	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Al de Leon"));
+
 }
 
 

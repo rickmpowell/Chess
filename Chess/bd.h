@@ -719,7 +719,7 @@ public:
 	uint8_t mpsqipc[64+64];	/* the board itself (maps square to piece) */
 	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards for the pieces
 	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
-	BB bbEmpty;	// empty squares
+	BB bbUnoccupied;	// empty squares
 	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
@@ -728,7 +728,7 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) : bbEmpty(bd.bbEmpty), sqEnPassant(bd.sqEnPassant), cs(bd.cs)
+	BD(const BD& bd) : bbUnoccupied(bd.bbUnoccupied), sqEnPassant(bd.sqEnPassant), cs(bd.cs)
 	{
 		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
 		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
@@ -810,13 +810,27 @@ public:
 	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const;
 	bool FInCheck(CPC cpc) const;
-	bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const;
+	bool FBbAttacked(BB bbAttacked, CPC cpcBy) const;
+	BB BbAttackedAll(CPC cpcBy) const;
+
+	/*	BD::FSqAttacked
+	 *	
+	 *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
+	 *	on sqAttacked is not considered to be attacking sqAttacked.
+	 */
+	inline bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const
+	{
+		return FBbAttacked(BB(sqAttacked), cpcBy);
+	}
+
+	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const;
+	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const;
 	BB BbPawnAttacked(CPC cpcBy) const;
-	bool FSqKingAttacked(SQ sqAttacked, CPC cpcBy) const;
+	BB BbKingAttacked(CPC cpcBy) const;
 	BB BbKnightAttacked(CPC cpcBy) const;
-	bool FSqBishopAttacked(BB bbAttacked, CPC cpcBy) const;
-	bool FSqRookAttacked(BB bbAttacked, CPC cpcBy) const;
-	bool FSqQueenAttacked(BB bbAttacked, CPC cpcBy) const;
+	BB BbBishopAttacked(CPC cpcBy) const;
+	BB BbRookAttacked(CPC cpcBy) const;
+	BB BbQueenAttacked(CPC cpcBy) const;
 	
 	/*	BD::FDsqAttack
 	 *
@@ -934,18 +948,40 @@ public:
 	 *	bitboard manipulation
 	 */
 
+	/*	BD::SetBB
+	 *
+	 *	Sets the bitboard of the piece ipc in the square sq. Keeps all bitboards
+	 *	in sync, including the piece color bitboard and the unoccupied bitboard.
+	 * 
+	 *	Note that the unoccupied bitboard is not necessarily kept in a consistent
+	 *	state by SetBB, if the bitboard in the opposite color happens to be set.
+	 *	This normally doesn't happen, because it would technically be in an illegal 
+	 *	state to have a square set by both colors. When making moves, clear before 
+	 *	you set and you shouldn't get in any trouble.
+	 */
 	inline void SetBB(IPC ipc, SQ sq)
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
 		mpcpcbb[ipc.cpc()] += sq;
-		bbEmpty -= sq;
+		bbUnoccupied -= sq;
 	}
 
+
+	/*	BD::ClearBB
+	 *
+	 *	Clears the piece ipc in square sq from the bitboards. Keeps track of piece
+	 *	boards, color boards, and unoccupied boards.
+	 * 
+	 *	Note that we clear the unoccupied bit here, even if the opposite color might
+	 *	theoretically have a piece in that square. It's up to the calling code to
+	 *	make sure this doesn't happen.
+	 */
 	inline void ClearBB(IPC ipc, SQ sq)
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
 		mpcpcbb[ipc.cpc()] -= sq;
-		bbEmpty += sq;
+		assert(!mpcpcbb[~ipc.cpc()].fSet(sq));
+		bbUnoccupied += sq;
 	}
 
 	/*
