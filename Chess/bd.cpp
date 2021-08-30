@@ -12,6 +12,76 @@
 
 /*
  *
+ *	genhabd
+ * 
+ *	The zobrist-hash generator.
+ *
+ */
+
+GENHABD genhabd;
+
+
+/*	GENHABD::GENHABD
+ *
+ *	Generates the random bit arrays used to compute the hash.
+ */
+GENHABD::GENHABD(void)
+{
+	uniform_int_distribution<uint32_t> grfDist(0L, 0xffffffffUL);
+	for (int isq = 0; isq < 8 * 8; isq++)
+		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+			for (APC apc = APC::Null; apc <= APC::ActMax; ++apc)
+				rghabdPiece[isq][apc][cpc] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+
+	rghabdCastle[0] = 0;
+	for (int ics = 1; ics < CArray(rghabdCastle); ics++)
+		rghabdCastle[ics] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+
+	for (int iep = 0; iep < CArray(rghabdEnPassant); iep++)
+		rghabdEnPassant[iep] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+
+	habdMove = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+}
+
+
+/*	GENHABD::HabdFromBd
+ *
+ *	Creates the initial hash value for a new board position.
+ */
+HABD GENHABD::HabdFromBd(const BD& bd) const
+{
+	/* pieces */
+
+	HABD habd = 0ULL;
+	for (int rank = 0; rank < rankMax; rank++)
+		for (int file = 0; file < fileMax; file++) {
+			APC apc = bd(rank, file).apc();
+			if (apc != APC::Null)
+				habd ^= rghabdPiece[rank * 8 + file][apc][bd(rank, file).cpc()];
+		}
+
+#ifdef LATER
+	/* castle state */
+
+	habd ^= rghabdCastle[bd.cs];
+
+	/* en passant state */
+
+	if (!bd.sqEnPassant.fIsNil())
+		habd ^= rghabdEnPassant[bd.sqEnPassant.file()];
+#endif
+
+	/* current side to move */
+
+	if (bd.cpcToMove == CPC::Black)
+		habd ^= habdMove;
+
+	return habd;
+}
+
+
+/*
+ *
  *	mpsqdirbb
  *
  *	We keep bitboards for every square and every direction of squares that are
@@ -59,10 +129,7 @@ BD::BD(void)
 {
 	assert(sizeof(IPC) == sizeof(uint8_t));
 	assert(sizeof(SQ) == sizeof(uint8_t));
-
 	SetEmpty();
-	cs = ((csKing | csQueen) << (int)CPC::White) | ((csKing | csQueen) << (int)CPC::Black); 
-	sqEnPassant = sqNil;
 	Validate();
 }
 
@@ -82,7 +149,14 @@ void BD::SetEmpty(void)
 			mpapcbb[cpc][apc] = bbNone;
 		mpcpcbb[cpc] = bbNone;
 	}
+
 	bbUnoccupied = bbAll;
+
+	cs = 0;
+	cpcToMove = CPC::White;
+	sqEnPassant = sqNil;
+	
+	habd = 0L;
 }
 
 
@@ -102,7 +176,7 @@ bool BD::operator==(const BD& bd) const
 		if (mptpcsq[(int)CPC::White][tpc] != bd.mptpcsq[(int)CPC::White][tpc] ||
 				mptpcsq[(int)CPC::Black][tpc] != bd.mptpcsq[(int)CPC::Black][tpc])
 			return false;
-	return cs == bd.cs && sqEnPassant == bd.sqEnPassant;
+	return cs == bd.cs && sqEnPassant == bd.sqEnPassant && cpcToMove == bd.cpcToMove;
 }
 
 
@@ -167,7 +241,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
  *	Adds a piece from the FEN piece stream to the board. Makes sure both
  *	board mappings are correct. 
  * 
- *	Promoted pawns are the real can of worms with this process.
+ *	Promoted  pawns are the real can of worms with this process.
  */
 void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 {
@@ -222,6 +296,22 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 	(*this)(sq) = IPC(tpc, cpc, apc);
 	SqFromTpc(tpc, cpc) = sq;
 	SetBB((*this)(sq), sq);
+}
+
+
+void BD::InitFENSideToMove(const wchar_t*& sz)
+{
+	SkipToNonSpace(sz);
+	cpcToMove = CPC::White;
+	for (; *sz && *sz != L' '; sz++) {
+		switch (*sz) {
+		case 'w': break;
+		case 'b': ToggleToMove(); break;
+		default: goto Done;
+		}
+	}
+Done:
+	SkipToSpace(sz);
 }
 
 
@@ -437,6 +527,7 @@ void BD::MakeMvSq(MV& mv)
 
 	sqEnPassant = sqNil;
 Done:
+	ToggleToMove();
 	Validate();
 }
 
@@ -529,7 +620,21 @@ void BD::UndoMvSq(MV mv)
 		}
 	}
 
+	ToggleToMove();
+
 	Validate();
+}
+
+
+/*	BDG::GenGmv
+ *
+ *	Generates the legal moves for the current player who has the move.
+ *	Optionally doesn't bother to remove moves that would leave the
+ *	king in check.
+ */
+void BD::GenGmv(GMV& gmv, RMCHK rmchk) const
+{
+	GenGmv(gmv, cpcToMove, rmchk);
 }
 
 
@@ -542,19 +647,9 @@ void BD::UndoMvSq(MV mv)
 void BD::GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const
 {
 	Validate();
-	GenGmvColor(gmv, cpcMove, false);
+	GenGmvColor(gmv, cpcMove);
 	if (rmchk == RMCHK::Remove)
 		RemoveInCheckMoves(gmv, cpcMove);
-}
-
-
-void BD::GenGmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const
-{
-	GenGmvColor(gmv, cpcMove, true);
-	if (rmchk == RMCHK::Remove) {
-		RemoveInCheckMoves(gmv, cpcMove);
-		RemoveQuiescentMoves(gmv, cpcMove);
-	}
 }
 
 
@@ -590,6 +685,12 @@ void BD::RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const
 		/* TODO: need to test for checks */
 	}
 	gmv.Resize(imvTo);
+}
+
+
+bool BD::FMvIsQuiescent(MV mv) const
+{
+	return FMvIsQuiescent(mv, cpcToMove);
 }
 
 
@@ -746,7 +847,7 @@ bool BD::FBbAttacked(BB bbAttacked, CPC cpcBy) const
  *	Generates moves for the given color pieces. Does not check if the king is left in
  *	check, so caller must weed those moves out.
  */
-void BD::GenGmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const
+void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 {
 	gmv.Clear();
 
@@ -811,8 +912,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const
 	assert((*this)(sqFrom).cpc() == cpcMove);
 	assert(ApcFromSq(sqFrom) == APC::King);
 	GenGmvKing(gmv, sqFrom);
-	if (!fForAttack)
-		GenGmvCastle(gmv, sqFrom);
+	GenGmvCastle(gmv, sqFrom);
 }
 
 
@@ -1108,8 +1208,43 @@ void BD::Validate(void) const
 	assert((mpcpcbb[CPC::White] & mpcpcbb[CPC::Black]) == bbNone);
 
 	/* check for valid castle situations */
+
+	if (cs & csWhiteKing) {
+		assert((*this)(SQ(0, fileKing)).apc() == APC::King);
+		assert((*this)(SQ(0, fileKing)).cpc() == CPC::White);
+		assert((*this)(SQ(0, fileKingRook)).apc() == APC::Rook);
+		assert((*this)(SQ(0, fileKingRook)).cpc() == CPC::White);
+	}
+	if (cs & csBlackKing) {
+		assert((*this)(SQ(7, fileKing)).apc() == APC::King);
+		assert((*this)(SQ(7, fileKing)).cpc() == CPC::Black);
+		assert((*this)(SQ(7, fileKingRook)).apc() == APC::Rook);
+		assert((*this)(SQ(7, fileKingRook)).cpc() == CPC::Black);
+	}
+	if (cs & csWhiteQueen) {
+		assert((*this)(SQ(0, fileKing)).apc() == APC::King);
+		assert((*this)(SQ(0, fileKing)).cpc() == CPC::White);
+		assert((*this)(SQ(0, fileQueenRook)).apc() == APC::Rook);
+		assert((*this)(SQ(0, fileQueenRook)).cpc() == CPC::White);
+	}
+	if (cs & csBlackQueen) {
+		assert((*this)(SQ(7, fileKing)).apc() == APC::King);
+		assert((*this)(SQ(7, fileKing)).cpc() == CPC::Black);
+		assert((*this)(SQ(7, fileQueenRook)).apc() == APC::Rook);
+		assert((*this)(SQ(7, fileQueenRook)).cpc() == CPC::Black);
+	}
+
 	/* check for valid en passant situations */
+
+	if (!sqEnPassant.fIsNil()) {
+	}
+
+	/* make sure hash is kept accurate */
+
+	assert(habd == genhabd.HabdFromBd(*this));
+
 }
+
 
 void BD::ValidateBB(IPC ipc, SQ sq) const
 {
@@ -1144,7 +1279,7 @@ void BD::ValidateBB(IPC ipc, SQ sq) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : gs(GS::Playing), cpcToMove(CPC::White), imvCur(-1), imvPawnOrTakeLast(-1)
+BDG::BDG(void) : gs(GS::Playing), imvCur(-1), imvPawnOrTakeLast(-1)
 {
 }
 
@@ -1173,22 +1308,6 @@ void BDG::InitGame(const wchar_t* szFEN)
 	imvCur = -1;
 	imvPawnOrTakeLast = -1;
 	SetGs(GS::Playing);
-}
-
-
-void BDG::InitFENSideToMove(const wchar_t*& sz)
-{
-	SkipToNonSpace(sz);
-	cpcToMove = CPC::White;
-	for (; *sz && *sz != L' '; sz++) {
-		switch (*sz) {
-		case 'w': cpcToMove = CPC::White ; break;
-		case 'b': cpcToMove = CPC::Black; break;
-		default: goto Done;
-		}
-	}
-Done:
-	SkipToSpace(sz);
 }
 
 
@@ -1293,30 +1412,6 @@ wstring BDG::SzFEN(void) const
 }
 
 
-/*	BDG::GenGmv
- *
- *	Generates the legal moves for the current player who has the move.
- *	Optionally doesn't bother to remove moves that would leave the 
- *	king in check.
- */
-void BDG::GenGmv(GMV& gmv, RMCHK rmchk) const
-{
-	BD::GenGmv(gmv, cpcToMove, rmchk);
-}
-
-
-void BDG::GenGmvQuiescent(GMV& gmv, RMCHK rmchk) const
-{
-	BD::GenGmvQuiescent(gmv, cpcToMove, rmchk);
-}
-
-
-bool BDG::FMvIsQuiescent(MV mv) const
-{
-	return BD::FMvIsQuiescent(mv, cpcToMove);
-}
-
-
 /*	BDG::MakeMv
  *
  *	Make a move on the board, and keeps the move list for the game. Caller is
@@ -1342,10 +1437,6 @@ void BDG::MakeMv(MV mv)
 
 	if (ApcFromSq(mv.sqTo()) == APC::Pawn || mv.fIsCapture())
 		imvPawnOrTakeLast = imvCur;
-
-	/* other player's move */
-
-	cpcToMove = ~cpcToMove;
 }
 
 
@@ -1384,7 +1475,6 @@ void BDG::UndoMv(void)
 	}
 	UndoMvSq(vmvGame[imvCur--]);
 	assert(imvCur >= -1);
-	cpcToMove = ~cpcToMove;
 }
 
 
@@ -1402,7 +1492,6 @@ void BDG::RedoMv(void)
 	if (ApcFromSq(mv.sqFrom()) == APC::Pawn || mv.fIsCapture())
 		imvPawnOrTakeLast = imvCur;
 	MakeMvSq(mv);
-	cpcToMove = ~cpcToMove;
 }
 
 

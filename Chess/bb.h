@@ -469,7 +469,6 @@ public:
 };
 
 
-
 /*
  *
  *	some constant bitboards
@@ -585,6 +584,16 @@ inline int DfileFromDir(DIR dir)
 {
 	return (int)dir % 3 - 1;
 }
+
+
+/*
+ *
+ *	MPSQDIRBB
+ *
+ *	Just a little wrapper to compute static attack vectors for each square
+ *	of the board. 
+ *
+ */
 
 
 class MPSQDIRBB

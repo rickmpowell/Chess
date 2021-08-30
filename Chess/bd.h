@@ -393,12 +393,9 @@ private:
 	vector<uint32_t>* pvmvOverflow;
 
 public:
-#pragma warning(push)
-#pragma warning (disable:26495)
 	GMV() : cmvCur(0), pvmvOverflow(nullptr) 
 	{
 	}
-#pragma warning(pop)
 
 	~GMV() 
 	{
@@ -692,6 +689,87 @@ inline int DsqPawnFromCpc(CPC cpc)
 	return 16 - ((int)cpc << 5);
 }
 
+/*
+ *
+ *	HABD
+ * 
+ *	Board hash
+ * 
+ */
+
+
+typedef uint64_t HABD;
+
+
+/*
+ *
+ *	GENHABD class
+ *
+ *	Generate game board hashing. This uses Zobrist hashing, which creates a large
+ *	bit-array for each possible individual square state on the board. The hash is
+ *	the XOR of all the individual states.
+ *
+ *	The advantage of Zobrist hashing is it's inexpensive to keep up-to-date during
+ *	move/undo with two or three simple xor operations.
+ *
+ */
+
+class BD;
+
+class GENHABD
+{
+private:
+	HABD rghabdPiece[8 * 8][APC::ActMax][CPC::ColorMax];
+	HABD rghabdCastle[16];
+	HABD rghabdEnPassant[8];
+	HABD habdMove;
+
+public:
+
+	GENHABD(void);
+	HABD HabdFromBd(const BD& bd) const;
+
+
+	/*	HABD::TogglePiece
+	 *
+	 *	Toggles the square/ipc in the hash at the given square.
+	 */
+	inline void TogglePiece(HABD& habd, SQ sq, IPC ipc) const
+	{
+		habd ^= rghabdPiece[sq.rank() * 8 + sq.file()][ipc.apc()][ipc.cpc()];
+	}
+
+
+	/*	HABD::ToggleToMove
+	 *
+	 *	Toggles the player to move in the hash.
+	 */
+	inline void ToggleToMove(HABD& habd) const
+	{
+		habd ^= habdMove;
+	}
+
+
+	/*	HABD::ToggleCastle
+	 *
+	 *	Toggles the castle state in the hash
+	 */
+	inline void ToggleCaslte(HABD& habd, CPC cpc, int cs) const
+	{
+		habd ^= rghabdCastle[cs << cpc];
+	}
+
+
+	/*	HABD::ToggleEnPassant
+	 *
+	 *	Toggles the en passant state in the hash
+	 */
+	inline void ToggleEnPassant(HABD& habd, int file) const
+	{
+		habd ^= rghabdEnPassant[file];
+	}
+};
+
 
 /*
  *
@@ -721,14 +799,16 @@ public:
 	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
 	BB bbUnoccupied;	// empty squares
 	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
+	CPC cpcToMove;	/* side with the move */
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	BYTE cs;	/* castle sides */
+	HABD habd;	/* board hash */
 
 public:
 	BD(void);
 
-	BD(const BD& bd) : bbUnoccupied(bd.bbUnoccupied), sqEnPassant(bd.sqEnPassant), cs(bd.cs)
+	BD(const BD& bd) : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), cs(bd.cs), habd(bd.habd)
 	{
 		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
 		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
@@ -747,9 +827,10 @@ public:
 
 	/* move generation */
 	
+	void GenGmv(GMV& gmv, RMCHK rmchk) const;
 	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenGmvQuiescent(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
-	void GenGmvColor(GMV& gmv, CPC cpcMove, bool fForAttack) const;
+	bool FMvIsQuiescent(MV mv) const;
+	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
 	void GenGmvPawn(GMV& gmv, SQ sqFrom) const;
 	void GenGmvKnight(GMV& gmv, SQ sqFrom) const;
 	void GenGmvBishop(GMV& gmv, SQ sqFrom) const;
@@ -868,15 +949,17 @@ public:
 	{ 
 		return *(IPC*)&mpsqipc[rank * 16 + file]; 
 	}
-	
 	inline IPC& operator()(SQ sq) 
 	{
 		return *(IPC*)&mpsqipc[sq]; 
 	}
-
 	inline const IPC& operator()(SQ sq) const 
 	{
 		return *(IPC*)&mpsqipc[sq];
+	}
+	inline const IPC& operator()(int rank, int file) const
+	{
+		return *(IPC*)&mpsqipc[rank * 16 + file];
 	}
 
 	inline SQ& SqFromTpc(TPC tpc, CPC cpc) 
@@ -908,6 +991,7 @@ public:
 	inline const SQ operator()(IPC ipc) const {
 		return SqFromIpc(ipc);
 	}
+
 
 	inline APC ApcFromSq(SQ sq) const 
 	{
@@ -961,9 +1045,11 @@ public:
 	 */
 	inline void SetBB(IPC ipc, SQ sq)
 	{
+		extern GENHABD genhabd;
 		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
 		mpcpcbb[ipc.cpc()] += sq;
 		bbUnoccupied -= sq;
+		genhabd.TogglePiece(habd, sq, ipc);
 	}
 
 
@@ -978,10 +1064,19 @@ public:
 	 */
 	inline void ClearBB(IPC ipc, SQ sq)
 	{
+		extern GENHABD genhabd;
 		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
 		mpcpcbb[ipc.cpc()] -= sq;
 		assert(!mpcpcbb[~ipc.cpc()].fSet(sq));
 		bbUnoccupied += sq;
+		genhabd.TogglePiece(habd, sq, ipc);
+	}
+
+	void ToggleToMove(void)
+	{
+		extern GENHABD genhabd;
+		cpcToMove = ~cpcToMove;
+		genhabd.ToggleToMove(habd);
 	}
 
 	/*
@@ -997,12 +1092,13 @@ public:
 
 	void InitFENPieces(const wchar_t*& szFEN);
 	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
-	void SkipToNonSpace(const wchar_t*& sz);
-	void SkipToSpace(const wchar_t*& sz);
+	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENCastle(const wchar_t*& sz);
 	void InitFENEnPassant(const wchar_t*& sz);
 	TPC TpcUnusedPawn(CPC cpc) const;
 	void EnsureCastleRook(CPC cpc, TPC tpcRook);
+	void SkipToNonSpace(const wchar_t*& sz);
+	void SkipToSpace(const wchar_t*& sz);
 
 	/*
 	 *	debug and validation
@@ -1075,7 +1171,6 @@ class BDG : public BD
 {
 public:
 	GS gs;
-	CPC cpcToMove;
 	vector<MV> vmvGame;	// the game moves that resulted in bd board state
 	int imvCur;
 	int imvPawnOrTakeLast;	/* index of last pawn or capture move (used directly for 50-move 
@@ -1085,15 +1180,6 @@ public:
 public:
 	BDG(void);
 	BDG(const wchar_t* szFEN);
-	//void NewGame(void);
-
-	/* 
-	 *	move generation 
-	 */
-
-	void GenGmv(GMV& gmv, RMCHK rmchk) const;
-	void GenGmvQuiescent(GMV& gmv, RMCHK rmchk) const;
-	bool FMvIsQuiescent(MV mv) const;
 	
 	/* 
 	 *	making moves 
@@ -1145,7 +1231,6 @@ public:
 	 */
 
 	void InitGame(const wchar_t* szFen);
-	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENHalfmoveClock(const wchar_t*& sz);
 	void InitFENFullmoveCounter(const wchar_t*& sz);
 
@@ -1156,28 +1241,6 @@ public:
 	wstring SzFEN(void) const;
 	operator wstring() const { return SzFEN(); }
 
-};
-
-
-/*
- *
- *	HABDG class
- * 
- *	Game board hash
- *
- */
-
-class HABDG
-{
-	uint32_t rggrfRandom[8 * 8][APC::ActMax];
-public:
-	HABDG(void)
-	{
-		uniform_int_distribution<uint32_t> grfDist(0L, 0xffffffffL);
-		for (int isq = 0; isq < 8 * 8; isq++)
-			for (APC apc = APC::Null; apc < APC::ActMax; ++apc)
-				rggrfRandom[isq][apc] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
-	}
 };
 
 

@@ -34,7 +34,7 @@ public:
 	{
 		bdg.MakeMv(mv);
 		gmvReplyAll.Reserve(50);
-		bdg.GenGmvColor(gmvReplyAll, bdg.cpcToMove, false);
+		bdg.GenGmvColor(gmvReplyAll, bdg.cpcToMove);
 	}
 
 	bool operator<(const MVEV& mvev) const

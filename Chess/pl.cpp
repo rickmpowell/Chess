@@ -151,7 +151,7 @@ float PLAI::CmvFromLevel(int level) const
 int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
-	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove);
 	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
@@ -521,7 +521,7 @@ float PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 	float evalMat = vpcSelf - vpcNext;
 
 	static GMV gmvSelf;
-	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove, false);
+	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
 	int evalMob = gmvSelf.cmv() - mvev.gmvReplyAll.cmv();
 
 	if (fFull) {
@@ -751,7 +751,7 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
-	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove, false);
+	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove);
 	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
