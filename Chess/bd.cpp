@@ -6,9 +6,10 @@
  * 
  */
 
-
 #include "bd.h"
 
+
+mt19937 rgen(0);
 
 /*
  *

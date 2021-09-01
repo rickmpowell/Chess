@@ -11,8 +11,6 @@
 #include "Resources/Resource.h"
 
 
-mt19937 rgen(0);
-
 
 /*  AboutDlgProc
  *
