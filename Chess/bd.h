@@ -1022,6 +1022,11 @@ public:
 	{ 
 		csCur |= csSide << (int)cpc; 
 	}
+
+	inline void SetCastle(int cs)
+	{
+		csCur |= cs;
+	}
 	
 	inline void ClearCastle(CPC cpc, int csSide) 
 	{ 

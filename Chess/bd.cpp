@@ -546,18 +546,22 @@ void BD::UndoMvSq(MV mv)
 	IPC ipcMove = (*this)(sqTo);
 	CPC cpcMove = ipcMove.cpc();
 
-	/* restore castle and en passant state. Castle state can only be added
-	   on an undo, so it's OK to or those bits back in. Note that the en 
-	   passant state only saves the file of the en passant captureable pawn 
-	   (due to lack of available bits in the MV). */
+	/* restore castle state. Castle state can only be added on an undo, so it's 
+	   OK to or those bits back in. Note that we use the tpc to determine which
+	   side the castle was on, which is a little hacky and is prone to break,
+	   so be careful in any code that initializes boards pieces to make sure the 
+	   right tpc is used for rooks that are still in castleable state */
 
-	csCur |= CsUnpackColor(mv.csPrev(), cpcMove);
+	SetCastle(CsUnpackColor(mv.csPrev(), cpcMove));
 	APC apcCapt = mv.apcCapture();
 	if (mv.apcCapture() == APC::RookCastleable) {
 		assert(mv.tpcCapture() == tpcKingRook || mv.tpcCapture() == tpcQueenRook);
 		SetCastle(~cpcMove, mv.tpcCapture() == tpcKingRook ? csKing : csQueen);
 		apcCapt = APC::Rook;
 	}
+
+	/* Restore en passant state. Note that the en passant state only saves the file 
+	   of the en passant captureable pawn (due to lack of available bits in the MV). */
 
 	if (mv.fEpPrev())
 		sqEnPassant = SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev());
