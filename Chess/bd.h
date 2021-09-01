@@ -754,9 +754,9 @@ public:
 	 *
 	 *	Toggles the castle state in the hash
 	 */
-	inline void ToggleCaslte(HABD& habd, CPC cpc, int cs) const
+	inline void ToggleCastle(HABD& habd, int cs) const
 	{
-		habd ^= rghabdCastle[cs << cpc];
+		habd ^= rghabdCastle[cs];
 	}
 
 
@@ -769,6 +769,8 @@ public:
 		habd ^= rghabdEnPassant[file];
 	}
 };
+
+extern GENHABD genhabd;
 
 
 /*
@@ -1020,17 +1022,23 @@ public:
 	
 	inline void SetCastle(CPC cpc, int csSide) 
 	{ 
-		csCur |= csSide << (int)cpc; 
+		genhabd.ToggleCastle(habd, csCur);
+		csCur |= csSide << (int)cpc;
+		genhabd.ToggleCastle(habd, csCur);
 	}
 
 	inline void SetCastle(int cs)
 	{
+		genhabd.ToggleCastle(habd, csCur);
 		csCur |= cs;
+		genhabd.ToggleCastle(habd, csCur);
 	}
 	
 	inline void ClearCastle(CPC cpc, int csSide) 
 	{ 
-		csCur &= ~(csSide << (int)cpc); 
+		genhabd.ToggleCastle(habd, csCur);
+		csCur &= ~(csSide << (int)cpc);
+		genhabd.ToggleCastle(habd, csCur);
 	}
 
 	/*
@@ -1050,7 +1058,6 @@ public:
 	 */
 	inline void SetBB(IPC ipc, SQ sq)
 	{
-		extern GENHABD genhabd;
 		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
 		mpcpcbb[ipc.cpc()] += sq;
 		bbUnoccupied -= sq;
@@ -1069,7 +1076,6 @@ public:
 	 */
 	inline void ClearBB(IPC ipc, SQ sq)
 	{
-		extern GENHABD genhabd;
 		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
 		mpcpcbb[ipc.cpc()] -= sq;
 		assert(!mpcpcbb[~ipc.cpc()].fSet(sq));
@@ -1079,7 +1085,6 @@ public:
 
 	void ToggleToMove(void)
 	{
-		extern GENHABD genhabd;
 		cpcToMove = ~cpcToMove;
 		genhabd.ToggleToMove(habd);
 	}

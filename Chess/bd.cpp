@@ -61,11 +61,11 @@ HABD GENHABD::HabdFromBd(const BD& bd) const
 				habd ^= rghabdPiece[rank * 8 + file][apc][bd(rank, file).cpc()];
 		}
 
-#ifdef LATER
 	/* castle state */
 
-	habd ^= rghabdCastle[bd.cs];
+	habd ^= rghabdCastle[bd.csCur];
 
+#ifdef LATER
 	/* en passant state */
 
 	if (!bd.sqEnPassant.fIsNil())
@@ -562,7 +562,8 @@ void BD::UndoMvSq(MV mv)
 	}
 
 	/* Restore en passant state. Note that the en passant state only saves the file 
-	   of the en passant captureable pawn (due to lack of available bits in the MV). */
+	   of the en passant captureable pawn (due to lack of available bits in the MV),
+	   but we can generate the rank knowing the side that has the move */
 
 	if (mv.fEpPrev())
 		sqEnPassant = SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev());
@@ -572,15 +573,12 @@ void BD::UndoMvSq(MV mv)
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
 
-	if (mv.apcPromote() != APC::Null) {
-		ClearBB(ipcMove, sqTo);
+	ClearBB(ipcMove, sqTo);
+	if (mv.apcPromote() != APC::Null)
 		ipcMove = IpcSetApc(ipcMove, APC::Pawn);
-	}
 	(*this)(sqFrom) = ipcMove;
 	SetBB(ipcMove, sqFrom);
-	ClearBB(ipcMove, sqTo);
 	SqFromIpc(ipcMove) = sqFrom;
-
 	APC apcMove = ipcMove.apc();	// get the type of moved piece after we've undone promotion
 
 	/* if move was a capture, put the captured piece back on the board; otherwise
@@ -592,8 +590,7 @@ void BD::UndoMvSq(MV mv)
 		IPC ipcTake = IPC(mv.tpcCapture(), ~cpcMove, apcCapt);
 		SQ sqTake = sqTo;
 		if (sqTake == sqEnPassant) {
-			/* capture into the en passant square must be en passant capture
-			   pawn x pawn */
+			/* capture into the en passant square must be pawn x pawn */
 			assert(ApcFromSq(sqTo) == APC::Pawn && apcCapt == APC::Pawn);
 			sqTake = SQ(sqEnPassant.rank() + cpcMove*2 - 1, sqEnPassant.file());
 			(*this)(sqTo) = ipcEmpty;
