@@ -152,7 +152,7 @@ void BD::SetEmpty(void)
 
 	bbUnoccupied = bbAll;
 
-	cs = 0;
+	csCur = 0;
 	cpcToMove = CPC::White;
 	sqEnPassant = sqNil;
 	
@@ -176,7 +176,7 @@ bool BD::operator==(const BD& bd) const
 		if (mptpcsq[(int)CPC::White][tpc] != bd.mptpcsq[(int)CPC::White][tpc] ||
 				mptpcsq[(int)CPC::Black][tpc] != bd.mptpcsq[(int)CPC::Black][tpc])
 			return false;
-	return cs == bd.cs && sqEnPassant == bd.sqEnPassant && cpcToMove == bd.cpcToMove;
+	return csCur == bd.csCur && sqEnPassant == bd.sqEnPassant && cpcToMove == bd.cpcToMove;
 }
 
 
@@ -426,7 +426,7 @@ void BD::MakeMvSq(MV& mv)
 
 	/* store undo information in the mv */
 
-	mv.SetCsEp(CsPackColor(cs, cpcFrom), sqEnPassant);
+	mv.SetCsEp(CsPackColor(csCur, cpcFrom), sqEnPassant);
 	SQ sqTake = sqTo;
 	if (apcFrom == APC::Pawn) {
 		if (sqTake == sqEnPassant)
@@ -439,8 +439,8 @@ void BD::MakeMvSq(MV& mv)
 	if (!ipcTake.fIsEmpty()) {
 		TPC tpcTake = TpcFromSq(sqTake);
 		APC apcTake = ApcFromSq(sqTake);
-		if ((tpcTake == tpcQueenRook && (cs & (csQueen << ~cpcFrom))) ||
-				(tpcTake == tpcKingRook && (cs & (csKing << ~cpcFrom))))
+		if ((tpcTake == tpcQueenRook && (csCur & (csQueen << ~cpcFrom))) ||
+				(tpcTake == tpcKingRook && (csCur & (csKing << ~cpcFrom))))
 			apcTake = APC::RookCastleable;
 		mv.SetCapture(apcTake, tpcTake);
 
@@ -551,7 +551,7 @@ void BD::UndoMvSq(MV mv)
 	   passant state only saves the file of the en passant captureable pawn 
 	   (due to lack of available bits in the MV). */
 
-	cs |= CsUnpackColor(mv.csPrev(), cpcMove);
+	csCur |= CsUnpackColor(mv.csPrev(), cpcMove);
 	APC apcCapt = mv.apcCapture();
 	if (mv.apcCapture() == APC::RookCastleable) {
 		assert(mv.tpcCapture() == tpcKingRook || mv.tpcCapture() == tpcQueenRook);
@@ -1209,25 +1209,25 @@ void BD::Validate(void) const
 
 	/* check for valid castle situations */
 
-	if (cs & csWhiteKing) {
+	if (csCur & csWhiteKing) {
 		assert((*this)(SQ(0, fileKing)).apc() == APC::King);
 		assert((*this)(SQ(0, fileKing)).cpc() == CPC::White);
 		assert((*this)(SQ(0, fileKingRook)).apc() == APC::Rook);
 		assert((*this)(SQ(0, fileKingRook)).cpc() == CPC::White);
 	}
-	if (cs & csBlackKing) {
+	if (csCur & csBlackKing) {
 		assert((*this)(SQ(7, fileKing)).apc() == APC::King);
 		assert((*this)(SQ(7, fileKing)).cpc() == CPC::Black);
 		assert((*this)(SQ(7, fileKingRook)).apc() == APC::Rook);
 		assert((*this)(SQ(7, fileKingRook)).cpc() == CPC::Black);
 	}
-	if (cs & csWhiteQueen) {
+	if (csCur & csWhiteQueen) {
 		assert((*this)(SQ(0, fileKing)).apc() == APC::King);
 		assert((*this)(SQ(0, fileKing)).cpc() == CPC::White);
 		assert((*this)(SQ(0, fileQueenRook)).apc() == APC::Rook);
 		assert((*this)(SQ(0, fileQueenRook)).cpc() == CPC::White);
 	}
-	if (cs & csBlackQueen) {
+	if (csCur & csBlackQueen) {
 		assert((*this)(SQ(7, fileKing)).apc() == APC::King);
 		assert((*this)(SQ(7, fileKing)).cpc() == CPC::Black);
 		assert((*this)(SQ(7, fileQueenRook)).apc() == APC::Rook);
@@ -1375,16 +1375,16 @@ wstring BDG::SzFEN(void) const
 	/* castling */
 
 	sz += L' ';
-	if (cs == 0)
+	if (csCur == 0)
 		sz += L'-';
 	else {
-		if (cs & csWhiteKing)
+		if (csCur & csWhiteKing)
 			sz += L'K';
-		if (cs & csWhiteQueen)
+		if (csCur & csWhiteQueen)
 			sz += L'Q';
-		if (cs & csBlackKing)
+		if (csCur & csBlackKing)
 			sz += L'k';
-		if (cs & csBlackQueen)
+		if (csCur & csBlackQueen)
 			sz += L'q';
 	}
 

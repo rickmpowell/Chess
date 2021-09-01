@@ -26,11 +26,9 @@ void GA::Test(SPMV spmv)
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	LogClose(L"New Game", L"Passed", LGF::Normal);
 
-#ifdef NDEBUG
 	LogOpen(L"Perft", L"");
 	PerftTest();
 	LogClose(L"Perft", L"Passed", LGF::Normal);
-#endif
 
 	LogOpen(L"Undo", L"");
 	UndoTest();
@@ -154,7 +152,7 @@ void GA::ValidateCastle(const wchar_t*& sz) const
 		default: assert(false); goto Done;
 		}
 	}
-	assert(bdg.cs == cs);
+	assert(bdg.csCur == cs);
 Done:
 	SkipToWhiteSpace(sz);
 }
@@ -523,7 +521,20 @@ struct {
 	{L"Perftsuite 159", L"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", {1ULL, 0, 0, 0, 0, 89941194ULL}, 5 },
 	{L"Perftsuite 160", L"1k6/1b6/8/8/7R/8/8/4K2R b K - 0 1", {1ULL, 0, 0, 0, 0, 1063513ULL}, 5 },
 	{L"Perftsuite 161", L"3k4/3p4/8/K1P4r/8/8/8/8 b - -0 1", {1ULL, 0, 0, 0, 0, 0, 1134888ULL}, 6 },
-	{L"Perftsuite 162", L"8/8/4k3/8/2p5/8/B2P2K1/8 w - -0 1", {1ULL, 0, 0, 0, 0, 0, 1015133ULL}, 6 }
+	{L"Perftsuite 162", L"8/8/4k3/8/2p5/8/B2P2K1/8 w - -0 1", {1ULL, 0, 0, 0, 0, 0, 1015133ULL}, 6 },
+
+	/* perft tests from chessprogramming.org */
+
+	{L"Initial", L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 
+			{1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 119060324ULL, 3195901860ULL, 84998978956ULL, 
+		     2439530234167ULL, 69352859712417ULL, 2097651003696806ULL, 62854969236701747ULL, 1981066775000396239ULL}, 6},
+	{ L"Kiwipete", L"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", { 1ULL, 48ULL, 2039ULL, 97862LL, 4085603ULL, 193690690ULL, 8031647685ULL }, 5 },
+	{ L"Position 3", L"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", { 1ULL, 14ULL, 191ULL, 2812ULL, 43238ULL, 674624ULL, 11030083ULL, 178633661ULL, 3009794393ULL }, 7 },
+	{ L"Position 4", L"r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", { 1ULL, 6ULL, 264ULL, 9467ULL, 422333ULL, 15833292ULL, 706045033ULL}, 6 },
+	{ L"Position 5", L"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", {1ULL, 44ULL, 1486ULL, 62379ULL, 2103487ULL, 89941194ULL}, 5 },
+	{ L"Position 6", L"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+			{ 1ULL, 46ULL, 2079ULL, 89890ULL, 3894594ULL, 164075551ULL, 6923051137ULL, 287188994746ULL, 11923589843526ULL, 
+		      490154852788714ULL }, 5 }
 };
 
 void GA::PerftTest(void)
@@ -533,28 +544,6 @@ void GA::PerftTest(void)
 			rgperfttest[iperfttest].szFEN,
 			rgperfttest[iperfttest].rgull,
 			rgperfttest[iperfttest].cull, true);
-
-	/* perft tests from chessprogramming.org */
-
-	RunPerftTest(L"Initial", L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-		(uint64_t[14]){ 1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 119060324ULL, 3195901860ULL, 84998978956ULL, 2439530234167ULL,
-			69352859712417ULL, 2097651003696806ULL, 62854969236701747ULL, 1981066775000396239ULL }, 6, true);
-
-	RunPerftTest(L"Kiwipete", L"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 
-		(uint64_t[7]){ 1ULL, 48ULL, 2039ULL, 97862LL, 4085603ULL, 193690690ULL, 8031647685ULL }, 5, true);
-
-	RunPerftTest(L"Position 3", L"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 
-		(uint64_t[9]){ 1ULL, 14ULL, 191ULL, 2812ULL, 43238ULL, 674624ULL, 11030083ULL, 178633661ULL, 3009794393ULL }, 7, true);
-
-	RunPerftTest(L"Position 4", L"r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 
-		(uint64_t[7]){ 1ULL, 6ULL, 264ULL, 9467ULL, 422333ULL, 15833292ULL, 706045033ULL }, 6, true);
-
-	RunPerftTest(L"Position 5", L"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 
-		(uint64_t[6]){ 1ULL, 44ULL, 1486ULL, 62379ULL, 2103487ULL, 89941194ULL }, 5, true);
-
-	RunPerftTest(L"Position 6", L"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", 
-		(uint64_t[10]){ 1ULL, 46ULL, 2079ULL, 89890ULL, 3894594ULL, 164075551ULL, 6923051137ULL, 287188994746ULL, 11923589843526ULL, 490154852788714ULL }, 5, true);
-
 }
 
 
@@ -564,7 +553,7 @@ void GA::PerftTest(void)
  *	Cycles through each depth from 1 to depthLast, verifying move counts in mpdepthcmv. 
  *	The tag is just used for debug output.
  */
-void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdepthcmv[], int depthLast, bool fDivide)
+void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
 	LogOpen(tag, L"");
 	InitGame(szFEN);
@@ -578,6 +567,11 @@ void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdep
 		uint64_t cmvExp = mpdepthcmv[depth];
 		if (cmvExp == 0)
 			continue;
+#ifndef NDEBUG
+		/* in debug mode, these tests take too damn long */
+		if (cmvExp > 4000000ULL)
+			break;
+#endif
 
 		/* what we expect to happen */
 

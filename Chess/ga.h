@@ -208,7 +208,7 @@ public:
 	void UndoFullGame(void);
 
 	void PerftTest(void);
-	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], uint64_t mpdepthcmv[], int depthMax, bool fDivide);
+	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
 	uint64_t CmvPerft(int depth);
 	uint64_t CmvPerftDivide(int depth);
 };

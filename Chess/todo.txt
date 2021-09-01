@@ -1,4 +1,5 @@
-  Use hashes to compare draws and board equality
+  Have debug perft tests stop at a certain number of expected nodes
+  Implement transposition tables and use in alpha-beta search
   Include en passant and castle states to Zobrist hashing
   Use magic bitboards for move generation
   Use magic bitboards for attack squares
@@ -22,7 +23,6 @@
   ML: Take advantage of DrawSzFit in move list, etc. to  make move list narrower
   AI: Communicate best continuation back
   Use UCI (universal chess interface) to communicate to UI from AI
-  AI: Hash boards
   AI: Quitting the app while AI is running sometimes crashes in PresentSwch
   UI: Move as many drawing objects into classes as possible
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
@@ -64,7 +64,6 @@
   AI: interruptible
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
-  Can we hash boards to help with the 3-fold draw detection?
   Eval: Add square control factor to evaluation function
   Limit UI during message pumps in test and AI
   AI: Do a multithreaded lookup
@@ -99,6 +98,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Use hashes to compare draws and board equality
+* Can we hash boards to help with the 3-fold draw detection?
+* AI: Hash boards
 * Implement Zobrist hashing of the board and keep it up-to-date in the BD
 * Move cpcToMove from the BDG to the BD
 * Move gen: checks use bitboards for bishops, rooks, and queens

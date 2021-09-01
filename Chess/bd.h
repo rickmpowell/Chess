@@ -802,13 +802,13 @@ public:
 	CPC cpcToMove;	/* side with the move */
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
-	BYTE cs;	/* castle sides */
+	BYTE csCur;	/* castle sides */
 	HABD habd;	/* board hash */
 
 public:
 	BD(void);
 
-	BD(const BD& bd) : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), cs(bd.cs), habd(bd.habd)
+	BD(const BD& bd) : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
 	{
 		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
 		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
@@ -1015,17 +1015,17 @@ public:
 
 	inline bool FCanCastle(CPC cpc, int csSide) const 
 	{
-		return (this->cs & (csSide << (int)cpc)) != 0;
+		return (csCur & (csSide << (int)cpc)) != 0;
 	}
 	
 	inline void SetCastle(CPC cpc, int csSide) 
 	{ 
-		this->cs |= csSide << (int)cpc; 
+		csCur |= csSide << (int)cpc; 
 	}
 	
 	inline void ClearCastle(CPC cpc, int csSide) 
 	{ 
-		this->cs &= ~(csSide << (int)cpc); 
+		csCur &= ~(csSide << (int)cpc); 
 	}
 
 	/*
