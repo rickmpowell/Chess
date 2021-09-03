@@ -14,15 +14,13 @@
  *
  *	This is the top-level test script.
  */
-void GA::Test(SPMV spmv)
+void GA::Test(void)
 {
 	InitLog(3);
 	LogOpen(L"Test", L"Start");
-	SPMV spmvSav = spmvCur;
-	spmvCur = spmv;
 	
 	LogOpen(L"New Game", L"");
-	NewGame(new RULE(0, 0, 0));
+	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
 	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	LogClose(L"New Game", L"Passed", LGF::Normal);
 
@@ -39,8 +37,6 @@ void GA::Test(SPMV spmv)
 	LogClose(L"Play", L"Players", LGF::Normal);
 	
 	LogClose(L"Test", L"Passed", LGF::Normal);
-
-	spmvCur = spmvSav;
 }
 
 
@@ -210,6 +206,7 @@ int GA::PlayPGNFile(const wchar_t szFile[])
 
 	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
 	LogOpen(szFileBase, L"");
+	SetProcpgn(new PROCPGNTEST(*this));
 	try {
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
@@ -217,6 +214,7 @@ int GA::PlayPGNFile(const wchar_t szFile[])
 			if (DeserializeGame(istkpgn) != 1)
 				break;
 		}
+		SetProcpgn(nullptr);
 		LogClose(szFileBase, L"Passed", LGF::Normal);
 	}
 	catch (int err)
@@ -226,11 +224,14 @@ int GA::PlayPGNFile(const wchar_t szFile[])
 			::wsprintf(sz, L"Error Line %d", err);
 			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);
 		}
+		SetProcpgn(nullptr);
 		LogClose(szFileBase, L"Failed", LGF::Normal);
 		return err;
 	}
 	return 0;
 }
+
+
 
 
 void GA::UndoTest(void)
@@ -252,12 +253,28 @@ void GA::UndoTest(void)
 }
 
 
+int PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
+{
+	int w = PROCPGNOPEN::ProcessTag(tkpgn, szValue);
+//	if (tkpgn == tkpgnTagsEnd)
+//		ga.uiti.Redraw();
+	return w;
+}
+
+
+int PROCPGNTEST::ProcessMv(MV mv)
+{
+	return PROCPGNOPEN::ProcessMv(mv);
+}
+
+
 int GA::PlayUndoPGNFile(const wchar_t* szFile)
 {
 	ifstream is(szFile, ifstream::in);
 
 	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
 	LogOpen(szFileBase, L"");
+	SetProcpgn(new PROCPGNTESTUNDO(*this));
 	try {
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
@@ -267,6 +284,7 @@ int GA::PlayUndoPGNFile(const wchar_t* szFile)
 			UndoFullGame();
 			ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 		}
+		SetProcpgn(nullptr);
 		LogClose(szFileBase, L"Passed", LGF::Normal);
 	}
 	catch (int err) {
@@ -275,6 +293,7 @@ int GA::PlayUndoPGNFile(const wchar_t* szFile)
 			::wsprintf(sz, L"Error Line %d", err);
 			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);
 		}
+		SetProcpgn(nullptr);
 		LogClose(szFileBase, L"Failed", LGF::Normal);
 		return err;
 	}
@@ -286,13 +305,34 @@ void GA::UndoFullGame(void)
 {
 	while (bdg.imvCur >= 0) {
 		BDG bdgInit = bdg;
-		UndoMv(spmvCur);
-		RedoMv(spmvCur);
+		UndoMv(SPMV::Hidden);
+		RedoMv(SPMV::Hidden);
 		assert(bdg == bdgInit);
 		if (bdg != bdgInit)
 			throw 1;
-		UndoMv(spmvCur);
+		UndoMv(SPMV::Hidden);
 	}
+}
+
+
+int PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
+{
+	return PROCPGNTEST::ProcessTag(tkpgn, szValue);
+}
+
+
+int PROCPGNTESTUNDO::ProcessMv(MV mv)
+{
+	BDG bdgInit = ga.bdg;
+	ga.MakeMv(mv, SPMV::Hidden);
+	BDG bdgNew = ga.bdg;
+	ga.UndoMv(SPMV::Hidden);
+	if (bdgInit != ga.bdg)
+		throw 1;
+	ga.RedoMv(SPMV::Hidden);
+	if (bdgNew != ga.bdg)
+		throw 1;
+	return 0;
 }
 
 
@@ -556,7 +596,7 @@ void GA::PerftTest(void)
 void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
 	LogOpen(tag, L"");
-	InitGame(szFEN);
+	InitGame(szFEN, SPMV::Hidden);
 	uibd.Redraw();
 
 	bool fPassed = false;

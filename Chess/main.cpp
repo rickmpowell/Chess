@@ -116,7 +116,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     pga = new GA(*this);
     pga->SetPl(CPC::Black, rginfopl.PplFactory(*pga, 0));
     pga->SetPl(CPC::White, rginfopl.PplFactory(*pga, 1));
-    pga->NewGame(new RULE);
+    pga->NewGame(new RULE, SPMV::Animate);
 
     /* create the main window */
 
@@ -509,7 +509,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->NewGame(new RULE);
+        app.pga->NewGame(new RULE, SPMV::Animate);
         app.pga->Redraw();
         return 1;
     }
@@ -554,7 +554,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv(app.pga->spmvCur);
+        app.pga->UndoMv(SPMV::Animate);
         return 1;
     }
 
@@ -581,7 +581,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv(app.pga->spmvCur);
+        app.pga->RedoMv(SPMV::Animate);
         return 1;
     }
 
@@ -686,7 +686,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->Test(SPMV::Hidden);
+        app.pga->Test();
         return 1;
     }
 
@@ -862,15 +862,28 @@ public:
         char* pch = (char*)clipb.PGetData(CF_TEXT);
         if (app.pga->FIsPgnData(pch)) {
             is.str(pch);
+            app.pga->SetProcpgn(new PROCPGNPASTE(*app.pga));
             app.pga->Deserialize(is);
+            app.pga->SetProcpgn(nullptr);
         }
         else {
-            app.pga->InitGame(WszWidenSz(pch).c_str());
+            app.pga->InitGame(WszWidenSz(pch).c_str(), SPMV::Animate);
             app.pga->Redraw();
         }
         return 1;
     }
 };
+
+
+int PROCPGNPASTE::ProcessTag(int tkpgn, const string& szValue)
+{
+    return PROCPGNOPEN::ProcessTag(tkpgn, szValue);
+}
+
+int PROCPGNPASTE::ProcessMv(MV mv)
+{
+    return PROCPGNOPEN::ProcessMv(mv);
+}
 
 
 class CMDSETUPBOARD : public CMD

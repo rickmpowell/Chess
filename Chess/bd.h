@@ -324,11 +324,11 @@ public:
 		return *this;  
 	}
 
-	inline MV& SetCsEp(int cs, const SQ& sqEnPassant)
+	inline MV& SetCsEp(int cs, SQ sqEP)
 	{
 		csGrf = cs;
-		fileEnPassantGrf = sqEnPassant.file();
-		fEnPassantGrf = !sqEnPassant.fIsNil();
+		fileEnPassantGrf = sqEP.file();
+		fEnPassantGrf = !sqEP.fIsNil();
 		return *this;
 	}
 
@@ -947,6 +947,15 @@ public:
 		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
+	inline void SetEnPassant(SQ sq)
+	{
+		if (!sqEnPassant.fIsNil())
+			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
+		sqEnPassant = sq;
+		if (!sqEnPassant.fIsNil())
+			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
+	}
+
 	inline IPC& operator()(int rank, int file) 
 	{ 
 		return *(IPC*)&mpsqipc[rank * 16 + file]; 
@@ -1394,7 +1403,9 @@ enum TKPGN {
 	tkpgnRound,
 	tkpgnWhite,
 	tkpgnBlack,
-	tkpgnResult
+	tkpgnResult,
+	tkpgnTagsStart,
+	tkpgnTagsEnd
 };
 
 

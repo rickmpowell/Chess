@@ -9,7 +9,7 @@
 #include "bd.h"
 
 
-mt19937 rgen(0);
+mt19937 rgen(7724322UL);
 
 /*
  *
@@ -65,12 +65,10 @@ HABD GENHABD::HabdFromBd(const BD& bd) const
 
 	habd ^= rghabdCastle[bd.csCur];
 
-#ifdef LATER
 	/* en passant state */
 
 	if (!bd.sqEnPassant.fIsNil())
 		habd ^= rghabdEnPassant[bd.sqEnPassant.file()];
-#endif
 
 	/* current side to move */
 
@@ -381,7 +379,7 @@ void BD::EnsureCastleRook(CPC cpc, TPC tpcCorner)
 void BD::InitFENEnPassant(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);
-	sqEnPassant = sqNil;
+	SetEnPassant(sqNil);
 	int rank = -1, file = -1;
 	for (; *sz && *sz != L' '; sz++) {
 		if (*sz >= L'a' && *sz <= L'h')
@@ -392,7 +390,7 @@ void BD::InitFENEnPassant(const wchar_t*& sz)
 			rank = file = -1;
 	}
 	if (rank != -1 && file != -1)
-		sqEnPassant = SQ(rank, file);
+		SetEnPassant(SQ(rank, file));
 	SkipToSpace(sz);
 }
 
@@ -472,7 +470,7 @@ void BD::MakeMvSq(MV& mv)
 	case APC::Pawn:
 		/* save double-pawn moves for potential en passant and return */
 		if (((sqFrom.rank() ^ sqTo.rank()) & 0x03) == 0x02) {
-			sqEnPassant = SQ((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file());
+			SetEnPassant(SQ((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file()));
 			goto Done;
 		}
 		
@@ -526,7 +524,7 @@ void BD::MakeMvSq(MV& mv)
 		break;
 	}
 
-	sqEnPassant = sqNil;
+	SetEnPassant(sqNil);
 Done:
 	ToggleToMove();
 	Validate();
@@ -566,9 +564,9 @@ void BD::UndoMvSq(MV mv)
 	   but we can generate the rank knowing the side that has the move */
 
 	if (mv.fEpPrev())
-		sqEnPassant = SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev());
+		SetEnPassant(SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev()));
 	else
-		sqEnPassant = sqNil;
+		SetEnPassant(sqNil);
 
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */

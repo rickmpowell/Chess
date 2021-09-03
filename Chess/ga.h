@@ -15,6 +15,64 @@
 #include "debug.h"
 
 
+/*
+ *
+ *	PROCPGN class
+ * 
+ *	A little communication class to handle final processing of PGN files. A
+ *	virtual class that is used to catch the tags and move list as they are
+ *	read.
+ * 
+ */
+
+
+class PROCPGN
+{
+protected:
+	GA& ga;
+public:
+	PROCPGN(GA& ga);
+	virtual ~PROCPGN(void) { }
+	virtual int ProcessMv(MV mv) = 0;
+	virtual int ProcessTag(int tkpgn, const string& szVal) = 0;
+};
+
+
+class PROCPGNOPEN : public PROCPGN
+{
+public:
+	PROCPGNOPEN(GA& ga) : PROCPGN(ga) { }
+	virtual int ProcessMv(MV mv);
+	virtual int ProcessTag(int tkpgn, const string& szVal);
+};
+
+
+class PROCPGNPASTE : public PROCPGNOPEN
+{
+public:
+	PROCPGNPASTE(GA& ga) : PROCPGNOPEN(ga) { }
+	virtual int ProcessMv(MV mv);
+	virtual int ProcessTag(int tkpgn, const string& szVal);
+};
+
+
+class PROCPGNTEST : public PROCPGNOPEN
+{
+public:
+	PROCPGNTEST(GA& ga) : PROCPGNOPEN(ga) { }
+	virtual int ProcessMv(MV mv);
+	virtual int ProcessTag(int tkpgn, const string& szVal);
+};
+
+
+class PROCPGNTESTUNDO : public PROCPGNTEST
+{
+public:
+	PROCPGNTESTUNDO(GA& ga) : PROCPGNTEST(ga) { }
+	virtual int ProcessMv(MV mv);
+	virtual int ProcessTag(int tkpgn, const string& szVal);
+};
+
 
 /*
  *
@@ -49,17 +107,18 @@ public:
 	UIDB uidb;
 	UITIP uitip;
 
-	UI* puiCapt;
-	UI* puiFocus;
-	UI* puiHover;
-	SPMV spmvCur;
+	UI* puiCapt;	/* mouse capture */
+	UI* puiFocus;	/* keyboard focus */
+	UI* puiHover;	/* current hover UI */
+	map<TID, UI*> mptidpui;	/* windows timer id to UI mapping */
+
 	bool fInPlay;
-	map<TID, UI*> mptidpui;
 
 public:
 	BDG bdg;	// board
 	PL* mpcpcppl[CPC::ColorMax];	// players
 	RULE* prule;
+	PROCPGN* pprocpgn;	/* process pgn file handler */
 	TID tidClock;
 	DWORD mpcpctmClock[CPC::ColorMax];	// player clocks
 	DWORD tmLast;	// time of last move
@@ -136,11 +195,10 @@ public:
 
 	static const wchar_t szInitFEN[];
 	int Play(void);
-	void NewGame(RULE* prule);
-	void InitGame(const wchar_t* szFEN);
+	void NewGame(RULE* prule, SPMV spmv);
+	void InitGame(const wchar_t* szFEN, SPMV spmv);
 	void InitClocks(void);
-	void StartGame(void);
-	void EndGame(void);
+	void EndGame(SPMV spmv);
 	void MakeMv(MV mv, SPMV spmv);
 	void SwitchClock(DWORD tmCur);
 	void StartClock(CPC cpc, DWORD tmCur);
@@ -164,6 +222,7 @@ public:
 	 *	Deserializing 
 	 */
 
+	void SetProcpgn(PROCPGN* pprocpgn);
 	void OpenPGNFile(const wchar_t szFile[]);
 	void PlayPGNFiles(const wchar_t szPath[]);
 	int PlayPGNFile(const wchar_t szFile[]);
@@ -175,7 +234,6 @@ public:
 	int DeserializeMove(ISTKPGN& istkpgn);
 	bool FIsMoveNumber(TK* ptk, int& w) const;
 	void ProcessTag(const string& szTag, const string& szVal);
-	void ProcessTag(int tkpgn, const string& szVal);
 	void ProcessMove(const string& szMove);
 	bool FIsPgnData(const char* pch) const;
 
@@ -194,7 +252,7 @@ public:
 	 *	Tests and validation
 	 */
 
-	void Test(SPMV spmv);
+	void Test(void);
 	void ValidateFEN(const wchar_t* szFEN) const;
 	void ValidatePieces(const wchar_t*& sz) const;
 	void ValidateMoveColor(const wchar_t*& sz) const;

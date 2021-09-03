@@ -1,9 +1,10 @@
-  Have debug perft tests stop at a certain number of expected nodes
-  Implement transposition tables and use in alpha-beta search
-  Include en passant and castle states to Zobrist hashing
-  Use magic bitboards for move generation
-  Use magic bitboards for attack squares
-  Add a new game panel
+  Throw exceptions for user interrupts
+  Throw exceptions for test failures
+  Throw exceptions for parse errors
+  AI: Implement transposition tables and use in alpha-beta search
+  Movegen: Use magic bitboards for move generation
+  Movegen: Use magic bitboards for attack squares
+  UI: Add a new game panel
   UI: try to pixel align as many borders as possible
   Test: Add perft level option
   UIPL: on hover, change background color when we can change the player
@@ -34,15 +35,13 @@
   UI: Need a visual indication of where focus is
   UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
-  Add ability to paste FEN format
-  Open: Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
   Open: Beef up error handling in deserialize
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
   Test: if no pgn files in a directory, file enumeration crashes
   ML: Size icons in move list slightly larger than text
   AI: Consider a different board evaluation for pre-sorting alpha-beta pruning
-  Can we search for already evaluated board positions? Could save a lot of time in end game.
+  AI: Can we search for already evaluated board positions? Could save a lot of time in end game.
   ML: If text in move list gets too small, replace icons with letters
   Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   UI: Scale buttons to size of window
@@ -88,7 +87,6 @@
   UIBD: Legal move circles disappear when dragging
   GA: Break the UI out of the GA
   Official game has slightly different rules for some draw situations
-  Playing test PGN files in Fast mode should display result in game over panel
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
   Have an official game mode that does not allow undo
@@ -98,6 +96,10 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Add ability to paste FEN format
+* Open: Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
+* Include en passant and castle states to Zobrist hashing
+* Have debug perft tests stop at a certain number of expected nodes
 * Use hashes to compare draws and board equality
 * Can we hash boards to help with the 3-fold draw detection?
 * AI: Hash boards

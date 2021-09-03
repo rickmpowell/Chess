@@ -12,12 +12,12 @@
 
 void GA::OpenPGNFile(const wchar_t szFile[])
 {
-	spmvCur = SPMV::Hidden;
+	SetProcpgn(new PROCPGNOPEN(*this));
 	ifstream is(szFile, ifstream::in);
 	Deserialize(is);
+	app.pga->SetProcpgn(nullptr);
 	uiml.UpdateContSize();
-	uiml.SetSel((int)bdg.vmvGame.size() - 1, spmvCur);
-	spmvCur = SPMV::Animate;
+	uiml.SetSel((int)bdg.vmvGame.size() - 1, SPMV::Hidden);
 	uiml.FMakeVis(bdg.imvCur);
 	Redraw();
 }
@@ -39,7 +39,7 @@ bool GA::FIsPgnData(const char* pch) const
 void GA::Deserialize(istream& is)
 {
 	ISTKPGN istkpgn(is);
-	NewGame(new RULE(0, 0, 0));
+	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
 	if (!DeserializeHeaders(istkpgn))
 		return;
 	DeserializeMoveList(istkpgn);
@@ -48,7 +48,7 @@ void GA::Deserialize(istream& is)
 
 int GA::DeserializeGame(ISTKPGN& istkpgn)
 {
-	NewGame(new RULE(0, 0, 0));
+	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
 	if (!DeserializeHeaders(istkpgn))
 		return 0;
 	DeserializeMoveList(istkpgn);
@@ -60,8 +60,11 @@ int GA::DeserializeHeaders(ISTKPGN& istkpgn)
 {
 	if (!DeserializeTag(istkpgn))
 		return 0;
+	pprocpgn->ProcessTag(tkpgnTagsStart, "");
 	while (DeserializeTag(istkpgn))
 		;
+	assert(pprocpgn);
+	pprocpgn->ProcessTag(tkpgnTagsEnd, "");
 	return 1;
 }
 
@@ -163,8 +166,15 @@ int GA::DeserializeMove(ISTKPGN& istkpgn)
 }
 
 
+/*	GA::ProcessTag
+ *
+ *	Processes the tag/value pair in the PGN file stream. Performs the actual
+ *	side effects of the tag.
+ */
 void GA::ProcessTag(const string& szTag, const string& szVal)
 {
+	assert(pprocpgn);
+
 	struct {
 		const char* sz;
 		int tkpgn;
@@ -180,45 +190,34 @@ void GA::ProcessTag(const string& szTag, const string& szVal)
 
 	for (int isz = 0; isz < CArray(mpsztkpgn); isz++) {
 		if (szTag == mpsztkpgn[isz].sz) {
-			ProcessTag(mpsztkpgn[isz].tkpgn, szVal);
+			pprocpgn->ProcessTag(mpsztkpgn[isz].tkpgn, szVal);
 			break;
 		}
 	}
 }
 
 
-void GA::ProcessTag(int tkpgn, const string& szVal)
-{
-	switch (tkpgn) {
-	case tkpgnWhite:
-	case tkpgnBlack:
-	{
-		wstring wszVal(szVal.begin(), szVal.end());
-		mpcpcppl[tkpgn == tkpgnBlack ? CPC::Black : CPC::White]->SetName(wszVal);
-		uiti.Redraw();
-		break;
-	}
-	case tkpgnEvent:
-	case tkpgnSite:
-	case tkpgnDate:
-	case tkpgnRound:
-	case tkpgnResult:
-	default:
-		break;
-	}
-}
-
-
+/*	GA::ProcessMove
+ *
+ *	Parses and performs the move that has been extracted from the PGN stream.
+ */
 void GA::ProcessMove(const string& szMove)
 {
+	assert(pprocpgn);
+
 	MV mv;
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMv(pch, mv) != 1)
 		return;
-	MakeMv(mv, spmvCur);
+	pprocpgn->ProcessMv(mv);
 }
 
 
+/*	GA:::FIsMoveNumber
+ *
+ *	Returns true if the token from the PGN token stream is a move number, 
+ *	which is returned in w.
+ */
 bool GA::FIsMoveNumber(TK* ptk, int& w) const
 {
 	w = 0;
@@ -229,6 +228,64 @@ bool GA::FIsMoveNumber(TK* ptk, int& w) const
 		w = w * 10 + sz[ich] - '0';
 	}
 	return true;
+}
+
+
+/*	GA::SetProcpgn
+ *
+ *	Sets the PGN handler in the game.
+ */
+void GA::SetProcpgn(PROCPGN* pprocpgn)
+{
+	if (this->pprocpgn) {
+		delete this->pprocpgn;
+		this->pprocpgn = nullptr;
+	}
+	this->pprocpgn = pprocpgn;
+}
+
+
+/*
+ *
+ *	PROCPGN class
+ * 
+ *	Processes PGN files. This is the base processing class, which is used
+ *	during file/open. 
+ * 
+ */
+
+
+PROCPGN::PROCPGN(GA& ga) : ga(ga)
+{
+}
+
+
+int PROCPGNOPEN::ProcessMv(MV mv)
+{
+	ga.MakeMv(mv, SPMV::Hidden);
+	return 0;
+}
+
+
+int PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
+{
+	switch (tkpgn) {
+	case tkpgnWhite:
+	case tkpgnBlack:
+	{
+		wstring wszVal(szValue.begin(), szValue.end());
+		ga.mpcpcppl[tkpgn == tkpgnBlack ? CPC::Black : CPC::White]->SetName(wszVal);
+		break;
+	}
+	case tkpgnEvent:
+	case tkpgnSite:
+	case tkpgnDate:
+	case tkpgnRound:
+	case tkpgnResult:
+	default:
+		break;
+	}
+	return 0;
 }
 
 

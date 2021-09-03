@@ -53,7 +53,8 @@ void GA::DiscardRsrcClass(void)
 
 GA::GA(APP& app) : UI(nullptr), app(app), 
 	uiti(this), uibd(this), uiml(this), uidb(this), uitip(this), 
-	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr), spmvCur(SPMV::Animate), fInPlay(false), prule(nullptr)
+	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr), 
+	fInPlay(false), prule(nullptr), pprocpgn(nullptr)
 
 {
 	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = nullptr;
@@ -69,6 +70,8 @@ GA::~GA(void)
 			delete mpcpcppl[cpc];
 	if (prule)
 		delete prule;
+	if (pprocpgn)
+		delete pprocpgn;
 }
 
 
@@ -173,27 +176,22 @@ void GA::Layout(void)
  *	Starts a new game with the given rule set, initializing everything and redrawing 
  *	the screen
  */
-void GA::NewGame(RULE* prule)
+void GA::NewGame(RULE* prule, SPMV spmv)
 {
 	if (this->prule)
 		delete this->prule;
 	this->prule = prule;	
-	InitGame(szInitFEN);
+	InitGame(szInitFEN, spmv);
 }
 
 
-void GA::InitGame(const wchar_t* szFEN)
+void GA::InitGame(const wchar_t* szFEN, SPMV spmv)
 {
 	InitClocks();
 	bdg.InitGame(szFEN);
+
 	uibd.InitGame();
 	uiml.InitGame();
-	StartGame();
-}
-
-
-void GA::StartGame(void)
-{
 	SetFocus(&uiml);
 }
 
@@ -206,12 +204,14 @@ void GA::InitClocks(void)
 }
 
 
-void GA::EndGame(void)
+void GA::EndGame(SPMV spmv)
 {
 	if (prule->TmGame())
 		app.StopTimer(tidClock);
-	if (spmvCur != SPMV::Hidden)
-		uiml.EndGame();	
+
+	if (spmv != SPMV::Hidden) {
+		uiml.EndGame();
+	}
 }
 
 
@@ -322,7 +322,7 @@ void GA::TickTimer(TID tid, UINT tmCur)
 	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
 		dtm = mpcpctmClock[bdg.cpcToMove];
 		bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
-		EndGame();
+		EndGame(SPMV::Animate);
 	}
 	mpcpctmClock[bdg.cpcToMove] -= dtm;
 	tmLast = tmCur;
@@ -369,7 +369,7 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
 	SwitchClock(tm == 0 ? 1 : tm);
 	uibd.MakeMv(mv, spmvMove);
 	if (bdg.gs != GS::Playing)
-		EndGame();
+		EndGame(spmvMove);
 	if (spmvMove != SPMV::Hidden) {
 		uiml.UpdateContSize();
 		uiml.SetSel(bdg.imvCur, spmvMove);
@@ -417,7 +417,8 @@ void GA::MoveToImv(int imv, SPMV spmv)
 		uibd.UndoMv(spmv);
 	while (bdg.imvCur < imv)
 		uibd.RedoMv(spmv);
-	uiml.Layout();	// in case game over state changed
+	if (spmv != SPMV::Hidden)
+		uiml.Layout();	// in case game over state changed
 	uiml.SetSel(bdg.imvCur, spmv);
 }
 
@@ -446,9 +447,10 @@ int GA::Play(void)
 	try {
 		do {
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
-			MV mv = ppl->MvGetNext(spmvCur);
+			SPMV spmv = SPMV::Animate;
+			MV mv = ppl->MvGetNext(spmv);
 			assert(!mv.fIsNil());
-			MakeMv(mv, spmvCur);
+			MakeMv(mv, spmv);
 			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
 		} while (bdg.gs == GS::Playing);
 	}
