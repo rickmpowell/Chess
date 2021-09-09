@@ -875,12 +875,12 @@ public:
 };
 
 
-int PROCPGNPASTE::ProcessTag(int tkpgn, const string& szValue)
+ERR PROCPGNPASTE::ProcessTag(int tkpgn, const string& szValue)
 {
     return PROCPGNOPEN::ProcessTag(tkpgn, szValue);
 }
 
-int PROCPGNPASTE::ProcessMv(MV mv)
+ERR PROCPGNPASTE::ProcessMv(MV mv)
 {
     return PROCPGNOPEN::ProcessMv(mv);
 }

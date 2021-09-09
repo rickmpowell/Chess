@@ -47,14 +47,14 @@ void GA::PlayPGNFiles(const wchar_t szPath[])
 	szSpec += L"\\*.pgn";
 	HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
 	if (hfind == INVALID_HANDLE_VALUE)
-		throw 1;
+		throw EX("No such file");
 	do {
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 		wstring szSpec(szPath);
 		szSpec += L"\\";
 		szSpec += ffd.cFileName;
-		if (PlayPGNFile(szSpec.c_str()) < 0)
+		if (FErrIsSevere(PlayPGNFile(szSpec.c_str())))
 			break;
 	} while (FindNextFile(hfind, &ffd) != 0);
 	FindClose(hfind);
@@ -200,35 +200,37 @@ void GA::SkipToWhiteSpace(const wchar_t*& sz) const
  *
  *	Plays the games in the PGN file given by szFile
  */
-int GA::PlayPGNFile(const wchar_t szFile[])
+ERR GA::PlayPGNFile(const wchar_t szFile[])
 {
 	ifstream is(szFile, ifstream::in);
 
 	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
 	LogOpen(szFileBase, L"");
 	SetProcpgn(new PROCPGNTEST(*this));
+	ERR err;
 	try {
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
 			LogTemp(wstring(L"Game ") + to_wstring(igame+1));
-			if (DeserializeGame(istkpgn) != 1)
+			if ((err = DeserializeGame(istkpgn)) != ERR::None)
 				break;
 		}
-		SetProcpgn(nullptr);
 		LogClose(szFileBase, L"Passed", LGF::Normal);
 	}
-	catch (int err)
+	catch (EXPARSE& ex)
 	{
-		if (err != 1) {
-			wchar_t sz[100];
-			::wsprintf(sz, L"Error Line %d", err);
-			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);
-		}
-		SetProcpgn(nullptr);
+		::MessageBox(nullptr, WszWidenSz(ex.what()).c_str(), L"PGN File Error", MB_OK);
 		LogClose(szFileBase, L"Failed", LGF::Normal);
-		return err;
+		err = ERR::Parse;
 	}
-	return 0;
+	catch (EX& ex)
+	{
+		::MessageBox(nullptr, WszWidenSz(ex.what()).c_str(), L"Error", MB_OK);
+		LogClose(szFileBase, L"Failed", LGF::Normal);
+		err = ERR::Fatal;
+	}
+	SetProcpgn(nullptr);
+	return err;
 }
 
 
@@ -245,7 +247,7 @@ void GA::UndoTest(void)
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 		wstring szSpec = wstring(L"..\\Chess\\Test\\Players\\") + ffd.cFileName;
-		if (PlayUndoPGNFile(szSpec.c_str()) < 0)
+		if (PlayUndoPGNFile(szSpec.c_str()) != ERR::None)
 			break;
 		break;
 	} while (FindNextFile(hfind, &ffd) != 0);
@@ -253,51 +255,46 @@ void GA::UndoTest(void)
 }
 
 
-int PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
+ERR PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
 {
-	int w = PROCPGNOPEN::ProcessTag(tkpgn, szValue);
+	ERR err = PROCPGNOPEN::ProcessTag(tkpgn, szValue);
 //	if (tkpgn == tkpgnTagsEnd)
 //		ga.uiti.Redraw();
-	return w;
+	return err;
 }
 
 
-int PROCPGNTEST::ProcessMv(MV mv)
+ERR PROCPGNTEST::ProcessMv(MV mv)
 {
 	return PROCPGNOPEN::ProcessMv(mv);
 }
 
 
-int GA::PlayUndoPGNFile(const wchar_t* szFile)
+ERR GA::PlayUndoPGNFile(const wchar_t* szFile)
 {
 	ifstream is(szFile, ifstream::in);
 
 	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
 	LogOpen(szFileBase, L"");
 	SetProcpgn(new PROCPGNTESTUNDO(*this));
+	ERR err;
 	try {
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
 			LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
-			if (DeserializeGame(istkpgn) != 1)
+			if ((err = DeserializeGame(istkpgn)) != ERR::None)
 				break;
 			UndoFullGame();
 			ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 		}
-		SetProcpgn(nullptr);
 		LogClose(szFileBase, L"Passed", LGF::Normal);
 	}
-	catch (int err) {
-		if (err == 1) {
-			wchar_t sz[58];
-			::wsprintf(sz, L"Error Line %d", err);
-			::MessageBox(nullptr, sz, L"PGN File Error", MB_OK);
-		}
-		SetProcpgn(nullptr);
+	catch (EX& ex) {
+		::MessageBox(nullptr, WszWidenSz(ex.what()).c_str(), L"PGN File Error", MB_OK);
 		LogClose(szFileBase, L"Failed", LGF::Normal);
-		return err;
 	}
-	return 0;
+	SetProcpgn(nullptr);
+	return err;
 }
 
 
@@ -309,30 +306,30 @@ void GA::UndoFullGame(void)
 		RedoMv(SPMV::Hidden);
 		assert(bdg == bdgInit);
 		if (bdg != bdgInit)
-			throw 1;
+			throw EXFAILTEST();
 		UndoMv(SPMV::Hidden);
 	}
 }
 
 
-int PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
+ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 {
 	return PROCPGNTEST::ProcessTag(tkpgn, szValue);
 }
 
 
-int PROCPGNTESTUNDO::ProcessMv(MV mv)
+ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
 {
 	BDG bdgInit = ga.bdg;
 	ga.MakeMv(mv, SPMV::Hidden);
 	BDG bdgNew = ga.bdg;
 	ga.UndoMv(SPMV::Hidden);
 	if (bdgInit != ga.bdg)
-		throw 1;
+		throw EXFAILTEST();
 	ga.RedoMv(SPMV::Hidden);
 	if (bdgNew != ga.bdg)
-		throw 1;
-	return 0;
+		throw EXFAILTEST();
+	return ERR::None;
 }
 
 

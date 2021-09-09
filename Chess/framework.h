@@ -73,27 +73,93 @@ extern bool fValidate;
 
 /*
  *
+ *	Useful C/C++ extensions
+ *
+ */
+
+
+#define CArray(rg) (sizeof(rg) / sizeof((rg)[0]))
+
+template<class Interface>
+inline void SafeRelease(Interface** ppi)
+{
+	if (*ppi != nullptr) {
+		(*ppi)->Release();
+		*ppi = nullptr;
+	}
+}
+
+string SzFlattenWsz(const wstring& wsz);
+wstring WszWidenSz(const string& sz);
+
+
+/*
+ *
  *	EX class
  * 
  *	Exception wrapper class
  *
  */
 
+
 class EX : public exception
 {
+protected:
 	string szWhat;
 
 public:
-	EX(const wstring& sz)
-	{
-		
-	}
+	EX(void) : szWhat("") { }
+	EX(const string& sz) {	}
 
 	virtual const char* what(void) const
 	{
 		return szWhat.c_str();
 	}
+
+	virtual void set_what(const string& szNew)
+	{
+		szWhat = szNew;
+	}
 };
+
+
+class ISTK;
+
+class EXPARSE : public EX
+{
+public:
+	EXPARSE(const string& szMsg, ISTK& istk);
+	EXPARSE(const string& szMsg, const wchar_t* szFile, int line);
+};
+
+
+class EXINT : public EX
+{
+public:
+	EXINT(void) : EX("interrupted") { }
+};
+
+
+class EXFAILTEST : public EX
+{
+public:
+	EXFAILTEST(void) : EX("Test failed") { }
+};
+
+
+enum class ERR {
+	EndOfFile = 1,
+	
+	None = 0,
+	
+	Fatal = -1,
+	Parse = -2
+};
+
+inline bool FErrIsSevere(ERR err)
+{
+	return (int)err < 0;
+}
 
 
 /*
@@ -491,26 +557,6 @@ typedef ID2D1PathGeometry GEOM;
 typedef IDXGISwapChain1 SWCH;
 typedef UINT_PTR TID;
 
-
-/*
- *
- *	Useful C/C++ extensions
- * 
- */
-
-#define CArray(rg) (sizeof(rg) / sizeof((rg)[0]))
-
-template<class Interface>
-inline void SafeRelease(Interface** ppi)
-{
-	if (*ppi != nullptr) {
-		(*ppi)->Release();
-		*ppi = nullptr;
-	}
-}
-
-string SzFlattenWsz(const wstring& wsz);
-wstring WszWidenSz(const string& sz);
 
 
 /*

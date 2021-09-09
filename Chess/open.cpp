@@ -10,11 +10,30 @@
 #include <streambuf>
 
 
+EXPARSE::EXPARSE(const string& szMsg, ISTK& istk) : EX()
+{
+	char sz[1024];
+	snprintf(sz, CArray(sz), szMsg.c_str(), SzFlattenWsz(L"").c_str(), istk.line());
+	set_what(sz);
+}
+
+EXPARSE::EXPARSE(const string& szMsg, const wchar_t* szFile, int line) : EX()
+{
+	char sz[1024];
+	snprintf(sz, CArray(sz), szMsg.c_str(), SzFlattenWsz(szFile).c_str(), line);
+	set_what(sz);
+}
+
+
 void GA::OpenPGNFile(const wchar_t szFile[])
 {
 	SetProcpgn(new PROCPGNOPEN(*this));
 	ifstream is(szFile, ifstream::in);
-	Deserialize(is);
+	try {
+		Deserialize(is);
+	}
+	catch (EX& ex) {
+	}
 	app.pga->SetProcpgn(nullptr);
 	uiml.UpdateContSize();
 	uiml.SetSel((int)bdg.vmvGame.size() - 1, SPMV::Hidden);
@@ -36,40 +55,64 @@ bool GA::FIsPgnData(const char* pch) const
 }
 
 
-void GA::Deserialize(istream& is)
+/*	GA::Deserialize
+ *
+ *	Deserializes the stream as a PGN file. Throws an exception on parse errors
+ *	or file errors. Returns 0 on success, 1 if we reached EOF.
+ */
+ERR GA::Deserialize(istream& is)
 {
 	ISTKPGN istkpgn(is);
 	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
-	if (!DeserializeHeaders(istkpgn))
-		return;
-	DeserializeMoveList(istkpgn);
+	try {
+		ERR err;
+		if ((err = DeserializeHeaders(istkpgn)) != ERR::None)
+			return err;
+		DeserializeMoveList(istkpgn);
+	}
+	catch (EX& ex) {
+		NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+		throw ex;
+	}
+	return ERR::None;
 }
 
 
-int GA::DeserializeGame(ISTKPGN& istkpgn)
+/*	GA::DeserializeGame
+ *
+ *	Deserializes a single game from a PGN token stream. Return 0 on success,
+ *	1 if we're at the EOF, or throws an exception on parse and file errors.
+ */
+ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 {
 	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
-	if (!DeserializeHeaders(istkpgn))
-		return 0;
-	DeserializeMoveList(istkpgn);
-	return 1;
+	ERR err;
+	if ((err = DeserializeHeaders(istkpgn)) != ERR::None)
+		return err;
+	return DeserializeMoveList(istkpgn);
 }
 
 
-int GA::DeserializeHeaders(ISTKPGN& istkpgn)
+ERR GA::DeserializeHeaders(ISTKPGN& istkpgn)
 {
-	if (!DeserializeTag(istkpgn))
-		return 0;
+	ERR err;
+	if ((err = DeserializeTag(istkpgn)) != ERR::None)
+		return err;
 	pprocpgn->ProcessTag(tkpgnTagsStart, "");
-	while (DeserializeTag(istkpgn))
+	while (DeserializeTag(istkpgn) != ERR::EndOfFile)
 		;
 	assert(pprocpgn);
 	pprocpgn->ProcessTag(tkpgnTagsEnd, "");
-	return 1;
+	return ERR::None;
 }
 
 
-int GA::DeserializeTag(ISTKPGN& istkpgn)
+/*	GA::DeserializeTag
+ *
+ *	Deserializes a single tag from the PGN file header section. Returns 0 on success,
+ *	returns ERR::EndOfFile if end of tag section.
+ */
+ERR GA::DeserializeTag(ISTKPGN& istkpgn)
 {
 	class TKS {
 	public:
@@ -90,29 +133,29 @@ int GA::DeserializeTag(ISTKPGN& istkpgn)
 		switch ((int)*tks.ptkStart) {
 		case tkpgnBlankLine:
 		case tkpgnEnd:
-			return 0;	// blank line signifies end of tags
+			return ERR::EndOfFile;	// blank line signifies end of tags
 		case tkpgnLBracket:
 			goto GotTag;
 		default:
-			throw istkpgn.line();
+			throw EXPARSE("Expecting open bracket in tag list", istkpgn);
 		}
 	}
 GotTag:
 	/* read symbol, value, and end tag */
 	tks.ptkSym = istkpgn.PtkNext();
 	if ((int)*tks.ptkSym != tkpgnSymbol)
-		throw istkpgn.line();
+		throw EXPARSE("Expecting symbol", istkpgn);
 	tks.ptkVal = istkpgn.PtkNext();
 	if ((int)*tks.ptkVal != tkpgnString)
-		throw istkpgn.line();
+		throw EXPARSE("Expecting string value", istkpgn);
 	tks.ptkEnd = istkpgn.PtkNext();
 	if ((int)*tks.ptkEnd != tkpgnRBracket)
-		throw istkpgn.line();
+		throw EXPARSE("Expecting close bracket", istkpgn);
 
 	/* we have a well-formed tag */
 	ProcessTag(tks.ptkSym->sz(), tks.ptkVal->sz());
 
-	return 1;
+	return ERR::None;
 }
 
 
@@ -123,15 +166,16 @@ GotTag:
  *	the PGN processing. Returns 1 if the move list was successfully processed.
  *	Can throw an exception on syntax errors in the PGN file
  */
-int GA::DeserializeMoveList(ISTKPGN& istkpgn)
+ERR GA::DeserializeMoveList(ISTKPGN& istkpgn)
 {
-	while (DeserializeMove(istkpgn))
+	while (DeserializeMove(istkpgn) == ERR::None) {
 		PumpMsg();
-	return 1;
+	}
+	return ERR::None;
 }
 
 
-int GA::DeserializeMove(ISTKPGN& istkpgn)
+ERR GA::DeserializeMove(ISTKPGN& istkpgn)
 {
 	TK* ptk;
 	for (ptk = istkpgn.PtkNext(); ; ) {
@@ -141,7 +185,7 @@ int GA::DeserializeMove(ISTKPGN& istkpgn)
 			if (!FIsMoveNumber(ptk, w)) {
 				ProcessMove(ptk->sz());
 				delete ptk;
-				return 1;
+				return ERR::None;
 			}
 			/* eat trailing periods */
 			/* TODO: should communicate the move number back to the caller,
@@ -156,13 +200,13 @@ int GA::DeserializeMove(ISTKPGN& istkpgn)
 		case tkpgnBlankLine:
 		case tkpgnEnd:
 			delete ptk;
-			return 0;
+			return ERR::EndOfFile;
 		default:
 			istkpgn.UngetTk(ptk);
-			return 0;
+			return ERR::EndOfFile;
 		}
 	}
-	return 1;
+	return ERR::None;
 }
 
 
@@ -171,7 +215,7 @@ int GA::DeserializeMove(ISTKPGN& istkpgn)
  *	Processes the tag/value pair in the PGN file stream. Performs the actual
  *	side effects of the tag.
  */
-void GA::ProcessTag(const string& szTag, const string& szVal)
+ERR GA::ProcessTag(const string& szTag, const string& szVal)
 {
 	assert(pprocpgn);
 
@@ -194,6 +238,7 @@ void GA::ProcessTag(const string& szTag, const string& szVal)
 			break;
 		}
 	}
+	return ERR::None;
 }
 
 
@@ -201,15 +246,16 @@ void GA::ProcessTag(const string& szTag, const string& szVal)
  *
  *	Parses and performs the move that has been extracted from the PGN stream.
  */
-void GA::ProcessMove(const string& szMove)
+ERR GA::ProcessMove(const string& szMove)
 {
 	assert(pprocpgn);
 
 	MV mv;
 	const char* pch = szMove.c_str();
-	if (bdg.ParseMv(pch, mv) != 1)
-		return;
+	if (bdg.ParseMv(pch, mv) == ERR::EndOfFile)
+		return ERR::EndOfFile;
 	pprocpgn->ProcessMv(mv);
+	return ERR::None;
 }
 
 
@@ -260,14 +306,14 @@ PROCPGN::PROCPGN(GA& ga) : ga(ga)
 }
 
 
-int PROCPGNOPEN::ProcessMv(MV mv)
+ERR PROCPGNOPEN::ProcessMv(MV mv)
 {
 	ga.MakeMv(mv, SPMV::Hidden);
-	return 0;
+	return ERR::None;
 }
 
 
-int PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
+ERR PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
 {
 	switch (tkpgn) {
 	case tkpgnWhite:
@@ -285,7 +331,7 @@ int PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
 	default:
 		break;
 	}
-	return 0;
+	return ERR::None;
 }
 
 
@@ -301,7 +347,7 @@ int PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
  *	Parses an algebraic move for the current board state. Returns 1 for
  *	a successful move, 0 for end game, and -1 for error.
  */
-int BDG::ParseMv(const char*& pch, MV& mv) const
+ERR BDG::ParseMv(const char*& pch, MV& mv) const
 {
 	GMV gmv;
 	GenGmv(gmv, RMCHK::Remove);
@@ -332,17 +378,17 @@ int BDG::ParseMv(const char*& pch, MV& mv) const
 	BuildCastle:
 		rank = RankBackFromCpc(cpcToMove);
 		mv = MV(SQ(rank, fileKing), SQ(rank, file));
-		return 1;
+		return ERR::None;
 	case TKMV::WhiteWins:
 	case TKMV::BlackWins:
 	case TKMV::Draw:
 	case TKMV::InProgress:
-		return 0;
+		return ERR::EndOfFile;
 	case TKMV::End:
-		return 0;	// the move symbol is blank - can this happen?
+		return ERR::EndOfFile;	// the move symbol is blank - can this happen?
 	default:
 		/* all other tokens are illegal */
-		return -1;
+		throw EXPARSE("Illegal token", L"", 1);
 	}
 }
 
@@ -364,7 +410,7 @@ APC ApcFromTkmv(TKMV tkmv)
 }
 
 
-int BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
+ERR BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
 {
 	SQ sq;
 
@@ -375,9 +421,9 @@ int BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
 	case TKMV::To:	/* B-c5 or Bxc5 */
 	case TKMV::Take:
 		if (TkmvScan(pch, sq) != TKMV::Square)
-			return -1;
+			throw EXPARSE("Illegal move square", L"", 1);
 		if (!FMvMatchPieceTo(gmv, apc, -1, -1, sq, mv))
-			return -1;
+			throw EXPARSE("Not a valid move", L"", 1);
 		break;
 
 	case TKMV::Square:	/* Bc5, Bd3c5, Bd3-c5, Bd3xc5 */
@@ -392,13 +438,13 @@ int BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
 		if (tkmv != TKMV::Square) { /* Bc5 */
 			/* look up piece that can move to this square */
 			if (!FMvMatchPieceTo(gmv, apc, -1, -1, sq, mv))
-				return -1;
+				throw EXPARSE("No pieces can move to this square", L"", 1);
 			break;
 		}
 		/* Bd5c4 */
 		pch = pchNext;
 		if (!FMvMatchFromTo(gmv, sq, sqTo, mv))
-			return -1;
+			throw EXPARSE("Not a valid move", L"", 1);
 		break;
 	}
 
@@ -412,10 +458,10 @@ int BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
 			tkmv = TkmvScan(pchNext, sqTo);
 		}
 		if (tkmv != TKMV::Square)
-			return -1;
+			throw EXPARSE("Invalid square", L"", 1);
 		pch = pchNext;
 		if (!FMvMatchPieceTo(gmv, apc, -1, sq.file(), sqTo, mv))
-			return -1;
+			throw EXPARSE("Not a valid move", L"", 1);
 		break;
 	}
 
@@ -429,21 +475,21 @@ int BDG::ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const
 			tkmv = TkmvScan(pchNext, sqTo);
 		}
 		if (tkmv != TKMV::Square)
-			return -1;
+			throw EXPARSE("Expected square", L"", 1);
 		pch = pchNext;
 		if (!FMvMatchPieceTo(gmv, apc, sq.rank(), -1, sqTo, mv))
-			return -1;
+			throw EXPARSE("Not a valid move", L"", 1);
 		break;
 	}
 
 	default:
-		return -1;
+		throw EXPARSE("Not a valid move", L"", 1);
 	}
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-int BDG::ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
+ERR BDG::ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 {
 	/* e4, e4e5, e4-e5, e4xe5 */
 	const char* pchNext = pch;
@@ -457,17 +503,17 @@ int BDG::ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 	if (TkmvScan(pchNext, sq) == TKMV::Square) {
 		pch = pchNext;
 		if (!FMvMatchFromTo(gmv, sq, sqTo, mv))
-			return -1;
+			throw EXPARSE("Not a valid move", L"", 1);
 	}
 	else { /* e4 pawn move */
 		if (!FMvMatchPieceTo(gmv, APC::Pawn, -1, -1, sq, mv))
-			return -1;
+			throw EXPARSE("Not a valid move", L"", 1);
 	}
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-int BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
+ERR BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 {
 	const char* pchNext = pch;
 	for (;;) {
@@ -484,26 +530,28 @@ int BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 			TKMV tkmv = TkmvScan(pchNext, sqT);
 			APC apc = ApcFromTkmv(tkmv);
 			if (apc == APC::Null)
-				return -1;
+				throw EXPARSE("Not a valid promotion", L"", 1);
 			pch = pchNext;
 			mv.SetApcPromote(apc);
 			break;
 		}
 		case TKMV::End:
-			return 1;
+			return ERR::None;
 		case TKMV::WhiteWins:
 		case TKMV::BlackWins:
 		case TKMV::Draw:
 		case TKMV::InProgress:
-			return 0;
+			return ERR::None;
 		default:
-			return -1;
+			throw EXPARSE("Not a valid move suffix", L"", 1);
 		}
 	}
+
+	return ERR::None;
 }
 
 
-int BDG::ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
+ERR BDG::ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 {
 	/* de4, d-e4, dxe4 */
 	const char* pchNext = pch;
@@ -514,15 +562,15 @@ int BDG::ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 		tkmv = TkmvScan(pchNext, sqTo);
 	}
 	if (tkmv != TKMV::Square)
-		return -1;
+		throw EXPARSE("Not a valid square", L"", 1);
 	pch = pchNext;
 	if (!FMvMatchPieceTo(gmv, APC::Pawn, -1, sq.file(), sqTo, mv))
-		return -1;
+		throw EXPARSE("Not a valid move", L"", 1);
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-int BDG::ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
+ERR BDG::ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 {
 	/* 7e4, 7-e4, 7xe4 */
 	const char* pchNext = pch;
@@ -533,10 +581,10 @@ int BDG::ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const
 		tkmv = TkmvScan(pchNext, sqTo);
 	}
 	if (tkmv != TKMV::Square)
-		return -1;
+		throw EXPARSE("Not a valid destination square", L"", 1);
 	pch = pchNext;
 	if (!FMvMatchPieceTo(gmv, APC::Pawn, sq.rank(), -1, sqTo, mv))
-		return -1;
+		throw EXPARSE("Not a valid move", L"", 1);
 	return ParseMvSuffixes(mv, pch);
 }
 

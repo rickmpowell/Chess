@@ -119,7 +119,7 @@ private:
 	SBAR sbarVert;
 
 protected:
-	const float dxyScrollBarWidth = 10.0f;
+	const float dxyScrollBarWidth = 12.0f;
 
 public:
 	UIPS(GA* pga);

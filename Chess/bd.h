@@ -1235,12 +1235,12 @@ public:
 	 *	parsing moves 
 	 */
 
-	int ParseMv(const char*& pch, MV& mv) const;
-	int ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const;
-	int ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
-	int ParseMvSuffixes(MV& mv, const char*& pch) const;
-	int ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
-	int ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
+	ERR ParseMv(const char*& pch, MV& mv) const;
+	ERR ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const;
+	ERR ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
+	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
+	ERR ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
+	ERR ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
 	bool FMvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
 	bool FMvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, MV& mv) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
@@ -1343,6 +1343,8 @@ public:
 
 class ISTK
 {
+	friend class EXPARSE;
+
 protected:
 	int li;
 	istream& is;

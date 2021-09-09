@@ -33,8 +33,8 @@ protected:
 public:
 	PROCPGN(GA& ga);
 	virtual ~PROCPGN(void) { }
-	virtual int ProcessMv(MV mv) = 0;
-	virtual int ProcessTag(int tkpgn, const string& szVal) = 0;
+	virtual ERR ProcessMv(MV mv) = 0;
+	virtual ERR ProcessTag(int tkpgn, const string& szVal) = 0;
 };
 
 
@@ -42,8 +42,8 @@ class PROCPGNOPEN : public PROCPGN
 {
 public:
 	PROCPGNOPEN(GA& ga) : PROCPGN(ga) { }
-	virtual int ProcessMv(MV mv);
-	virtual int ProcessTag(int tkpgn, const string& szVal);
+	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
 
@@ -51,8 +51,8 @@ class PROCPGNPASTE : public PROCPGNOPEN
 {
 public:
 	PROCPGNPASTE(GA& ga) : PROCPGNOPEN(ga) { }
-	virtual int ProcessMv(MV mv);
-	virtual int ProcessTag(int tkpgn, const string& szVal);
+	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
 
@@ -60,8 +60,8 @@ class PROCPGNTEST : public PROCPGNOPEN
 {
 public:
 	PROCPGNTEST(GA& ga) : PROCPGNOPEN(ga) { }
-	virtual int ProcessMv(MV mv);
-	virtual int ProcessTag(int tkpgn, const string& szVal);
+	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
 
@@ -69,8 +69,8 @@ class PROCPGNTESTUNDO : public PROCPGNTEST
 {
 public:
 	PROCPGNTESTUNDO(GA& ga) : PROCPGNTEST(ga) { }
-	virtual int ProcessMv(MV mv);
-	virtual int ProcessTag(int tkpgn, const string& szVal);
+	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
 
@@ -225,16 +225,16 @@ public:
 	void SetProcpgn(PROCPGN* pprocpgn);
 	void OpenPGNFile(const wchar_t szFile[]);
 	void PlayPGNFiles(const wchar_t szPath[]);
-	int PlayPGNFile(const wchar_t szFile[]);
-	void Deserialize(istream& is);
-	int DeserializeGame(ISTKPGN& istkpgn);
-	int DeserializeHeaders(ISTKPGN& istkpgn);
-	int DeserializeMoveList(ISTKPGN& istkpgn);
-	int DeserializeTag(ISTKPGN& istkpgn);
-	int DeserializeMove(ISTKPGN& istkpgn);
+	ERR PlayPGNFile(const wchar_t szFile[]);
+	ERR Deserialize(istream& is);
+	ERR DeserializeGame(ISTKPGN& istkpgn);
+	ERR DeserializeHeaders(ISTKPGN& istkpgn);
+	ERR DeserializeMoveList(ISTKPGN& istkpgn);
+	ERR DeserializeTag(ISTKPGN& istkpgn);
+	ERR DeserializeMove(ISTKPGN& istkpgn);
 	bool FIsMoveNumber(TK* ptk, int& w) const;
-	void ProcessTag(const string& szTag, const string& szVal);
-	void ProcessMove(const string& szMove);
+	ERR ProcessTag(const string& szTag, const string& szVal);
+	ERR ProcessMove(const string& szMove);
 	bool FIsPgnData(const char* pch) const;
 
 	/*
@@ -262,7 +262,7 @@ public:
 	void SkipToWhiteSpace(const wchar_t*& sz) const;
 
 	void UndoTest(void);
-	int PlayUndoPGNFile(const wchar_t* szFile);
+	ERR PlayUndoPGNFile(const wchar_t* szFile);
 	void UndoFullGame(void);
 
 	void PerftTest(void);
