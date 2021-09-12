@@ -51,6 +51,7 @@
 #include <iomanip>
 #include <fstream>
 #include <filesystem>
+#include <format>
 
 
 using namespace D2D1;
@@ -109,7 +110,7 @@ protected:
 
 public:
 	EX(void) : szWhat("") { }
-	EX(const string& sz) {	}
+	EX(const string& sz) : szWhat(sz) {	}
 
 	virtual const char* what(void) const
 	{
@@ -128,6 +129,7 @@ class ISTK;
 class EXPARSE : public EX
 {
 public:
+	EXPARSE(const string& szMsg);
 	EXPARSE(const string& szMsg, ISTK& istk);
 	EXPARSE(const string& szMsg, const wchar_t* szFile, int line);
 };

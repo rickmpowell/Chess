@@ -135,6 +135,17 @@ public:
 	{ 
 		return 1ULL << shgrf(); 
 	}
+
+	inline operator string() const
+	{
+		if (fIsNil())
+			return "<nil>";
+		char sz[3];
+		sz[0] = 'a' + file();
+		sz[1] = '1' + rank();
+		sz[2] = 0;
+		return string(sz);
+	}
 };
 
 const SQ sqNil = SQ(0xff);
@@ -233,7 +244,6 @@ inline int bitscanRev(uint64_t grf)
 	_BitScanReverse64(&shf, grf);
 	return shf;
 #else
-	/* TODO: use intrinsic */
 	grf |= grf >> 1;
 	grf |= grf >> 2;
 	grf |= grf >> 4;

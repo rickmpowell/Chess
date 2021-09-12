@@ -1176,6 +1176,9 @@ enum class TKMV {
 };
 
 
+string to_string(TKMV tkmv);
+
+
 /*
  *
  *	BDG class
@@ -1236,13 +1239,13 @@ public:
 	 */
 
 	ERR ParseMv(const char*& pch, MV& mv) const;
-	ERR ParsePieceMv(const GMV& gmv, TKMV tkmv, const char*& pch, MV& mv) const;
-	ERR ParseSquareMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
+	ERR ParsePieceMv(const GMV& gmv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseSquareMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
-	ERR ParseFileMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
-	ERR ParseRankMv(const GMV& gmv, SQ sq, const char*& pch, MV& mv) const;
-	bool FMvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, MV& mv) const;
-	bool FMvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, MV& mv) const;
+	ERR ParseFileMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseRankMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	MV MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	MV MvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 
 	/*

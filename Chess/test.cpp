@@ -25,7 +25,7 @@ void GA::Test(void)
 	LogClose(L"New Game", L"Passed", LGF::Normal);
 
 	LogOpen(L"Perft", L"");
-	PerftTest();
+//	PerftTest();
 	LogClose(L"Perft", L"Passed", LGF::Normal);
 
 	LogOpen(L"Undo", L"");
