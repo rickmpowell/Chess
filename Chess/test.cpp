@@ -10,40 +10,239 @@
 #include "ga.h"
 
 
+/*
+ *
+ *	Test harness
+ * 
+ */
+
+
+ /*
+  *
+  *	TESTLIST
+  *
+  *	The list of tests that we're going to run, which are standardized by being derived
+  *	from the virtual TEST class.
+  *
+  *	Adding different types of test runs and/or different types of test reporting should
+  *	be implemented by adding functionality to this TESTLIST class. The individual TESTs
+  *	should communicate with the TESTLIST to report and interface.
+  *
+  */
+
+class TEST;
+
+class TESTLIST
+{
+public:
+	GA& ga;
+	vector<TEST*> rgptest;
+public:
+	TESTLIST(GA& ga);
+	~TESTLIST(void);
+	void Add(TEST* ptest);
+	bool FDepthLog(LGT lgt, int& depth);
+	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+	void RunAll(void);
+	void Clear(void);
+};
+
+
+/*
+ *
+ *	TEST base class
+ * 
+ *	This is the base class for all the individual tests. Tests are derived from this
+ *	class and added to the TESTLIST collection, which is used to acutally run the
+ *	test run.
+ * 
+ */
+
+
+class TEST
+{
+	APP& app;
+	TESTLIST& testlist;
+public:
+	TEST(TESTLIST& testlist);
+	virtual ~TEST(void) { }
+	virtual wstring SzName(void) const = 0;
+	virtual wstring SzSubName(void) const {
+		return L"";
+	}
+
+	bool FDepthLog(LGT lgt, int& depth);
+	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+
+	virtual void Run(void) = 0;
+};
+
+
+TEST::TEST(TESTLIST& testlist) : app(testlist.ga.App()), testlist(testlist)
+{
+}
+
+bool TEST::FDepthLog(LGT lgt, int& depth)
+{
+	return testlist.FDepthLog(lgt, depth);
+}
+
+
+void TEST::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+{
+	testlist.AddLog(lgt, lgf, depth, tag, szData);
+}
+
+/*
+ *
+ *	TESTLIST implementation
+ * 
+ */
+
+
+TESTLIST::TESTLIST(GA& ga) : ga(ga) 
+{
+}
+
+
+TESTLIST::~TESTLIST(void)
+{
+	Clear();
+}
+
+
+void TESTLIST::Add(TEST* ptest)
+{
+	rgptest.push_back(ptest);
+}
+
+
+bool TESTLIST::FDepthLog(LGT lgt, int& depth)
+{
+	return ga.FDepthLog(lgt, depth);
+}
+
+
+void TESTLIST::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+{
+	ga.AddLog(lgt, lgf, depth, tag, szData);
+}
+
+
+void TESTLIST::RunAll(void)
+{
+	ga.InitLog(3);
+	LogOpen(L"Test", L"Start");
+
+	for (TEST* ptest : rgptest) {
+		LogOpen(ptest->SzName(), ptest->SzSubName());
+		ptest->Run();
+		LogClose(ptest->SzName(), L"Passed", LGF::Normal);
+	}
+
+	LogClose(L"Test", L"Passed", LGF::Normal);
+}
+
+
+void TESTLIST::Clear(void)
+{
+	for (; rgptest.size() > 0; rgptest.pop_back())
+		delete rgptest.back();
+}
+
+
+/*
+ *
+ *	Individual game tests
+ *
+ */
+
+
+class GATEST : public TEST
+{
+protected:
+	GA& ga;
+public:
+	GATEST(TESTLIST& testlist) : TEST(testlist), ga(testlist.ga) { }
+};
+
+
+class NEWGAMETEST : public GATEST
+{
+public:
+	NEWGAMETEST(TESTLIST& testlist) : GATEST(testlist) { }
+	wstring SzName(void) const { return L"New Game"; }
+
+	virtual void Run(void)
+	{
+		ga.NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+		ga.ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	}
+};
+
+
+class PERFTTEST : public GATEST
+{
+public:
+	PERFTTEST(TESTLIST& testlist) : GATEST(testlist) { }	
+	virtual wstring SzName(void) const { return L"Perft"; }
+
+	virtual void Run(void)
+	{
+		ga.PerftTest();
+	}
+
+};
+
+
+class UNDOTEST : public GATEST
+{
+public:
+	UNDOTEST(TESTLIST& testlist) : GATEST(testlist) { }
+	virtual wstring SzName(void) const { return L"Undo"; }
+
+	virtual void Run(void)
+	{
+		ga.UndoTest();
+	}
+};
+
+
+class PLAYTEST : public GATEST
+{
+	wstring szSub;
+public:
+	PLAYTEST(TESTLIST& testlist, const wstring& szSub) : GATEST(testlist), szSub(szSub) { }
+	virtual wstring SzName(void) const { return L"Play"; }
+	virtual wstring SzSubName(void) const { return szSub; }
+
+	virtual void Run(void)
+	{
+		ga.PlayPGNFiles(wstring(L"..\\Chess\\Test\\") + szSub);
+	}
+};
+
+
 /*	GA::Test
  *
  *	This is the top-level test script.
  */
 void GA::Test(void)
 {
-	InitLog(3);
-	LogOpen(L"Test", L"Start");
-	
-	LogOpen(L"New Game", L"");
-	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
-	ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	LogClose(L"New Game", L"Passed", LGF::Normal);
+	TESTLIST testlist(*this);
+	testlist.Add(new NEWGAMETEST(testlist));
+	testlist.Add(new PERFTTEST(testlist));
+	testlist.Add(new UNDOTEST(testlist));
+	testlist.Add(new PLAYTEST(testlist, L"Players"));
 
-	LogOpen(L"Perft", L"");
-//	PerftTest();
-	LogClose(L"Perft", L"Passed", LGF::Normal);
-
-	LogOpen(L"Undo", L"");
-	UndoTest();
-	LogClose(L"Undo", L"Passed", LGF::Normal);
-	
-	LogOpen(L"Play", L"Players");
-	PlayPGNFiles(L"..\\Chess\\Test\\Players");
-	LogClose(L"Play", L"Players", LGF::Normal);
-	
-	LogClose(L"Test", L"Passed", LGF::Normal);
+	testlist.RunAll();
 }
 
 
-void GA::PlayPGNFiles(const wchar_t szPath[])
+void GA::PlayPGNFiles(const wstring& szPath)
 {
 	WIN32_FIND_DATA ffd;
-	wstring szSpec(szPath);
+	wstring szSpec(szPath.c_str());
 	szSpec += L"\\*.pgn";
 	HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
 	if (hfind == INVALID_HANDLE_VALUE)

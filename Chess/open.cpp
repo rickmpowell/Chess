@@ -635,9 +635,7 @@ MV BDG::MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ s
 			return mvSearch;
 		}
 	}
-	string sz = string(pchFirst, pchLim - pchFirst);
-	string szMsg = format("{} is not a legal move", sz);
-	throw EXPARSE(szMsg);
+	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim - pchFirst)));
 }
 
 MV BDG::MvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const

@@ -224,7 +224,7 @@ public:
 
 	void SetProcpgn(PROCPGN* pprocpgn);
 	void OpenPGNFile(const wchar_t szFile[]);
-	void PlayPGNFiles(const wchar_t szPath[]);
+	void PlayPGNFiles(const wstring& szPath);
 	ERR PlayPGNFile(const wchar_t szFile[]);
 	ERR Deserialize(istream& is);
 	ERR DeserializeGame(ISTKPGN& istkpgn);

@@ -51,11 +51,10 @@ void GA::DiscardRsrcClass(void)
 }
 
 
-GA::GA(APP& app) : UI(nullptr), app(app), 
-	uiti(this), uibd(this), uiml(this), uidb(this), uitip(this), 
-	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr), 
-	fInPlay(false), prule(nullptr), pprocpgn(nullptr)
-
+GA::GA(APP& app) : UI(nullptr), app(app),
+	uiti(this), uibd(this), uiml(this), uidb(this), uitip(this),
+	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
+	fInPlay(false), prule(nullptr), pprocpgn(nullptr), tidClock(0)
 {
 	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = nullptr;
 	tmLast = 0L;
