@@ -17,255 +17,121 @@
  */
 
 
- /*
-  *
-  *	TESTLIST
-  *
-  *	The list of tests that we're going to run, which are standardized by being derived
-  *	from the virtual TEST class.
-  *
-  *	Adding different types of test runs and/or different types of test reporting should
-  *	be implemented by adding functionality to this TESTLIST class. The individual TESTs
-  *	should communicate with the TESTLIST to report and interface.
-  *
-  */
-
-class TEST;
-
-class TESTLIST
-{
-public:
-	GA& ga;
-	vector<TEST*> rgptest;
-public:
-	TESTLIST(GA& ga);
-	~TESTLIST(void);
-	void Add(TEST* ptest);
-	bool FDepthLog(LGT lgt, int& depth);
-	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
-	void RunAll(void);
-	void Clear(void);
-};
-
-
 /*
  *
  *	TEST base class
- * 
- *	This is the base class for all the individual tests. Tests are derived from this
- *	class and added to the TESTLIST collection, which is used to acutally run the
- *	test run.
- * 
+ *
+ *	This is the base class for all the individual tests. Tests are organized as a 
+ *	tree. Non-leaf nodes enumerate through child sub-tests
+ *
  */
 
 
 class TEST
 {
+protected:
 	APP& app;
-	TESTLIST& testlist;
-public:
-	TEST(TESTLIST& testlist);
-	virtual ~TEST(void) { }
-	virtual wstring SzName(void) const = 0;
-	virtual wstring SzSubName(void) const {
-		return L"";
-	}
+	GA& ga;
+	TEST* ptestParent;
+	vector<TEST*> rgptest;
 
+public:
+	TEST(GA& ga, TEST* ptestParent);
+	virtual ~TEST(void);
+	virtual wstring SzName(void) const;
+	virtual wstring SzSubName(void) const;
+	void Add(TEST* ptest);
+	void Clear(void);
 	bool FDepthLog(LGT lgt, int& depth);
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+	inline void LogTemp(const wstring& szData)
+	{
+		int depthLog;
+		if (FDepthLog(LGT::Temp, depthLog))
+			AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
+	}
+	void RunAll(void);
+	virtual void Run(void);
+	int Error(const string& szMsg);
 
-	virtual void Run(void) = 0;
+	/* board validation */
+
+	void ValidateFEN(const wchar_t* szFEN) const;
+	void ValidatePieces(const wchar_t*& sz) const;
+	void ValidateMoveColor(const wchar_t*& sz) const;
+	void ValidateCastle(const wchar_t*& sz) const;
+	void ValidateEnPassant(const wchar_t*& sz) const;
+	void SkipWhiteSpace(const wchar_t*& sz) const;
+	void SkipToWhiteSpace(const wchar_t*& sz) const;
 };
 
 
-TEST::TEST(TESTLIST& testlist) : app(testlist.ga.App()), testlist(testlist)
+TEST::TEST(GA& ga, TEST* ptestParent) : app(ga.App()), ga(ga), ptestParent(ptestParent)
 {
 }
 
-bool TEST::FDepthLog(LGT lgt, int& depth)
-{
-	return testlist.FDepthLog(lgt, depth);
-}
-
-
-void TEST::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
-{
-	testlist.AddLog(lgt, lgf, depth, tag, szData);
-}
-
-/*
- *
- *	TESTLIST implementation
- * 
- */
-
-
-TESTLIST::TESTLIST(GA& ga) : ga(ga) 
-{
-}
-
-
-TESTLIST::~TESTLIST(void)
+TEST::~TEST(void)
 {
 	Clear();
 }
 
+wstring TEST::SzName(void) const
+{
+	return L"Test";
+}
 
-void TESTLIST::Add(TEST* ptest)
+wstring TEST::SzSubName(void) const
+{
+	return L"";
+}
+
+void TEST::Add(TEST* ptest)
 {
 	rgptest.push_back(ptest);
 }
 
-
-bool TESTLIST::FDepthLog(LGT lgt, int& depth)
-{
-	return ga.FDepthLog(lgt, depth);
-}
-
-
-void TESTLIST::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
-{
-	ga.AddLog(lgt, lgf, depth, tag, szData);
-}
-
-
-void TESTLIST::RunAll(void)
-{
-	ga.InitLog(3);
-	LogOpen(L"Test", L"Start");
-
-	for (TEST* ptest : rgptest) {
-		LogOpen(ptest->SzName(), ptest->SzSubName());
-		ptest->Run();
-		LogClose(ptest->SzName(), L"Passed", LGF::Normal);
-	}
-
-	LogClose(L"Test", L"Passed", LGF::Normal);
-}
-
-
-void TESTLIST::Clear(void)
+void TEST::Clear(void)
 {
 	for (; rgptest.size() > 0; rgptest.pop_back())
 		delete rgptest.back();
 }
 
-
-/*
- *
- *	Individual game tests
- *
- */
-
-
-class GATEST : public TEST
+void TEST::RunAll(void)
 {
-protected:
-	GA& ga;
-public:
-	GATEST(TESTLIST& testlist) : TEST(testlist), ga(testlist.ga) { }
-};
-
-
-class NEWGAMETEST : public GATEST
-{
-public:
-	NEWGAMETEST(TESTLIST& testlist) : GATEST(testlist) { }
-	wstring SzName(void) const { return L"New Game"; }
-
-	virtual void Run(void)
-	{
-		ga.NewGame(new RULE(0, 0, 0), SPMV::Hidden);
-		ga.ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	LogOpen(SzName(), SzSubName());
+	Run();
+	for (TEST* ptest : rgptest) {
+		ptest->RunAll();
 	}
-};
+	LogClose(SzName(), L"Passed", LGF::Normal);
+}
 
-
-class PERFTTEST : public GATEST
+void TEST::Run(void)
 {
-public:
-	PERFTTEST(TESTLIST& testlist) : GATEST(testlist) { }	
-	virtual wstring SzName(void) const { return L"Perft"; }
+}
 
-	virtual void Run(void)
-	{
-		ga.PerftTest();
-	}
-
-};
-
-
-class UNDOTEST : public GATEST
+bool TEST::FDepthLog(LGT lgt, int& depth)
 {
-public:
-	UNDOTEST(TESTLIST& testlist) : GATEST(testlist) { }
-	virtual wstring SzName(void) const { return L"Undo"; }
+	return ga.FDepthLog(lgt, depth);
+}
 
-	virtual void Run(void)
-	{
-		ga.UndoTest();
-	}
-};
-
-
-class PLAYTEST : public GATEST
+void TEST::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {
-	wstring szSub;
-public:
-	PLAYTEST(TESTLIST& testlist, const wstring& szSub) : GATEST(testlist), szSub(szSub) { }
-	virtual wstring SzName(void) const { return L"Play"; }
-	virtual wstring SzSubName(void) const { return szSub; }
+	ga.AddLog(lgt, lgf, depth, tag, szData);
+}
 
-	virtual void Run(void)
-	{
-		ga.PlayPGNFiles(wstring(L"..\\Chess\\Test\\") + szSub);
-	}
-};
-
-
-/*	GA::Test
- *
- *	This is the top-level test script.
- */
-void GA::Test(void)
+int TEST::Error(const string& szMsg)
 {
-	TESTLIST testlist(*this);
-	testlist.Add(new NEWGAMETEST(testlist));
-	testlist.Add(new PERFTTEST(testlist));
-	testlist.Add(new UNDOTEST(testlist));
-	testlist.Add(new PLAYTEST(testlist, L"Players"));
-
-	testlist.RunAll();
+	return app.Error(szMsg, MB_OK);
 }
 
 
-void GA::PlayPGNFiles(const wstring& szPath)
-{
-	WIN32_FIND_DATA ffd;
-	wstring szSpec(szPath.c_str());
-	szSpec += L"\\*.pgn";
-	HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
-	if (hfind == INVALID_HANDLE_VALUE)
-		throw EX("No such file");
-	do {
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
-		wstring szSpec(szPath);
-		szSpec += L"\\";
-		szSpec += ffd.cFileName;
-		if (FErrIsSevere(PlayPGNFile(szSpec.c_str())))
-			break;
-	} while (FindNextFile(hfind, &ffd) != 0);
-	FindClose(hfind);
-}
-
-
-/*	GA::ValidateFEN
+/*	TEST::ValidateFEN
  *
  *	Verifies the board matches the board state in the FEN string. Note that we very
  *	specifically do our own FEN parsing here.
  */
-void GA::ValidateFEN(const wchar_t* szFEN) const
+void TEST::ValidateFEN(const wchar_t* szFEN) const
 {
 	const wchar_t* sz = szFEN;
 	ValidatePieces(sz);
@@ -274,27 +140,39 @@ void GA::ValidateFEN(const wchar_t* szFEN) const
 	ValidateEnPassant(sz);
 }
 
-
-void GA::ValidatePieces(const wchar_t*& sz) const
+void TEST::ValidatePieces(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int rank = 7;
 	SQ sq = SQ(rank, 0);
+	APC apc = APC::Null;
+	CPC cpc = CPC::NoColor;
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case L'/': rank--; assert(rank >= 0); sq = SQ(rank, 0); break;
-		case L'r': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
-		case L'n': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
-		case L'b': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
-		case L'q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
-		case L'k': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
-		case L'p': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == CPC::Black); sq++; break;
-		case L'R': assert(bdg.ApcFromSq(sq) == APC::Rook); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
-		case L'N': assert(bdg.ApcFromSq(sq) == APC::Knight); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
-		case L'B': assert(bdg.ApcFromSq(sq) == APC::Bishop); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
-		case L'Q': assert(bdg.ApcFromSq(sq) == APC::Queen); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
-		case L'K': assert(bdg.ApcFromSq(sq) == APC::King); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
-		case L'P': assert(bdg.ApcFromSq(sq) == APC::Pawn); assert(bdg.CpcFromSq(sq) == CPC::White); sq++; break;
+		case L'/':  
+			if (--rank < 0)
+				throw EXPARSE("too many FEN ranks");
+			sq = SQ(rank, 0); 
+			break;
+		case L'r': 
+		case L'R': apc = APC::Rook; goto CheckPiece; 
+		case L'n': 
+		case L'N': apc = APC::Knight; goto CheckPiece;
+		case L'b': 
+		case L'B': apc = APC::Bishop; goto CheckPiece;
+		case L'q': 
+		case L'Q': apc = APC::Queen; goto CheckPiece;
+		case L'k': 
+		case L'K': apc = APC::King; goto CheckPiece;
+		case L'p': 
+		case L'P':
+			apc = APC::Pawn;
+CheckPiece:
+			cpc = islower(*sz) ? CPC::Black : CPC::White;
+			if (ga.bdg.ApcFromSq(sq) != apc || ga.bdg.CpcFromSq(sq) != cpc)
+				throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
+			sq++; 
+			break;
 		case L'1':
 		case L'2':
 		case L'3':
@@ -303,212 +181,224 @@ void GA::ValidatePieces(const wchar_t*& sz) const
 		case L'6':
 		case L'7':
 		case L'8':
-		{
 			for (int dsq = *sz - L'0'; dsq > 0; dsq--, sq++) {
-				assert(bdg.FIsEmpty(sq));
+				if (!ga.bdg.FIsEmpty(sq))
+					throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
 			}
 			break;
-		}
-		default: assert(false); goto Done;
+		default: 
+			throw EXPARSE("invalid FEN piece"); 
 		}
 	}
-Done:
+
 	SkipToWhiteSpace(sz);
 }
 
 
-void GA::ValidateMoveColor(const wchar_t*& sz) const
+void TEST::ValidateMoveColor(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
+	CPC cpc = CPC::NoColor;
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case L'b': assert(bdg.cpcToMove == CPC::Black); break;
+		case L'b': 
+			cpc = CPC::Black;
+			break;
 		case L'w':
-		case L'-': assert(bdg.cpcToMove == CPC::White); break;
-		default: assert(false); goto Done;
+		case L'-': 
+			cpc = CPC::White;
+			break;
+		default: 
+			throw EXPARSE("invalid move color");
 		}
 	}
-Done:
+	if (ga.bdg.cpcToMove != cpc)
+		throw EXFAILTEST("move color mismatch");
 	SkipToWhiteSpace(sz);
 }
 
 
-void GA::ValidateCastle(const wchar_t*& sz) const
+void TEST::ValidateCastle(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int cs = 0;
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case L'k': cs |= csKing << CPC::White; break;
-		case L'q': cs |= csQueen << CPC::White; break;
-		case L'K': cs |= csKing << CPC::Black; break;
-		case L'Q': cs |= csQueen << CPC::Black; break;
-		case L'-': break;
-		default: assert(false); goto Done;
+		case L'k': 
+			cs |= csKing << CPC::White; 
+			break;
+		case L'q': 
+			cs |= csQueen << CPC::White; 
+			break;
+		case L'K': 
+			cs |= csKing << CPC::Black; 
+			break;
+		case L'Q': 
+			cs |= csQueen << CPC::Black;
+			break;
+		case L'-': 
+			break;
+		default: 
+			throw EXPARSE("invalid castle state");
 		}
 	}
-	assert(bdg.csCur == cs);
-Done:
+	if (ga.bdg.csCur != cs)
+		throw EXFAILTEST("mismatched castle state");
 	SkipToWhiteSpace(sz);
 }
 
 
-void GA::ValidateEnPassant(const wchar_t*& sz) const
+void TEST::ValidateEnPassant(const wchar_t*& sz) const
 {
 	SkipWhiteSpace(sz);
 	if (*sz == L'-') {
-		assert(bdg.sqEnPassant.fIsNil());
+		if (!ga.bdg.sqEnPassant.fIsNil())
+			throw EXFAILTEST("en passant square mismatch");
 	}
 	else if (*sz >= L'a' && *sz <= L'h') {
-#ifndef NDEBUG
 		int file = *sz - L'a';
-#endif
 		sz++;
 		if (*sz >= L'1' && *sz <= L'8') {
-			assert(bdg.sqEnPassant == SQ(*sz - L'1', file));
+			if (ga.bdg.sqEnPassant != SQ(*sz - L'1', file))
+				throw EXFAILTEST("en passant square mismatch");
 			sz++;
-			if (*sz && *sz != L' ') {
-				assert(false);
-				goto Done;
-			}
+			if (*sz && *sz != L' ')
+				throw EXPARSE("invalid en passant square");
 		}
 	}
-	else {
-		assert(false);
-	}
-Done:
+	else
+		throw EXPARSE("invalid en passant square");
+
 	SkipToWhiteSpace(sz);
 }
 
 
-void GA::SkipWhiteSpace(const wchar_t*& sz) const
+void TEST::SkipWhiteSpace(const wchar_t*& sz) const
 {
 	for (; *sz && *sz == L' '; sz++)
 		;
 }
 
 
-void GA::SkipToWhiteSpace(const wchar_t*& sz) const
+void TEST::SkipToWhiteSpace(const wchar_t*& sz) const
 {
 	for (; *sz && *sz != L' '; sz++)
 		;
 }
 
 
-/*	GA::PlayPGNFile
+/*
  *
- *	Plays the games in the PGN file given by szFile
+ *	TESTNEWGAME
+ * 
  */
-ERR GA::PlayPGNFile(const wchar_t szFile[])
+
+
+class TESTNEWGAME : public TEST
 {
-	ifstream is(szFile, ifstream::in);
+public:
+	TESTNEWGAME(GA& ga, TEST* ptestParent) : TEST(ga, ptestParent) { }
+	wstring SzName(void) const { return L"New Game"; }
 
-	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
-	LogOpen(szFileBase, L"");
-	SetProcpgn(new PROCPGNTEST(*this));
-	ERR err;
-	try {
-		ISTKPGN istkpgn(is);
-		for (int igame = 0; ; igame++) {
-			LogTemp(wstring(L"Game ") + to_wstring(igame+1));
-			if ((err = DeserializeGame(istkpgn)) != ERR::None)
-				break;
-		}
-		LogClose(szFileBase, L"Passed", LGF::Normal);
-	}
-	catch (EXPARSE& ex)
+	virtual void Run(void)
 	{
-		::MessageBox(nullptr, WszWidenSz(ex.what()).c_str(), L"PGN File Error", MB_OK);
-		LogClose(szFileBase, L"Failed", LGF::Normal);
-		err = ERR::Parse;
+		ga.NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+		ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
-	catch (EX& ex)
-	{
-		::MessageBox(nullptr, WszWidenSz(ex.what()).c_str(), L"Error", MB_OK);
-		LogClose(szFileBase, L"Failed", LGF::Normal);
-		err = ERR::Fatal;
-	}
-	SetProcpgn(nullptr);
-	return err;
-}
+};
 
 
+/* 
+ *
+ *	TESTPERFT
+ * 
+ */
 
 
-void GA::UndoTest(void)
+class TESTPERFT : public TEST
 {
-	WIN32_FIND_DATA ffd;
-	wstring szSpec(L"..\\Chess\\Test\\Players\\*.pgn");
-	HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
-	if (hfind == INVALID_HANDLE_VALUE)
-		throw 1;
-	do {
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
+public:
+	TESTPERFT(GA& ga, TEST* ptestParent) : TEST(ga, ptestParent) { }	
+	virtual wstring SzName(void) const { return L"Perft"; }
+
+	virtual void Run(void)
+	{
+		ga.PerftTest();
+	}
+};
+
+
+/*
+ *
+ *	TESTUNDO
+ * 
+ */
+
+
+class TESTUNDO : public TEST
+{
+public:
+	TESTUNDO(GA& ga, TEST* ptestParent) : TEST(ga, ptestParent) { }
+	virtual wstring SzName(void) const { return L"Undo"; }
+
+	virtual void Run(void)
+	{
+		WIN32_FIND_DATA ffd;
+		wstring szSpec(L"..\\Chess\\Test\\Players\\*.pgn");
+		HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
+		if (hfind == INVALID_HANDLE_VALUE)
+			throw EX("No PGN files found");
+		while (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			if (FindNextFile(hfind, &ffd) == 0)
+				goto Done;
+		{
 		wstring szSpec = wstring(L"..\\Chess\\Test\\Players\\") + ffd.cFileName;
-		if (PlayUndoPGNFile(szSpec.c_str()) != ERR::None)
-			break;
-		break;
-	} while (FindNextFile(hfind, &ffd) != 0);
-	FindClose(hfind);
-}
-
-
-ERR PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
-{
-	ERR err = PROCPGNOPEN::ProcessTag(tkpgn, szValue);
-//	if (tkpgn == tkpgnTagsEnd)
-//		ga.uiti.Redraw();
-	return err;
-}
-
-
-ERR PROCPGNTEST::ProcessMv(MV mv)
-{
-	return PROCPGNOPEN::ProcessMv(mv);
-}
-
-
-ERR GA::PlayUndoPGNFile(const wchar_t* szFile)
-{
-	ifstream is(szFile, ifstream::in);
-
-	wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
-	LogOpen(szFileBase, L"");
-	SetProcpgn(new PROCPGNTESTUNDO(*this));
-	ERR err;
-	try {
-		ISTKPGN istkpgn(is);
-		for (int igame = 0; ; igame++) {
-			LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
-			if ((err = DeserializeGame(istkpgn)) != ERR::None)
-				break;
-			UndoFullGame();
-			ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+		PlayUndoPGNFile(szSpec.c_str());
 		}
-		LogClose(szFileBase, L"Passed", LGF::Normal);
+Done:
+		FindClose(hfind);
 	}
-	catch (EX& ex) {
-		::MessageBox(nullptr, WszWidenSz(ex.what()).c_str(), L"PGN File Error", MB_OK);
-		LogClose(szFileBase, L"Failed", LGF::Normal);
-	}
-	SetProcpgn(nullptr);
-	return err;
-}
 
 
-void GA::UndoFullGame(void)
-{
-	while (bdg.imvCur >= 0) {
-		BDG bdgInit = bdg;
-		UndoMv(SPMV::Hidden);
-		RedoMv(SPMV::Hidden);
-		assert(bdg == bdgInit);
-		if (bdg != bdgInit)
-			throw EXFAILTEST();
-		UndoMv(SPMV::Hidden);
+	ERR PlayUndoPGNFile(const wchar_t* szFile)
+	{
+		ifstream is(szFile, ifstream::in);
+
+		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
+		LogOpen(szFileBase, L"");
+		PROCPGNGA procpgngaSav(ga, new PROCPGNTESTUNDO(ga));
+		ERR err;
+		try {
+			ISTKPGN istkpgn(is);
+			for (int igame = 0; ; igame++) {
+				LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
+				if ((err = ga.DeserializeGame(istkpgn)) != ERR::None)
+					break;
+				UndoFullGame();
+				ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+			}
+			LogClose(szFileBase, L"Passed", LGF::Normal);
+		}
+		catch (exception& ex) {
+			Error(ex.what());
+			LogClose(szFileBase, L"Failed", LGF::Normal);
+		}
+		return err;
 	}
-}
+
+	void UndoFullGame(void)
+	{
+		while (ga.bdg.imvCur >= 0) {
+			BDG bdgInit = ga.bdg;
+			ga.UndoMv(SPMV::Hidden);
+			ga.RedoMv(SPMV::Hidden);
+			assert(ga.bdg == bdgInit);
+			if (ga.bdg != bdgInit)
+				throw EXFAILTEST();
+			ga.UndoMv(SPMV::Hidden);
+		}
+	}
+};
 
 
 ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
@@ -529,6 +419,109 @@ ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
 	return ERR::None;
+}
+
+
+/*
+ *
+ *	TESTPGNS
+ * 
+ */
+
+
+class TESTPGNS : public TEST
+{
+	wstring szSub;
+public:
+	TESTPGNS(GA& ga, TEST* ptestParent, const wstring& szSub) : TEST(ga, ptestParent), szSub(szSub) { }
+	virtual wstring SzName(void) const { return L"Play"; }
+	virtual wstring SzSubName(void) const { return szSub; }
+
+	virtual void Run(void)
+	{
+		PlayPGNFiles(wstring(L"..\\Chess\\Test\\") + szSub);
+	}
+
+	void PlayPGNFiles(const wstring& szPath)
+	{
+		WIN32_FIND_DATA ffd;
+		wstring szSpec = szPath + L"\\*.pgn";
+		HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
+		if (hfind == INVALID_HANDLE_VALUE)
+			throw EX("No .pgn files found");
+		do {
+			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+				continue;
+			wstring szSpec = szPath + L"\\" + ffd.cFileName;
+			try {
+				PlayPGNFile(szSpec.c_str());
+			}
+			catch (exception& ex) {
+				break;
+			}
+		} while (FindNextFile(hfind, &ffd) != 0);
+		FindClose(hfind);
+	}
+
+	ERR PlayPGNFile(const wchar_t szFile[])
+	{
+		ifstream is(szFile, ifstream::in);
+
+		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
+		LogOpen(szFileBase, L"");
+		PROCPGNGA procpgngaSav(ga, new PROCPGNTEST(ga));
+		ERR err;
+		try {
+			ISTKPGN istkpgn(is);
+			istkpgn.SetSzStream(szFileBase);
+			int igame = 0;
+			do {
+				LogTemp(wstring(L"Game ") + to_wstring(++igame));
+				err = ga.DeserializeGame(istkpgn);
+			} while (err == ERR::None);
+			LogClose(szFileBase, L"Passed", LGF::Normal);
+		}
+		catch (EXPARSE& ex) {
+			Error(ex.what());
+			LogClose(szFileBase, L"Failed", LGF::Normal);
+			err = ERR::Parse;
+		}
+		catch (exception& ex) {
+			Error(ex.what());
+			LogClose(szFileBase, L"Failed", LGF::Normal);
+			err = ERR::Fatal;
+		}
+		return err;
+	}
+};
+
+
+ERR PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
+{
+	return PROCPGNOPEN::ProcessTag(tkpgn, szValue);
+}
+
+
+ERR PROCPGNTEST::ProcessMv(MV mv)
+{
+	return PROCPGNOPEN::ProcessMv(mv);
+}
+
+
+/*	GA::Test
+ *
+ *	This is the top-level test script.
+ */
+void GA::Test(void)
+{
+	TEST testRoot(*this, nullptr);
+	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
+	//testRoot.Add(new TESTPERFT(*this, &testRoot));
+	//testRoot.Add(new TESTUNDO(*this, &testRoot));
+	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
+
+	InitLog(3);
+	testRoot.RunAll();
 }
 
 

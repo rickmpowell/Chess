@@ -1349,9 +1349,10 @@ class ISTK
 	friend class EXPARSE;
 
 protected:
-	int li;
+	int liCur;
 	istream& is;
 	TK* ptkPrev;
+	wstring szStream;
 
 	char ChNext(void);
 	void UngetCh(char ch);
@@ -1367,6 +1368,8 @@ public:
 	virtual TK* PtkNext(void) = 0;
 	void UngetTk(TK* ptk);
 	int line(void) const;
+	wstring SzStream(void) const;
+	void SetSzStream(const wstring& sz);
 };
 
 
@@ -1418,6 +1421,7 @@ class ISTKPGN : public ISTK
 {
 protected:
 	bool fWhiteSpace;
+	int imvCur;
 
 	virtual bool FIsSymbol(char ch, bool fFirst) const;
 	char ChSkipWhite(void);
@@ -1426,4 +1430,6 @@ public:
 	ISTKPGN(istream& is);
 	void WhiteSpace(bool fReturn);
 	virtual TK* PtkNext(void);
+	void ScanToBlankLine(void);
+	void SetImvCur(int imv);
 };

@@ -124,13 +124,13 @@ public:
 };
 
 
-class ISTK;
+class ISTKPGN;
 
 class EXPARSE : public EX
 {
 public:
 	EXPARSE(const string& szMsg);
-	EXPARSE(const string& szMsg, ISTK& istk);
+	EXPARSE(const string& szMsg, ISTKPGN& istkpgn);
 	EXPARSE(const string& szMsg, const wchar_t* szFile, int line);
 };
 
@@ -146,6 +146,7 @@ class EXFAILTEST : public EX
 {
 public:
 	EXFAILTEST(void) : EX("Test failed") { }
+	EXFAILTEST(const string& szMsg) : EX("Test failed: " + szMsg) { }
 };
 
 
@@ -155,13 +156,10 @@ enum class ERR {
 	None = 0,
 	
 	Fatal = -1,
-	Parse = -2
+	Parse = -2,
+	Interrupted = -3,
+	Failed = -4
 };
-
-inline bool FErrIsSevere(ERR err)
-{
-	return (int)err < 0;
-}
 
 
 /*
@@ -597,6 +595,24 @@ template<class T> inline bool in_range(const T& t, const T& tFirst, const T& tLa
  * 
  */
 
+
+/*
+ *
+ *	RESTORE template
+ *
+ *	Used to craete a little saver/restorer for a member variable within a class.
+ * 
+ */
+
+
+template<typename T>
+class RESTORE {
+	T& t;
+	T tSav;
+public:
+	RESTORE(T& tNew) : t(tNew), tSav(t) {};
+	~RESTORE() { t = tSav; }
+};
 
 /*
  *	DC antialias mode 

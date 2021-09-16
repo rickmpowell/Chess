@@ -224,9 +224,7 @@ public:
 
 	void SetProcpgn(PROCPGN* pprocpgn);
 	void OpenPGNFile(const wchar_t szFile[]);
-	void PlayPGNFiles(const wstring& szPath);
-	ERR PlayPGNFile(const wchar_t szFile[]);
-	ERR Deserialize(istream& is);
+	ERR Deserialize(ISTKPGN& istkpgn);
 	ERR DeserializeGame(ISTKPGN& istkpgn);
 	ERR DeserializeHeaders(ISTKPGN& istkpgn);
 	ERR DeserializeMoveList(ISTKPGN& istkpgn);
@@ -234,7 +232,7 @@ public:
 	ERR DeserializeMove(ISTKPGN& istkpgn);
 	bool FIsMoveNumber(TK* ptk, int& w) const;
 	ERR ProcessTag(const string& szTag, const string& szVal);
-	ERR ProcessMove(const string& szMove);
+	ERR ParseAndProcessMove(const string& szMove);
 	bool FIsPgnData(const char* pch) const;
 
 	/*
@@ -253,20 +251,31 @@ public:
 	 */
 
 	void Test(void);
-	void ValidateFEN(const wchar_t* szFEN) const;
-	void ValidatePieces(const wchar_t*& sz) const;
-	void ValidateMoveColor(const wchar_t*& sz) const;
-	void ValidateCastle(const wchar_t*& sz) const;
-	void ValidateEnPassant(const wchar_t*& sz) const;
-	void SkipWhiteSpace(const wchar_t*& sz) const;
-	void SkipToWhiteSpace(const wchar_t*& sz) const;
 
-	void UndoTest(void);
-	ERR PlayUndoPGNFile(const wchar_t* szFile);
-	void UndoFullGame(void);
 
 	void PerftTest(void);
 	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
 	uint64_t CmvPerft(int depth);
 	uint64_t CmvPerftDivide(int depth);
+};
+
+
+struct PROCPGNGA
+{
+	GA& ga;
+
+	PROCPGNGA(GA& ga, PROCPGN* pprocpgn) : ga(ga)
+	{
+		Set(pprocpgn);
+	}
+
+	void Set(PROCPGN* pprocpgn)
+	{
+		ga.SetProcpgn(pprocpgn);
+	}
+
+	~PROCPGNGA(void)
+	{
+		Set(nullptr);
+	}
 };

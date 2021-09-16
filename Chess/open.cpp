@@ -14,10 +14,9 @@ EXPARSE::EXPARSE(const string& szMsg) : EX(szMsg)
 {
 }
 
-EXPARSE::EXPARSE(const string& szMsg, ISTK& istk) : EX()
+EXPARSE::EXPARSE(const string& szMsg, ISTKPGN& istkpgn) : EX()
 {
-	char sz[1024];
-	snprintf(sz, CArray(sz), szMsg.c_str(), SzFlattenWsz(L"").c_str(), istk.line());
+	string sz = format("{0}({1}) : error : {2}", SzFlattenWsz(istkpgn.SzStream()), istkpgn.line(), szMsg);
 	set_what(sz);
 }
 
@@ -31,14 +30,11 @@ EXPARSE::EXPARSE(const string& szMsg, const wchar_t* szFile, int line) : EX()
 
 void GA::OpenPGNFile(const wchar_t szFile[])
 {
-	SetProcpgn(new PROCPGNOPEN(*this));
 	ifstream is(szFile, ifstream::in);
-	try {
-		Deserialize(is);
-	}
-	catch (EX& ex) {
-	}
-	app.pga->SetProcpgn(nullptr);
+	ISTKPGN istkpgn(is);
+	istkpgn.SetSzStream(szFile);
+	PROCPGNGA procpgngaSav(*this, new PROCPGNOPEN(*this));
+	Deserialize(istkpgn);
 	uiml.UpdateContSize();
 	uiml.SetSel((int)bdg.vmvGame.size() - 1, SPMV::Hidden);
 	uiml.FMakeVis(bdg.imvCur);
@@ -64,17 +60,16 @@ bool GA::FIsPgnData(const char* pch) const
  *	Deserializes the stream as a PGN file. Throws an exception on parse errors
  *	or file errors. Returns 0 on success, 1 if we reached EOF.
  */
-ERR GA::Deserialize(istream& is)
+ERR GA::Deserialize(ISTKPGN& istkpgn)
 {
-	ISTKPGN istkpgn(is);
 	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
 	try {
-		ERR err;
-		if ((err = DeserializeHeaders(istkpgn)) != ERR::None)
+		ERR err = DeserializeHeaders(istkpgn);
+		if (err != ERR::None)
 			return err;
 		DeserializeMoveList(istkpgn);
 	}
-	catch (EX& ex) {
+	catch (exception& ex) {
 		NewGame(new RULE(0, 0, 0), SPMV::Hidden);
 		throw ex;
 	}
@@ -85,15 +80,34 @@ ERR GA::Deserialize(istream& is)
 /*	GA::DeserializeGame
  *
  *	Deserializes a single game from a PGN token stream. Return 0 on success,
- *	1 if we're at the EOF, or throws an exception on parse and file errors.
+ *	an error at EOF, or throws an exception on parse and file errors. 
+ * 
+ *	On errorsr, we attempt to position the stream pointer after the end of the
+ *	game move list, so that additional games can still be deserialized.
  */
 ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 {
 	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+	istkpgn.SetImvCur(0);
 	ERR err;
-	if ((err = DeserializeHeaders(istkpgn)) != ERR::None)
-		return err;
-	return DeserializeMoveList(istkpgn);
+	try {
+		err = DeserializeHeaders(istkpgn);
+		if (err != ERR::None)
+			return err;
+	}
+	catch (EXPARSE& ex) {
+		istkpgn.ScanToBlankLine();
+		istkpgn.ScanToBlankLine();
+		throw ex;
+	}
+	try {
+		err = DeserializeMoveList(istkpgn);
+	}
+	catch (EXPARSE& ex) {
+		istkpgn.ScanToBlankLine();
+		throw ex;
+	}
+	return err;
 }
 
 
@@ -185,20 +199,33 @@ ERR GA::DeserializeMove(ISTKPGN& istkpgn)
 	for (ptk = istkpgn.PtkNext(); ; ) {
 		switch ((int)*ptk) {
 		case tkpgnSymbol:
-			int w;
-			if (!FIsMoveNumber(ptk, w)) {
-				ProcessMove(ptk->sz());
+			int imv;
+			if (!FIsMoveNumber(ptk, imv)) {
+				try {
+					ParseAndProcessMove(ptk->sz());
+				} 
+				catch (EXPARSE& ex) {
+					delete ptk;
+					throw EXPARSE(ex.what(), istkpgn);
+				}
 				delete ptk;
 				return ERR::None;
 			}
-			/* eat trailing periods */
-			/* TODO: should communicate the move number back to the caller,
-			 * and three dots signifies black is next to move
-			 */
-			do {
-				delete ptk;
-				ptk = istkpgn.PtkNext();
-			} while ((int)*ptk == tkpgnPeriod);
+			else {
+				/* eat all the consecutive trailing periods after a move number */
+				/* TODO: should communicate the move number back to the caller,
+				 * and three dots signifies black is next to move, although I 
+				 * think the triple-dot thing should only be legal as the first 
+				 * move in the move list.
+				 */
+				int cchPeriod = 0;
+				do {
+					delete ptk;
+					ptk = istkpgn.PtkNext();
+					cchPeriod++;
+				} while ((int)*ptk == tkpgnPeriod);
+				istkpgn.SetImvCur(2 * (imv - 1) + (cchPeriod >= 3 ? 1 : 0));
+			}
 			break;
 		case tkpgnStar:
 		case tkpgnBlankLine:
@@ -246,11 +273,14 @@ ERR GA::ProcessTag(const string& szTag, const string& szVal)
 }
 
 
-/*	GA::ProcessMove
+/*	GA::ParseAndProcessMove
  *
  *	Parses and performs the move that has been extracted from the PGN stream.
+ * 
+ *	Returns an ERR for non-fatal errors (like eof), and throws exceptions on
+ *	hard errors.
  */
-ERR GA::ProcessMove(const string& szMove)
+ERR GA::ParseAndProcessMove(const string& szMove)
 {
 	assert(pprocpgn);
 
@@ -387,7 +417,12 @@ string to_string(TKMV tkmv)
  *
  *	Parses an algebraic move for the current board state. Returns 0 for
  *	a successful move, 1 for end game, and throws an EXPARSE exception on
- *	a parse error.
+ *	a parse error. 
+ *	
+ *	Note that the EXPARSE exception does not a build a full file/line error 
+ *	message, because this parse code can be used for non-file related parsing.
+ *	File loading code needs to intercept this exception and add more information
+ *	to make the error message complete.
  */
 ERR BDG::ParseMv(const char*& pch, MV& mv) const
 {
@@ -737,7 +772,7 @@ TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
  */
 
 
-ISTKPGN::ISTKPGN(istream& is) : ISTK(is), fWhiteSpace(false)
+ISTKPGN::ISTKPGN(istream& is) : ISTK(is), fWhiteSpace(false), imvCur(0)
 {
 }
 
@@ -918,6 +953,28 @@ Retry:
 }
 
 
+/*	ISTKPGN:::ScanToBlankLine
+ *
+ *	Scans through the stream until it encounters a blank line or the end of stream.
+ */
+void ISTKPGN::ScanToBlankLine(void)
+{
+	for (TK* ptk = PtkNext(); (int)*ptk != tkpgnEnd && (int)*ptk != tkpgnBlankLine; ptk = PtkNext())
+		;
+}
+
+
+/*	ISTKPGN::SetImvCur
+ *
+ *	We keep track of the current move number in the move, which is helpful
+ *	for error reporting
+ */
+void ISTKPGN::SetImvCur(int imv)
+{
+	imvCur = imv;
+}
+
+
 /*
  *
  *	ISTK class
@@ -928,7 +985,7 @@ Retry:
  */
 
 
-ISTK::ISTK(istream& is) : li(1), is(is), ptkPrev(nullptr)
+ISTK::ISTK(istream& is) : liCur(1), is(is), ptkPrev(nullptr), szStream(L"<stream>")
 {
 }
 
@@ -959,11 +1016,11 @@ char ISTK::ChNext(void)
 	if (ch == '\r') {
 		if (is.peek() == '\n')
 			is.get(ch);
-		li++;
+		liCur++;
 		return '\n';
 	}
 	else if (ch == '\n')
-		li++;
+		liCur++;
 	return ch;
 }
 
@@ -972,7 +1029,7 @@ void ISTK::UngetCh(char ch)
 {
 	assert(ch != '\0');
 	if (ch == '\n')
-		li--;
+		liCur--;
 	is.unget();
 }
 
@@ -1019,9 +1076,20 @@ void ISTK::UngetTk(TK* ptk)
 
 int ISTK::line(void) const
 {
-	return li;
+	return liCur;
 }
 
+
+wstring ISTK::SzStream(void) const
+{
+	return szStream;
+}
+
+
+void ISTK::SetSzStream(const wstring& sz)
+{
+	szStream = sz;
+}
 
 /*
  *

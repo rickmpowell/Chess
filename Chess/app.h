@@ -152,6 +152,9 @@ public:
 	wstring SzLoad(int ids) const;
 	wstring SzAppDataPath(void) const;
 
+	int Error(const wstring& szMsg, int mb);
+	int Error(const string& szMsg, int mb);
+
 private:
 	void CreateRsrc(void);
 	void DiscardRsrc(void);

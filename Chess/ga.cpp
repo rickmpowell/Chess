@@ -454,7 +454,7 @@ int GA::Play(void)
 		} while (bdg.gs == GS::Playing);
 	}
 	catch (int err) {
-		::MessageBoxW(app.hwnd, L"Game play has been aborted.", nullptr, MB_OK);
+		app.Error(L"Game play has been aborted.", MB_OK);
 		return err;
 	}
 	LogClose(L"Game", L"", LGF::Normal);

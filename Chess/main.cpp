@@ -43,7 +43,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
         return app.MessagePump();
     }
     catch (int err) {
-        ::MessageBox(nullptr,
+        ::MessageBoxW(nullptr,
             L"Could not initialize application", L"Fatal Error",
             MB_OK);
         return err;
@@ -175,6 +175,17 @@ POINT APP::PtMessage(void)
     pt.y = GET_Y_LPARAM(dw);
     ::ScreenToClient(hwnd, &pt);
     return pt;
+}
+
+
+int APP::Error(const wstring& szMsg, int mb)
+{
+    return ::MessageBoxW(hwnd, szMsg.c_str(), L"Error", mb);
+}
+
+int APP::Error(const string& szMsg, int mb)
+{
+    return Error(WszWidenSz(szMsg), mb);
 }
 
 
@@ -829,7 +840,7 @@ public:
             clipb.SetData(CF_TEXT, (void*)sz.c_str(), (int)sz.size() + 1);
         }
         catch (int err) {
-            ::MessageBox(app.hwnd, L"Rendering clipboard failed.", L"Clipboard Error", MB_OK);
+            app.Error(L"Rendering clipboard failed.", MB_OK);
             return err;
         }
         return 1;
@@ -859,12 +870,17 @@ public:
             return 0;
         CLIPB clipb(app);
         istringstream is;
+        ISTKPGN istkpgn(is);
         char* pch = (char*)clipb.PGetData(CF_TEXT);
         if (app.pga->FIsPgnData(pch)) {
             is.str(pch);
-            app.pga->SetProcpgn(new PROCPGNPASTE(*app.pga));
-            app.pga->Deserialize(is);
-            app.pga->SetProcpgn(nullptr);
+            PROCPGNGA procpgngaSav(*app.pga, new PROCPGNPASTE(*app.pga));
+            try {
+                app.pga->Deserialize(istkpgn);
+            }
+            catch (exception& ex) {
+                app.Error(ex.what(), MB_OK);
+            }
         }
         else {
             app.pga->InitGame(WszWidenSz(pch).c_str(), SPMV::Animate);
