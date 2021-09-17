@@ -1,101 +1,101 @@
-  Throw exceptions for user interrupts
-  Throw exceptions for test failures
-  Throw exceptions for parse errors
-  AI: Implement transposition tables and use in alpha-beta search
-  Movegen: Use magic bitboards for move generation
-  Movegen: Use magic bitboards for attack squares
-  UI: Add a new game panel
-  UI: try to pixel align as many borders as possible
+  Test: Errors in PGN file test should display in test progress panel
+  Test: Add option to draw or not draw moves during test run
+  Test: Don't display resign/draw controls during test playback
   Test: Add perft level option
-  UIPL: on hover, change background color when we can change the player
-  When AIs are playing each other, making human moves should be allowed until we start the game
-  AI: I think when we're ahead, we permit 3-fold draws too easily
-  Use C++ exception class to throw exceptions
-  Choosing the player picker while the AI is running crashes
-  When player picker is up, clicking outside the picker should make it cancel.
-  Ticking clock overwrites popup tips
-  Log: Should we hash tags?
-  Help: Help box icon looks like shit
-  UIPL: Move level control into the chooser
-  Move all localizable strings into resources
-  Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
-  ML: I don't think move list is baseline aligned - problem with descenders? 
-  Can we make things like Undo work while AI is thinking?
-  ML: Take advantage of DrawSzFit in move list, etc. to  make move list narrower
-  AI: Communicate best continuation back
-  Use UCI (universal chess interface) to communicate to UI from AI
-  AI: Quitting the app while AI is running sometimes crashes in PresentSwch
-  UI: Move as many drawing objects into classes as possible
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
   Test: We're erroneously reporting success when aborting test run
   Test: Clicking test button in UIDB should interrupt a running test
-  Log: File logging and UIDB logging need to have their own depth
-  Test: Don't show player names in UITI during test runs
-  AI: spin off AI into its own thread
-  UI: Need a visual indication of where focus is
-  UIDB: Add support for multi-line log entries in db panel
-  Add ability to load FEN files
-  Open: Beef up error handling in deserialize
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
   Test: if no pgn files in a directory, file enumeration crashes
-  ML: Size icons in move list slightly larger than text
+  Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
+  Test: PGN games should feed moves through a PL
+  Throw exceptions for user interrupts
+  AI: Implement transposition tables and use in alpha-beta search
+  AI: I think when we're ahead, we permit 3-fold draws too easily
+  AI: Communicate best continuation back
+  AI: Quitting the app while AI is running sometimes crashes in PresentSwch
+  AI: spin off AI into its own thread
+  AI: annotate candidate best moves on board
+  AI: interruptible
+  AI: look deeper on a few of the "best" moves
+  AI: take clock time into account
   AI: Consider a different board evaluation for pre-sorting alpha-beta pruning
   AI: Can we search for already evaluated board positions? Could save a lot of time in end game.
-  ML: If text in move list gets too small, replace icons with letters
-  Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
-  UI: Scale buttons to size of window
-  UITI: Layout using font metrics
-  UI: Test with alternate fonts
-  UIBD: Dragging pieces outside board clips the dragged piece
-  UIML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
-  Add canceled game-over state
-  Open: PGN game browser if multiple games in Open...
-  UI: Implement labeled icon buttons
-  Test: Parse errors in PGN file test should display in test progress panel
+  AI: Do a multithreaded lookup
+  AI: build and keep lookahead tree 
+  AI: Play through until no checks before evaluation
+  Choosing the player picker while the AI is running crashes
+  When AIs are playing each other, making human moves should be allowed until we start the game
+  Can we make things like Undo work while AI is thinking?
+  Move gen: Use magic bitboards for move generation
+  Move gen: Use magic bitboards for attack squares
   Move gen: bitboard king
   Move gen: bitboard bishops, rooks, and queens
   Move gen: bitboard knights
   Move gen: bitboard pawns
   Move gen: use bitboards to test attack squares for legal castles
-  Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
-  AI: annotate candidate best moves on board
-  AI: interruptible
-  AI: look deeper on a few of the "best" moves
-  AI: take clock time into account
+  Log: Should we hash tags?
+  Log: File logging and UIDB logging need to have their own depth
+  UI: Add a new game panel
+  UI: try to pixel align as many borders as possible
+  UI: Move as many drawing objects into classes as possible
+  UI: Need a visual indication of where focus is
+  UIPL: on hover, change background color when we can change the player
+  When player picker is up, clicking outside the picker should make it cancel.
+  Ticking clock overwrites popup tips
+  Help: Help box icon looks like shit
+  UIPL: Move level control into the chooser
+  Move all localizable strings into resources
+  Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
+  ML: I don't think move list is baseline aligned - problem with descenders? 
+  ML: Take advantage of DrawSzFit in move list, etc. to  make move list narrower
+  Use UCI (universal chess interface) to communicate to UI from AI
+  UIDB: Add support for multi-line log entries in db panel
+  Add ability to load FEN files
+  ML: Size icons in move list slightly larger than text
+  ML: If text in move list gets too small, replace icons with letters
+  UI: Scale buttons to size of window
+  UITI: Layout using font metrics
+  UI: Test with alternate fonts
+  UIBD: Dragging pieces outside board clips the dragged piece
+  Open: PGN game browser if multiple games in Open...
+  UI: Implement labeled icon buttons
+  UI for specifying human player names
+  UITI: Hook up UI elements to real information from the GA
   Eval: Add square control factor to evaluation function
   Limit UI during message pumps in test and AI
-  AI: Do a multithreaded lookup
-  Test: Add option to draw or not draw moves during test run
-  Test: Don't display resign/draw controls during test playback
-  AI: build and keep lookahead tree 
-  UIBD: Hilite last made move on board
   Feature: Add a UI for setting up a board
-  AI: Play through until no checks before evaluation
-  SBAR: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
-  Test: PGN games should feed moves through a PL
+  UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
+  UI: Implement disabled menu items hooked to the CMD
+  UI: Implement disabled buttons that hook to CMD
+  ML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
   ML: Checkmates should have a # instead of a +
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
   ML: Add a UI for offering draws
-  UI for specifying human player names
-  UITI: Hook up UI elements to real information from the GA
-  UI: Implement disabled menu items hooked to the CMD
-  UI: Implement disabled buttons that hook to CMD
+  ML: Animate the game over panel into position.
+  ML: Add undo/redo/play/pause buttons in a panel
+  Keyboard entry of moves
+  Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
+  Add canceled game-over state
+  GA: Break the UI out of the GA
+  RULE: Official game has slightly different rules for some draw situations
+  RULE: Have an official game mode that does not allow undo as a rule
+  UIBD: Hilite last made move on board
   UIBD: clips when rotating on flip board
   UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
-  GA: Break the UI out of the GA
-  Official game has slightly different rules for some draw situations
-  ML: Animate the game over panel into position.
-  ML: Add undo/redo/play/pause buttons in a panel
-  Have an official game mode that does not allow undo
-  Keyboard entry of moves
-  UI for picking clock/timing rules 
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Test: Implement a test harness
+* Open: Beef up error handling in deserialize
+* Test: Don't show player names in UITI during test runs
+* Use C++ exception class to throw exceptions
+* Throw exceptions for test failures
+* Throw exceptions for parse errors
 * Add ability to paste FEN format
 * Open: Implement an interruption hook in deserialize and use it in Test, but not Open or Paste
 * Include en passant and castle states to Zobrist hashing

@@ -56,13 +56,13 @@ public:
 
 	/* board validation */
 
-	void ValidateFEN(const wchar_t* szFEN) const;
-	void ValidatePieces(const wchar_t*& sz) const;
-	void ValidateMoveColor(const wchar_t*& sz) const;
-	void ValidateCastle(const wchar_t*& sz) const;
-	void ValidateEnPassant(const wchar_t*& sz) const;
-	void SkipWhiteSpace(const wchar_t*& sz) const;
-	void SkipToWhiteSpace(const wchar_t*& sz) const;
+	void ValidateFEN(const char* szFEN) const;
+	void ValidatePieces(const char*& sz) const;
+	void ValidateMoveColor(const char*& sz) const;
+	void ValidateCastle(const char*& sz) const;
+	void ValidateEnPassant(const char*& sz) const;
+	void SkipWhiteSpace(const char*& sz) const;
+	void SkipToWhiteSpace(const char*& sz) const;
 };
 
 
@@ -106,6 +106,11 @@ void TEST::RunAll(void)
 	LogClose(SzName(), L"Passed", LGF::Normal);
 }
 
+
+/*	TEST::Run
+ *
+ *	The leaf node test run.
+ */
 void TEST::Run(void)
 {
 }
@@ -131,41 +136,41 @@ int TEST::Error(const string& szMsg)
  *	Verifies the board matches the board state in the FEN string. Note that we very
  *	specifically do our own FEN parsing here.
  */
-void TEST::ValidateFEN(const wchar_t* szFEN) const
+void TEST::ValidateFEN(const char* szFEN) const
 {
-	const wchar_t* sz = szFEN;
+	const char* sz = szFEN;
 	ValidatePieces(sz);
 	ValidateMoveColor(sz);
 	ValidateCastle(sz);
 	ValidateEnPassant(sz);
 }
 
-void TEST::ValidatePieces(const wchar_t*& sz) const
+void TEST::ValidatePieces(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int rank = 7;
 	SQ sq = SQ(rank, 0);
 	APC apc = APC::Null;
 	CPC cpc = CPC::NoColor;
-	for (; *sz && *sz != L' '; sz++) {
+	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
-		case L'/':  
+		case '/':  
 			if (--rank < 0)
 				throw EXPARSE("too many FEN ranks");
 			sq = SQ(rank, 0); 
 			break;
-		case L'r': 
-		case L'R': apc = APC::Rook; goto CheckPiece; 
-		case L'n': 
-		case L'N': apc = APC::Knight; goto CheckPiece;
-		case L'b': 
-		case L'B': apc = APC::Bishop; goto CheckPiece;
-		case L'q': 
-		case L'Q': apc = APC::Queen; goto CheckPiece;
-		case L'k': 
-		case L'K': apc = APC::King; goto CheckPiece;
-		case L'p': 
-		case L'P':
+		case 'r': 
+		case 'R': apc = APC::Rook; goto CheckPiece; 
+		case 'n': 
+		case 'N': apc = APC::Knight; goto CheckPiece;
+		case 'b': 
+		case 'B': apc = APC::Bishop; goto CheckPiece;
+		case 'q': 
+		case 'Q': apc = APC::Queen; goto CheckPiece;
+		case 'k': 
+		case 'K': apc = APC::King; goto CheckPiece;
+		case 'p': 
+		case 'P':
 			apc = APC::Pawn;
 CheckPiece:
 			cpc = islower(*sz) ? CPC::Black : CPC::White;
@@ -173,21 +178,21 @@ CheckPiece:
 				throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
 			sq++; 
 			break;
-		case L'1':
-		case L'2':
-		case L'3':
-		case L'4':
-		case L'5':
-		case L'6':
-		case L'7':
-		case L'8':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
 			for (int dsq = *sz - L'0'; dsq > 0; dsq--, sq++) {
 				if (!ga.bdg.FIsEmpty(sq))
 					throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
 			}
 			break;
 		default: 
-			throw EXPARSE("invalid FEN piece"); 
+			throw EXPARSE(string("invalid FEN piece '") + *sz + '\''); 
 		}
 	}
 
@@ -195,17 +200,17 @@ CheckPiece:
 }
 
 
-void TEST::ValidateMoveColor(const wchar_t*& sz) const
+void TEST::ValidateMoveColor(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
 	CPC cpc = CPC::NoColor;
-	for (; *sz && *sz != L' '; sz++) {
+	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
-		case L'b': 
+		case 'b': 
 			cpc = CPC::Black;
 			break;
-		case L'w':
-		case L'-': 
+		case 'w':
+		case '-': 
 			cpc = CPC::White;
 			break;
 		default: 
@@ -218,25 +223,25 @@ void TEST::ValidateMoveColor(const wchar_t*& sz) const
 }
 
 
-void TEST::ValidateCastle(const wchar_t*& sz) const
+void TEST::ValidateCastle(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int cs = 0;
-	for (; *sz && *sz != L' '; sz++) {
+	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
-		case L'k': 
+		case 'k': 
 			cs |= csKing << CPC::White; 
 			break;
-		case L'q': 
+		case 'q': 
 			cs |= csQueen << CPC::White; 
 			break;
-		case L'K': 
+		case 'K': 
 			cs |= csKing << CPC::Black; 
 			break;
-		case L'Q': 
+		case 'Q': 
 			cs |= csQueen << CPC::Black;
 			break;
-		case L'-': 
+		case '-': 
 			break;
 		default: 
 			throw EXPARSE("invalid castle state");
@@ -248,21 +253,21 @@ void TEST::ValidateCastle(const wchar_t*& sz) const
 }
 
 
-void TEST::ValidateEnPassant(const wchar_t*& sz) const
+void TEST::ValidateEnPassant(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
-	if (*sz == L'-') {
+	if (*sz == '-') {
 		if (!ga.bdg.sqEnPassant.fIsNil())
 			throw EXFAILTEST("en passant square mismatch");
 	}
-	else if (*sz >= L'a' && *sz <= L'h') {
-		int file = *sz - L'a';
+	else if (*sz >= 'a' && *sz <= 'h') {
+		int file = *sz - 'a';
 		sz++;
-		if (*sz >= L'1' && *sz <= L'8') {
-			if (ga.bdg.sqEnPassant != SQ(*sz - L'1', file))
+		if (*sz >= '1' && *sz <= '8') {
+			if (ga.bdg.sqEnPassant != SQ(*sz - '1', file))
 				throw EXFAILTEST("en passant square mismatch");
 			sz++;
-			if (*sz && *sz != L' ')
+			if (*sz && *sz != ' ')
 				throw EXPARSE("invalid en passant square");
 		}
 	}
@@ -273,16 +278,16 @@ void TEST::ValidateEnPassant(const wchar_t*& sz) const
 }
 
 
-void TEST::SkipWhiteSpace(const wchar_t*& sz) const
+void TEST::SkipWhiteSpace(const char*& sz) const
 {
-	for (; *sz && *sz == L' '; sz++)
+	for (; *sz && *sz == ' '; sz++)
 		;
 }
 
 
-void TEST::SkipToWhiteSpace(const wchar_t*& sz) const
+void TEST::SkipToWhiteSpace(const char*& sz) const
 {
-	for (; *sz && *sz != L' '; sz++)
+	for (; *sz && *sz != ' '; sz++)
 		;
 }
 
@@ -303,7 +308,7 @@ public:
 	virtual void Run(void)
 	{
 		ga.NewGame(new RULE(0, 0, 0), SPMV::Hidden);
-		ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+		ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 };
 
@@ -375,7 +380,7 @@ Done:
 				if ((err = ga.DeserializeGame(istkpgn)) != ERR::None)
 					break;
 				UndoFullGame();
-				ValidateFEN(L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+				ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 			}
 			LogClose(szFileBase, L"Passed", LGF::Normal);
 		}
@@ -483,13 +488,13 @@ public:
 		}
 		catch (EXPARSE& ex) {
 			Error(ex.what());
-			LogClose(szFileBase, L"Failed", LGF::Normal);
-			err = ERR::Parse;
+			LogClose(szFileBase, L"Failed", LGF::Bold);
+			throw ex;
 		}
 		catch (exception& ex) {
 			Error(ex.what());
-			LogClose(szFileBase, L"Failed", LGF::Normal);
-			err = ERR::Fatal;
+			LogClose(szFileBase, L"Failed", LGF::Bold);
+			throw ex;
 		}
 		return err;
 	}
