@@ -71,7 +71,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
 	}
 	catch (exception& ex) {
 		NewGame(new RULE(0, 0, 0), SPMV::Hidden);
-		throw ex;
+		throw;
 	}
 	return ERR::None;
 }
@@ -98,14 +98,14 @@ ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 	catch (EXPARSE& ex) {
 		istkpgn.ScanToBlankLine();
 		istkpgn.ScanToBlankLine();
-		throw ex;
+		throw;
 	}
 	try {
 		err = DeserializeMoveList(istkpgn);
 	}
 	catch (EXPARSE& ex) {
 		istkpgn.ScanToBlankLine();
-		throw ex;
+		throw;
 	}
 	return err;
 }
@@ -875,7 +875,7 @@ Retry:
 		/* bracketed comments */
 		do {
 			if (FIsEnd(ch = ChNext()))
-				throw line();
+				throw EXPARSE("missing end of comment");
 		} while (ch != '}');
 		if (!fWhiteSpace)
 			goto Retry;
@@ -888,7 +888,7 @@ Retry:
 		int w = 0;
 		ch = ChNext();
 		if (!FIsDigit(ch))
-			throw line();
+			throw EXPARSE("invalid numeric annotation integer");
 		do {
 			w = w * 10 + ch - '0';
 			ch = ChNext();
@@ -905,11 +905,11 @@ Retry:
 		do {
 			ch = ChNext();
 			if (FIsEnd(ch))
-				throw line();
+				throw EXPARSE("missing closing quote on string");
 			if (ch == '\\') {
 				ch = ChNext();
 				if (FIsEnd(ch))
-					throw line();
+					throw EXPARSE("improper character escape in string");
 			}
 			*pch++ = ch;
 		} while (ch != '"');

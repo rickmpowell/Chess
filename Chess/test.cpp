@@ -50,9 +50,11 @@ public:
 		if (FDepthLog(LGT::Temp, depthLog))
 			AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
 	}
-	void RunAll(void);
+	ERR RunAll(void);
+	ERR ErrRun(void);
 	virtual void Run(void);
 	int Error(const string& szMsg);
+	bool FContinueTest(ERR err) const;
 
 	/* board validation */
 
@@ -96,14 +98,56 @@ void TEST::Clear(void)
 		delete rgptest.back();
 }
 
-void TEST::RunAll(void)
+ERR TEST::RunAll(void)
 {
 	LogOpen(SzName(), SzSubName());
-	Run();
-	for (TEST* ptest : rgptest) {
-		ptest->RunAll();
+
+	ERR err = ErrRun();
+	if (FContinueTest(err)) {
+		for (TEST* ptest : rgptest) {
+			err = ptest->RunAll();
+			if (!FContinueTest(err))
+				break;
+		}
 	}
-	LogClose(SzName(), L"Passed", LGF::Normal);
+
+	switch (err) {
+	case ERR::None:
+		LogClose(SzName(), L"Passed", LGF::Normal);
+		break;
+	default:
+	case ERR::Failed:
+		LogClose(SzName(), L"Failed", LGF::Bold);
+		break;
+	case ERR::Interrupted:
+		LogClose(SzName(), L"Interrupted", LGF::Italic);
+		break;
+	}
+	return err;
+}
+
+ERR TEST::ErrRun(void)
+{
+	try {
+		Run();
+	}
+	catch (exception& ex) {
+		LogData(WszWidenSz(ex.what()));
+		return ERR::Failed;
+	}
+	catch (...) {
+		LogData(L"Unknown exception");
+		return ERR::Failed;
+	}
+	return ERR::None;
+
+}
+
+bool TEST::FContinueTest(ERR err) const
+{
+	if (err == ERR::Interrupted)
+		return false;
+	return true;
 }
 
 
@@ -354,41 +398,39 @@ public:
 		if (hfind == INVALID_HANDLE_VALUE)
 			throw EX("No PGN files found");
 		while (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			if (FindNextFile(hfind, &ffd) == 0)
-				goto Done;
-		{
-		wstring szSpec = wstring(L"..\\Chess\\Test\\Players\\") + ffd.cFileName;
-		PlayUndoPGNFile(szSpec.c_str());
-		}
-Done:
+			if (FindNextFile(hfind, &ffd) == 0) {
+				FindClose(hfind);
+				return;
+			}
+
 		FindClose(hfind);
+		szSpec = wstring(L"..\\Chess\\Test\\Players\\") + ffd.cFileName;
+		LogOpen(ffd.cFileName, L"");
+		try {
+			PlayUndoPGNFile(szSpec.c_str());
+			LogClose(ffd.cFileName, L"Passed", LGF::Normal);
+		}
+		catch (EX& ex) {
+			LogClose(ffd.cFileName, L"Failed", LGF::Normal);
+			throw;
+		}
 	}
 
 
-	ERR PlayUndoPGNFile(const wchar_t* szFile)
+	void PlayUndoPGNFile(const wchar_t* szFile)
 	{
 		ifstream is(szFile, ifstream::in);
 
 		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
-		LogOpen(szFileBase, L"");
 		PROCPGNGA procpgngaSav(ga, new PROCPGNTESTUNDO(ga));
-		ERR err;
-		try {
-			ISTKPGN istkpgn(is);
-			for (int igame = 0; ; igame++) {
-				LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
-				if ((err = ga.DeserializeGame(istkpgn)) != ERR::None)
-					break;
-				UndoFullGame();
-				ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-			}
-			LogClose(szFileBase, L"Passed", LGF::Normal);
+		ISTKPGN istkpgn(is);
+		for (int igame = 0; ; igame++) {
+			LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
+			if (ga.DeserializeGame(istkpgn) != ERR::None)
+				break;
+			UndoFullGame();
+			ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 		}
-		catch (exception& ex) {
-			Error(ex.what());
-			LogClose(szFileBase, L"Failed", LGF::Normal);
-		}
-		return err;
 	}
 
 	void UndoFullGame(void)
@@ -459,44 +501,34 @@ public:
 				continue;
 			wstring szSpec = szPath + L"\\" + ffd.cFileName;
 			try {
+				LogOpen(ffd.cFileName, L"");
 				PlayPGNFile(szSpec.c_str());
+				LogClose(ffd.cFileName, L"Passed", LGF::Normal);
 			}
 			catch (exception& ex) {
-				break;
+				LogData(WszWidenSz(ex.what()));
+				LogClose(ffd.cFileName, L"Failed", LGF::Bold);
+				FindClose(hfind);
+				throw;
 			}
 		} while (FindNextFile(hfind, &ffd) != 0);
 		FindClose(hfind);
 	}
 
-	ERR PlayPGNFile(const wchar_t szFile[])
+	void PlayPGNFile(const wchar_t szFile[])
 	{
 		ifstream is(szFile, ifstream::in);
 
 		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
-		LogOpen(szFileBase, L"");
 		PROCPGNGA procpgngaSav(ga, new PROCPGNTEST(ga));
 		ERR err;
-		try {
-			ISTKPGN istkpgn(is);
-			istkpgn.SetSzStream(szFileBase);
-			int igame = 0;
-			do {
-				LogTemp(wstring(L"Game ") + to_wstring(++igame));
-				err = ga.DeserializeGame(istkpgn);
-			} while (err == ERR::None);
-			LogClose(szFileBase, L"Passed", LGF::Normal);
-		}
-		catch (EXPARSE& ex) {
-			Error(ex.what());
-			LogClose(szFileBase, L"Failed", LGF::Bold);
-			throw ex;
-		}
-		catch (exception& ex) {
-			Error(ex.what());
-			LogClose(szFileBase, L"Failed", LGF::Bold);
-			throw ex;
-		}
-		return err;
+		ISTKPGN istkpgn(is);
+		istkpgn.SetSzStream(szFileBase);
+		int igame = 0;
+		do {
+			LogTemp(wstring(L"Game ") + to_wstring(++igame));
+			err = ga.DeserializeGame(istkpgn);
+		} while (err == ERR::None);
 	}
 };
 
@@ -522,7 +554,7 @@ void GA::Test(void)
 	TEST testRoot(*this, nullptr);
 	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
 	//testRoot.Add(new TESTPERFT(*this, &testRoot));
-	//testRoot.Add(new TESTUNDO(*this, &testRoot));
+	testRoot.Add(new TESTUNDO(*this, &testRoot));
 	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
 
 	InitLog(3);

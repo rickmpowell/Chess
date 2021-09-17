@@ -62,7 +62,7 @@ D2::D2(void) : pfactd2(nullptr), pfactwic(nullptr), pfactdwr(nullptr)
 	}
 	catch (int err) {
 		Cleanup();
-		throw err;
+		throw;
 	}
 }
 

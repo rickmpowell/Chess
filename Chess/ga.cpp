@@ -475,14 +475,14 @@ void GA::PumpMsg(void)
 		case WM_KEYDOWN:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
 			if (msg.wParam == VK_ESCAPE)
-				throw -1;
+				throw EXINT();
 			break;
 		case WM_TIMER:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
 			DispatchTimer(msg.wParam, msg.time);
 			continue;
 		case WM_QUIT:
-			throw -1;
+			throw EXINT();
 		default:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
 			break;
