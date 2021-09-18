@@ -810,7 +810,7 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
+	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
 	{
 		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
 		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
@@ -818,9 +818,9 @@ public:
 		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
 	}
 
-	void SetEmpty(void);
-	bool operator==(const BD& bd) const;
-	bool operator!=(const BD& bd) const;
+	void SetEmpty(void) noexcept;
+	bool operator==(const BD& bd) const noexcept;
+	bool operator!=(const BD& bd) const noexcept;
 
 	/* making moves */
 
@@ -831,7 +831,7 @@ public:
 	
 	void GenGmv(GMV& gmv, RMCHK rmchk) const;
 	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
-	bool FMvIsQuiescent(MV mv) const;
+	bool FMvIsQuiescent(MV mv) const noexcept;
 	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
 	void GenGmvPawn(GMV& gmv, SQ sqFrom) const;
 	void GenGmvKnight(GMV& gmv, SQ sqFrom) const;
@@ -891,29 +891,29 @@ public:
 
 	void RemoveInCheckMoves(GMV& gmv, CPC cpc) const;
 	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
-	bool FMvIsQuiescent(MV mv, CPC cpc) const;
-	bool FInCheck(CPC cpc) const;
-	bool FBbAttacked(BB bbAttacked, CPC cpcBy) const;
-	BB BbAttackedAll(CPC cpcBy) const;
+	bool FMvIsQuiescent(MV mv, CPC cpc) const noexcept;
+	bool FInCheck(CPC cpc) const noexcept;
+	bool FBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
+	BB BbAttackedAll(CPC cpcBy) const noexcept;
 
 	/*	BD::FSqAttacked
 	 *	
 	 *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
 	 *	on sqAttacked is not considered to be attacking sqAttacked.
 	 */
-	inline bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const
+	inline bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
 	{
 		return FBbAttacked(BB(sqAttacked), cpcBy);
 	}
 
-	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const;
-	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const;
-	BB BbPawnAttacked(CPC cpcBy) const;
-	BB BbKingAttacked(CPC cpcBy) const;
-	BB BbKnightAttacked(CPC cpcBy) const;
-	BB BbBishopAttacked(CPC cpcBy) const;
-	BB BbRookAttacked(CPC cpcBy) const;
-	BB BbQueenAttacked(CPC cpcBy) const;
+	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	BB BbPawnAttacked(CPC cpcBy) const noexcept;
+	BB BbKingAttacked(CPC cpcBy) const noexcept;
+	BB BbKnightAttacked(CPC cpcBy) const noexcept;
+	BB BbBishopAttacked(CPC cpcBy) const noexcept;
+	BB BbRookAttacked(CPC cpcBy) const noexcept;
+	BB BbQueenAttacked(CPC cpcBy) const noexcept;
 	
 	/*	BD::FDsqAttack
 	 *
@@ -921,7 +921,7 @@ public:
 	 *	between the two squares. Assumes the two squares are reachable using the dsq
 	 *	increment.
 	 */
-	inline bool FDsqAttack(SQ sqAttacked, SQ sq, int dsq) const
+	inline bool FDsqAttack(SQ sqAttacked, SQ sq, int dsq) const noexcept
 	{
 		do {
 			sq += dsq;
@@ -937,17 +937,17 @@ public:
 	 *	optimized - beware of bit twiddling tricks!
 	 */
 	
-	inline bool FMvEnPassant(MV mv) const
+	inline bool FMvEnPassant(MV mv) const noexcept
 	{
 		return mv.sqTo() == sqEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
 	}
 
-	inline bool FMvIsCapture(MV mv) const
+	inline bool FMvIsCapture(MV mv) const noexcept
 	{
 		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
-	inline void SetEnPassant(SQ sq)
+	inline void SetEnPassant(SQ sq) noexcept
 	{
 		if (!sqEnPassant.fIsNil())
 			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
@@ -956,94 +956,101 @@ public:
 			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
 	}
 
-	inline IPC& operator()(int rank, int file) 
+	inline IPC& operator()(int rank, int file) noexcept 
 	{ 
 		return *(IPC*)&mpsqipc[rank * 16 + file]; 
 	}
-	inline IPC& operator()(SQ sq) 
+	inline IPC& operator()(SQ sq) noexcept
 	{
 		return *(IPC*)&mpsqipc[sq]; 
 	}
-	inline const IPC& operator()(SQ sq) const 
+	inline const IPC& operator()(SQ sq) const noexcept
 	{
 		return *(IPC*)&mpsqipc[sq];
 	}
-	inline const IPC& operator()(int rank, int file) const
+	inline const IPC& operator()(int rank, int file) const noexcept
 	{
 		return *(IPC*)&mpsqipc[rank * 16 + file];
 	}
 
-	inline SQ& SqFromTpc(TPC tpc, CPC cpc) 
+	inline SQ& SqFromTpc(TPC tpc, CPC cpc) noexcept
 	{
 		return *(SQ*)&mptpcsq[cpc][tpc]; 
 	}
 	
-	inline SQ& SqFromIpc(IPC ipc) 
+	inline SQ& SqFromIpc(IPC ipc) noexcept
 	{
 		return SqFromTpc(ipc.tpc(), ipc.cpc()); 
 	}
 	
-	inline SQ SqFromTpc(TPC tpc, CPC cpc) const 
+	inline SQ SqFromTpc(TPC tpc, CPC cpc) const noexcept
 	{
 		return *(SQ*)&mptpcsq[cpc][tpc]; 
 	}
 
-	inline SQ SqFromIpc(IPC ipc) const { return SqFromTpc(ipc.tpc(), ipc.cpc()); }
+	inline SQ SqFromIpc(IPC ipc) const noexcept 
+	{
+		return SqFromTpc(ipc.tpc(), ipc.cpc()); 
+	}
 
-	inline SQ& operator()(TPC tpc, CPC cpc) {
+	inline SQ& operator()(TPC tpc, CPC cpc) noexcept
+	{
 		return SqFromTpc(tpc, cpc);
 	}
-	inline SQ operator()(TPC tpc, CPC cpc) const {
+	
+	inline SQ operator()(TPC tpc, CPC cpc) const noexcept
+	{
 		return SqFromTpc(tpc, cpc);
 	}
 	inline SQ& operator()(IPC ipc) {
 		return SqFromIpc(ipc);
 	}
-	inline const SQ operator()(IPC ipc) const {
+	
+	inline const SQ operator()(IPC ipc) const noexcept
+	{
 		return SqFromIpc(ipc);
 	}
 
-
-	inline APC ApcFromSq(SQ sq) const 
+	inline APC ApcFromSq(SQ sq) const noexcept
 	{
 		return (*this)(sq).apc();
 	}
 	
-	inline TPC TpcFromSq(SQ sq) const 
+	inline TPC TpcFromSq(SQ sq) const noexcept
 	{
 		return (*this)(sq).tpc();
 	}
 	
-	inline CPC CpcFromSq(SQ sq) const 
+	inline CPC CpcFromSq(SQ sq) const noexcept
 	{ 
 		return (*this)(sq).cpc(); 
 	}
 	
-	inline bool FIsEmpty(SQ sq) const 
+	inline bool FIsEmpty(SQ sq) const noexcept
 	{
 		return (*this)(sq).fIsEmpty();
 	}
 
-	inline bool FCanCastle(CPC cpc, int csSide) const 
+	inline bool FCanCastle(CPC cpc, int csSide) const noexcept
 	{
 		return (csCur & (csSide << (int)cpc)) != 0;
 	}
 	
-	inline void SetCastle(CPC cpc, int csSide) 
+	inline void SetCastle(CPC cpc, int csSide) noexcept
 	{ 
 		genhabd.ToggleCastle(habd, csCur);
 		csCur |= csSide << (int)cpc;
 		genhabd.ToggleCastle(habd, csCur);
 	}
 
-	inline void SetCastle(int cs)
+	inline void SetCastle(int cs) noexcept
 	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur |= cs;
 		genhabd.ToggleCastle(habd, csCur);
 	}
 	
-	inline void ClearCastle(CPC cpc, int csSide) 
+	inline void ClearCastle(CPC cpc, int csSide) noexcept
 	{ 
 		genhabd.ToggleCastle(habd, csCur);
 		csCur &= ~(csSide << (int)cpc);
@@ -1065,7 +1072,7 @@ public:
 	 *	state to have a square set by both colors. When making moves, clear before 
 	 *	you set and you shouldn't get in any trouble.
 	 */
-	inline void SetBB(IPC ipc, SQ sq)
+	inline void SetBB(IPC ipc, SQ sq) noexcept
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
 		mpcpcbb[ipc.cpc()] += sq;
@@ -1083,7 +1090,7 @@ public:
 	 *	theoretically have a piece in that square. It's up to the calling code to
 	 *	make sure this doesn't happen.
 	 */
-	inline void ClearBB(IPC ipc, SQ sq)
+	inline void ClearBB(IPC ipc, SQ sq) noexcept
 	{
 		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
 		mpcpcbb[ipc.cpc()] -= sq;
@@ -1092,7 +1099,7 @@ public:
 		genhabd.TogglePiece(habd, sq, ipc);
 	}
 
-	void ToggleToMove(void)
+	void ToggleToMove(void) noexcept
 	{
 		cpcToMove = ~cpcToMove;
 		genhabd.ToggleToMove(habd);
@@ -1102,8 +1109,8 @@ public:
 	 *	getting piece value of pieces/squares
 	 */
 
-	float VpcFromSq(SQ sq) const;
-	float VpcTotalFromCpc(CPC cpc) const;
+	float VpcFromSq(SQ sq) const noexcept;
+	float VpcTotalFromCpc(CPC cpc) const noexcept;
 
 	/*
 	 *	reading FEN strings 

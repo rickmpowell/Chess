@@ -133,7 +133,7 @@ BD::BD(void)
 }
 
 
-void BD::SetEmpty(void)
+void BD::SetEmpty(void) noexcept
 {
 	assert(sizeof(mpsqipc[0]) == 1);
 	memset(mpsqipc, ipcEmpty, sizeof(mpsqipc));
@@ -169,7 +169,7 @@ void BD::SetEmpty(void)
  *	have the current move color in the BD, so this isn't' exactly the draw-state
  *	comparison. Caller has to make sure the move color is the same.
  */
-bool BD::operator==(const BD& bd) const
+bool BD::operator==(const BD& bd) const noexcept
 {
 	for (int tpc = 0; tpc < tpcPieceMax; tpc++)
 		if (mptpcsq[(int)CPC::White][tpc] != bd.mptpcsq[(int)CPC::White][tpc] ||
@@ -179,7 +179,7 @@ bool BD::operator==(const BD& bd) const
 }
 
 
-bool BD::operator!=(const BD& bd) const
+bool BD::operator!=(const BD& bd) const noexcept
 {
 	return !(*this == bd);
 }
@@ -688,13 +688,13 @@ void BD::RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const
 }
 
 
-bool BD::FMvIsQuiescent(MV mv) const
+bool BD::FMvIsQuiescent(MV mv) const noexcept
 {
 	return FMvIsQuiescent(mv, cpcToMove);
 }
 
 
-bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
+bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const noexcept
 {
 	return FIsEmpty(mv.sqTo()) ||
 		VpcFromSq(mv.sqFrom()) + 50.0f >= VpcFromSq(mv.sqTo());
@@ -706,7 +706,7 @@ bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const
  *	Returns true if the given color's king is in check. Does not require ComputeAttacked,
  *	and does a complete scan of the opponent pieces to find checks.
  */
-bool BD::FInCheck(CPC cpc) const
+bool BD::FInCheck(CPC cpc) const noexcept
 {
 	return FSqAttacked((*this)(tpcKing, cpc), ~cpc);
 }
@@ -716,7 +716,7 @@ bool BD::FInCheck(CPC cpc) const
  *
  *	Returns bitboard of all squares pawns attack.
  */
-BB BD::BbPawnAttacked(CPC cpcBy) const
+BB BD::BbPawnAttacked(CPC cpcBy) const noexcept
 {
 	BB bbPawn = mpapcbb[cpcBy][APC::Pawn];
 	bbPawn = cpcBy == CPC::White ? BbNorthOne(bbPawn) : BbSouthOne(bbPawn);
@@ -725,7 +725,7 @@ BB BD::BbPawnAttacked(CPC cpcBy) const
 }
 
 
-BB BD::BbKnightAttacked(CPC cpcBy) const
+BB BD::BbKnightAttacked(CPC cpcBy) const noexcept
 {
 	BB bbKnights = mpapcbb[cpcBy][APC::Knight];
 	BB bb1 = BbWestOne(bbKnights) | BbEastOne(bbKnights);
@@ -734,7 +734,7 @@ BB BD::BbKnightAttacked(CPC cpcBy) const
 }
 
 
-BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const
+BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept
 {
 	assert(dir == DIR::East || dir == DIR::NorthWest || dir == DIR::North || dir == DIR::NorthEast);
 	BB bbAttacks = mpsqdirbb(sqFrom, dir);
@@ -744,7 +744,7 @@ BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const
 }
 
 
-BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const
+BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept
 {
 	assert(dir == DIR::West || dir == DIR::SouthWest || dir == DIR::South || dir == DIR::SouthEast);
 	BB bbAttacks = mpsqdirbb(sqFrom, dir);
@@ -754,7 +754,7 @@ BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const
 }
 
 
-BB BD::BbBishopAttacked(CPC cpcBy) const
+BB BD::BbBishopAttacked(CPC cpcBy) const noexcept
 {
 	BB bbAttacks;
 	for (BB bbBishops = mpapcbb[cpcBy][APC::Bishop]; bbBishops; bbBishops.ClearLow()) {
@@ -768,7 +768,7 @@ BB BD::BbBishopAttacked(CPC cpcBy) const
 }
 
 
-BB BD::BbRookAttacked(CPC cpcBy) const
+BB BD::BbRookAttacked(CPC cpcBy) const noexcept
 {
 	BB bbAttacks;
 	for (BB bbRooks = mpapcbb[cpcBy][APC::Rook]; bbRooks; bbRooks.ClearLow()) {
@@ -782,7 +782,7 @@ BB BD::BbRookAttacked(CPC cpcBy) const
 }
 
 
-BB BD::BbQueenAttacked(CPC cpcBy) const
+BB BD::BbQueenAttacked(CPC cpcBy) const noexcept
 {
 	BB bbAttacks;
 	for (BB bbQueens = mpapcbb[cpcBy][APC::Queen]; bbQueens; bbQueens.ClearLow()) {
@@ -800,7 +800,7 @@ BB BD::BbQueenAttacked(CPC cpcBy) const
 }
 
 
-BB BD::BbKingAttacked(CPC cpcBy) const
+BB BD::BbKingAttacked(CPC cpcBy) const noexcept
 {
 	BB bbKing = mpapcbb[cpcBy][APC::King];
 	BB bbKingAttacked = BbEastOne(bbKing) | BbWestOne(bbKing);
@@ -813,7 +813,7 @@ BB BD::BbKingAttacked(CPC cpcBy) const
  *
  *	Returns bitboard of all squares attacked by the color
  */
-BB BD::BbAttackedAll(CPC cpcBy) const
+BB BD::BbAttackedAll(CPC cpcBy) const noexcept
 {
 	return BbQueenAttacked(cpcBy) | BbRookAttacked(cpcBy) | BbBishopAttacked(cpcBy) | 
 		BbKnightAttacked(cpcBy) | BbPawnAttacked(cpcBy) | BbKingAttacked(cpcBy);
@@ -824,7 +824,7 @@ BB BD::BbAttackedAll(CPC cpcBy) const
  *
  *	Returns true if the given bitboard is attacked by someone of the color cpcBy.
  */
-bool BD::FBbAttacked(BB bbAttacked, CPC cpcBy) const
+bool BD::FBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 {
 	if (BbQueenAttacked(cpcBy) & bbAttacked)
 		return true;
@@ -1119,7 +1119,7 @@ void BD::GenGmvEnPassant(GMV& gmv, SQ sqFrom) const
 }
 
 
-float BD::VpcFromSq(SQ sq) const
+float BD::VpcFromSq(SQ sq) const noexcept
 {
 	assert(!sq.fIsOffBoard());
 	APC apc = ApcFromSq(sq);
@@ -1132,7 +1132,7 @@ float BD::VpcFromSq(SQ sq) const
  *
  *	Piece value of the entire board for the given color
  */
-float BD::VpcTotalFromCpc(CPC cpc) const
+float BD::VpcTotalFromCpc(CPC cpc) const noexcept
 {
 	float vpc = 0;
 	for (int tpc = 0; tpc < tpcPieceMax; tpc++) {
