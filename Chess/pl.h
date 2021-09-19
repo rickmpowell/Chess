@@ -11,6 +11,7 @@
 #include "bd.h"
 
 
+
 /*
  *
  *	MVEV structure
@@ -25,19 +26,19 @@ class MVEV
 {
 public:
 	MV mv;
-	float eval;
+	EVAL eval;
 	GMV gmvReplyAll;	// all reply moves, including illegal moves that leave king in check
 
-	MVEV(void) : mv(MV()), eval(0.0f) { }
+	MVEV(void) : mv(MV()), eval(0) { }
 
-	MVEV(BDG& bdg, MV mv) : mv(mv), eval(0.0f)
+	MVEV(BDG& bdg, MV mv) : mv(mv), eval(0)
 	{
 		bdg.MakeMv(mv);
 		gmvReplyAll.Reserve(50);
 		bdg.GenGmvColor(gmvReplyAll, bdg.cpcToMove);
 	}
 
-	bool operator<(const MVEV& mvev) const
+	bool operator<(const MVEV& mvev) const noexcept
 	{
 		return eval < mvev.eval;
 	}
@@ -81,17 +82,17 @@ public:
 
 	virtual MV MvGetNext(SPMV& spmv) = 0;
 	
-	virtual bool FHasLevel(void) const
+	virtual bool FHasLevel(void) const noexcept
 	{
 		return false;
 	}
 
-	virtual int Level(void) const
+	virtual int Level(void) const noexcept
 	{
 		return level;
 	}
 
-	virtual void SetLevel(int level)
+	virtual void SetLevel(int level) noexcept
 	{
 		this->level = level;
 	}
@@ -116,10 +117,10 @@ public:
 class PLAI : public PL
 {
 protected:
-	float rgfAICoeff[3];
+	EVAL rgfAICoeff[3];
 	uint16_t cYield;
 
-	/* logging */
+	/* logging statistics */
 	time_point<high_resolution_clock> tpStart;
 	size_t cmvevEval;
 	size_t cmvevGen;
@@ -128,30 +129,30 @@ protected:
 public:
 	PLAI(GA& ga);
 	virtual MV MvGetNext(SPMV& spmv);
-	virtual bool FHasLevel(void) const;
-	virtual void SetLevel(int level);
+	virtual bool FHasLevel(void) const noexcept;
+	virtual void SetLevel(int level) noexcept;
 
 protected:
-	float EvalBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule);
-	float EvalBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, float evalAlpha, float evalBeta);
+	EVAL EvalBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta, const RULE& rule);
+	EVAL EvalBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, EVAL evalAlpha, EVAL evalBeta);
 	void PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
 	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
-	virtual float EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
-	float CmvFromLevel(int level) const;
+	virtual EVAL EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
+	float CmvFromLevel(int level) const noexcept;
 
 	void StartMoveLog(void);
 	void EndMoveLog(void);
 
-	float VpcFromCpc(const BDG& bdg, CPC cpcMove) const;
-	float VpcOpening(const BDG& bdg, CPC cpcMove) const;
-	float VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const;
-	float VpcMiddleGame(const BDG& bdg, CPC cpcMove) const;
-	float VpcLateMidGame(const BDG& bdg, CPC cpcMove) const;
-	float VpcEndGame(const BDG& bdg, CPC cpcMove) const;
-	float VpcLateEndGame(const BDG& bdg, CPC cpcMove) const;
-	float VpcWeightTable(const BDG& bdg, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const;
+	EVAL VpcFromCpc(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcOpening(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcMiddleGame(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcLateMidGame(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcEndGame(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcLateEndGame(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[APC::ActMax][64]) const noexcept;
 };
 
 
@@ -160,7 +161,7 @@ class PLAI2 : public PLAI
 public:
 	PLAI2(GA& ga);
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
-	virtual float EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
+	virtual EVAL EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
 };
 
 

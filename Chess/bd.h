@@ -12,6 +12,10 @@
 #include "bb.h"
 
 
+
+typedef float EVAL;
+
+
 /*
  *
  *	RULE
@@ -794,7 +798,7 @@ enum class RMCHK {	// GenGmv Option to optionally remove checks
 
 class BD
 {
-	static const float mpapcvpc[];
+	static const EVAL mpapcvpc[];
 public:
 	uint8_t mpsqipc[64+64];	/* the board itself (maps square to piece) */
 	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards for the pieces
@@ -1109,8 +1113,8 @@ public:
 	 *	getting piece value of pieces/squares
 	 */
 
-	float VpcFromSq(SQ sq) const noexcept;
-	float VpcTotalFromCpc(CPC cpc) const noexcept;
+	EVAL VpcFromSq(SQ sq) const noexcept;
+	EVAL VpcTotalFromCpc(CPC cpc) const noexcept;
 
 	/*
 	 *	reading FEN strings 

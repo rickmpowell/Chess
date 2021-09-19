@@ -109,7 +109,7 @@ PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cmvevEval(0), cmvevGen(0), 
  *
  *	Returns true if the player has a quality of play level control.
  */
-bool PLAI::FHasLevel(void) const
+bool PLAI::FHasLevel(void) const noexcept
 {
 	return true;
 }
@@ -119,7 +119,7 @@ bool PLAI::FHasLevel(void) const
  *
  *	Sets the quality of play level for the AI.
  */
-void PLAI::SetLevel(int level)
+void PLAI::SetLevel(int level) noexcept
 {
 	this->level = peg(level, 1, 10);
 }
@@ -130,7 +130,7 @@ void PLAI::SetLevel(int level)
  *	Converts quality of play level into number of moves to consider when
  *	making a move.
  */
-float PLAI::CmvFromLevel(int level) const
+float PLAI::CmvFromLevel(int level) const noexcept
 {
 	switch (level) {
 	case 1: return 500.0f;
@@ -200,11 +200,11 @@ void PLAI::EndMoveLog(void)
  *	This is a computer AI implementation.
  */
 
-const float evalInf = 10000.0f;	/* infinity */
-const float evalMate = 9999.0f;	/* checkmates are given evals of evalMate minus moves to mate */
-const float evalMateMin = evalMate - 80.0f;
+const EVAL evalInf = 10000.0f;	/* infinity */
+const EVAL evalMate = 9999.0f;	/* checkmates are given evals of evalMate minus moves to mate */
+const EVAL evalMateMin = evalMate - 80.0f;
 
-bool FEvalIsMate(float eval)
+bool FEvalIsMate(EVAL eval)
 {
 	return eval >= evalMateMin;
 }
@@ -244,7 +244,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 	cYield = 0;
 	MV mvBest;
-	float evalAlpha = -evalInf, evalBeta = evalInf;
+	EVAL evalAlpha = -evalInf, evalBeta = evalInf;
 	cmvevGen = vmvev.size();
 
 	for (MVEV& mvev : vmvev) {
@@ -253,7 +253,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 		bdg.MakeMv(mvev.mv);
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)), SzFromEval(mvev.eval));
-		float eval = -EvalBdgDepth(bdg, mvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
+		EVAL eval = -EvalBdgDepth(bdg, mvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
 		bdg.UndoMv();
 
 		/* keep track of best move */
@@ -290,7 +290,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
  * 
  *	Returns board evaluation in centi-pawns.
  */
-float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, float evalAlpha, float evalBeta, const RULE& rule)
+EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta, const RULE& rule)
 {
 	/* if we've reached target depth, continue on until we reach quienscence */
 
@@ -311,7 +311,7 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
 
 	int cmvLegal = 0;
 	cmvevGen += vmvev.size();
-	float evalBest = -evalInf;
+	EVAL evalBest = -evalInf;
 
 	for (MVEV& mvev: vmvev) {
 		
@@ -327,7 +327,7 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
 		/* recursively evaluate the move to target depth, using alpha-beta pruning */
 
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", (wstring)bdg)), SzFromEval(mvev.eval));
-		float eval = -EvalBdgDepth(bdg, mvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
+		EVAL eval = -EvalBdgDepth(bdg, mvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
 		bdg.UndoMv();
 		
 		/* do our alpha-beta pruning */
@@ -355,7 +355,7 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
 
 	if (cmvLegal == 0) {
 		if (bdg.FInCheck(bdg.cpcToMove))
-			return -(evalMate - (float)depth);
+			return -(evalMate - (EVAL)depth);
 		else
 			return 0.0f;
 	}
@@ -366,7 +366,7 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
 	GS gs = bdg.GsTestGameOver(mvevEval.gmvReplyAll, *ga.prule);
 	assert(gs != GS::BlackCheckMated && gs != GS::WhiteCheckMated);
 	if (gs != GS::Playing)
-		return 0.0f;
+		return 0;
 
 	return evalBest;
 }
@@ -377,19 +377,19 @@ float PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, floa
  *	Returns the quiescent evaluation of the board from the point of view of the 
  *	previous move player, i.e., it evaluates the previous move.
  */
-float PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, float evalAlpha, float evalBeta)
+EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, EVAL evalAlpha, EVAL evalBeta)
 {
 	/* we need to evaluate the board before we remove moves from the move list, 
 	   because the un-processed move list is used to compute mobility */
 
-	float eval = EvalBdg(bdg, mvevEval, true);
+	EVAL eval = EvalBdg(bdg, mvevEval, true);
 	
 	/* check for mates and stalemates */
 
 	bdg.RemoveInCheckMoves(mvevEval.gmvReplyAll, bdg.cpcToMove);
 	if (mvevEval.gmvReplyAll.cmv() == 0) {
 		if (bdg.FInCheck(bdg.cpcToMove))
-			return -(evalMate - (float)depth);
+			return -(evalMate - (EVAL)depth);
 		else
 			return 0.0;	
 	}
@@ -417,7 +417,7 @@ float PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, float evalAlph
 	/* keepin track of stats and best move */
 
 	cmvevGen += vmvev.size();
-	float evalBest = -evalInf;
+	EVAL evalBest = -evalInf;
 	int cmv = 0;
 
 	for (MVEV& mvev : vmvev) {
@@ -426,7 +426,7 @@ float PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, float evalAlph
 
 		bdg.MakeMv(mvev.mv);
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)), SzFromEval(mvev.eval));
-		float eval = -EvalBdgQuiescent(bdg, mvev, depth + 1, -evalBeta, -evalAlpha);
+		EVAL eval = -EvalBdgQuiescent(bdg, mvev, depth + 1, -evalBeta, -evalAlpha);
 		bdg.UndoMv();
 		cmv++;
 
@@ -503,12 +503,12 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev)
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-float PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
+EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 {
 	cmvevEval++;
 
-	float vpcNext = VpcFromCpc(bdg, bdg.cpcToMove);
-	float vpcSelf = VpcFromCpc(bdg, ~bdg.cpcToMove);
+	EVAL vpcNext = VpcFromCpc(bdg, bdg.cpcToMove);
+	EVAL vpcSelf = VpcFromCpc(bdg, ~bdg.cpcToMove);
 	if (!fFull) {
 		/* make a guess that this is a bad move if we're moving to an attacked square
 		   that isn't defended, which will improve alpha-beta pruning, but not something 
@@ -518,7 +518,7 @@ float PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
 			vpcSelf -= bdg.VpcFromSq(mvev.mv.sqTo());
 	}
-	float evalMat = vpcSelf - vpcNext;
+	EVAL evalMat = vpcSelf - vpcNext;
 
 	static GMV gmvSelf;
 	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
@@ -538,7 +538,7 @@ float PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
  *	stage of the game we're in and dispatches to the appropriate evaluation
  *	function (opening, middle game, endgame)
  */
-float PLAI::VpcFromCpc(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcFromCpc(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	float vpcMove = bdg.VpcTotalFromCpc(cpcMove) + bdg.VpcTotalFromCpc(~cpcMove);
 	if (vpcMove > 7000.0f)
@@ -554,7 +554,7 @@ float PLAI::VpcFromCpc(const BDG& bdg, CPC cpcMove) const
 	return VpcLateEndGame(bdg, cpcMove);
 }
 
-const float mpapcsqevalOpening[APC::ActMax][64] = {
+const EVAL mpapcsqevalOpening[APC::ActMax][64] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -563,62 +563,62 @@ const float mpapcsqevalOpening[APC::ActMax][64] = {
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Pawn
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Knight
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.2f, 1.2f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.1f, 1.1f, 1.1f, 1.1f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Bishop
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Rook
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Queen
-	 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f,
-	 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f, 0.9f,
-	 0.9f, 0.9f, 0.9f, 0.8f, 0.8f, 0.9f, 0.9f, 0.9f,
-	 0.9f, 0.9f, 0.9f, 0.8f, 0.8f, 0.9f, 0.9f, 0.9f,
-	 0.9f, 0.9f, 1.0f, 1.0f, 1.0f, 1.0f, 0.9f, 0.9f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,	// APC::King
-	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-	 0.7f, 0.7f, 0.5f, 0.5f, 0.5f, 0.5f, 0.7f, 0.7f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.5f, 1.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.5f, 1.5f}
+	{100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	// APC::Pawn
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
+	 100.0f, 100.0f, 110.0f, 110.0f, 110.0f, 110.0f, 100.0f, 100.0f,
+	 100.0f, 100.0f, 110.0f, 120.0f, 120.0f, 110.0f, 100.0f, 100.0f,
+	 100.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 100.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f},
+	{220.0f, 230.0f, 240.0f, 240.0f, 240.0f, 240.0f, 230.0f, 220.0f,	// APC::Knight
+	 230.0f, 260.0f, 275.0f, 275.0f, 275.0f, 275.0f, 260.0f, 230.0f,
+	 240.0f, 275.0f, 300.0f, 300.0f, 300.0f, 300.0f, 275.0f, 240.0f,
+	 240.0f, 275.0f, 300.0f, 310.0f, 310.0f, 300.0f, 275.0f, 240.0f,
+	 240.0f, 275.0f, 300.0f, 310.0f, 310.0f, 300.0f, 275.0f, 240.0f,
+	 240.0f, 275.0f, 300.1f, 310.0f, 310.0f, 300.1f, 275.0f, 240.0f,
+	 230.0f, 260.0f, 275.0f, 275.0f, 275.0f, 275.0f, 260.0f, 230.0f,
+	 220.0f, 230.0f, 240.0f, 240.0f, 240.0f, 240.0f, 230.0f, 220.0f},
+	{300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,	// APC::Bishop
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f},
+	{500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,	// APC::Rook
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f},
+	{900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,	// APC::Queen
+	 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f,
+	 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f,
+	 880.0f, 880.0f, 880.0f, 850.0f, 850.0f, 880.0f, 880.0f, 880.0f,
+	 880.0f, 880.0f, 880.0f, 850.0f, 850.0f, 880.0f, 880.0f, 880.0f,
+	 890.0f, 890.0f, 900.0f, 900.0f, 900.0f, 900.0f, 890.0f, 890.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f},
+	{100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	// APC::King
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
+	 150.0f, 150.0f, 100.0f, 100.0f, 100.0f, 100.0f, 150.0f, 150.0f,
+	 250.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 250.0f,
+	 300.0f, 300.0f, 250.0f, 200.0f, 200.0f, 250.0f, 300.0f, 300.0f}
 };
-float PLAI::VpcOpening(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcOpening(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	return VpcWeightTable(bdg, cpcMove, mpapcsqevalOpening);
 }
 
 
-float PLAI::VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	return (VpcMiddleGame(bdg, cpcMove) + VpcOpening(bdg, cpcMove)) / 2.0f;
 }
@@ -628,19 +628,19 @@ float PLAI::VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const
  *
  *	Returns the board evaluation for middle game stage of the game
  */
-float PLAI::VpcMiddleGame(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcMiddleGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	return bdg.VpcTotalFromCpc(cpcMove);
 }
 
 
-float PLAI::VpcLateMidGame(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcLateMidGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	return (VpcMiddleGame(bdg, cpcMove) + VpcEndGame(bdg, cpcMove)) / 2.0f;
 }
 
 
-const float mpapcsqevalEndGame[APC::ActMax][64] = {
+const EVAL mpapcsqevalEndGame[APC::ActMax][64] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -649,63 +649,63 @@ const float mpapcsqevalEndGame[APC::ActMax][64] = {
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0},
-	{9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f,	// APC::Pawn
-	 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f,
-	 2.5f, 2.5f, 2.5f, 2.5f, 2.5f, 2.5f, 2.5f, 2.5f,
-	 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f,
-	 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f,
-	 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f, 1.3f,
-	 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f, 1.1f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Knight
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Bishop
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Rook
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,	// APC::Queen
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-	 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-	{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,	// APC::King
-	 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.5f,
-	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
-	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
-	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
-	 0.5f, 1.0f, 1.5f, 1.5f, 1.5f, 1.5f, 1.0f, 0.5f,
-	 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.5f,
-	 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f}
+	{900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,	// APC::Pawn
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 250.0f, 250.0f, 250.0f, 250.0f, 250.0f, 250.0f, 250.0f, 250.0f,
+	 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f,
+	 150.0f, 150.0f, 150.0f, 150.0f, 150.0f, 150.0f, 150.0f, 150.0f,
+	 130.0f, 130.0f, 130.0f, 130.0f, 130.0f, 130.0f, 130.0f, 130.0f,
+	 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f},
+	{275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,	// APC::Knight
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
+	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f},
+	{300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,	// APC::Bishop
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
+	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f},
+	{500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,	// APC::Rook
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
+	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f},
+	{900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,	// APC::Queen
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
+	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f},
+	{100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	// APC::King
+	 100.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 100.0f,
+	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
+	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
+	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
+	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
+	 100.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 100.0f,
+	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f }
 };
 
-float PLAI::VpcEndGame(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcEndGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	return VpcWeightTable(bdg, cpcMove, mpapcsqevalEndGame);
 }
 
 
-float PLAI::VpcLateEndGame(const BDG& bdg, CPC cpcMove) const
+EVAL PLAI::VpcLateEndGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
 	return VpcEndGame(bdg, cpcMove);
 }
@@ -716,19 +716,17 @@ float PLAI::VpcLateEndGame(const BDG& bdg, CPC cpcMove) const
  *	Uses a weight table to compute piece values. Weight tables are multpliers
  *	on the base value of the piece.
  */
-float PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const float mpapcsqeval[APC::ActMax][64]) const
+EVAL PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[APC::ActMax][64]) const noexcept
 {
-	float vpc = 0.0f;
+	EVAL vpc = 0;
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
 		SQ sq = bdg.mptpcsq[cpcMove][tpc];
 		if (sq.fIsNil())
 			continue;
-		APC apc = bdg.ApcFromSq(sq);
 		int rank = sq.rank();
-		int file = sq.file();
 		if (cpcMove == CPC::White)
 			rank = rankMax - rank - 1;
-		vpc += bdg.VpcFromSq(sq) * mpapcsqeval[apc][rank * 8 + file];
+		vpc += mpapcsqeval[bdg.ApcFromSq(sq)][rank * 8 + sq.file()];
 	}
 	return vpc;
 }
@@ -760,9 +758,9 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 }
 
 
-float PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
+EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 {
-	float eval;
+	EVAL eval;
 	eval = PLAI::EvalBdg(bdg, mvev, fFull);
 	if (fFull) {
 		//normal_distribution<float> flDist(0.0, 25.0f);
