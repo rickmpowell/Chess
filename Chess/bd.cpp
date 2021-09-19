@@ -1119,12 +1119,10 @@ void BD::GenGmvEnPassant(GMV& gmv, SQ sqFrom) const
 }
 
 
-float BD::VpcFromSq(SQ sq) const noexcept
+EVAL BD::VpcFromSq(SQ sq) const noexcept
 {
 	assert(!sq.fIsOffBoard());
-	APC apc = ApcFromSq(sq);
-	float vpc = mpapcvpc[apc];
-	return vpc;
+	return mpapcvpc[ApcFromSq(sq)];
 }
 
 
@@ -1132,9 +1130,9 @@ float BD::VpcFromSq(SQ sq) const noexcept
  *
  *	Piece value of the entire board for the given color
  */
-float BD::VpcTotalFromCpc(CPC cpc) const noexcept
+EVAL BD::VpcTotalFromCpc(CPC cpc) const noexcept
 {
-	float vpc = 0;
+	EVAL vpc = 0;
 	for (int tpc = 0; tpc < tpcPieceMax; tpc++) {
 		SQ sq = mptpcsq[cpc][tpc];
 		if (!sq.fIsNil())

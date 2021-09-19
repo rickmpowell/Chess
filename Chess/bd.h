@@ -13,7 +13,7 @@
 
 
 
-typedef float EVAL;
+typedef int32_t EVAL;
 
 
 /*

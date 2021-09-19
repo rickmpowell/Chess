@@ -31,32 +31,20 @@ PL::~PL(void)
 }
 
 
-wstring SzFromEval(float eval)
+wstring SzFromEval(EVAL eval)
 {
 	wchar_t sz[20], *pch = sz;
-	if (eval < 0) {
+	if (eval >= 0)
+		*pch++ = L'+';
+	else {
 		*pch++ = L'-';
 		eval = -eval;
 	}
-	else
-		*pch++ = L'+';
-	int cchFrac = 2;
-	float tens = pow(10.0f, (float)cchFrac);
-	eval = round(eval * tens) / tens;
-	float w = floor(eval);
-	eval -= w;
-	pch = PchDecodeInt((int)w, pch);
+	pch = PchDecodeInt(eval / 100, pch);
+	eval %= 100;
 	*pch++ = L'.';
-	for (int ich = 0; ich < cchFrac-1; ich++) {
-		eval *= 10.0f;
-		w = floor(eval);
-		eval -= w;
-		*pch++ = L'0' + (int)w;
-	}
-	eval *= 10.0f;
-	w = floor(eval);
-	eval -= w;
-	*pch++ = L'0' + (int)w;
+	*pch++ = L'0' + eval / 10;
+	*pch++ = L'0' + eval % 10;
 	*pch = 0;
 	return wstring(sz);
 }
@@ -100,8 +88,8 @@ void PL::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szDa
 
 PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cmvevEval(0), cmvevGen(0), cmvevPrune(0)
 {
-	rgfAICoeff[0] = 1.0f;
-	rgfAICoeff[1] = 2.0f;
+	rgfAICoeffNum[0] = 100;
+	rgfAICoeffNum[1] = 50;
 }
 
 
@@ -200,9 +188,10 @@ void PLAI::EndMoveLog(void)
  *	This is a computer AI implementation.
  */
 
-const EVAL evalInf = 10000.0f;	/* infinity */
-const EVAL evalMate = 9999.0f;	/* checkmates are given evals of evalMate minus moves to mate */
-const EVAL evalMateMin = evalMate - 80.0f;
+const EVAL evalInf = 10000 * 100;	/* largest possible evaluation */
+const EVAL evalMate = evalInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
+const EVAL evalMateMin = evalMate - 100;
+const EVAL evalTempo = 33;	/* evaluation of a single move advantage */
 
 bool FEvalIsMate(EVAL eval)
 {
@@ -253,7 +242,18 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 		bdg.MakeMv(mvev.mv);
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)), SzFromEval(mvev.eval));
-		EVAL eval = -EvalBdgDepth(bdg, mvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
+		EVAL eval;
+		try {
+			eval = -EvalBdgDepth(bdg, mvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
+		}
+		catch (...) {
+			LogClose(bdg.SzDecodeMvPost(mvev.mv), L"Interrupted", LGF::Italic);
+			if (mvBest.fIsNil()) {
+				ga.bdg.RemoveInCheckMoves(gmv, ga.bdg.cpcToMove);
+				mvBest = gmv[0];
+			}
+			break;
+		}
 		bdg.UndoMv();
 
 		/* keep track of best move */
@@ -327,7 +327,15 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, EVAL 
 		/* recursively evaluate the move to target depth, using alpha-beta pruning */
 
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", (wstring)bdg)), SzFromEval(mvev.eval));
-		EVAL eval = -EvalBdgDepth(bdg, mvev, depth+1, depthMax, -evalBeta, -evalAlpha, rule);
+		EVAL eval;
+		try {
+			eval = -EvalBdgDepth(bdg, mvev, depth + 1, depthMax, -evalBeta, -evalAlpha, rule);
+		}
+		catch (...) {
+			bdg.UndoMv();
+			LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval) + L" (interrupted)", LGF::Italic);
+			throw;
+		}
 		bdg.UndoMv();
 		
 		/* do our alpha-beta pruning */
@@ -391,7 +399,7 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, EVAL evalAlpha,
 		if (bdg.FInCheck(bdg.cpcToMove))
 			return -(evalMate - (EVAL)depth);
 		else
-			return 0.0;	
+			return 0;	
 	}
 
 	/* remove any "quiet" moves; once only quiet moves are left, we can
@@ -496,6 +504,11 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev)
 	}
 }
 
+inline EVAL EvalTempo(CPC cpc)
+{
+	return cpc == CPC::White ? evalTempo : -evalTempo;
+}
+
 
 /*	PLAI::EvalBdg
  *
@@ -522,13 +535,13 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 
 	static GMV gmvSelf;
 	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
-	int evalMob = gmvSelf.cmv() - mvev.gmvReplyAll.cmv();
+	EVAL evalMob = gmvSelf.cmv() - mvev.gmvReplyAll.cmv();
 
 	if (fFull) {
 		LogData(L"Material " + to_wstring((int)vpcSelf) + L"-" + to_wstring((int)vpcNext));
 		LogData(L"Mobility " + to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(mvev.gmvReplyAll.cmv()));
 	}
-	return rgfAICoeff[0] * evalMat + rgfAICoeff[1] * (float)evalMob;
+	return (rgfAICoeffNum[0] * evalMat + rgfAICoeffNum[1] * evalMob + 50) / 100 + EvalTempo(bdg.cpcToMove);
 }
 
 
@@ -540,16 +553,16 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
  */
 EVAL PLAI::VpcFromCpc(const BDG& bdg, CPC cpcMove) const noexcept
 {
-	float vpcMove = bdg.VpcTotalFromCpc(cpcMove) + bdg.VpcTotalFromCpc(~cpcMove);
-	if (vpcMove > 7000.0f)
+	EVAL vpcMove = bdg.VpcTotalFromCpc(cpcMove) + bdg.VpcTotalFromCpc(~cpcMove);
+	if (vpcMove > 7000)
 		return VpcOpening(bdg, cpcMove);
-	if (vpcMove > 6200.0f)
+	if (vpcMove > 6200)
 		return VpcEarlyMidGame(bdg, cpcMove);
-	if (vpcMove > 5400.0f)
+	if (vpcMove > 5400)
 		return VpcMiddleGame(bdg, cpcMove);
-	if (vpcMove > 4600.0f)
+	if (vpcMove > 4600)
 		return VpcLateMidGame(bdg, cpcMove);
-	if (vpcMove > 2200.0f)
+	if (vpcMove > 2200)
 		return VpcEndGame(bdg, cpcMove);
 	return VpcLateEndGame(bdg, cpcMove);
 }
@@ -563,54 +576,54 @@ const EVAL mpapcsqevalOpening[APC::ActMax][64] = {
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0},
-	{100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	// APC::Pawn
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
-	 100.0f, 100.0f, 110.0f, 110.0f, 110.0f, 110.0f, 100.0f, 100.0f,
-	 100.0f, 100.0f, 110.0f, 120.0f, 120.0f, 110.0f, 100.0f, 100.0f,
-	 100.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 100.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f},
-	{220.0f, 230.0f, 240.0f, 240.0f, 240.0f, 240.0f, 230.0f, 220.0f,	// APC::Knight
-	 230.0f, 260.0f, 275.0f, 275.0f, 275.0f, 275.0f, 260.0f, 230.0f,
-	 240.0f, 275.0f, 300.0f, 300.0f, 300.0f, 300.0f, 275.0f, 240.0f,
-	 240.0f, 275.0f, 300.0f, 310.0f, 310.0f, 300.0f, 275.0f, 240.0f,
-	 240.0f, 275.0f, 300.0f, 310.0f, 310.0f, 300.0f, 275.0f, 240.0f,
-	 240.0f, 275.0f, 300.1f, 310.0f, 310.0f, 300.1f, 275.0f, 240.0f,
-	 230.0f, 260.0f, 275.0f, 275.0f, 275.0f, 275.0f, 260.0f, 230.0f,
-	 220.0f, 230.0f, 240.0f, 240.0f, 240.0f, 240.0f, 230.0f, 220.0f},
-	{300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,	// APC::Bishop
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f},
-	{500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,	// APC::Rook
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f},
-	{900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,	// APC::Queen
-	 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f,
-	 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f, 880.0f,
-	 880.0f, 880.0f, 880.0f, 850.0f, 850.0f, 880.0f, 880.0f, 880.0f,
-	 880.0f, 880.0f, 880.0f, 850.0f, 850.0f, 880.0f, 880.0f, 880.0f,
-	 890.0f, 890.0f, 900.0f, 900.0f, 900.0f, 900.0f, 890.0f, 890.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f},
-	{100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	// APC::King
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,
-	 150.0f, 150.0f, 100.0f, 100.0f, 100.0f, 100.0f, 150.0f, 150.0f,
-	 250.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 250.0f,
-	 300.0f, 300.0f, 250.0f, 200.0f, 200.0f, 250.0f, 300.0f, 300.0f}
+	{100, 100, 100, 100, 100, 100, 100, 100,	// APC::Pawn
+	 100, 100, 100, 100, 100, 100, 100, 100,
+	 100, 100, 100, 100, 100, 100, 100, 100,
+	 100, 100, 110, 110, 110, 110, 100, 100,
+	 100, 100, 110, 120, 120, 110, 100, 100,
+	 100, 110, 110, 110, 110, 110, 110, 100,
+	 100, 100, 100, 100, 100, 100, 100, 100,
+	 100, 100, 100, 100, 100, 100, 100, 100},
+	{220, 230, 240, 240, 240, 240, 230, 220,	// APC::Knight
+	 230, 260, 275, 275, 275, 275, 260, 230,
+	 240, 275, 300, 300, 300, 300, 275, 240,
+	 240, 275, 300, 310, 310, 300, 275, 240,
+	 240, 275, 300, 310, 310, 300, 275, 240,
+	 240, 275, 300, 310, 310, 300, 275, 240,
+	 230, 260, 275, 275, 275, 275, 260, 230,
+	 220, 230, 240, 240, 240, 240, 230, 220},
+	{300, 300, 300, 300, 300, 300, 300, 300,	// APC::Bishop
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300},
+	{500, 500, 500, 500, 500, 500, 500, 500,	// APC::Rook
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500},
+	{900, 900, 900, 900, 900, 900, 900, 900,	// APC::Queen
+	 880, 880, 880, 880, 880, 880, 880, 880,
+	 880, 880, 880, 880, 880, 880, 880, 880,
+	 880, 880, 880, 850, 850, 880, 880, 880,
+	 880, 880, 880, 850, 850, 880, 880, 880,
+	 890, 890, 900, 900, 900, 900, 890, 890,
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900},
+	{100, 100, 100, 100, 100, 100, 100, 100,	// APC::King
+	 100, 100, 100, 100, 100, 100, 100, 100,	
+	 100, 100, 100, 100, 100, 100, 100, 100,
+	 100, 100, 100, 100, 100, 100, 100, 100,
+	 100, 100, 100, 100, 100, 100, 100, 100,
+	 150, 150, 100, 100, 100, 100, 150, 150,
+	 250, 200, 200, 200, 200, 200, 200, 250,
+	 300, 300, 250, 200, 200, 250, 300, 300}
 };
 EVAL PLAI::VpcOpening(const BDG& bdg, CPC cpcMove) const noexcept
 {
@@ -620,7 +633,7 @@ EVAL PLAI::VpcOpening(const BDG& bdg, CPC cpcMove) const noexcept
 
 EVAL PLAI::VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
-	return (VpcMiddleGame(bdg, cpcMove) + VpcOpening(bdg, cpcMove)) / 2.0f;
+	return (VpcMiddleGame(bdg, cpcMove) + VpcOpening(bdg, cpcMove)) / 2;
 }
 
 
@@ -636,7 +649,7 @@ EVAL PLAI::VpcMiddleGame(const BDG& bdg, CPC cpcMove) const noexcept
 
 EVAL PLAI::VpcLateMidGame(const BDG& bdg, CPC cpcMove) const noexcept
 {
-	return (VpcMiddleGame(bdg, cpcMove) + VpcEndGame(bdg, cpcMove)) / 2.0f;
+	return (VpcMiddleGame(bdg, cpcMove) + VpcEndGame(bdg, cpcMove)) / 2;
 }
 
 
@@ -649,54 +662,54 @@ const EVAL mpapcsqevalEndGame[APC::ActMax][64] = {
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0},
-	{900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,	// APC::Pawn
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 250.0f, 250.0f, 250.0f, 250.0f, 250.0f, 250.0f, 250.0f, 250.0f,
-	 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f,
-	 150.0f, 150.0f, 150.0f, 150.0f, 150.0f, 150.0f, 150.0f, 150.0f,
-	 130.0f, 130.0f, 130.0f, 130.0f, 130.0f, 130.0f, 130.0f, 130.0f,
-	 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f, 110.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f},
-	{275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,	// APC::Knight
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f,
-	 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f, 275.0f},
-	{300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,	// APC::Bishop
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f,
-	 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f, 300.0f},
-	{500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,	// APC::Rook
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f,
-	 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f, 500.0f},
-	{900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,	// APC::Queen
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f,
-	 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f, 900.0f},
-	{100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f,	// APC::King
-	 100.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 100.0f,
-	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
-	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
-	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
-	 100.0f, 200.0f, 300.0f, 300.0f, 300.0f, 300.0f, 200.0f, 100.0f,
-	 100.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 200.0f, 100.0f,
-	 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f }
+	{900, 900, 900, 900, 900, 900, 900, 900,	// APC::Pawn
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 250, 250, 250, 250, 250, 250, 250, 250,
+	 200, 200, 200, 200, 200, 200, 200, 200,
+	 150, 150, 150, 150, 150, 150, 150, 150,
+	 130, 130, 130, 130, 130, 130, 130, 130,
+	 110, 110, 110, 110, 110, 110, 110, 110,
+	 100, 100, 100, 100, 100, 100, 100, 100},
+	{275, 275, 275, 275, 275, 275, 275, 275,	// APC::Knight
+	 275, 275, 275, 275, 275, 275, 275, 275,
+	 275, 275, 275, 275, 275, 275, 275, 275,
+	 275, 275, 275, 275, 275, 275, 275, 275,
+	 275, 275, 275, 275, 275, 275, 275, 275,
+	 275, 275, 275, 275, 275, 275, 275, 275,
+	 275, 275, 275, 275, 275, 275, 275, 275,
+	 275, 275, 275, 275, 275, 275, 275, 275},
+	{300, 300, 300, 300, 300, 300, 300, 300,	// APC::Bishop
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300,
+	 300, 300, 300, 300, 300, 300, 300, 300},
+	{500, 500, 500, 500, 500, 500, 500, 500,	// APC::Rook
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500,
+	 500, 500, 500, 500, 500, 500, 500, 500},
+	{900, 900, 900, 900, 900, 900, 900, 900,	// APC::Queen
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900,
+	 900, 900, 900, 900, 900, 900, 900, 900},
+	{100, 100, 100, 100, 100, 100, 100, 100,	// APC::King
+	 100, 200, 200, 200, 200, 200, 200, 100,
+	 100, 200, 300, 300, 300, 300, 200, 100,
+	 100, 200, 300, 300, 300, 300, 200, 100,
+	 100, 200, 300, 300, 300, 300, 200, 100,
+	 100, 200, 300, 300, 300, 300, 200, 100,
+	 100, 200, 200, 200, 200, 200, 200, 100,
+	 100, 100, 100, 100, 100, 100, 100, 100 }
 };
 
 EVAL PLAI::VpcEndGame(const BDG& bdg, CPC cpcMove) const noexcept
@@ -741,7 +754,7 @@ EVAL PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[AP
 
 PLAI2::PLAI2(GA& ga) : PLAI(ga)
 {
-	rgfAICoeff[1] = 0.1f;
+	rgfAICoeffNum[1] = 5;
 	SetName(L"SQ Mathilda");
 }
 

@@ -117,7 +117,7 @@ public:
 class PLAI : public PL
 {
 protected:
-	EVAL rgfAICoeff[3];
+	uint16_t rgfAICoeffNum[3];	/* coefficient is this number divided by 100 */
 	uint16_t cYield;
 
 	/* logging statistics */
