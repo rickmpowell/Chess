@@ -553,7 +553,7 @@ void GA::Test(void)
 {
 	TEST testRoot(*this, nullptr);
 	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
-	//testRoot.Add(new TESTPERFT(*this, &testRoot));
+	testRoot.Add(new TESTPERFT(*this, &testRoot));
 	testRoot.Add(new TESTUNDO(*this, &testRoot));
 	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
 

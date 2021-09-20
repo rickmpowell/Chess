@@ -126,14 +126,14 @@ public:
 		return SQ(rankMax - 1 - rank(), file()); 
 	}
 	
-	inline int shgrf(void) const noexcept
+	inline uint8_t shf(void) const noexcept
 	{
 		return (grf & 7) | ((grf >> 1) & 0x38); 
 	}
 	
 	inline uint64_t fgrf(void) const noexcept
 	{ 
-		return 1ULL << shgrf(); 
+		return 1ULL << shf(); 
 	}
 
 	inline operator string() const noexcept
@@ -253,6 +253,13 @@ inline int bitscanRev(uint64_t grf) noexcept
 	return rgbsRev64[(grf * debruijn64) >> 58];
 #endif
 }
+
+
+inline SQ SqFromShf(uint8_t shf)
+{
+	return SQ(shf >> 3, shf & 7);
+}
+
 
 
 /*
@@ -453,18 +460,16 @@ public:
 		return popcount(grf);
 	}
 
-	inline SQ sqLow(void) const noexcept
+	inline uint8_t shfLow(void) const noexcept
 	{
 		assert(grf);
-		int bit = bitscan(grf);
-		return SQ(bit >> 3, bit & 7);
+		return bitscan(grf);
 	}
 
-	inline SQ sqHigh(void) const noexcept
+	inline uint8_t shfHigh(void) const noexcept
 	{
 		assert(grf);
-		int bit = bitscanRev(grf);
-		return SQ(bit >> 3, bit & 7);
+		return bitscanRev(grf);
 	}
 
 	inline void ClearLow(void) noexcept
@@ -568,37 +573,46 @@ inline BB BbSouthTwo(const BB& bb) noexcept
  */
 
 enum class DIR {
-	SouthWest = 0,
+	SouthWest = 0,	/* reverse directions */
 	South = 1,
 	SouthEast = 2,
 	West = 3,
-	Nil = 4,
-	East = 5,
-	NorthWest = 6,
-	North = 7,
-	NorthEast = 8,
-	Max = 9
+	East = 4,	/* forward directions */
+	NorthWest = 5,
+	North = 6,
+	NorthEast = 7,
+	Max = 8
 };
+
 
 inline DIR DirFromDrankDfile(int drank, int dfile) noexcept
 {
-	return (DIR)((drank + 1) * 3 + dfile + 1);
+	int dir = ((drank + 1) * 3 + dfile + 1);
+	if (dir >= (int)DIR::East + 1)
+		dir--;
+	return (DIR)dir;
 }
 
 inline int DrankFromDir(DIR dir) noexcept
 {
-	return (int)dir / 3 - 1;
+	if (dir >= DIR::East)
+		return ((int)dir + 1) / 3 - 1;
+	else
+		return (int)dir / 3 - 1;
 }
 
 inline int DfileFromDir(DIR dir) noexcept
 {
-	return (int)dir % 3 - 1;
+	if (dir >= DIR::East)
+		return ((int)dir + 1) % 3 - 1;
+	else
+		return (int)dir % 3 - 1;
 }
 
 
 /*
  *
- *	MPSQDIRBB
+ *	MPSHFDIRBB
  *
  *	Just a little wrapper to compute static attack vectors for each square
  *	of the board. 
@@ -606,14 +620,16 @@ inline int DfileFromDir(DIR dir) noexcept
  */
 
 
-class MPSQDIRBB
+class MPSHFDIRBB
 {
-	BB mpsqdirbb[128][9];
+	BB mpshfdirbb[64][8];
 public:
-	MPSQDIRBB(void);
+	MPSHFDIRBB(void);
 	
-	inline BB operator()(SQ sq, DIR dir) noexcept
+	inline BB operator()(uint8_t shf, DIR dir) noexcept
 	{
-		return mpsqdirbb[sq][(int)dir];
+		assert(shf < 64);
+		assert((int)dir < 8);
+		return mpshfdirbb[shf][(int)dir];
 	}
 };

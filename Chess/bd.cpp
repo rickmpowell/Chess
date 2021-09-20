@@ -81,7 +81,7 @@ HABD GENHABD::HabdFromBd(const BD& bd) const
 
 /*
  *
- *	mpsqdirbb
+ *	mpshfdirbb
  *
  *	We keep bitboards for every square and every direction of squares that are
  *	attacked from that square.
@@ -89,9 +89,9 @@ HABD GENHABD::HabdFromBd(const BD& bd) const
  */
 
 
-MPSQDIRBB mpsqdirbb;
+MPSHFDIRBB mpshfdirbb;
 
-MPSQDIRBB::MPSQDIRBB(void)
+MPSHFDIRBB::MPSHFDIRBB(void)
 {
 	/* build all the attack bitboards for each square and each direction */
 
@@ -104,8 +104,9 @@ MPSQDIRBB::MPSQDIRBB(void)
 					if (dsq == 0)
 						continue;
 					DIR dir = DirFromDrankDfile(drank, dfile);
-					for (SQ sqNext = sq + dsq; !sqNext.fIsOffBoard(); sqNext += dsq)
-						mpsqdirbb[sq][(int)dir] |= BB(sqNext.fgrf());
+					for (SQ sqNext = sq + dsq; !sqNext.fIsOffBoard(); sqNext += dsq) {
+						mpshfdirbb[sq.shf()][(int)dir] |= BB(sqNext.fgrf());
+					}
 				}
 		}
 }
@@ -714,7 +715,7 @@ bool BD::FInCheck(CPC cpc) const noexcept
 
 /*	BD::BbPawnAttacked
  *
- *	Returns bitboard of all squares pawns attack.
+ *	Returns bitboard of all squares all pawns attack.
  */
 BB BD::BbPawnAttacked(CPC cpcBy) const noexcept
 {
@@ -725,6 +726,10 @@ BB BD::BbPawnAttacked(CPC cpcBy) const noexcept
 }
 
 
+/*	BD::BbKnightAttacked
+ *
+ *	Returns a bitboard of all squares a knight attacks.
+ */
 BB BD::BbKnightAttacked(CPC cpcBy) const noexcept
 {
 	BB bbKnights = mpapcbb[cpcBy][APC::Knight];
@@ -734,35 +739,47 @@ BB BD::BbKnightAttacked(CPC cpcBy) const noexcept
 }
 
 
-BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept
+/*	BD::BbFwdSlideAttacks
+ *
+ *	Returns a bitboard of squares a sliding piece (rook, bishop, queen) attacks
+ *	in the direction given. Only works for forward moves (north, northwest,
+ *	northeast, and east).
+ */
+BB BD::BbFwdSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept
 {
 	assert(dir == DIR::East || dir == DIR::NorthWest || dir == DIR::North || dir == DIR::NorthEast);
-	BB bbAttacks = mpsqdirbb(sqFrom, dir);
+	BB bbAttacks = mpshfdirbb(shfFrom, dir);
 	/* set a bit that can't be hit to so sqLow never has to deal with an empty bitboard */
-	BB bbBlockers = (bbAttacks - bbUnoccupied) | BB(0x8000000000000000ULL);
-	return bbAttacks ^ mpsqdirbb(bbBlockers.sqLow(), dir);
+	BB bbBlockers = (bbAttacks - bbUnoccupied) | BB(1ULL<<63);
+	return bbAttacks ^ mpshfdirbb(bbBlockers.shfLow(), dir);
 }
 
 
-BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept
+/*	BD::BbRevSlideAttacks
+ *
+ *	Returns bitboard of squares a sliding piece attacks in the direction given.
+ *	Only works for reverse moves (south, southwest, southeast, and west).
+ */
+BB BD::BbRevSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept
 {
 	assert(dir == DIR::West || dir == DIR::SouthWest || dir == DIR::South || dir == DIR::SouthEast);
-	BB bbAttacks = mpsqdirbb(sqFrom, dir);
-	/* set a bit that can't be hit to so sqHigh never has to deal with an empty bitboard */
-	BB bbBlockers = (bbAttacks - bbUnoccupied) | BB(0x0000000000000001ULL);
-	return bbAttacks ^ mpsqdirbb(bbBlockers.sqHigh(), dir);
+	BB bbAttacks = mpshfdirbb(shfFrom, dir);
+	/* set a bit that can't be hit in the reverse direction (because sqHigh doesn't work
+	   for zero bitboards) */
+	BB bbBlockers = (bbAttacks - bbUnoccupied) | BB(1);
+	return bbAttacks ^ mpshfdirbb(bbBlockers.shfHigh(), dir);
 }
 
 
 BB BD::BbBishopAttacked(CPC cpcBy) const noexcept
 {
-	BB bbAttacks;
+	BB bbAttacks(0);
 	for (BB bbBishops = mpapcbb[cpcBy][APC::Bishop]; bbBishops; bbBishops.ClearLow()) {
-		SQ sq = bbBishops.sqLow();
-		bbAttacks |= BbFwdSlideAttacks(DIR::NorthEast, sq);
-		bbAttacks |= BbFwdSlideAttacks(DIR::NorthWest, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::SouthEast, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::SouthWest, sq);
+		uint8_t shf = bbBishops.shfLow();
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthEast, shf);
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthWest, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthEast, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthWest, shf);
 	}
 	return bbAttacks;
 }
@@ -772,11 +789,11 @@ BB BD::BbRookAttacked(CPC cpcBy) const noexcept
 {
 	BB bbAttacks;
 	for (BB bbRooks = mpapcbb[cpcBy][APC::Rook]; bbRooks; bbRooks.ClearLow()) {
-		SQ sq = bbRooks.sqLow();
-		bbAttacks |= BbFwdSlideAttacks(DIR::North, sq);
-		bbAttacks |= BbFwdSlideAttacks(DIR::East, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::South, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::West, sq);
+		uint8_t shf = bbRooks.shfLow();
+		bbAttacks |= BbFwdSlideAttacks(DIR::North, shf);
+		bbAttacks |= BbFwdSlideAttacks(DIR::East, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::South, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::West, shf);
 	}
 	return bbAttacks;
 }
@@ -786,15 +803,15 @@ BB BD::BbQueenAttacked(CPC cpcBy) const noexcept
 {
 	BB bbAttacks;
 	for (BB bbQueens = mpapcbb[cpcBy][APC::Queen]; bbQueens; bbQueens.ClearLow()) {
-		SQ sq = bbQueens.sqLow();
-		bbAttacks |= BbFwdSlideAttacks(DIR::North, sq);
-		bbAttacks |= BbFwdSlideAttacks(DIR::East, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::South, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::West, sq);
-		bbAttacks |= BbFwdSlideAttacks(DIR::NorthEast, sq);
-		bbAttacks |= BbFwdSlideAttacks(DIR::NorthWest, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::SouthEast, sq);
-		bbAttacks |= BbRevSlideAttacks(DIR::SouthWest, sq);
+		uint8_t shf = bbQueens.shfLow();
+		bbAttacks |= BbFwdSlideAttacks(DIR::North, shf);
+		bbAttacks |= BbFwdSlideAttacks(DIR::East, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::South, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::West, shf);
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthEast, shf);
+		bbAttacks |= BbFwdSlideAttacks(DIR::NorthWest, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthEast, shf);
+		bbAttacks |= BbRevSlideAttacks(DIR::SouthWest, shf);
 	}
 	return bbAttacks;
 }
@@ -854,7 +871,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 	/* generate pawn moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Pawn]; bb; bb.ClearLow()) {
-		SQ sqFrom = bb.sqLow();
+		SQ sqFrom = SqFromShf(bb.shfLow());
 		assert(!FIsEmpty(sqFrom));
 		assert((*this)(sqFrom).cpc() == cpcMove);
 		assert(ApcFromSq(sqFrom) == APC::Pawn);
@@ -866,7 +883,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 	/* generate knight moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Knight]; bb; bb.ClearLow()) {
-		SQ sqFrom = bb.sqLow();
+		SQ sqFrom = SqFromShf(bb.shfLow());
 		assert(!FIsEmpty(sqFrom));
 		assert((*this)(sqFrom).cpc() == cpcMove);
 		assert(ApcFromSq(sqFrom) == APC::Knight);
@@ -876,7 +893,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 	/* generate bishop moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Bishop]; bb; bb.ClearLow()) {
-		SQ sqFrom = bb.sqLow();
+		SQ sqFrom = SqFromShf(bb.shfLow());
 		assert(!FIsEmpty(sqFrom));
 		assert((*this)(sqFrom).cpc() == cpcMove);
 		assert(ApcFromSq(sqFrom) == APC::Bishop);
@@ -886,7 +903,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 	/* generate rook moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Rook]; bb; bb.ClearLow()) {
-		SQ sqFrom = bb.sqLow();
+		SQ sqFrom = SqFromShf(bb.shfLow());
 		assert(!FIsEmpty(sqFrom));
 		assert((*this)(sqFrom).cpc() == cpcMove);
 		assert(ApcFromSq(sqFrom) == APC::Rook);
@@ -896,7 +913,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 	/* generate queen moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Queen]; bb; bb.ClearLow()) {
-		SQ sqFrom = bb.sqLow();
+		SQ sqFrom = SqFromShf(bb.shfLow());
 		assert(!FIsEmpty(sqFrom));
 		assert((*this)(sqFrom).cpc() == cpcMove);
 		assert(ApcFromSq(sqFrom) == APC::Queen);
@@ -907,7 +924,7 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 
 	BB bb = mpapcbb[cpcMove][APC::King];
 	assert(bb);
-	SQ sqFrom = bb.sqLow();
+	SQ sqFrom = SqFromShf(bb.shfLow());
 	assert(!FIsEmpty(sqFrom));
 	assert((*this)(sqFrom).cpc() == cpcMove);
 	assert(ApcFromSq(sqFrom) == APC::King);

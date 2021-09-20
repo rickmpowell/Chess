@@ -910,8 +910,8 @@ public:
 		return FBbAttacked(BB(sqAttacked), cpcBy);
 	}
 
-	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
-	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	BB BbFwdSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept;
+	BB BbRevSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept;
 	BB BbPawnAttacked(CPC cpcBy) const noexcept;
 	BB BbKingAttacked(CPC cpcBy) const noexcept;
 	BB BbKnightAttacked(CPC cpcBy) const noexcept;
