@@ -175,6 +175,7 @@ public:
 	void Move(const PT& ptNew);
 	void OffsetBounds(float dx, float dy);
 	void Show(bool fShow);
+	void ShowAll(bool fShow);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 

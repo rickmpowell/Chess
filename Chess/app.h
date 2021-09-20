@@ -166,6 +166,7 @@ private:
 	void Redraw(void);
 	void Redraw(RC rc);
 
+	void OnDestroy(void);
 	void OnPaint(void);
 	void OnSize(UINT dx, UINT dy);
 	bool OnCommand(int idm);

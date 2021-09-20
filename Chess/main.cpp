@@ -353,6 +353,19 @@ void APP::DispatchTimer(TID tid, UINT dtm)
 }
 
 
+/*  APP::OnDestroy
+ *
+ *  Handles the window destroy notification. Since we have modal loops and the
+ *  main window can be destroyed in them, we need to invalidate all our drawing
+ *  operations here so we can gracefully shut down
+ */
+void APP::OnDestroy(void)
+{
+    DiscardRsrcSize();
+    pga->ShowAll(false);
+}
+
+
 /*  APP::OnSize
  *
  *  Handles the window size notification for the top-level window. New size
@@ -1245,6 +1258,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         return 0;
 
     case WM_DESTROY:
+        papp->OnDestroy();
         ::PostQuitMessage(0);
         break;
 

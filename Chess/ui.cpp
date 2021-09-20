@@ -381,6 +381,13 @@ void UI::Show(bool fVisNew)
 }
 
 
+void UI::ShowAll(bool fVisNew)
+{
+	for (UI* puiChild : vpuiChild)
+		puiChild->ShowAll(fVisNew);
+	Show(fVisNew);
+}
+
 /*	UI::PuiFromPt
  *
  *	Returns the UI element the point is over. Point is in global coordinates.
