@@ -29,8 +29,9 @@
 #define iddAbout		1
 
 #define iddTestPerft	2
-#define ideDepth		256
-
+#define idcPerftType	256
+#define idePerftDepth	257
+ 
 /*
  *	menus, accelerators, and commands
  */

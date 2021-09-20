@@ -730,16 +730,44 @@ public:
  * 
  */
 
+
+enum class TPERFT {
+    Normal = 0,
+    Bulk = 1,
+    Divide = 2
+};
+
+wstring to_wstring(TPERFT tperft)
+{
+    switch (tperft) {
+    case TPERFT::Bulk:
+        return L"Bulk";
+    case TPERFT::Divide:
+        return L"Divide";
+    default:
+        return L"Normal";
+    }
+}
+
+struct DDPERFT {
+    TPERFT tperft;
+    int depth;
+};
+
 INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam)
 {
-    int* pdepth;
+    DDPERFT* pddperft;
     switch (wm) {
     case WM_INITDIALOG:
     {
-        pdepth = (int*)lparam;
+        pddperft = (DDPERFT*)lparam;
         ::SetWindowLongPtr(hdlg, DWLP_USER, lparam);
-        ::SetDlgItemTextW(hdlg, ideDepth, to_wstring(*pdepth).c_str());
-
+        ::SetDlgItemTextW(hdlg, idePerftDepth, to_wstring(pddperft->depth).c_str());
+        HWND hwndCombo = ::GetDlgItem(hdlg, idcPerftType);
+        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(TPERFT::Normal).c_str());
+        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(TPERFT::Bulk).c_str());
+        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(TPERFT::Divide).c_str());
+        ::SendMessageW(hwndCombo, CB_SETCURSEL, (WPARAM)pddperft->tperft, 0);
         HWND hwndParent = GetParent(hdlg);
         RECT rcParent, rcDlg;
         GetWindowRect(hwndParent, &rcParent);
@@ -754,8 +782,8 @@ INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lpar
         switch (LOWORD(wparam)) {
         case IDOK:
             wchar_t sz[256];
-            pdepth = (int*)::GetWindowLongPtr(hdlg, DWLP_USER);
-            ::GetDlgItemTextW(hdlg, ideDepth, sz, CArray(sz));
+            pddperft = (DDPERFT*)::GetWindowLongPtr(hdlg, DWLP_USER);
+            ::GetDlgItemTextW(hdlg, idePerftDepth, sz, CArray(sz));
             int depth;
             try {
                 depth = stoi(sz);
@@ -766,7 +794,8 @@ INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lpar
                 ::MessageBoxW(hdlg, L"Depth must be an integer between 2 and 20", L"Error", MB_OK);
                 break;
             }
-            *pdepth = depth;
+            pddperft->tperft = (TPERFT)::SendDlgItemMessage(hdlg, idcPerftType, CB_GETCURSEL, 0, 0);
+            pddperft->depth = depth;
             [[fallthrough]];
         case IDCANCEL:
             ::EndDialog(hdlg, LOWORD(wparam));
@@ -779,25 +808,35 @@ INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lpar
     return (INT_PTR)false;
 }
 
+
 class CMDPERFTDIVIDE : public CMD
 {
 public:
 
-    static int depthPerft;
-    static bool fDivide;
+    static DDPERFT ddperft;
 
 public:
     CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
-        if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddTestPerft), app.hwnd, TestPerftDlgProc, (LPARAM)&depthPerft) != IDOK)
+        if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddTestPerft), app.hwnd, TestPerftDlgProc, (LPARAM)&ddperft) != IDOK)
             return 1;
 
-        app.pga->SetDepthLog(4);
-        app.pga->XLogOpen(L"perft", to_wstring(depthPerft));
+        app.pga->XLogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth));
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
-        uint64_t cmv = fDivide ? app.pga->CmvPerftDivide(depthPerft) : app.pga->CmvPerft(depthPerft);
+        uint64_t cmv;
+        switch (ddperft.tperft) {
+        case TPERFT::Divide:
+            cmv = app.pga->CmvPerftDivide(ddperft.depth);
+            break;
+        case TPERFT::Bulk:
+            cmv = app.pga->CmvPerftBulk(ddperft.depth);
+            break;
+        default:
+            cmv = app.pga->CmvPerft(ddperft.depth);
+            break;
+        }
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
         duration dtp = tpEnd - tpStart;
         microseconds us = duration_cast<microseconds>(dtp);
@@ -816,12 +855,11 @@ public:
 
     virtual wstring SzMenu(void) const
     {
-        return wstring(L"perft ") + to_wstring(depthPerft);
+        return wstring(L"perft ") + to_wstring(ddperft.depth);
     }
 };
 
-int CMDPERFTDIVIDE::depthPerft = 3;
-bool CMDPERFTDIVIDE::fDivide = true;
+DDPERFT CMDPERFTDIVIDE::ddperft = { TPERFT::Divide, 3 };
 
 
 /*

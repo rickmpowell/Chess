@@ -122,7 +122,7 @@ MPSQDIRBB::MPSQDIRBB(void)
  *
  */
 
-const EVAL BD::mpapcvpc[] = { 0.0f, 100.0f, 275.0f, 300.0f, 500.0f, 900.0f, 200.0f, -1.0f };
+const EVAL BD::mpapcvpc[] = { 0, 100, 275, 300, 500, 900, 200, -1 };
 
 BD::BD(void)
 {

@@ -1078,9 +1078,10 @@ public:
 	 */
 	inline void SetBB(IPC ipc, SQ sq) noexcept
 	{
-		mpapcbb[ipc.cpc()][ipc.apc()] += sq;
-		mpcpcbb[ipc.cpc()] += sq;
-		bbUnoccupied -= sq;
+		BB bb(sq);
+		mpapcbb[ipc.cpc()][ipc.apc()] += bb;
+		mpcpcbb[ipc.cpc()] += bb;
+		bbUnoccupied -= bb;
 		genhabd.TogglePiece(habd, sq, ipc);
 	}
 
@@ -1096,10 +1097,11 @@ public:
 	 */
 	inline void ClearBB(IPC ipc, SQ sq) noexcept
 	{
-		mpapcbb[ipc.cpc()][ipc.apc()] -= sq;
-		mpcpcbb[ipc.cpc()] -= sq;
+		BB bb(sq);
+		mpapcbb[ipc.cpc()][ipc.apc()] -= bb;
+		mpcpcbb[ipc.cpc()] -= bb;
 		assert(!mpcpcbb[~ipc.cpc()].fSet(sq));
-		bbUnoccupied += sq;
+		bbUnoccupied += bb;
 		genhabd.TogglePiece(habd, sq, ipc);
 	}
 

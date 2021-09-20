@@ -573,12 +573,25 @@ uint64_t GA::CmvPerft(int depth)
 		return 1;
 	GMV gmv;
 	bdg.GenGmv(gmv, RMCHK::Remove);
-	if (depth == 1)
-		return gmv.cmv();
 	uint64_t cmv = 0;
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		bdg.MakeMv(gmv[imv]);
 		cmv += CmvPerft(depth - 1);
+		bdg.UndoMv();
+	}
+	return cmv;
+}
+
+uint64_t GA::CmvPerftBulk(int depth)
+{
+	GMV gmv;
+	bdg.GenGmv(gmv, RMCHK::Remove);
+	if (depth <= 1)
+		return gmv.cmv();
+	uint64_t cmv = 0;
+	for (int imv = 0; imv < gmv.cmv(); imv++) {
+		bdg.MakeMv(gmv[imv]);
+		cmv += CmvPerftBulk(depth - 1);
 		bdg.UndoMv();
 	}
 	return cmv;
