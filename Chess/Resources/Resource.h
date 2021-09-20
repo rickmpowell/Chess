@@ -1,4 +1,8 @@
 
+/*
+ *	strings
+ */
+
 #define idsApp			1
 #define idsShowDebugPanel 2
 #define idsHideDebugPanel 3
@@ -10,15 +14,26 @@
 #define idsTipTest      9
 #define idsTipUndoMove  10
 #define idsTipRedoMove  11
-#define idsTipLogDepthUp 12
-#define idsTipLogDepthDown 13
-#define idsTipLogFileToggle 14
-#define idsTipPlayerLvlUp      15
-#define idsTipPlayerLvlUpBlack	16
-#define idsTipPlayerLvlDown	17
+#define idsTipLogDepthUp			12
+#define idsTipLogDepthDown			13
+#define idsTipLogFileToggle			14
+#define idsTipPlayerLvlUp			15
+#define idsTipPlayerLvlUpBlack		16
+#define idsTipPlayerLvlDown			17
 #define idsTipPlayerLvlDownBlack	18
 
+/*
+ *	Dialog definitions
+ */
+
 #define iddAbout		1
+
+#define iddTestPerft	2
+#define ideDepth		256
+
+/*
+ *	menus, accelerators, and commands
+ */
 
 #define idmApp			1
 #define idaApp			1
@@ -51,8 +66,16 @@
 #define cmdPerftDivide      25
 #define cmdMax				26
 
+/*
+ *	icons
+ */
+
 #define idiApp			1
 #define idiSmall		2
+
+/*
+ *	images
+ */
 
 #define idbPieces		1
 #define idbLogo		  3

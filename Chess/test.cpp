@@ -594,7 +594,9 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 	if (depthPerft == 1)
 		return gmv.cmv();
 	uint64_t cmv = 0;
-	//BDG bdgInit = bdg;
+#ifndef NDEBUG
+	BDG bdgInit = bdg;
+#endif
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		bdg.MakeMv(gmv[imv]);
 		LogOpen(TAG(bdg.SzDecodeMvPost(gmv[imv]), ATTR(L"FEN", (wstring)bdg)), L"");
@@ -602,7 +604,7 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 		cmv += cmvMove;
 		bdg.UndoMv();
 		LogClose(bdg.SzDecodeMvPost(gmv[imv]), to_wstring(cmvMove), LGF::Normal);
-		//assert(bdg == bdgInit);
+		assert(bdg == bdgInit);
 	}
 	return cmv;
 

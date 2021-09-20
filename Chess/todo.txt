@@ -1,7 +1,5 @@
-  Test: Errors in PGN file test should display in test progress panel
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
-  Test: Add perft level option
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
   Test: We're erroneously reporting success when aborting test run
   Test: Clicking test button in UIDB should interrupt a running test
@@ -10,7 +8,6 @@
   Test: if no pgn files in a directory, file enumeration crashes
   Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Test: PGN games should feed moves through a PL
-  Throw exceptions for user interrupts
   AI: Implement transposition tables and use in alpha-beta search
   AI: I think when we're ahead, we permit 3-fold draws too easily
   AI: Communicate best continuation back
@@ -91,6 +88,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Test: Add perft level option
+* Throw exceptions for user interrupts
+* Test: Errors in PGN file test should display in test progress panel
 * AI: Quitting the app while AI is running sometimes crashes in PresentSwch
 * Test: Implement a test harness
 * Open: Beef up error handling in deserialize

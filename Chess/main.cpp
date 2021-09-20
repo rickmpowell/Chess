@@ -730,18 +730,81 @@ public:
  * 
  */
 
+INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam)
+{
+    int* pdepth;
+    switch (wm) {
+    case WM_INITDIALOG:
+    {
+        pdepth = (int*)lparam;
+        ::SetWindowLongPtr(hdlg, DWLP_USER, lparam);
+        ::SetDlgItemTextW(hdlg, ideDepth, to_wstring(*pdepth).c_str());
+
+        HWND hwndParent = GetParent(hdlg);
+        RECT rcParent, rcDlg;
+        GetWindowRect(hwndParent, &rcParent);
+        GetWindowRect(hdlg, &rcDlg);
+        SetWindowPos(hdlg, NULL,
+            (rcParent.left + rcParent.right - (rcDlg.right - rcDlg.left)) / 2,
+            (rcParent.top + rcParent.bottom - (rcDlg.bottom - rcDlg.top)) / 2,
+            0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+        return (INT_PTR)true;
+    }
+    case WM_COMMAND:
+        switch (LOWORD(wparam)) {
+        case IDOK:
+            wchar_t sz[256];
+            pdepth = (int*)::GetWindowLongPtr(hdlg, DWLP_USER);
+            ::GetDlgItemTextW(hdlg, ideDepth, sz, CArray(sz));
+            int depth;
+            try {
+                depth = stoi(sz);
+                if (depth < 2 || depth > 20)
+                    throw 0;
+            } 
+            catch (...) {
+                ::MessageBoxW(hdlg, L"Depth must be an integer between 2 and 20", L"Error", MB_OK);
+                break;
+            }
+            *pdepth = depth;
+            [[fallthrough]];
+        case IDCANCEL:
+            ::EndDialog(hdlg, LOWORD(wparam));
+            return (INT_PTR)true;
+        default:
+            break;
+        }
+        break;
+    }
+    return (INT_PTR)false;
+}
 
 class CMDPERFTDIVIDE : public CMD
 {
-    int depthPerft;
+public:
+
+    static int depthPerft;
+    static bool fDivide;
 
 public:
-    CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd), depthPerft(3) { }
+    CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
+        if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddTestPerft), app.hwnd, TestPerftDlgProc, (LPARAM)&depthPerft) != IDOK)
+            return 1;
+
+        app.pga->SetDepthLog(4);
         app.pga->XLogOpen(L"perft", to_wstring(depthPerft));
-        uint64_t cmv = app.pga->CmvPerftDivide(depthPerft);
+        time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
+        uint64_t cmv = fDivide ? app.pga->CmvPerftDivide(depthPerft) : app.pga->CmvPerft(depthPerft);
+        time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
+        duration dtp = tpEnd - tpStart;
+        microseconds us = duration_cast<microseconds>(dtp);
+        float sp = (float)us.count() / 1000.0f;
+        app.pga->XLogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
+        sp = 1000.0f * (float)cmv / (float)us.count();
+        app.pga->XLogData(L"Speed: " + to_wstring((int)round(sp)) + L" moves/ms");
         app.pga->XLogClose(L"perft", to_wstring(cmv), LGF::Normal);
         return 1;
     }
@@ -756,6 +819,9 @@ public:
         return wstring(L"perft ") + to_wstring(depthPerft);
     }
 };
+
+int CMDPERFTDIVIDE::depthPerft = 3;
+bool CMDPERFTDIVIDE::fDivide = true;
 
 
 /*
