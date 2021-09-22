@@ -290,8 +290,9 @@ inline SQ SqFromShf(uint8_t shf)
 
 class BB
 {
-	uint64_t grf;
 public:
+	uint64_t grf;
+
 	inline BB(void) noexcept : grf(0)
 	{
 	}
@@ -612,7 +613,7 @@ inline int DfileFromDir(DIR dir) noexcept
 
 /*
  *
- *	MPSHFDIRBB
+ *	MPBB
  *
  *	Just a little wrapper to compute static attack vectors for each square
  *	of the board. 
@@ -620,16 +621,28 @@ inline int DfileFromDir(DIR dir) noexcept
  */
 
 
-class MPSHFDIRBB
+class MPBB
 {
-	BB mpshfdirbb[64][8];
+	BB mpshfdirbbSlide[64][8];
+	BB mpshfbbKing[64];
+	BB mpshfbbKnight[64];
 public:
-	MPSHFDIRBB(void);
+	MPBB(void);
 	
-	inline BB operator()(uint8_t shf, DIR dir) noexcept
+	inline BB BbSlideTo(uint8_t shf, DIR dir) noexcept
 	{
 		assert(shf < 64);
 		assert((int)dir < 8);
-		return mpshfdirbb[shf][(int)dir];
+		return mpshfdirbbSlide[shf][(int)dir];
+	}
+
+	inline BB BbKingTo(uint8_t shf) noexcept
+	{
+		return mpshfbbKing[shf];
+	}
+
+	inline BB BbKnightTo(uint8_t shf) noexcept
+	{
+		return mpshfbbKnight[shf];
 	}
 };

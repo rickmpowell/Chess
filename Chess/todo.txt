@@ -12,7 +12,7 @@
   AI: I think when we're ahead, we permit 3-fold draws too easily
   AI: Communicate best continuation back
   AI: spin off AI into its own thread
-  AI: annotate candidate best moves on board
+  AI: annotate candidate best moves on board while thinking
   AI: interruptible
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
@@ -28,11 +28,6 @@
   Can we make things like Undo work while AI is thinking?
   Move gen: Use magic bitboards for move generation
   Move gen: Use magic bitboards for attack squares
-  Move gen: bitboard king
-  Move gen: bitboard bishops, rooks, and queens
-  Move gen: bitboard knights
-  Move gen: bitboard pawns
-  Move gen: use bitboards to test attack squares for legal castles
   Log: Should we hash tags?
   Log: File logging and UIDB logging need to have their own depth
   UI: Add a new game panel
@@ -88,6 +83,11 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Move gen: bitboard king
+* Move gen: bitboard bishops, rooks, and queens
+* Move gen: bitboard knights
+* Move gen: bitboard pawns
+* Move gen: use bitboards to test attack squares for legal castles
 * Test: Add perft level option
 * Throw exceptions for user interrupts
 * Test: Errors in PGN file test should display in test progress panel

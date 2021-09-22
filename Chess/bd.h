@@ -519,6 +519,8 @@ public:
 	inline void AppendMv(MV mv)
 	{
 		assert(FValid()); 
+		assert(!mv.sqFrom().fIsOffBoard());
+		assert(!mv.sqTo().fIsOffBoard());
 		if (cmvCur < cmvPreMax)
 			amv[cmvCur++] = mv;
 		else
@@ -529,6 +531,8 @@ public:
 	inline void AppendMv(SQ sqFrom, SQ sqTo)
 	{
 		assert(FValid());
+		assert(!sqFrom.fIsOffBoard());
+		assert(!sqTo.fIsOffBoard());
 		if (cmvCur < cmvPreMax) 
 			amv[cmvCur++] = MV(sqFrom, sqTo);
 		else
@@ -835,59 +839,14 @@ public:
 	
 	void GenGmv(GMV& gmv, RMCHK rmchk) const;
 	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
-	bool FMvIsQuiescent(MV mv) const noexcept;
 	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
-	void GenGmvPawn(GMV& gmv, SQ sqFrom) const;
-	void GenGmvKnight(GMV& gmv, SQ sqFrom) const;
-	void GenGmvBishop(GMV& gmv, SQ sqFrom) const;
-	void GenGmvRook(GMV& gmv, SQ sqFrom) const;
-	void GenGmvQueen(GMV& gmv, SQ sqFrom) const;
-	void GenGmvKing(GMV& gmv, SQ sqFrom) const;
+	void GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const;
 	void GenGmvCastle(GMV& gmv, SQ sqFrom) const;
-	void GenGmvPawnCapture(GMV& gmv, SQ sqFrom, int dsq) const;
 	void AddGmvMvPromotions(GMV& gmv, MV mv) const;
-	void GenGmvEnPassant(GMV& gmv, SQ sqFrom) const;
-
-
-	/*	BD::FGenGmvDsq
-	 *
-	 *	Checks the square in the direction given by dsq for a valid
-	 *	destination square. Adds the move to gmv if it is valid.
-	 *	Returns true if the destination square was empty; returns
-	 *	false if it's not a legal square or there is a piece in the
-	 *	square.
-	 */
-	inline bool FGenGmvDsq(GMV& gmv, SQ sqFrom, SQ sq, IPC ipcFrom, int dsq) const
-	{
-		SQ sqTo = sq + dsq;
-		if (sqTo.fIsOffBoard())
-			return false;
-
-		/* have we run into one of our own pieces? */
-		if (!FIsEmpty(sqTo) && CpcFromSq(sqTo) == ipcFrom.cpc())
-			return false;
-
-		/* add the move to the list */
-		gmv.AppendMv(MV(sqFrom, sqTo));
-
-		/* return false if we've reached an enemy piece - this capture
-		   is the end of a potential slide move */
-		return FIsEmpty(sqTo);
-	}
-
-
-	/*	BD::GenGmvSlide
-	 *
-	 *	Generates all straight-line moves in the direction dsq starting at sqFrom.
-	 *	Stops when the piece runs into a piece of its own color, or a capture of
-	 *	an enemy piece, or it reaches the end of the board.
-	 */
-	inline void GenGmvSlide(GMV& gmv, SQ sqFrom, int dsq) const
-	{
-		IPC ipcFrom = (*this)(sqFrom);
-		for (int sq = sqFrom; FGenGmvDsq(gmv, sqFrom, sq, ipcFrom, dsq); sq += dsq)
-			;
-	}
+	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq) const;
+	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq) const;
+	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo) const;
+	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dsq) const;
 	
 	/*
 	 *	checking squares for attack 
@@ -898,7 +857,10 @@ public:
 	bool FMvIsQuiescent(MV mv, CPC cpc) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	bool FBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
-	BB BbAttackedAll(CPC cpcBy) const noexcept;
+	bool FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept;
+	bool FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept;
+	bool FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept;
+
 
 	/*	BD::FSqAttacked
 	 *	
@@ -915,26 +877,6 @@ public:
 	BB BbPawnAttacked(CPC cpcBy) const noexcept;
 	BB BbKingAttacked(CPC cpcBy) const noexcept;
 	BB BbKnightAttacked(CPC cpcBy) const noexcept;
-	BB BbBishopAttacked(CPC cpcBy) const noexcept;
-	BB BbRookAttacked(CPC cpcBy) const noexcept;
-	BB BbQueenAttacked(CPC cpcBy) const noexcept;
-	
-	/*	BD::FDsqAttack
-	 *
-	 *	Checks that sqAttacked is being attacked from sq, with dsq being the increment
-	 *	between the two squares. Assumes the two squares are reachable using the dsq
-	 *	increment.
-	 */
-	inline bool FDsqAttack(SQ sqAttacked, SQ sq, int dsq) const noexcept
-	{
-		do {
-			sq += dsq;
-			assert(!sq.fIsOffBoard());
-			if (sq == sqAttacked)
-				return true;
-		} while (FIsEmpty(sq));
-		return false;
-	}
 
 	/*
 	 *	move, square, and piece convenience functions. most of these need to be highly
