@@ -78,6 +78,38 @@ public:
 	{
 		return grf == 0xc0;
 	}
+
+	inline SHF& operator+=(int dsq) noexcept
+	{
+		grf += dsq;
+		return *this;
+	}
+
+	inline SHF operator+(int dsq) const noexcept
+	{
+		return SHF(grf + dsq);
+	}
+
+	inline SHF operator++(int) noexcept
+	{
+		uint8_t grfT = grf++;
+		return SHF(grfT);
+	}
+
+	inline SHF operator-(int dsq) const noexcept
+	{
+		return SHF((uint8_t)(grf - dsq));
+	}
+
+	inline int operator-(const SHF& shf) const noexcept
+	{
+		return (int)grf - (int)shf.grf;
+	}
+
+	inline SHF shfFlip(void) noexcept
+	{
+		return SHF(rankMax - 1 - rank(), file());
+	}
 };
 
 

@@ -186,10 +186,10 @@ void BD::SetEmpty(void) noexcept
  */
 bool BD::operator==(const BD& bd) const noexcept
 {
-	for (int tpc = 0; tpc < tpcPieceMax; tpc++)
-		if (mptpcsq[(int)CPC::White][tpc] != bd.mptpcsq[(int)CPC::White][tpc] ||
-				mptpcsq[(int)CPC::Black][tpc] != bd.mptpcsq[(int)CPC::Black][tpc])
-			return false;
+	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
+			if (mpapcbb[cpc][apc] != bd.mpapcbb[cpc][apc])
+				return false;
 	return csCur == bd.csCur && shfEnPassant == bd.shfEnPassant && cpcToMove == bd.cpcToMove;
 }
 
@@ -213,23 +213,23 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
 	/* parse the line */
 
 	int rank = rankMax - 1;
-	SQ sq = SQ(rank, 0);
+	SHF shf = SHF(rank, 0);
 	const wchar_t* pch;
 	for (pch = szFEN; *pch != L' ' && *pch != L'\0'; pch++) {
 		switch (*pch) {
-		case 'p': AddPieceFEN(sq++, tpcPawnFirst, CPC::Black, APC::Pawn); break;
-		case 'r': AddPieceFEN(sq++, tpcQueenRook, CPC::Black, APC::Rook); break;
-		case 'n': AddPieceFEN(sq++, tpcQueenKnight, CPC::Black, APC::Knight); break;
-		case 'b': AddPieceFEN(sq++, tpcQueenBishop, CPC::Black, APC::Bishop); break;
-		case 'q': AddPieceFEN(sq++, tpcQueen, CPC::Black, APC::Queen); break;
-		case 'k': AddPieceFEN(sq++, tpcKing, CPC::Black, APC::King); break;
-		case 'P': AddPieceFEN(sq++, tpcPawnFirst, CPC::White, APC::Pawn); break;
-		case 'R': AddPieceFEN(sq++, tpcQueenRook, CPC::White, APC::Rook); break;
-		case 'N': AddPieceFEN(sq++, tpcQueenKnight, CPC::White, APC::Knight); break;
-		case 'B': AddPieceFEN(sq++, tpcQueenBishop, CPC::White, APC::Bishop); break;
-		case 'Q': AddPieceFEN(sq++, tpcQueen, CPC::White, APC::Queen); break;
-		case 'K': AddPieceFEN(sq++, tpcKing, CPC::White, APC::King); break;
-		case '/': sq = SQ(--rank, 0);  break;
+		case 'p': AddPieceFEN(shf++, tpcPawnFirst, CPC::Black, APC::Pawn); break;
+		case 'r': AddPieceFEN(shf++, tpcQueenRook, CPC::Black, APC::Rook); break;
+		case 'n': AddPieceFEN(shf++, tpcQueenKnight, CPC::Black, APC::Knight); break;
+		case 'b': AddPieceFEN(shf++, tpcQueenBishop, CPC::Black, APC::Bishop); break;
+		case 'q': AddPieceFEN(shf++, tpcQueen, CPC::Black, APC::Queen); break;
+		case 'k': AddPieceFEN(shf++, tpcKing, CPC::Black, APC::King); break;
+		case 'P': AddPieceFEN(shf++, tpcPawnFirst, CPC::White, APC::Pawn); break;
+		case 'R': AddPieceFEN(shf++, tpcQueenRook, CPC::White, APC::Rook); break;
+		case 'N': AddPieceFEN(shf++, tpcQueenKnight, CPC::White, APC::Knight); break;
+		case 'B': AddPieceFEN(shf++, tpcQueenBishop, CPC::White, APC::Bishop); break;
+		case 'Q': AddPieceFEN(shf++, tpcQueen, CPC::White, APC::Queen); break;
+		case 'K': AddPieceFEN(shf++, tpcKing, CPC::White, APC::King); break;
+		case '/': shf = SHF(--rank, 0);  break;
 		case '1':
 		case '2': 
 		case '3': 
@@ -238,7 +238,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
 		case '6':
 		case '7':
 		case '8':
-			sq += *pch - L'0'; 
+			shf += *pch - L'0'; 
 			break;
 		default:
 			/* TODO: illegal character in the string - report error */
@@ -257,7 +257,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
  * 
  *	Promoted  pawns are the real can of worms with this process.
  */
-void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
+void BD::AddPieceFEN(SHF shf, TPC tpc, CPC cpc, APC apc)
 {
 	/* if piece is already on the board, we need to go to work to find a place for 
 	 * this piece */
@@ -299,17 +299,18 @@ void BD::AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc)
 			/* try to put the piece in the correct king-side/queen-side slot; this
 			   is only important for clearing castle state */
 			TPC tpcPref = tpc;
-			if (sq.rank() == RankBackFromCpc(cpc))
-				tpcPref = sq.file() <= fileQueen ? TpcQueenSide(tpc) : TpcKingSide(tpc);
+			if (shf.rank() == RankBackFromCpc(cpc))
+				tpcPref = shf.file() <= fileQueen ? TpcQueenSide(tpc) : TpcKingSide(tpc);
 			if (SqFromTpc(tpcPref, cpc).fIsNil())
 				tpc = tpcPref;
 			break;
 		}
 	}
 
+	SQ sq = SqFromShf(shf);
 	(*this)(sq) = IPC(tpc, cpc, apc);
 	SqFromTpc(tpc, cpc) = sq;
-	SetBB((*this)(sq), sq);
+	SetBB((*this)(sq), shf);
 }
 
 
@@ -434,9 +435,9 @@ void BD::MakeMvSq(MV& mv)
 {
 	Validate();
 	assert(!mv.fIsNil());
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
-	IPC ipcFrom = (*this)(sqFrom);
+	SHF shfFrom = mv.shfFrom();
+	SHF shfTo = mv.shfTo();
+	IPC ipcFrom = (*this)(SqFromShf(shfFrom));
 	CPC cpcFrom = ipcFrom.cpc();
 	APC apcFrom = ipcFrom.apc();
 	assert(apcFrom != APC::Null);
@@ -444,25 +445,25 @@ void BD::MakeMvSq(MV& mv)
 	/* store undo information in the mv */
 
 	mv.SetCsEp(CsPackColor(csCur, cpcFrom), shfEnPassant);
-	SQ sqTake = sqTo;
+	SHF shfTake = shfTo;
 	if (apcFrom == APC::Pawn) {
-		if (sqTake.shf() == shfEnPassant)
-			sqTake = SQ(sqTo.rank() ^ 1, shfEnPassant.file());
+		if (shfTake == shfEnPassant)
+			shfTake = SHF(shfTo.rank() ^ 1, shfEnPassant.file());
 	}
 
 	/* captures. if we're taking a rook, we can't castle to that rook */
 
-	IPC ipcTake = (*this)(sqTake);
+	IPC ipcTake = (*this)(SqFromShf(shfTake));
 	if (!ipcTake.fIsEmpty()) {
-		TPC tpcTake = TpcFromSq(sqTake);
-		APC apcTake = ApcFromSq(sqTake);
+		TPC tpcTake = TpcFromSq(SqFromShf(shfTake));
+		APC apcTake = ApcFromSq(SqFromShf(shfTake));
 		if ((tpcTake == tpcQueenRook && (csCur & (csQueen << ~cpcFrom))) ||
 				(tpcTake == tpcKingRook && (csCur & (csKing << ~cpcFrom))))
 			apcTake = APC::RookCastleable;
 		mv.SetCapture(apcTake, tpcTake);
 
 		SqFromIpc(ipcTake) = sqNil;
-		ClearBB(ipcTake, sqTake);
+		ClearBB(ipcTake, shfTake);
 		
 		switch (ipcTake.tpc()) {
 		case tpcKingRook: 
@@ -478,55 +479,55 @@ void BD::MakeMvSq(MV& mv)
 
 	/* move the pieces */
 
-	(*this)(sqFrom) = ipcEmpty;
-	ClearBB(ipcFrom, sqFrom);
-	(*this)(sqTo) = ipcFrom;
-	SqFromIpc(ipcFrom) = sqTo;
-	SetBB(ipcFrom, sqTo);
+	(*this)(SqFromShf(shfFrom)) = ipcEmpty;
+	ClearBB(ipcFrom, shfFrom);
+	(*this)(SqFromShf(shfTo)) = ipcFrom;
+	SqFromIpc(ipcFrom) = SqFromShf(shfTo);
+	SetBB(ipcFrom, shfTo);
 
 	switch (apcFrom) {
 	case APC::Pawn:
 		/* save double-pawn moves for potential en passant and return */
-		if (((sqFrom.rank() ^ sqTo.rank()) & 0x03) == 0x02) {
-			SetEnPassant(SHF((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file()));
+		if (((shfFrom.rank() ^ shfTo.rank()) & 0x03) == 0x02) {
+			SetEnPassant(SHF((shfFrom.rank() + shfTo.rank()) / 2, shfTo.file()));
 			goto Done;
 		}
 		
-		if (sqTo.shf() == shfEnPassant) {
+		if (shfTo == shfEnPassant) {
 			/* take en passant - this is the case where we need to clear the taken piece
 			   instead of just replacing it */
-			(*this)(sqTake) = ipcEmpty;
+			(*this)(SqFromShf(shfTake)) = ipcEmpty;
 		}
-		else if (sqTo.rank() == 0 || sqTo.rank() == 7) {
+		else if (shfTo.rank() == 0 || shfTo.rank() == 7) {
 			/* pawn promotion on last rank */
 			IPC ipcPromote = IPC(ipcFrom.tpc(), cpcFrom, mv.apcPromote());
-			(*this)(sqTo) = ipcPromote;
-			ClearBB(ipcFrom, sqTo);
-			SetBB(ipcPromote, sqTo);
+			(*this)(SqFromShf(shfTo)) = ipcPromote;
+			ClearBB(ipcFrom, shfTo);
+			SetBB(ipcPromote, shfTo);
 		} 
 		break;
 
 	case APC::King:
 		ClearCastle(cpcFrom, csKing|csQueen);
-		if (sqFrom.file() - sqTo.file() > 1 || sqFrom.file() - sqTo.file() < -1) {
+		if (shfFrom.file() - shfTo.file() > 1 || shfFrom.file() - shfTo.file() < -1) {
 			/* castle moves */
-			int fileDst = sqTo.file();
+			int fileDst = shfTo.file();
 			assert(fileDst == fileKingKnight || fileDst == fileQueenBishop);
-			SQ sqRookFrom, sqRookTo;
+			SHF shfRookFrom, shfRookTo;
 			if (fileDst == fileKingKnight) {	// king side
-				sqRookFrom = sqTo + 1;
-				sqRookTo = sqTo - 1;
+				shfRookFrom = shfTo + 1;
+				shfRookTo = shfTo - 1;
 			}
 			else {	// must be queen side
-				sqRookFrom = sqTo - 2;
-				sqRookTo = sqTo + 1;
+				shfRookFrom = shfTo - 2;
+				shfRookTo = shfTo + 1;
 			}
-			IPC ipcRook = (*this)(sqRookFrom);
-			(*this)(sqRookFrom) = ipcEmpty;
-			ClearBB(ipcRook, sqRookFrom);
-			(*this)(sqRookTo) = ipcRook;
-			SqFromIpc(ipcRook) = sqRookTo;
-			SetBB(ipcRook, sqRookTo);
+			IPC ipcRook = (*this)(SqFromShf(shfRookFrom));
+			(*this)(SqFromShf(shfRookFrom)) = ipcEmpty;
+			ClearBB(ipcRook, shfRookFrom);
+			(*this)(SqFromShf(shfRookTo)) = ipcRook;
+			SqFromIpc(ipcRook) = SqFromShf(shfRookTo);
+			SetBB(ipcRook, shfRookTo);
 		}
 		break;
 
@@ -557,10 +558,10 @@ void BD::UndoMvSq(MV mv)
 {
 	/* unpack some useful information out of the move */
 
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SHF shfFrom = mv.shfFrom();
+	SHF shfTo = mv.shfTo();
 	assert(FIsEmpty(sqFrom));
-	IPC ipcMove = (*this)(sqTo);
+	IPC ipcMove = (*this)(SqFromShf(shfTo));
 	CPC cpcMove = ipcMove.cpc();
 
 	/* restore castle state. Castle state can only be added on an undo, so it's 
@@ -589,52 +590,52 @@ void BD::UndoMvSq(MV mv)
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
 
-	ClearBB(ipcMove, sqTo);
+	ClearBB(ipcMove, shfTo);
 	if (mv.apcPromote() != APC::Null)
 		ipcMove = IpcSetApc(ipcMove, APC::Pawn);
-	(*this)(sqFrom) = ipcMove;
-	SetBB(ipcMove, sqFrom);
-	SqFromIpc(ipcMove) = sqFrom;
+	(*this)(SqFromShf(shfFrom)) = ipcMove;
+	SetBB(ipcMove, shfFrom);
+	SqFromIpc(ipcMove) = SqFromShf(shfFrom);
 	APC apcMove = ipcMove.apc();	// get the type of moved piece after we've undone promotion
 
 	/* if move was a capture, put the captured piece back on the board; otherwise
 	   the destination square becomes empty */
 
 	if (apcCapt == APC::Null) 
-		(*this)(sqTo) = ipcEmpty;
+		(*this)(SqFromShf(shfTo)) = ipcEmpty;
 	else {
 		IPC ipcTake = IPC(mv.tpcCapture(), ~cpcMove, apcCapt);
-		SQ sqTake = sqTo;
-		if (sqTake.shf() == shfEnPassant) {
+		SHF shfTake = shfTo;
+		if (shfTake == shfEnPassant) {
 			/* capture into the en passant square must be pawn x pawn */
-			assert(ApcFromSq(sqTo) == APC::Pawn && apcCapt == APC::Pawn);
-			sqTake = SQ(shfEnPassant.rank() + cpcMove*2 - 1, shfEnPassant.file());
-			(*this)(sqTo) = ipcEmpty;
+			assert(ApcFromSq(SqFromShf(shfTo)) == APC::Pawn && apcCapt == APC::Pawn);
+			shfTake = SHF(shfEnPassant.rank() + cpcMove*2 - 1, shfEnPassant.file());
+			(*this)(SqFromShf(shfTo)) = ipcEmpty;
 		}
-		(*this)(sqTake) = ipcTake;
-		SqFromIpc(ipcTake) = sqTake;
-		SetBB(ipcTake, sqTake);
+		(*this)(SqFromShf(shfTake)) = ipcTake;
+		SqFromIpc(ipcTake) = SqFromShf(shfTake);
+		SetBB(ipcTake, shfTake);
 	}
 
 	/* undoing a castle means we need to undo the rook, too */
 
 	if (apcMove == APC::King) {
-		int dfile = sqTo.file() - sqFrom.file();
+		int dfile = shfTo.file() - shfFrom.file();
 		if (dfile < -1) { /* queen side castle */
-			IPC ipcRook = (*this)(sqTo + 1);
-			ClearBB(ipcRook, sqTo + 1);
-			SetBB(ipcRook, sqTo - 2);
-			(*this)(sqTo - 2) = ipcRook;
-			(*this)(sqTo + 1) = ipcEmpty;
-			SqFromIpc(ipcRook) = sqTo - 2;
+			IPC ipcRook = (*this)(SqFromShf(shfTo + 1));
+			ClearBB(ipcRook, shfTo + 1);
+			SetBB(ipcRook, shfTo - 2);
+			(*this)(SqFromShf(shfTo - 2)) = ipcRook;
+			(*this)(SqFromShf(shfTo + 1)) = ipcEmpty;
+			SqFromIpc(ipcRook) = SqFromShf(shfTo - 2);
 		}
 		else if (dfile > 1) { /* king side castle */
-			IPC ipcRook = (*this)(sqTo - 1);
-			ClearBB(ipcRook, sqTo - 1);
-			SetBB(ipcRook, sqTo + 1);
-			(*this)(sqTo + 1) = ipcRook;
-			(*this)(sqTo - 1) = ipcEmpty;
-			SqFromIpc(ipcRook) = sqTo + 1;
+			IPC ipcRook = (*this)(SqFromShf(shfTo - 1));
+			ClearBB(ipcRook, shfTo - 1);
+			SetBB(ipcRook, shfTo + 1);
+			(*this)(SqFromShf(shfTo + 1)) = ipcRook;
+			(*this)(SqFromShf(shfTo - 1)) = ipcEmpty;
+			SqFromIpc(ipcRook) = SqFromShf(shfTo + 1);
 		}
 	}
 

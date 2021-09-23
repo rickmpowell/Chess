@@ -1041,13 +1041,13 @@ public:
 	 *	state to have a square set by both colors. When making moves, clear before 
 	 *	you set and you shouldn't get in any trouble.
 	 */
-	inline void SetBB(IPC ipc, SQ sq) noexcept
+	inline void SetBB(IPC ipc, SHF shf) noexcept
 	{
-		BB bb(sq);
+		BB bb(shf);
 		mpapcbb[ipc.cpc()][ipc.apc()] += bb;
 		mpcpcbb[ipc.cpc()] += bb;
 		bbUnoccupied -= bb;
-		genhabd.TogglePiece(habd, sq, ipc);
+		genhabd.TogglePiece(habd, SqFromShf(shf), ipc);
 	}
 
 
@@ -1060,14 +1060,14 @@ public:
 	 *	theoretically have a piece in that square. It's up to the calling code to
 	 *	make sure this doesn't happen.
 	 */
-	inline void ClearBB(IPC ipc, SQ sq) noexcept
+	inline void ClearBB(IPC ipc, SHF shf) noexcept
 	{
-		BB bb(sq);
+		BB bb(shf);
 		mpapcbb[ipc.cpc()][ipc.apc()] -= bb;
 		mpcpcbb[ipc.cpc()] -= bb;
-		assert(!mpcpcbb[~ipc.cpc()].fSet(sq));
+		assert(!mpcpcbb[~ipc.cpc()].fSet(SqFromShf(shf)));
 		bbUnoccupied += bb;
-		genhabd.TogglePiece(habd, sq, ipc);
+		genhabd.TogglePiece(habd, SqFromShf(shf), ipc);
 	}
 
 	void ToggleToMove(void) noexcept
@@ -1088,7 +1088,7 @@ public:
 	 */
 
 	void InitFENPieces(const wchar_t*& szFEN);
-	void AddPieceFEN(SQ sq, TPC tpc, CPC cpc, APC apc);
+	void AddPieceFEN(SHF shf, TPC tpc, CPC cpc, APC apc);
 	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENCastle(const wchar_t*& sz);
 	void InitFENEnPassant(const wchar_t*& sz);
