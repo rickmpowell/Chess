@@ -535,7 +535,7 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 
 	static GMV gmvSelf;
 	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
-	EVAL evalMob = gmvSelf.cmv() - mvev.gmvReplyAll.cmv();
+	EVAL evalMob = 100 * (gmvSelf.cmv() - mvev.gmvReplyAll.cmv()) / (gmvSelf.cmv() + mvev.gmvReplyAll.cmv());
 
 	if (fFull) {
 		LogData(L"Material " + to_wstring((int)vpcSelf) + L"-" + to_wstring((int)vpcNext));
@@ -773,13 +773,15 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 
 EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 {
-	EVAL eval;
-	eval = PLAI::EvalBdg(bdg, mvev, fFull);
+	cmvevEval++;
+
+	EVAL vpcNext = VpcFromCpc(bdg, bdg.cpcToMove);
+	EVAL vpcSelf = VpcFromCpc(bdg, ~bdg.cpcToMove);
+	EVAL evalMat = vpcSelf - vpcNext;
 	if (fFull) {
-		//normal_distribution<float> flDist(0.0, 25.0f);
-		//eval += flDist(rgen);
+		LogData(L"Material " + to_wstring((int)vpcSelf) + L"-" + to_wstring((int)vpcNext));
 	}
-	return eval;
+	return evalMat + EvalTempo(bdg.cpcToMove);
 }
 
 

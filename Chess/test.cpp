@@ -301,14 +301,14 @@ void TEST::ValidateEnPassant(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
 	if (*sz == '-') {
-		if (!ga.bdg.sqEnPassant.fIsNil())
+		if (!ga.bdg.shfEnPassant.fIsNil())
 			throw EXFAILTEST("en passant square mismatch");
 	}
 	else if (*sz >= 'a' && *sz <= 'h') {
 		int file = *sz - 'a';
 		sz++;
 		if (*sz >= '1' && *sz <= '8') {
-			if (ga.bdg.sqEnPassant != SQ(*sz - '1', file))
+			if (ga.bdg.shfEnPassant != SHF(*sz - '1', file))
 				throw EXFAILTEST("en passant square mismatch");
 			sz++;
 			if (*sz && *sz != ' ')
@@ -638,8 +638,20 @@ struct {
 	int cull;
 } rgperfttest[] = {
 	/*
+	 * perft tests from chessprogramming.org 
+	 */
+	{L"Initial", L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+			{1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 119060324ULL, 3195901860ULL, 84998978956ULL,
+			 2439530234167ULL, 69352859712417ULL, 2097651003696806ULL, 62854969236701747ULL, 1981066775000396239ULL}, 6},
+	{ L"Kiwipete", L"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", { 1ULL, 48ULL, 2039ULL, 97862LL, 4085603ULL, 193690690ULL, 8031647685ULL }, 5 },
+	{ L"Position 3", L"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", { 1ULL, 14ULL, 191ULL, 2812ULL, 43238ULL, 674624ULL, 11030083ULL, 178633661ULL, 3009794393ULL }, 7 },
+	{ L"Position 4", L"r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", { 1ULL, 6ULL, 264ULL, 9467ULL, 422333ULL, 15833292ULL, 706045033ULL}, 6 },
+	{ L"Position 5", L"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", {1ULL, 44ULL, 1486ULL, 62379ULL, 2103487ULL, 89941194ULL}, 5 },
+	{ L"Position 6", L"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+			{ 1ULL, 46ULL, 2079ULL, 89890ULL, 3894594ULL, 164075551ULL, 6923051137ULL, 287188994746ULL, 11923589843526ULL,
+			  490154852788714ULL }, 5 },
+	/*
 	 *	perft test suite from algerbrex
-	 * 
 	 *	https://github.com/algerbrex/blunder/blob/main/tests/perftsuite.txt
 	 */
 	{L"Mini White King-Side Castle", L"4k3/8/8/8/8/8/8/4K2R w K - 0 1", {1ULL, 15ULL, 66ULL, 1197ULL, 7059ULL, 133987ULL, 764643ULL}, 6},
@@ -802,20 +814,7 @@ struct {
 	{L"Perftsuite 159", L"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", {1ULL, 0, 0, 0, 0, 89941194ULL}, 5 },
 	{L"Perftsuite 160", L"1k6/1b6/8/8/7R/8/8/4K2R b K - 0 1", {1ULL, 0, 0, 0, 0, 1063513ULL}, 5 },
 	{L"Perftsuite 161", L"3k4/3p4/8/K1P4r/8/8/8/8 b - -0 1", {1ULL, 0, 0, 0, 0, 0, 1134888ULL}, 6 },
-	{L"Perftsuite 162", L"8/8/4k3/8/2p5/8/B2P2K1/8 w - -0 1", {1ULL, 0, 0, 0, 0, 0, 1015133ULL}, 6 },
-
-	/* perft tests from chessprogramming.org */
-
-	{L"Initial", L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 
-			{1ULL, 20ULL, 400ULL, 8902ULL, 197281ULL, 4865609ULL, 119060324ULL, 3195901860ULL, 84998978956ULL, 
-		     2439530234167ULL, 69352859712417ULL, 2097651003696806ULL, 62854969236701747ULL, 1981066775000396239ULL}, 6},
-	{ L"Kiwipete", L"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", { 1ULL, 48ULL, 2039ULL, 97862LL, 4085603ULL, 193690690ULL, 8031647685ULL }, 5 },
-	{ L"Position 3", L"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", { 1ULL, 14ULL, 191ULL, 2812ULL, 43238ULL, 674624ULL, 11030083ULL, 178633661ULL, 3009794393ULL }, 7 },
-	{ L"Position 4", L"r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", { 1ULL, 6ULL, 264ULL, 9467ULL, 422333ULL, 15833292ULL, 706045033ULL}, 6 },
-	{ L"Position 5", L"rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", {1ULL, 44ULL, 1486ULL, 62379ULL, 2103487ULL, 89941194ULL}, 5 },
-	{ L"Position 6", L"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
-			{ 1ULL, 46ULL, 2079ULL, 89890ULL, 3894594ULL, 164075551ULL, 6923051137ULL, 287188994746ULL, 11923589843526ULL, 
-		      490154852788714ULL }, 5 }
+	{L"Perftsuite 162", L"8/8/4k3/8/2p5/8/B2P2K1/8 w - -0 1", {1ULL, 0, 0, 0, 0, 0, 1015133ULL}, 6 }
 };
 
 void GA::PerftTest(void)

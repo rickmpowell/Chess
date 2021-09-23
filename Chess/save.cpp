@@ -173,7 +173,7 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 
 	switch (apc) {
 	case APC::Pawn:
-		if (sqTo == sqEnPassant)
+		if (sqTo.shf() == shfEnPassant)
 			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
 		break;
 
@@ -231,7 +231,7 @@ FinishCastle:
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
-	if (apc == APC::Pawn && sqTo == sqEnPassant) {
+	if (apc == APC::Pawn && sqTo.shf() == shfEnPassant) {
 		if (fPretty)
 			*pch++ = chNonBreakingSpace;	
 		*pch++ = L'e';

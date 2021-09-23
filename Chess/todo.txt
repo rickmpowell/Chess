@@ -1,3 +1,4 @@
+  BD: remove x88 board
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run

@@ -254,9 +254,9 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
  *	The top 3 bits are the apc of the new piece on pawn promotions. 
  * 
  *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
- *  +-----------+-----------+-----------+-----------+
- *  |           to          |         from          |
- *  +-----------+-----------+-----------+-----------+
+ *  +-----------+--------+--------+--------+--------+
+ *  |           |       to        |      from       |
+ *  +-----------+--------+--------+--------+--------+
  *  +--------+-----+--------+--+--------+-----------+
  *  | promote|  cs | ep file|ep| cap apc|  cap tpc  |
  *  +--------+-----+--------+--+--------+-----------+
@@ -265,8 +265,9 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
 
 class MV {
 private:
-	uint32_t sqFromGrf : 8,
-		sqToGrf : 8,
+	uint32_t shfFromGrf: 6,
+		shfToGrf : 6,
+		padding: 4,
 		tpcCaptGrf : 4,
 		apcCaptGrf : 3,
 		fEnPassantGrf : 1,
@@ -277,17 +278,25 @@ private:
 public:
 	inline MV(void) 
 	{
-		*(uint32_t*)this = 0xffffffff;
+		*(uint32_t*)this = 0;
+	}
+
+	inline MV(SHF shfFrom, SHF shfTo, APC apcPromote = APC::Null) {
+		*(uint32_t*)this = 0;
+		shfFromGrf = shfFrom;
+		shfToGrf = shfTo;
+		apcPromoteGrf = apcPromote;
 	}
 
 	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
-		sqFromGrf = sqFrom;
-		sqToGrf = sqTo;
+		shfFromGrf = sqFrom.shf();
+		shfToGrf = sqTo.shf();
 		tpcCaptGrf = 0;
 		apcCaptGrf = APC::Null;
 		fEnPassantGrf = false;
 		csGrf = 0;
 		apcPromoteGrf = apcPromote;
+		padding = 0;
 	}
 	
 	inline operator uint32_t() const
@@ -295,14 +304,24 @@ public:
 		return *(uint32_t*)this;
 	}
 
+	inline SHF shfFrom(void) const
+	{
+		return shfFromGrf;
+	}
+
+	inline SHF shfTo(void) const
+	{
+		return shfToGrf;
+	}
+
 	inline SQ sqFrom(void) const
 	{
-		return (SQ)sqFromGrf; 
+		return (SQ)SqFromShf(shfFromGrf); 
 	}
 
 	inline SQ sqTo(void) const 
 	{
-		return (SQ)sqToGrf;
+		return (SQ)SqFromShf(shfToGrf);
 	}
 	
 	inline APC apcPromote(void) const 
@@ -312,7 +331,7 @@ public:
 
 	inline bool fIsNil(void) const 
 	{
-		return sqFromGrf == 255 && sqToGrf == 255 && apcPromoteGrf == APC::ActMax;
+		return shfFromGrf == 0 && shfToGrf == 0;
 	}
 
 	inline MV& SetApcPromote(APC apc)
@@ -328,11 +347,12 @@ public:
 		return *this;  
 	}
 
-	inline MV& SetCsEp(int cs, SQ sqEP)
+	inline MV& SetCsEp(int cs, SHF shfEP)
 	{
 		csGrf = cs;
-		fileEnPassantGrf = sqEP.file();
-		fEnPassantGrf = !sqEP.fIsNil();
+		fEnPassantGrf = !shfEP.fIsNil();
+		if (fEnPassantGrf)
+			fileEnPassantGrf = shfEP.file();
 		return *this;
 	}
 
@@ -528,15 +548,13 @@ public:
 		assert(FValid());
 	}
 
-	inline void AppendMv(SQ sqFrom, SQ sqTo)
+	inline void AppendMv(SHF shfFrom, SHF shfTo)
 	{
 		assert(FValid());
-		assert(!sqFrom.fIsOffBoard());
-		assert(!sqTo.fIsOffBoard());
 		if (cmvCur < cmvPreMax) 
-			amv[cmvCur++] = MV(sqFrom, sqTo);
+			amv[cmvCur++] = MV(shfFrom, shfTo);
 		else
-			AppendMvOverflow(MV(sqFrom, sqTo));
+			AppendMvOverflow(MV(shfFrom, shfTo));
 	}
 
 	void Resize(int cmvNew)
@@ -810,7 +828,7 @@ public:
 	BB bbUnoccupied;	// empty squares
 	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	CPC cpcToMove;	/* side with the move */
-	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
+	SHF shfEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	BYTE csCur;	/* castle sides */
 	HABD habd;	/* board hash */
@@ -818,7 +836,7 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
+	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), shfEnPassant(bd.shfEnPassant), csCur(bd.csCur), habd(bd.habd)
 	{
 		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
 		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
@@ -841,12 +859,12 @@ public:
 	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
 	void GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const;
-	void GenGmvCastle(GMV& gmv, SQ sqFrom) const;
+	void GenGmvCastle(GMV& gmv, SHF shfFrom, CPC cpcMove) const;
 	void AddGmvMvPromotions(GMV& gmv, MV mv) const;
-	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq) const;
+	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dshf) const;
 	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq) const;
-	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo) const;
-	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dsq) const;
+	void GenGmvBbMvs(GMV& gmv, SHF shfFrom, BB bbTo) const;
+	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dshf) const;
 	
 	/*
 	 *	checking squares for attack 
@@ -872,8 +890,8 @@ public:
 		return FBbAttacked(BB(sqAttacked), cpcBy);
 	}
 
-	BB BbFwdSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept;
-	BB BbRevSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept;
+	BB BbFwdSlideAttacks(DIR dir, SHF shfFrom) const noexcept;
+	BB BbRevSlideAttacks(DIR dir, SHF shfFrom) const noexcept;
 	BB BbPawnAttacked(CPC cpcBy) const noexcept;
 	BB BbKingAttacked(CPC cpcBy) const noexcept;
 	BB BbKnightAttacked(CPC cpcBy) const noexcept;
@@ -885,7 +903,7 @@ public:
 	
 	inline bool FMvEnPassant(MV mv) const noexcept
 	{
-		return mv.sqTo() == sqEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
+		return mv.shfTo() == shfEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const noexcept
@@ -893,27 +911,30 @@ public:
 		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
-	inline void SetEnPassant(SQ sq) noexcept
+	inline void SetEnPassant(SHF shf) noexcept
 	{
-		if (!sqEnPassant.fIsNil())
-			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
-		sqEnPassant = sq;
-		if (!sqEnPassant.fIsNil())
-			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
+		if (!shfEnPassant.fIsNil())
+			genhabd.ToggleEnPassant(habd, shfEnPassant.file());
+		shfEnPassant = shf;
+		if (!shfEnPassant.fIsNil())
+			genhabd.ToggleEnPassant(habd, shfEnPassant.file());
 	}
 
 	inline IPC& operator()(int rank, int file) noexcept 
 	{ 
 		return *(IPC*)&mpsqipc[rank * 16 + file]; 
 	}
+
 	inline IPC& operator()(SQ sq) noexcept
 	{
 		return *(IPC*)&mpsqipc[sq]; 
 	}
+
 	inline const IPC& operator()(SQ sq) const noexcept
 	{
 		return *(IPC*)&mpsqipc[sq];
 	}
+
 	inline const IPC& operator()(int rank, int file) const noexcept
 	{
 		return *(IPC*)&mpsqipc[rank * 16 + file];
@@ -948,7 +969,9 @@ public:
 	{
 		return SqFromTpc(tpc, cpc);
 	}
-	inline SQ& operator()(IPC ipc) {
+
+	inline SQ& operator()(IPC ipc) 
+	{
 		return SqFromIpc(ipc);
 	}
 	

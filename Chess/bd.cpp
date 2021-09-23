@@ -67,8 +67,8 @@ HABD GENHABD::HabdFromBd(const BD& bd) const
 
 	/* en passant state */
 
-	if (!bd.sqEnPassant.fIsNil())
-		habd ^= rghabdEnPassant[bd.sqEnPassant.file()];
+	if (!bd.shfEnPassant.fIsNil())
+		habd ^= rghabdEnPassant[bd.shfEnPassant.file()];
 
 	/* current side to move */
 
@@ -97,32 +97,31 @@ MPBB::MPBB(void)
 
 	for (int rank = 0; rank < rankMax; rank++)
 		for (int file = 0; file < fileMax; file++) {
-			SQ sq(rank, file);
+			SHF shf(rank, file);
 
 			/* slides */
 			
 			for (int drank = -1; drank <= 1; drank++)
 				for (int dfile = -1; dfile <= 1; dfile++) {
-					int dsq = 16 * drank + dfile;
-					if (dsq == 0)
+					if (drank == 0 && dfile == 0)
 						continue;
 					DIR dir = DirFromDrankDfile(drank, dfile);
-					for (SQ sqNext = sq + dsq; !sqNext.fIsOffBoard(); sqNext += dsq) {
-						mpshfdirbbSlide[sq.shf()][(int)dir] |= BB(sqNext.fgrf());
-					}
+					for (int rankMove = rank + drank, fileMove = file + dfile;
+							((rankMove | fileMove) & ~7) == 0; rankMove += drank, fileMove += dfile)
+						mpshfdirbbSlide[shf][(int)dir] |= BB(SHF(rankMove, fileMove));
 				}
 
 			/* knights */
 
-			BB bb(sq);
+			BB bb(shf);
 			BB bb1 = BbWestOne(bb) | BbEastOne(bb);
 			BB bb2 = BbWestTwo(bb) | BbEastTwo(bb);
-			mpshfbbKnight[sq.shf()] = BbNorthTwo(bb1) | BbSouthTwo(bb1) | BbNorthOne(bb2) | BbSouthOne(bb2);
+			mpshfbbKnight[shf] = BbNorthTwo(bb1) | BbSouthTwo(bb1) | BbNorthOne(bb2) | BbSouthOne(bb2);
 
 			/* kings */
 
 			bb1 = BbEastOne(bb) | BbWestOne(bb);
-			mpshfbbKing[sq.shf()] = bb1 | BbNorthOne(bb1 | bb) | BbSouthOne(bb1 | bb);
+			mpshfbbKing[shf] = bb1 | BbNorthOne(bb1 | bb) | BbSouthOne(bb1 | bb);
 		}
 }
 
@@ -169,7 +168,7 @@ void BD::SetEmpty(void) noexcept
 
 	csCur = 0;
 	cpcToMove = CPC::White;
-	sqEnPassant = sqNil;
+	shfEnPassant = SHF();
 	
 	habd = 0L;
 }
@@ -191,7 +190,7 @@ bool BD::operator==(const BD& bd) const noexcept
 		if (mptpcsq[(int)CPC::White][tpc] != bd.mptpcsq[(int)CPC::White][tpc] ||
 				mptpcsq[(int)CPC::Black][tpc] != bd.mptpcsq[(int)CPC::Black][tpc])
 			return false;
-	return csCur == bd.csCur && sqEnPassant == bd.sqEnPassant && cpcToMove == bd.cpcToMove;
+	return csCur == bd.csCur && shfEnPassant == bd.shfEnPassant && cpcToMove == bd.cpcToMove;
 }
 
 
@@ -395,7 +394,7 @@ void BD::EnsureCastleRook(CPC cpc, TPC tpcCorner)
 void BD::InitFENEnPassant(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);
-	SetEnPassant(sqNil);
+	SetEnPassant(SHF());
 	int rank = -1, file = -1;
 	for (; *sz && *sz != L' '; sz++) {
 		if (*sz >= L'a' && *sz <= L'h')
@@ -406,7 +405,7 @@ void BD::InitFENEnPassant(const wchar_t*& sz)
 			rank = file = -1;
 	}
 	if (rank != -1 && file != -1)
-		SetEnPassant(SQ(rank, file));
+		SetEnPassant(SHF(rank, file));
 	SkipToSpace(sz);
 }
 
@@ -433,19 +432,22 @@ TPC BD::TpcUnusedPawn(CPC cpc) const
  */
 void BD::MakeMvSq(MV& mv)
 {
+	Validate();
+	assert(!mv.fIsNil());
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	IPC ipcFrom = (*this)(sqFrom);
 	CPC cpcFrom = ipcFrom.cpc();
 	APC apcFrom = ipcFrom.apc();
+	assert(apcFrom != APC::Null);
 
 	/* store undo information in the mv */
 
-	mv.SetCsEp(CsPackColor(csCur, cpcFrom), sqEnPassant);
+	mv.SetCsEp(CsPackColor(csCur, cpcFrom), shfEnPassant);
 	SQ sqTake = sqTo;
 	if (apcFrom == APC::Pawn) {
-		if (sqTake == sqEnPassant)
-			sqTake = SQ(sqTo.rank() ^ 1, sqEnPassant.file());
+		if (sqTake.shf() == shfEnPassant)
+			sqTake = SQ(sqTo.rank() ^ 1, shfEnPassant.file());
 	}
 
 	/* captures. if we're taking a rook, we can't castle to that rook */
@@ -486,11 +488,11 @@ void BD::MakeMvSq(MV& mv)
 	case APC::Pawn:
 		/* save double-pawn moves for potential en passant and return */
 		if (((sqFrom.rank() ^ sqTo.rank()) & 0x03) == 0x02) {
-			SetEnPassant(SQ((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file()));
+			SetEnPassant(SHF((sqFrom.rank() + sqTo.rank()) / 2, sqTo.file()));
 			goto Done;
 		}
 		
-		if (sqTo == sqEnPassant) {
+		if (sqTo.shf() == shfEnPassant) {
 			/* take en passant - this is the case where we need to clear the taken piece
 			   instead of just replacing it */
 			(*this)(sqTake) = ipcEmpty;
@@ -540,7 +542,7 @@ void BD::MakeMvSq(MV& mv)
 		break;
 	}
 
-	SetEnPassant(sqNil);
+	SetEnPassant(SHF());
 Done:
 	ToggleToMove();
 	Validate();
@@ -580,9 +582,9 @@ void BD::UndoMvSq(MV mv)
 	   but we can generate the rank knowing the side that has the move */
 
 	if (mv.fEpPrev())
-		SetEnPassant(SQ(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev()));
+		SetEnPassant(SHF(cpcMove == CPC::White ? 5 : 2, mv.fileEpPrev()));
 	else
-		SetEnPassant(sqNil);
+		SetEnPassant(SHF());
 
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
@@ -603,10 +605,10 @@ void BD::UndoMvSq(MV mv)
 	else {
 		IPC ipcTake = IPC(mv.tpcCapture(), ~cpcMove, apcCapt);
 		SQ sqTake = sqTo;
-		if (sqTake == sqEnPassant) {
+		if (sqTake.shf() == shfEnPassant) {
 			/* capture into the en passant square must be pawn x pawn */
 			assert(ApcFromSq(sqTo) == APC::Pawn && apcCapt == APC::Pawn);
-			sqTake = SQ(sqEnPassant.rank() + cpcMove*2 - 1, sqEnPassant.file());
+			sqTake = SQ(shfEnPassant.rank() + cpcMove*2 - 1, shfEnPassant.file());
 			(*this)(sqTo) = ipcEmpty;
 		}
 		(*this)(sqTake) = ipcTake;
@@ -758,7 +760,7 @@ BB BD::BbKnightAttacked(CPC cpcBy) const noexcept
  *	ray that has a piece on it (either self of opponent color). So it includes
  *	not only squares that can be moved to, but also pieces that are defended.
  */
-BB BD::BbFwdSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept
+BB BD::BbFwdSlideAttacks(DIR dir, SHF shfFrom) const noexcept
 {
 	assert(dir == DIR::East || dir == DIR::NorthWest || dir == DIR::North || dir == DIR::NorthEast);
 	BB bbAttacks = mpbb.BbSlideTo(shfFrom, dir);
@@ -773,7 +775,7 @@ BB BD::BbFwdSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept
  *	Returns bitboard of squares a sliding piece attacks in the direction given.
  *	Only works for reverse moves (south, southwest, southeast, and west).
  */
-BB BD::BbRevSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept
+BB BD::BbRevSlideAttacks(DIR dir, SHF shfFrom) const noexcept
 {
 	assert(dir == DIR::West || dir == DIR::SouthWest || dir == DIR::South || dir == DIR::SouthEast);
 	BB bbAttacks = mpbb.BbSlideTo(shfFrom, dir);
@@ -787,7 +789,7 @@ BB BD::BbRevSlideAttacks(DIR dir, uint8_t shfFrom) const noexcept
 bool BD::FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept
 {
 	for (BB bbBishops = mpapcbb[cpcBy][APC::Bishop]; bbBishops; bbBishops.ClearLow()) {
-		uint8_t shf = bbBishops.shfLow();
+		SHF shf = bbBishops.shfLow();
 		if (BbFwdSlideAttacks(DIR::NorthEast, shf) & bb)
 			return true;
 		if (BbFwdSlideAttacks(DIR::NorthWest, shf) & bb)
@@ -804,7 +806,7 @@ bool BD::FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept
 bool BD::FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept
 {
 	for (BB bbRooks = mpapcbb[cpcBy][APC::Rook]; bbRooks; bbRooks.ClearLow()) {
-		uint8_t shf = bbRooks.shfLow();
+		SHF shf = bbRooks.shfLow();
 		if (BbFwdSlideAttacks(DIR::North, shf) & bb)
 			return true;
 		if (BbFwdSlideAttacks(DIR::East, shf) & bb)
@@ -821,7 +823,7 @@ bool BD::FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept
 bool BD::FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept
 {
 	for (BB bbQueens = mpapcbb[cpcBy][APC::Queen]; bbQueens; bbQueens.ClearLow()) {
-		uint8_t shf = bbQueens.shfLow();
+		SHF shf = bbQueens.shfLow();
 		if (BbFwdSlideAttacks(DIR::North, shf) & bb)
 			return true;
 		if (BbFwdSlideAttacks(DIR::East, shf) & bb)
@@ -886,37 +888,37 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 	/* generate knight moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Knight]; bb; bb.ClearLow()) {
-		uint8_t shfFrom = bb.shfLow();
+		SHF shfFrom = bb.shfLow();
 		BB bbTo = mpbb.BbKnightTo(shfFrom);
-		GenGmvBbMvs(gmv, SqFromShf(shfFrom), bbTo - mpcpcbb[cpcMove]);
+		GenGmvBbMvs(gmv, shfFrom, bbTo - mpcpcbb[cpcMove]);
 	}
 
 	/* generate bishop moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Bishop]; bb; bb.ClearLow()) {
-		uint8_t shfFrom = bb.shfLow();
+		SHF shfFrom = bb.shfLow();
 		BB bbTo = BbFwdSlideAttacks(DIR::NorthEast, shfFrom) |
 				BbRevSlideAttacks(DIR::SouthEast, shfFrom) |
 				BbRevSlideAttacks(DIR::SouthWest, shfFrom) |
 				BbFwdSlideAttacks(DIR::NorthWest, shfFrom);
-		GenGmvBbMvs(gmv, SqFromShf(shfFrom), bbTo - mpcpcbb[cpcMove]);
+		GenGmvBbMvs(gmv, shfFrom, bbTo - mpcpcbb[cpcMove]);
 	}
 
 	/* generate rook moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Rook]; bb; bb.ClearLow()) {
-		uint8_t shfFrom = bb.shfLow();
+		SHF shfFrom = bb.shfLow();
 		BB bbTo = BbFwdSlideAttacks(DIR::North, shfFrom) |
 				BbFwdSlideAttacks(DIR::East, shfFrom) |
 				BbRevSlideAttacks(DIR::South, shfFrom) |
 				BbRevSlideAttacks(DIR::West, shfFrom);
-		GenGmvBbMvs(gmv, SqFromShf(shfFrom), bbTo - mpcpcbb[cpcMove]);
+		GenGmvBbMvs(gmv, shfFrom, bbTo - mpcpcbb[cpcMove]);
 	}
 
 	/* generate queen moves */
 
 	for (BB bb = mpapcbb[cpcMove][APC::Queen]; bb; bb.ClearLow()) {
-		uint8_t shfFrom = bb.shfLow();
+		SHF shfFrom = bb.shfLow();
 		BB bbTo = BbFwdSlideAttacks(DIR::North, shfFrom) |
 				BbFwdSlideAttacks(DIR::NorthEast, shfFrom) |
 				BbFwdSlideAttacks(DIR::East, shfFrom) |
@@ -925,16 +927,16 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
 				BbRevSlideAttacks(DIR::SouthWest, shfFrom) |
 				BbRevSlideAttacks(DIR::West, shfFrom) |
 				BbFwdSlideAttacks(DIR::NorthWest, shfFrom);
-		GenGmvBbMvs(gmv, SqFromShf(shfFrom), bbTo - mpcpcbb[cpcMove]);
+		GenGmvBbMvs(gmv, shfFrom, bbTo - mpcpcbb[cpcMove]);
 	}
 
 	/* generate king moves - only one king per side */
 
 	BB bbKing = mpapcbb[cpcMove][APC::King];
-	SQ sqFrom = SqFromShf(bbKing.shfLow());
-	BB bbTo = mpbb.BbKingTo(sqFrom.shf());
-	GenGmvBbMvs(gmv, sqFrom, bbTo - mpcpcbb[cpcMove]);
-	GenGmvCastle(gmv, sqFrom);
+	SHF shfFrom = bbKing.shfLow();
+	BB bbTo = mpbb.BbKingTo(shfFrom);
+	GenGmvBbMvs(gmv, shfFrom, bbTo - mpcpcbb[cpcMove]);
+	GenGmvCastle(gmv, shfFrom, cpcMove);
 }
 
 
@@ -943,11 +945,11 @@ void BD::GenGmvColor(GMV& gmv, CPC cpcMove) const
  *	Generates all moves with destination squares in bbTo and square offset to
  *	the soruce square dsq 
  */
-void BD::GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq) const
+void BD::GenGmvBbMvs(GMV& gmv, BB bbTo, int dshf) const
 {
 	for (; bbTo; bbTo.ClearLow()) {
-		SQ sqTo = SqFromShf(bbTo.shfLow());
-		gmv.AppendMv(sqTo + dsq, sqTo);
+		SHF shfTo = bbTo.shfLow();
+		gmv.AppendMv(shfTo + dshf, bbTo.shfLow());
 	}
 }
 
@@ -957,25 +959,25 @@ void BD::GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq) const
  *	Generates all moves with the source square sqFrom and the destination squares
  *	in bbTo.
  */
-void BD::GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo) const
+void BD::GenGmvBbMvs(GMV& gmv, SHF shfFrom, BB bbTo) const
 {
 	for (; bbTo; bbTo.ClearLow()) {
-		SQ sqTo = SqFromShf(bbTo.shfLow());
-		gmv.AppendMv(sqFrom, sqTo);
+		SHF shfTo = bbTo.shfLow();
+		gmv.AppendMv(shfFrom, shfTo);
 	}
 }
 
 
-void BD::GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq) const
+void BD::GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dshf) const
 {
 	if (bbTo & bbRankPromotion) {
 		for (BB bbT = bbTo & bbRankPromotion; bbT; bbT.ClearLow()) {
-			SQ sqTo = SqFromShf(bbT.shfLow());
-			AddGmvMvPromotions(gmv, MV(sqTo + dsq, sqTo));
+			SHF shfTo = bbT.shfLow();
+			AddGmvMvPromotions(gmv, MV(shfTo + dshf, shfTo));
 		}
 		bbTo -= bbRankPromotion;
 	}
-	GenGmvBbMvs(gmv, bbTo, dsq);
+	GenGmvBbMvs(gmv, bbTo, dshf);
 }
 
 
@@ -983,34 +985,34 @@ void BD::GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const
 {
 	if (cpcMove == CPC::White) {
 		BB bbTo = (bbPawns << 8) & bbUnoccupied;
-		GenGmvBbPawnMvs(gmv, bbTo, bbRank8, -16);
+		GenGmvBbPawnMvs(gmv, bbTo, bbRank8, -8);
 		bbTo = ((bbTo & bbRank3) << 8) & bbUnoccupied;
-		GenGmvBbMvs(gmv, bbTo, -32);
+		GenGmvBbMvs(gmv, bbTo, -16);
 		bbTo = ((bbPawns - bbFileA) << 7) & mpcpcbb[CPC::Black];
-		GenGmvBbPawnMvs(gmv, bbTo, bbRank8, -15);
+		GenGmvBbPawnMvs(gmv, bbTo, bbRank8, -7);
 		bbTo = ((bbPawns - bbFileH) << 9) & mpcpcbb[CPC::Black];
-		GenGmvBbPawnMvs(gmv, bbTo, bbRank8, -17);
+		GenGmvBbPawnMvs(gmv, bbTo, bbRank8, -9);
 	}
 	else {
 		BB bbTo = (bbPawns >> 8) & bbUnoccupied;
-		GenGmvBbPawnMvs(gmv, bbTo, bbRank1, 16);
+		GenGmvBbPawnMvs(gmv, bbTo, bbRank1, 8);
 		bbTo = ((bbTo & bbRank6) >> 8) & bbUnoccupied;
-		GenGmvBbMvs(gmv, bbTo, 32);
+		GenGmvBbMvs(gmv, bbTo, 16);
 		bbTo = ((bbPawns - bbFileA) >> 9) & mpcpcbb[CPC::White];
-		GenGmvBbPawnMvs(gmv, bbTo, bbRank1, 17);
+		GenGmvBbPawnMvs(gmv, bbTo, bbRank1, 9);
 		bbTo = ((bbPawns - bbFileH) >> 7) & mpcpcbb[CPC::White];
-		GenGmvBbPawnMvs(gmv, bbTo, bbRank1, 15);
+		GenGmvBbPawnMvs(gmv, bbTo, bbRank1, 7);
 	}
 	
-	if (!sqEnPassant.fIsNil()) {
-		BB bbEnPassant(sqEnPassant), bbFrom;
+	if (!shfEnPassant.fIsNil()) {
+		BB bbEnPassant(shfEnPassant), bbFrom;
 		if (cpcMove == CPC::White)
 			bbFrom = ((bbEnPassant - bbFileA) >> 9) | ((bbEnPassant - bbFileH) >> 7);
 		else
 			bbFrom = ((bbEnPassant - bbFileA) << 7) | ((bbEnPassant - bbFileH) << 9);
 		for (bbFrom &= bbPawns; bbFrom; bbFrom.ClearLow()) {
-			SQ sqFrom = SqFromShf(bbFrom.shfLow());
-			gmv.AppendMv(sqFrom, sqEnPassant);
+			SHF shfFrom = bbFrom.shfLow();
+			gmv.AppendMv(shfFrom, shfEnPassant);
 		}
 	}
 
@@ -1038,17 +1040,16 @@ void BD::AddGmvMvPromotions(GMV& gmv, MV mv) const
  *	check and intermediate squares are not under attack, checks for intermediate 
  *	squares are empty, but does not check the final king destination for in check.
  */
-void BD::GenGmvCastle(GMV& gmv, SQ sqKing) const
+void BD::GenGmvCastle(GMV& gmv, SHF shfKing, CPC cpcMove) const
 {
-	CPC cpcKing = (*this)(sqKing).cpc();
-	BB bbKing = BB(sqKing);
-	if (FCanCastle(cpcKing, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
-		if (!FBbAttacked(bbKing | (bbKing << 1), ~cpcKing))
-			gmv.AppendMv(sqKing, sqKing + 2);
+	BB bbKing = BB(shfKing);
+	if (FCanCastle(cpcMove, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
+		if (!FBbAttacked(bbKing | (bbKing << 1), ~cpcMove))
+			gmv.AppendMv(shfKing, shfKing + 2);
 	}
-	if (FCanCastle(cpcKing, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
-		if (!FBbAttacked(bbKing | (bbKing >> 1), ~cpcKing)) 
-			gmv.AppendMv(sqKing, sqKing - 2);
+	if (FCanCastle(cpcMove, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
+		if (!FBbAttacked(bbKing | (bbKing >> 1), ~cpcMove)) 
+			gmv.AppendMv(shfKing, shfKing - 2);
 	}
 }
 
@@ -1168,7 +1169,7 @@ void BD::Validate(void) const
 
 	/* check for valid en passant situations */
 
-	if (!sqEnPassant.fIsNil()) {
+	if (!shfEnPassant.fIsNil()) {
 	}
 
 	/* make sure hash is kept accurate */
@@ -1323,11 +1324,11 @@ wstring BDG::SzFEN(void) const
 	/* en passant */
 
 	sz += L' ';
-	if (sqEnPassant.fIsNil())
+	if (shfEnPassant.fIsNil())
 		sz += L'-';
 	else {
-		sz += (L'a' + sqEnPassant.file());
-		sz += (L'1' + sqEnPassant.rank());
+		sz += (L'a' + shfEnPassant.file());
+		sz += (L'1' + shfEnPassant.rank());
 	}
 
 	/* halfmove clock */

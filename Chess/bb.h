@@ -35,6 +35,52 @@ enum {
 const int rankMax = 8;
 
 
+class SHF
+{
+	uint8_t grf;
+public:
+	inline SHF(void) noexcept : grf(0xc0)
+	{
+	}
+
+	inline SHF(uint8_t grf) noexcept : grf(grf)
+	{
+	}
+
+	inline SHF(int rank, int file) noexcept : grf((rank << 3) | file)
+	{
+	}
+
+	inline int rank(void) const noexcept
+	{
+		assert(!fIsNil());
+		return (grf >> 3) & 7;
+	}
+
+	inline int file(void) const noexcept
+	{
+		assert(!fIsNil());
+		return grf & 7;
+	}
+
+	inline uint64_t fgrf(void) const noexcept
+	{
+		assert(grf < 64);
+		return 1ULL << grf;
+	}
+
+	inline operator uint8_t() const noexcept
+	{
+		return grf;
+	}
+
+	inline bool fIsNil(void) const noexcept
+	{
+		return grf == 0xc0;
+	}
+};
+
+
 /*
  *
  *	SQ type
@@ -126,9 +172,9 @@ public:
 		return SQ(rankMax - 1 - rank(), file()); 
 	}
 	
-	inline uint8_t shf(void) const noexcept
+	inline SHF shf(void) const noexcept
 	{
-		return (grf & 7) | ((grf >> 1) & 0x38); 
+		return SHF(rank(), file());
 	}
 	
 	inline uint64_t fgrf(void) const noexcept
@@ -148,7 +194,7 @@ public:
 	}
 };
 
-const SQ sqNil = SQ(0xff);
+const SQ sqNil;
 
 
 
@@ -255,9 +301,9 @@ inline int bitscanRev(uint64_t grf) noexcept
 }
 
 
-inline SQ SqFromShf(uint8_t shf)
+inline SQ SqFromShf(SHF shf)
 {
-	return SQ(shf >> 3, shf & 7);
+	return SQ((uint8_t)shf >> 3, (uint8_t)shf & 7);
 }
 
 
@@ -298,6 +344,10 @@ public:
 	}
 
 	inline BB(uint64_t grf) noexcept : grf(grf)
+	{
+	}
+
+	inline BB(SHF shf) noexcept : grf(shf.fgrf())
 	{
 	}
 
@@ -461,16 +511,16 @@ public:
 		return popcount(grf);
 	}
 
-	inline uint8_t shfLow(void) const noexcept
+	inline SHF shfLow(void) const noexcept
 	{
 		assert(grf);
-		return bitscan(grf);
+		return SHF(bitscan(grf));
 	}
 
-	inline uint8_t shfHigh(void) const noexcept
+	inline SHF shfHigh(void) const noexcept
 	{
 		assert(grf);
-		return bitscanRev(grf);
+		return SHF(bitscanRev(grf));
 	}
 
 	inline void ClearLow(void) noexcept
@@ -629,14 +679,14 @@ class MPBB
 public:
 	MPBB(void);
 	
-	inline BB BbSlideTo(uint8_t shf, DIR dir) noexcept
+	inline BB BbSlideTo(SHF shf, DIR dir) noexcept
 	{
 		assert(shf < 64);
 		assert((int)dir < 8);
-		return mpshfdirbbSlide[shf][(int)dir];
+		return mpshfdirbbSlide[shf][(unsigned)dir];
 	}
 
-	inline BB BbKingTo(uint8_t shf) noexcept
+	inline BB BbKingTo(SHF shf) noexcept
 	{
 		return mpshfbbKing[shf];
 	}
