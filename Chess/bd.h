@@ -286,19 +286,9 @@ public:
 		shfFromGrf = shfFrom;
 		shfToGrf = shfTo;
 		apcPromoteGrf = apcPromote;
-	}
-
-	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
-		shfFromGrf = sqFrom.shf();
-		shfToGrf = sqTo.shf();
-		tpcCaptGrf = 0;
-		apcCaptGrf = APC::Null;
-		fEnPassantGrf = false;
-		csGrf = 0;
-		apcPromoteGrf = apcPromote;
 		padding = 0;
 	}
-	
+
 	inline operator uint32_t() const
 	{
 		return *(uint32_t*)this;
@@ -312,16 +302,6 @@ public:
 	inline SHF shfTo(void) const
 	{
 		return shfToGrf;
-	}
-
-	inline SQ sqFrom(void) const
-	{
-		return (SQ)SqFromShf(shfFromGrf); 
-	}
-
-	inline SQ sqTo(void) const 
-	{
-		return (SQ)SqFromShf(shfToGrf);
 	}
 	
 	inline APC apcPromote(void) const 
@@ -539,8 +519,6 @@ public:
 	inline void AppendMv(MV mv)
 	{
 		assert(FValid()); 
-		assert(!mv.sqFrom().fIsOffBoard());
-		assert(!mv.sqTo().fIsOffBoard());
 		if (cmvCur < cmvPreMax)
 			amv[cmvCur++] = mv;
 		else
@@ -760,9 +738,9 @@ public:
 	 *
 	 *	Toggles the square/ipc in the hash at the given square.
 	 */
-	inline void TogglePiece(HABD& habd, SQ sq, IPC ipc) const
+	inline void TogglePiece(HABD& habd, SHF shf, IPC ipc) const
 	{
-		habd ^= rghabdPiece[sq.rank() * 8 + sq.file()][ipc.apc()][ipc.cpc()];
+		habd ^= rghabdPiece[shf][ipc.apc()][ipc.cpc()];
 	}
 
 
@@ -1047,7 +1025,7 @@ public:
 		mpapcbb[ipc.cpc()][ipc.apc()] += bb;
 		mpcpcbb[ipc.cpc()] += bb;
 		bbUnoccupied -= bb;
-		genhabd.TogglePiece(habd, SqFromShf(shf), ipc);
+		genhabd.TogglePiece(habd, shf, ipc);
 	}
 
 
@@ -1065,9 +1043,9 @@ public:
 		BB bb(shf);
 		mpapcbb[ipc.cpc()][ipc.apc()] -= bb;
 		mpcpcbb[ipc.cpc()] -= bb;
-		assert(!mpcpcbb[~ipc.cpc()].fSet(SqFromShf(shf)));
+		assert(!mpcpcbb[~ipc.cpc()].fSet(shf));
 		bbUnoccupied += bb;
-		genhabd.TogglePiece(habd, SqFromShf(shf), ipc);
+		genhabd.TogglePiece(habd, shf, ipc);
 	}
 
 	void ToggleToMove(void) noexcept
@@ -1103,10 +1081,10 @@ public:
 
 #ifndef NDEBUG
 	void Validate(void) const;
-	void ValidateBB(IPC ipc, SQ sq) const;
+	void ValidateBB(IPC ipc, SHF shf) const;
 #else
 	inline void Validate(void) const { }
-	inline void ValidateBB(IPC ipc, SQ sq) const { }
+	inline void ValidateBB(IPC ipc, SHF shf) const { }
 #endif
 };
 
@@ -1218,13 +1196,13 @@ public:
 
 	ERR ParseMv(const char*& pch, MV& mv) const;
 	ERR ParsePieceMv(const GMV& gmv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseSquareMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseSquareMv(const GMV& gmv, SHF shf, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
-	ERR ParseFileMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseRankMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	MV MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
-	MV MvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
-	TKMV TkmvScan(const char*& pch, SQ& sq) const;
+	ERR ParseFileMv(const GMV& gmv, SHF shf, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseRankMv(const GMV& gmv, SHF shf, const char* pchInit, const char*& pch, MV& mv) const;
+	MV MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SHF shfTo, const char* pchFirst, const char* pchLim) const;
+	MV MvMatchFromTo(const GMV& gmv, SHF shfFrom, SHF shfTo, const char* pchFirst, const char* pchLim) const;
+	TKMV TkmvScan(const char*& pch, SHF& shf) const;
 
 	/*
 	 *	importing FEN strings 
@@ -1258,12 +1236,12 @@ public:
 class ANO
 {
 	friend class UIBD;
-	SQ sqFrom, sqTo;
+	SHF shfFrom, shfTo;
 public:
 	ANO(void) { }
 	~ANO(void) { }
-	ANO(SQ sq) : sqFrom(sq), sqTo(sqNil) { }
-	ANO(SQ sqFrom, SQ sqTo) : sqFrom(sqFrom), sqTo(sqTo) { }
+	ANO(SHF shf) : shfFrom(shf), shfTo(SHF()) { }
+	ANO(SHF shfFrom, SHF shfTo) : shfFrom(shfFrom), shfTo(shfTo) { }
 };
 
 

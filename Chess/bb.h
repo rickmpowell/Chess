@@ -528,6 +528,16 @@ public:
 		return *this;
 	}
 
+	inline bool operator==(const BB& bb) const noexcept
+	{
+		return grf == bb.grf;
+	}
+
+	inline bool operator!=(const BB& bb) const noexcept
+	{
+		return grf != bb.grf;
+	}
+
 	operator bool() const noexcept
 	{
 		return grf != 0;
@@ -560,9 +570,9 @@ public:
 		grf &= grf - 1;
 	}
 
-	inline bool fSet(SQ sq) const noexcept
+	inline bool fSet(SHF shf) const noexcept
 	{
-		return (grf & sq.fgrf()) != 0;
+		return (grf & shf.fgrf()) != 0;
 	}
 };
 

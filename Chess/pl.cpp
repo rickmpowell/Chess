@@ -729,17 +729,17 @@ EVAL PLAI::VpcLateEndGame(const BDG& bdg, CPC cpcMove) const noexcept
  *	Uses a weight table to compute piece values. Weight tables are multpliers
  *	on the base value of the piece.
  */
-EVAL PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[APC::ActMax][64]) const noexcept
+EVAL PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcshfeval[APC::ActMax][64]) const noexcept
 {
 	EVAL vpc = 0;
-	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SHF shf = ((SQ)bdg.mptpcsq[cpcMove][tpc]).shf();
-		if (shf.fIsNil())
-			continue;
-		int rank = shf.rank();
-		if (cpcMove == CPC::White)
-			rank = rankMax - rank - 1;
-		vpc += mpapcsqeval[bdg.ApcFromShf(shf)][rank * 8 + shf.file()];
+	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
+		for (BB bb = bdg.mpapcbb[cpcMove][apc]; bb; bb.ClearLow()) {
+			SHF shf = bb.shfLow();
+			int rank = shf.rank();
+			if (cpcMove == CPC::White)
+				rank = rankMax - rank - 1;
+			vpc += mpapcshfeval[apc][SHF(rank, shf.file())];
+		}
 	}
 	return vpc;
 }

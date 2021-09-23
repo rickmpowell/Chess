@@ -186,7 +186,7 @@ void BD::SetEmpty(void) noexcept
  */
 bool BD::operator==(const BD& bd) const noexcept
 {
-	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+	for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc)
 		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
 			if (mpapcbb[cpc][apc] != bd.mpapcbb[cpc][apc])
 				return false;
@@ -378,7 +378,7 @@ void BD::EnsureCastleRook(CPC cpc, TPC tpcCorner)
 	if (sqRook == sqCorner)
 		return;
 	
-	assert(ApcFromSq(sqCorner) == APC::Rook);
+	assert(ApcFromShf(sqCorner.shf()) == APC::Rook);
 	
 	/* swap the rooks so the correct one is in castle position */
 
@@ -607,7 +607,7 @@ void BD::UndoMvSq(MV mv)
 		SHF shfTake = shfTo;
 		if (shfTake == shfEnPassant) {
 			/* capture into the en passant square must be pawn x pawn */
-			assert(ApcFromSq(SqFromShf(shfTo)) == APC::Pawn && apcCapt == APC::Pawn);
+			assert(ApcFromShf(shfTo) == APC::Pawn && apcCapt == APC::Pawn);
 			shfTake = SHF(shfEnPassant.rank() + cpcMove*2 - 1, shfEnPassant.file());
 			(*this)(shfTo) = ipcEmpty;
 		}
@@ -1092,13 +1092,13 @@ void BD::Validate(void) const
 	for (int rank = 0; rank < rankMax; rank++) {
 		int file;
 		for (file = 0; file < fileMax; file++) {
-			SQ sq(rank, file);
-			IPC ipc = (*this)(sq);
+			SHF shf(rank, file);
+			IPC ipc = (*this)(shf);
 			if (ipc == ipcEmpty)
 				continue;
 
-			assert(SqFromIpc(ipc) == sq);
-			ValidateBB(ipc, sq);
+			assert(SqFromIpc(ipc).shf() == shf);
+			ValidateBB(ipc, shf);
 
 			TPC tpcPc = ipc.tpc();
 			APC apc = ipc.apc();
@@ -1142,28 +1142,28 @@ void BD::Validate(void) const
 	/* check for valid castle situations */
 
 	if (csCur & csWhiteKing) {
-		assert((*this)(SQ(0, fileKing)).apc() == APC::King);
-		assert((*this)(SQ(0, fileKing)).cpc() == CPC::White);
-		assert((*this)(SQ(0, fileKingRook)).apc() == APC::Rook);
-		assert((*this)(SQ(0, fileKingRook)).cpc() == CPC::White);
+		assert((*this)(SHF(0, fileKing)).apc() == APC::King);
+		assert((*this)(SHF(0, fileKing)).cpc() == CPC::White);
+		assert((*this)(SHF(0, fileKingRook)).apc() == APC::Rook);
+		assert((*this)(SHF(0, fileKingRook)).cpc() == CPC::White);
 	}
 	if (csCur & csBlackKing) {
-		assert((*this)(SQ(7, fileKing)).apc() == APC::King);
-		assert((*this)(SQ(7, fileKing)).cpc() == CPC::Black);
-		assert((*this)(SQ(7, fileKingRook)).apc() == APC::Rook);
-		assert((*this)(SQ(7, fileKingRook)).cpc() == CPC::Black);
+		assert((*this)(SHF(7, fileKing)).apc() == APC::King);
+		assert((*this)(SHF(7, fileKing)).cpc() == CPC::Black);
+		assert((*this)(SHF(7, fileKingRook)).apc() == APC::Rook);
+		assert((*this)(SHF(7, fileKingRook)).cpc() == CPC::Black);
 	}
 	if (csCur & csWhiteQueen) {
-		assert((*this)(SQ(0, fileKing)).apc() == APC::King);
-		assert((*this)(SQ(0, fileKing)).cpc() == CPC::White);
-		assert((*this)(SQ(0, fileQueenRook)).apc() == APC::Rook);
-		assert((*this)(SQ(0, fileQueenRook)).cpc() == CPC::White);
+		assert((*this)(SHF(0, fileKing)).apc() == APC::King);
+		assert((*this)(SHF(0, fileKing)).cpc() == CPC::White);
+		assert((*this)(SHF(0, fileQueenRook)).apc() == APC::Rook);
+		assert((*this)(SHF(0, fileQueenRook)).cpc() == CPC::White);
 	}
 	if (csCur & csBlackQueen) {
-		assert((*this)(SQ(7, fileKing)).apc() == APC::King);
-		assert((*this)(SQ(7, fileKing)).cpc() == CPC::Black);
-		assert((*this)(SQ(7, fileQueenRook)).apc() == APC::Rook);
-		assert((*this)(SQ(7, fileQueenRook)).cpc() == CPC::Black);
+		assert((*this)(SHF(7, fileKing)).apc() == APC::King);
+		assert((*this)(SHF(7, fileKing)).cpc() == CPC::Black);
+		assert((*this)(SHF(7, fileQueenRook)).apc() == APC::Rook);
+		assert((*this)(SHF(7, fileQueenRook)).cpc() == CPC::Black);
 	}
 
 	/* check for valid en passant situations */
@@ -1178,17 +1178,17 @@ void BD::Validate(void) const
 }
 
 
-void BD::ValidateBB(IPC ipc, SQ sq) const
+void BD::ValidateBB(IPC ipc, SHF shf) const
 {
 	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
 		for (APC apc = APC::Null; apc < APC::ActMax; ++apc) {
 			if (cpc == ipc.cpc() && apc == ipc.apc()) {
-				assert(mpapcbb[cpc][apc].fSet(sq));
-				assert(mpcpcbb[cpc].fSet(sq));
-				assert(!bbUnoccupied.fSet(sq));
+				assert(mpapcbb[cpc][apc].fSet(shf));
+				assert(mpcpcbb[cpc].fSet(shf));
+				assert(!bbUnoccupied.fSet(shf));
 			}
 			else {
-				assert(!mpapcbb[cpc][apc].fSet(sq));
+				assert(!mpapcbb[cpc][apc].fSet(shf));
 			}
 		}
 

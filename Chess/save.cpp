@@ -330,15 +330,15 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
  */
 wstring BDG::SzDecodeMvPost(MV mv) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SHF shfFrom = mv.shfFrom();
+	SHF shfTo = mv.shfTo();
 	wstring sz;
-	sz += L'a' + sqFrom.file();
-	sz += to_wstring(sqFrom.rank() + 1);
+	sz += L'a' + shfFrom.file();
+	sz += to_wstring(shfFrom.rank() + 1);
 	if (mv.fIsCapture())
 		sz += L'x';
-	sz += L'a' + sqTo.file();
-	sz += to_wstring(sqTo.rank() + 1);
+	sz += L'a' + shfTo.file();
+	sz += to_wstring(shfTo.rank() + 1);
 	if (mv.apcPromote() != APC::Null) {
 		sz += chEqual;
 		sz += mpapcch[mv.apcPromote()];
