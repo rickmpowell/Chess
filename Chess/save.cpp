@@ -163,25 +163,25 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	GenGmv(gmv, RMCHK::NoRemove);
 
 	/* if destination square is unique, just include the destination square */
-	SQ sqFrom = mv.sqFrom();
-	APC apc = ApcFromSq(sqFrom);
-	SQ sqTo = mv.sqTo();
-	SQ sqCapture = sqTo;
+	SHF shfFrom = mv.shfFrom();
+	APC apc = ApcFromShf(shfFrom);
+	SHF shfTo = mv.shfTo();
+	SHF shfCapture = shfTo;
 
 	wchar_t sz[16];
 	wchar_t* pch = sz;
 
 	switch (apc) {
 	case APC::Pawn:
-		if (sqTo.shf() == shfEnPassant)
-			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
+		if (shfTo == shfEnPassant)
+			shfCapture = SHF(shfTo.rank() ^ 1, shfTo.file());
 		break;
 
 	case APC::King:
-		if (sqFrom.file() == fileKing) {
-			if (sqTo.file() == fileKingKnight)
+		if (shfFrom.file() == fileKing) {
+			if (shfTo.file() == fileKingKnight)
 				goto FinishCastle;
-			if (sqTo.file() == fileQueenBishop) {
+			if (shfTo.file() == fileQueenBishop) {
 				*pch++ = L'O';
 				*pch++ = chMinus;
 FinishCastle:
@@ -206,7 +206,7 @@ FinishCastle:
 		if (!fPretty)
 			*pch++ = mpapcch[apc];
 		else
-			*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
+			*pch++ = mpapcchFig[CpcFromShf(shfFrom)][apc];
 	}
 
 	/* for ambiguous moves, we need to add various from square qualifiers depending
@@ -214,24 +214,24 @@ FinishCastle:
 
 	if (FMvApcAmbiguous(gmv, mv)) {
 		if (!FMvApcFileAmbiguous(gmv, mv))
-			*pch++ = L'a' + sqFrom.file();
+			*pch++ = L'a' + shfFrom.file();
 		else {
 			if (FMvApcRankAmbiguous(gmv, mv))
-				*pch++ = L'a' + sqFrom.file();
-			*pch++ = L'1' + sqFrom.rank();
+				*pch++ = L'a' + shfFrom.file();
+			*pch++ = L'1' + shfFrom.rank();
 		}
 	}
-	else if (apc == APC::Pawn && !FIsEmpty(sqCapture))
-		*pch++ = L'a' + sqFrom.file();
+	else if (apc == APC::Pawn && !FIsEmpty(shfCapture))
+		*pch++ = L'a' + shfFrom.file();
 
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
-	if (!FIsEmpty(sqCapture))
+	if (!FIsEmpty(shfCapture))
 		*pch++ = fPretty ? chMultiply : 'x';
-	*pch++ = L'a' + sqTo.file();
-	*pch++ = L'1' + sqTo.rank();
+	*pch++ = L'a' + shfTo.file();
+	*pch++ = L'1' + shfTo.rank();
 
-	if (apc == APC::Pawn && sqTo.shf() == shfEnPassant) {
+	if (apc == APC::Pawn && shfTo == shfEnPassant) {
 		if (fPretty)
 			*pch++ = chNonBreakingSpace;	
 		*pch++ = L'e';
@@ -256,13 +256,13 @@ FinishMove:
 
 bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SHF shfFrom = mv.shfFrom();
+	SHF shfTo = mv.shfTo();
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvOther = gmv[imv];
-		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
+		if (mvOther.shfTo() != shfTo || mvOther.shfFrom() == shfFrom)
 			continue;
-		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom))
+		if (ApcFromShf(mvOther.shfFrom()) == ApcFromShf(shfFrom))
 			return true;
 	}
 	return false;
@@ -271,13 +271,13 @@ bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
 
 bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SHF shfFrom = mv.shfFrom();
+	SHF shfTo = mv.shfTo();
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvOther = gmv[imv];
-		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
+		if (mvOther.shfTo() != shfTo || mvOther.shfFrom() == shfFrom)
 			continue;
-		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().rank() == sqFrom.rank())
+		if (ApcFromShf(mvOther.shfFrom()) == ApcFromShf(shfFrom) && mvOther.shfFrom().rank() == shfFrom.rank())
 			return true;
 	}
 	return false;
@@ -286,13 +286,13 @@ bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
 
 bool BDG::FMvApcFileAmbiguous(const GMV& gmv, MV mv) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SHF shfFrom = mv.shfFrom();
+	SHF shfTo = mv.shfTo();
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvOther = gmv[imv];
-		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
+		if (mvOther.shfTo() != shfTo || mvOther.shfFrom() == shfFrom)
 			continue;
-		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().file() == sqFrom.file())
+		if (ApcFromShf(mvOther.shfFrom()) == ApcFromShf(shfFrom) && mvOther.shfFrom().file() == shfFrom.file())
 			return true;
 	}
 	return false;

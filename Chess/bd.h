@@ -830,7 +830,7 @@ public:
 	CPC cpcToMove;	/* side with the move */
 	SHF shfEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
-	BYTE csCur;	/* castle sides */
+	uint8_t csCur;	/* castle sides */
 	HABD habd;	/* board hash */
 
 public:
@@ -882,12 +882,12 @@ public:
 
 	/*	BD::FSqAttacked
 	 *	
-	 *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
-	 *	on sqAttacked is not considered to be attacking sqAttacked.
+	 *	Returns true if shfAttacked is attacked by some piece of the color cpcBy. The piece
+	 *	on shfAttacked is not considered to be attacking shfAttacked.
 	 */
-	inline bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
+	inline bool FSqAttacked(SHF shfAttacked, CPC cpcBy) const noexcept
 	{
-		return FBbAttacked(BB(sqAttacked), cpcBy);
+		return FBbAttacked(BB(shfAttacked), cpcBy);
 	}
 
 	BB BbFwdSlideAttacks(DIR dir, SHF shfFrom) const noexcept;
@@ -903,12 +903,12 @@ public:
 	
 	inline bool FMvEnPassant(MV mv) const noexcept
 	{
-		return mv.shfTo() == shfEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
+		return mv.shfTo() == shfEnPassant && ApcFromShf(mv.shfFrom()) == APC::Pawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const noexcept
 	{
-		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
+		return !FIsEmpty(mv.shfTo()) || FMvEnPassant(mv);
 	}
 
 	inline void SetEnPassant(SHF shf) noexcept
@@ -925,14 +925,14 @@ public:
 		return *(IPC*)&mpsqipc[rank * 16 + file]; 
 	}
 
-	inline IPC& operator()(SQ sq) noexcept
+	inline IPC& operator()(SHF shf) noexcept
 	{
-		return *(IPC*)&mpsqipc[sq]; 
+		return *(IPC*)&mpsqipc[SqFromShf(shf)]; 
 	}
 
-	inline const IPC& operator()(SQ sq) const noexcept
+	inline const IPC& operator()(SHF shf) const noexcept
 	{
-		return *(IPC*)&mpsqipc[sq];
+		return *(IPC*)&mpsqipc[SqFromShf(shf)];
 	}
 
 	inline const IPC& operator()(int rank, int file) const noexcept
@@ -980,24 +980,24 @@ public:
 		return SqFromIpc(ipc);
 	}
 
-	inline APC ApcFromSq(SQ sq) const noexcept
+	inline APC ApcFromShf(SHF shf) const noexcept
 	{
-		return (*this)(sq).apc();
+		return (*this)(shf).apc();
 	}
 	
-	inline TPC TpcFromSq(SQ sq) const noexcept
+	inline TPC TpcFromShf(SHF shf) const noexcept
 	{
-		return (*this)(sq).tpc();
+		return (*this)(shf).tpc();
 	}
 	
-	inline CPC CpcFromSq(SQ sq) const noexcept
+	inline CPC CpcFromShf(SHF shf) const noexcept
 	{ 
-		return (*this)(sq).cpc(); 
+		return (*this)(shf).cpc(); 
 	}
 	
-	inline bool FIsEmpty(SQ sq) const noexcept
+	inline bool FIsEmpty(SHF shf) const noexcept
 	{
-		return (*this)(sq).fIsEmpty();
+		return (*this)(shf).fIsEmpty();
 	}
 
 	inline bool FCanCastle(CPC cpc, int csSide) const noexcept
@@ -1080,7 +1080,7 @@ public:
 	 *	getting piece value of pieces/squares
 	 */
 
-	EVAL VpcFromSq(SQ sq) const noexcept;
+	EVAL VpcFromShf(SHF shf) const noexcept;
 	EVAL VpcTotalFromCpc(CPC cpc) const noexcept;
 
 	/*

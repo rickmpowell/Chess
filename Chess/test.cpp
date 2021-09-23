@@ -193,7 +193,7 @@ void TEST::ValidatePieces(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
 	int rank = 7;
-	SQ sq = SQ(rank, 0);
+	SHF shf = SHF(rank, 0);
 	APC apc = APC::Null;
 	CPC cpc = CPC::NoColor;
 	for (; *sz && *sz != ' '; sz++) {
@@ -201,7 +201,7 @@ void TEST::ValidatePieces(const char*& sz) const
 		case '/':  
 			if (--rank < 0)
 				throw EXPARSE("too many FEN ranks");
-			sq = SQ(rank, 0); 
+			shf = SHF(rank, 0); 
 			break;
 		case 'r': 
 		case 'R': apc = APC::Rook; goto CheckPiece; 
@@ -218,9 +218,9 @@ void TEST::ValidatePieces(const char*& sz) const
 			apc = APC::Pawn;
 CheckPiece:
 			cpc = islower(*sz) ? CPC::Black : CPC::White;
-			if (ga.bdg.ApcFromSq(sq) != apc || ga.bdg.CpcFromSq(sq) != cpc)
-				throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
-			sq++; 
+			if (ga.bdg.ApcFromShf(shf) != apc || ga.bdg.CpcFromShf(shf) != cpc)
+				throw EXFAILTEST("FEN piece mismatch at " + (string)SqFromShf(shf));
+			shf++; 
 			break;
 		case '1':
 		case '2':
@@ -230,9 +230,9 @@ CheckPiece:
 		case '6':
 		case '7':
 		case '8':
-			for (int dsq = *sz - L'0'; dsq > 0; dsq--, sq++) {
-				if (!ga.bdg.FIsEmpty(sq))
-					throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
+			for (int dshf = *sz - L'0'; dshf > 0; dshf--, shf++) {
+				if (!ga.bdg.FIsEmpty(shf))
+					throw EXFAILTEST("FEN piece mismatch at " + (string)SqFromShf(shf));
 			}
 			break;
 		default: 

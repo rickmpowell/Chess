@@ -527,9 +527,9 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 		   that isn't defended, which will improve alpha-beta pruning, but not something 
 		   we want to do on real board evaluation; a better heuristic would be to 
 		   exchange until quiescence */
-		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
-				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
-			vpcSelf -= bdg.VpcFromSq(mvev.mv.sqTo());
+		if (bdg.FSqAttacked(mvev.mv.shfTo(), bdg.cpcToMove) &&
+				!bdg.FSqAttacked(mvev.mv.shfTo(), ~bdg.cpcToMove))
+			vpcSelf -= bdg.VpcFromShf(mvev.mv.shfTo());
 	}
 	EVAL evalMat = vpcSelf - vpcNext;
 
@@ -733,13 +733,13 @@ EVAL PLAI::VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[AP
 {
 	EVAL vpc = 0;
 	for (TPC tpc = tpcPieceMin; tpc < tpcPieceMax; ++tpc) {
-		SQ sq = bdg.mptpcsq[cpcMove][tpc];
-		if (sq.fIsNil())
+		SHF shf = ((SQ)bdg.mptpcsq[cpcMove][tpc]).shf();
+		if (shf.fIsNil())
 			continue;
-		int rank = sq.rank();
+		int rank = shf.rank();
 		if (cpcMove == CPC::White)
 			rank = rankMax - rank - 1;
-		vpc += mpapcsqeval[bdg.ApcFromSq(sq)][rank * 8 + sq.file()];
+		vpc += mpapcsqeval[bdg.ApcFromShf(shf)][rank * 8 + shf.file()];
 	}
 	return vpc;
 }

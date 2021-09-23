@@ -476,7 +476,7 @@ void UIBD::DrawPieceSq(SQ sq)
 	if (sq.fIsNil())
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-	DrawPc(RcFromSq(sq), opacity, ga.bdg(sq));
+	DrawPc(RcFromSq(sq), opacity, ga.bdg(sq.shf()));
 }
 
 
@@ -489,7 +489,7 @@ void UIBD::DrawPieceSq(SQ sq)
 void UIBD::DrawDragPc(const RC& rc)
 {
 	assert(!sqDragInit.fIsNil());
-	DrawPc(rc, 1.0f, ga.bdg(sqDragInit));
+	DrawPc(rc, 1.0f, ga.bdg(sqDragInit.shf()));
 }
 
 
@@ -630,9 +630,9 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 	else
 		file = fileMax - 1 - file;
 	*psq = SQ(rank, file);
-	if (ga.bdg.FIsEmpty(*psq))
+	if (ga.bdg.FIsEmpty(psq->shf()))
 		return HTBD::Empty;
-	if (ga.bdg.CpcFromSq(*psq) != ga.bdg.cpcToMove)
+	if (ga.bdg.CpcFromShf(psq->shf()) != ga.bdg.cpcToMove)
 		return HTBD::OpponentPc;
 
 	if (FMoveablePc(*psq))

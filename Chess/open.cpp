@@ -662,10 +662,10 @@ MV BDG::MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ s
 {
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvSearch = gmv[imv];
-		if (mvSearch.sqTo() == sqTo && ApcFromSq(mvSearch.sqFrom()) == apc) {
-			if (fileFrom != -1 && fileFrom != mvSearch.sqFrom().file())
+		if (mvSearch.sqTo() == sqTo && ApcFromShf(mvSearch.shfFrom()) == apc) {
+			if (fileFrom != -1 && fileFrom != mvSearch.shfFrom().file())
 				continue;
-			if (rankFrom != -1 && rankFrom != mvSearch.sqFrom().rank())
+			if (rankFrom != -1 && rankFrom != mvSearch.shfFrom().rank())
 				continue;
 			return mvSearch;
 		}
