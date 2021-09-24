@@ -267,12 +267,12 @@ class MV {
 private:
 	uint32_t shfFromGrf: 6,
 		shfToGrf : 6,
-		padding: 4,
+		csGrf: 4,
 		tpcCaptGrf : 4,
 		apcCaptGrf : 3,
 		fEnPassantGrf : 1,
 		fileEnPassantGrf : 3,
-		csGrf : 2,
+		padding : 2,
 		apcPromoteGrf : 3;
 
 public:
@@ -618,29 +618,6 @@ enum {
 };
 
 
-/*	CsPackColor
- *
- *	Packs castle state (king- and queen- side) for the given color into 2 bits for 
- *	saving in the MV undo 
- */
-inline int CsPackColor(int csUnpack, CPC cpc)
-{
-	int csPack = csUnpack >> (BYTE)cpc;
-	return ((csPack>>1)&2) | (csPack&1);
-}
-
-
-/*	CsUnpackColor
- *
- *	Unpack castle state packed by CsPackColor. When undoing, this can be or-ed into 
- *	board's regular castle state, because undoing can never remove castle rights 
- */
-inline int CsUnpackColor(int csPack, CPC cpc)
-{
-	int csUnpack = (csPack&1) | ((csPack&2)<<1);
-	return csUnpack << (BYTE)cpc;
-}
-
 /*
  *
  *	Some convenience functions that return specific special locations on the board. This
@@ -673,26 +650,6 @@ inline int RankBackFromCpc(CPC cpc)
 }
 
 
-/*	RankInitPawnFromCpc
- *
- *	Initial rank of pawns for the given color. Either 1 or 6.
- */
-inline int RankInitPawnFromCpc(CPC cpc)
-{
-	return RankBackFromCpc(cpc) ^ 1;
-}
-
-
-/*	DsqPawnFromCpc
- *
- *	Number of squares a pawn of the given color moves
- */
-inline int DsqPawnFromCpc(CPC cpc)
-{
-	/* white -> 16, black -> -16 */
-	return 16 - ((int)cpc << 5);
-}
-
 /*
  *
  *	HABD
@@ -723,6 +680,7 @@ class BD;
 class GENHABD
 {
 private:
+	/* TODO: rearrange this to be 64 x cpc x apc */
 	HABD rghabdPiece[8 * 8][APC::ActMax][CPC::ColorMax];
 	HABD rghabdCastle[16];
 	HABD rghabdEnPassant[8];
@@ -738,9 +696,9 @@ public:
 	 *
 	 *	Toggles the square/ipc in the hash at the given square.
 	 */
-	inline void TogglePiece(HABD& habd, SHF shf, IPC ipc) const
+	inline void TogglePiece(HABD& habd, SHF shf, CPC cpc, APC apc) const
 	{
-		habd ^= rghabdPiece[shf][ipc.apc()][ipc.cpc()];
+		habd ^= rghabdPiece[shf][apc][cpc];
 	}
 
 
@@ -960,7 +918,11 @@ public:
 
 	inline APC ApcFromShf(SHF shf) const noexcept
 	{
-		return (*this)(shf).apc();
+		CPC cpc = CpcFromShf(shf);
+		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
+			if (mpapcbb[cpc][apc].fSet(shf))
+				return apc;
+		return APC::Null;
 	}
 	
 	inline TPC TpcFromShf(SHF shf) const noexcept
@@ -970,7 +932,7 @@ public:
 	
 	inline CPC CpcFromShf(SHF shf) const noexcept
 	{ 
-		return (*this)(shf).cpc(); 
+		return mpcpcbb[CPC::White].fSet(shf) ? CPC::White : CPC::Black;
 	}
 	
 	inline bool FIsEmpty(SHF shf) const noexcept
@@ -1019,13 +981,13 @@ public:
 	 *	state to have a square set by both colors. When making moves, clear before 
 	 *	you set and you shouldn't get in any trouble.
 	 */
-	inline void SetBB(IPC ipc, SHF shf) noexcept
+	inline void SetBB(CPC cpc, APC apc, SHF shf) noexcept
 	{
 		BB bb(shf);
-		mpapcbb[ipc.cpc()][ipc.apc()] += bb;
-		mpcpcbb[ipc.cpc()] += bb;
+		mpapcbb[cpc][apc] += bb;
+		mpcpcbb[cpc] += bb;
 		bbUnoccupied -= bb;
-		genhabd.TogglePiece(habd, shf, ipc);
+		genhabd.TogglePiece(habd, shf, cpc, apc);
 	}
 
 
@@ -1038,14 +1000,14 @@ public:
 	 *	theoretically have a piece in that square. It's up to the calling code to
 	 *	make sure this doesn't happen.
 	 */
-	inline void ClearBB(IPC ipc, SHF shf) noexcept
+	inline void ClearBB(CPC cpc, APC apc, SHF shf) noexcept
 	{
 		BB bb(shf);
-		mpapcbb[ipc.cpc()][ipc.apc()] -= bb;
-		mpcpcbb[ipc.cpc()] -= bb;
-		assert(!mpcpcbb[~ipc.cpc()].fSet(shf));
+		mpapcbb[cpc][apc] -= bb;
+		mpcpcbb[cpc] -= bb;
+		assert(!mpcpcbb[~cpc].fSet(shf));
 		bbUnoccupied += bb;
-		genhabd.TogglePiece(habd, shf, ipc);
+		genhabd.TogglePiece(habd, shf, cpc, apc);
 	}
 
 	void ToggleToMove(void) noexcept
@@ -1081,10 +1043,10 @@ public:
 
 #ifndef NDEBUG
 	void Validate(void) const;
-	void ValidateBB(IPC ipc, SHF shf) const;
+	void ValidateBB(CPC cpc, APC apc, SHF shf) const;
 #else
 	inline void Validate(void) const { }
-	inline void ValidateBB(IPC ipc, SHF shf) const { }
+	inline void ValidateBB(CPC cpc, APC apc, SHF shf) const { }
 #endif
 };
 

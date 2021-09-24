@@ -475,7 +475,7 @@ void UIBD::DrawPieceShf(SHF shf)
 	if (shf.fIsNil())
 		return;
 	float opacity = shfDragInit == shf ? 0.2f : 1.0f;
-	DrawPc(RcFromShf(shf), opacity, ga.bdg(shf));
+	DrawPc(RcFromShf(shf), opacity, ga.bdg.CpcFromShf(shf), ga.bdg.ApcFromShf(shf));
 }
 
 
@@ -488,7 +488,7 @@ void UIBD::DrawPieceShf(SHF shf)
 void UIBD::DrawDragPc(const RC& rc)
 {
 	assert(!shfDragInit.fIsNil());
-	DrawPc(rc, 1.0f, ga.bdg(shfDragInit));
+	DrawPc(rc, 1.0f, ga.bdg.CpcFromShf(shfDragInit), ga.bdg.ApcFromShf(shfDragInit));
 }
 
 
@@ -516,9 +516,9 @@ RC UIBD::RcGetDrag(void)
  *
  *	Draws the chess piece on the square at rc.
  */
-void UIBD::DrawPc(const RC& rcPc, float opacity, IPC ipc)
+void UIBD::DrawPc(const RC& rcPc, float opacity, CPC cpc, APC apc)
 {
-	if (ipc == ipcEmpty)
+	if (apc == APC::Null)
 		return;
 
 	/* the piece png has the 12 different chess pieces oriented like:
@@ -529,8 +529,8 @@ void UIBD::DrawPc(const RC& rcPc, float opacity, IPC ipc)
 	SIZ siz = pbmpPieces->GetSize();
 	float dxPiece = siz.width / 6.0f;
 	float dyPiece = siz.height / 2.0f;
-	float xPiece = mpapcxBitmap[ipc.apc()] * dxPiece;
-	float yPiece = (int)ipc.cpc() * dyPiece;
+	float xPiece = mpapcxBitmap[apc] * dxPiece;
+	float yPiece = (int)cpc * dyPiece;
 	DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
 }
 

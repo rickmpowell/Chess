@@ -32,6 +32,13 @@ enum {
 	fileMax = 8
 };
 
+enum {
+	rankWhiteBack = 0,
+	rankWhitePawn = 1,
+	rankBlackPawn = 6,
+	rankBlackBack = 7
+};
+
 const int rankMax = 8;
 
 
@@ -251,7 +258,7 @@ const SQ sqNil;
  */
 inline int popcount(uint64_t grf) noexcept
 {
-	/* TODO: use intrinsic */
+#ifdef NO_INTRINSICS
 	const uint64_t k1 = 0x5555555555555555LL;
 	const uint64_t k2 = 0x3333333333333333LL;
 	const uint64_t k4 = 0x0f0f0f0f0f0f0f0fLL;
@@ -260,6 +267,9 @@ inline int popcount(uint64_t grf) noexcept
 	grfT = (grfT & k2) + ((grfT >> 2) & k2);
 	grfT = (grfT + (grfT >> 4)) & k4;
 	return (int)((grfT * kf) >> 56);
+#else
+	return __builtin_popcountll(grf);
+#endif
 }
 
 
