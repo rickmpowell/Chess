@@ -525,8 +525,7 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 {
 	cmvevEval++;
 
-	EVAL evalNext = EvalPstFromCpc(bdg, bdg.cpcToMove);
-	EVAL evalSelf = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
+	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
 	if (!fFull) {
 		/* make a guess that this is a bad move if we're moving to an attacked square
 		   that isn't defended, which will improve alpha-beta pruning, but not something 
@@ -534,16 +533,15 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 		   to exchange until quiescence */
 		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
 				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
-			evalSelf -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
+			evalMat -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
 	}
-	EVAL evalMat = evalSelf - evalNext;
 
 	static GMV gmvSelf;
 	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
-	EVAL evalMob = 10*(gmvSelf.cmv() - mvev.gmvReplyAll.cmv());
+	EVAL evalMob = 20*(gmvSelf.cmv() - mvev.gmvReplyAll.cmv());
 
 	if (fFull) {
-		LogData(L"Material " + to_wstring(evalSelf) + L"-" + to_wstring(evalNext));
+		LogData(L"Material " + to_wstring(evalMat));
 		LogData(L"Mobility " + to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(mvev.gmvReplyAll.cmv()));
 	}
 	return (rgfAICoeffNum[0] * evalMat + rgfAICoeffNum[1] * evalMob + 50) / 100 + EvalTempo(bdg.cpcToMove);
@@ -551,33 +549,31 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 
 enum PHASE {
 	phaseMax = 24,
-	phaseOpening = 20,
-	phaseMid = 16,
-	phaseEnd = 6,
-	phaseLateEnd = 0
+	phaseOpening = 22,
+	phaseMid = 20,
+	phaseEnd = 6
 };
+
 
 /*	PLAI:EvalPstFromCpc
  *
- *	Returns the board evaluation for the given color. Basically determines what
- *	stage of the game we're in and dispatches to the appropriate evaluation
- *	function (opening, middle game, endgame)
+ *	Returns the board evaluation for the given color. 
  */
-EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcMove) const noexcept
+EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcEval) const noexcept
 {
-	int mpapcphase[APC::ActMax] = { 0, 0, 1, 1, 2, 4, 0 };
+	static const int mpapcphase[APC::ActMax] = { 0, 0, 1, 1, 2, 4, 0 };
 	int phase = 0;
 	EVAL mpcpcevalOpening[2] = { 0, 0 };
 	EVAL mpcpcevalMid[2] = { 0, 0 };
 	EVAL mpcpcevalEnd[2] = { 0, 0 };
 
-	for (APC apc = APC::Knight; apc <= APC::Queen; ++apc) {
+	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
 		phase += bdg.mpapcbb[CPC::White][apc].csq() * mpapcphase[apc];
 		phase += bdg.mpapcbb[CPC::Black][apc].csq() * mpapcphase[apc];
 		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc) {
 			for (BB bb = bdg.mpapcbb[cpc][apc]; bb; bb.ClearLow()) {
 				SQ sq = bb.sqLow();
-				if (cpcMove == CPC::White)
+				if (cpc == CPC::White)
 					sq = sq ^ SQ(rankMax - 1, 0);
 				mpcpcevalOpening[cpc] += mpapcsqevalOpening[apc][sq];
 				mpcpcevalMid[cpc] += mpapcsqevalMiddleGame[apc][sq];
@@ -588,20 +584,21 @@ EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcMove) const noexcept
 	phase = min(phase, phaseMax);
 
 	if (phase > phaseOpening)
-		return mpcpcevalOpening[cpcMove] - mpcpcevalOpening[~cpcMove];
+		return mpcpcevalOpening[cpcEval] - mpcpcevalOpening[~cpcEval];
 	
 	if (phase > phaseMid)
 		return EvalInterpolate(phase, 
-			mpcpcevalOpening[cpcMove] - mpcpcevalOpening[~cpcMove], phaseOpening,
-			mpcpcevalMid[cpcMove] - mpcpcevalMid[~cpcMove], phaseMid);
+			mpcpcevalOpening[cpcEval] - mpcpcevalOpening[~cpcEval], phaseOpening,
+			mpcpcevalMid[cpcEval] - mpcpcevalMid[~cpcEval], phaseMid);
 		
 	if (phase > phaseEnd)
 		return EvalInterpolate(phase, 
-			mpcpcevalMid[cpcMove] - mpcpcevalMid[~cpcMove], phaseMid, 
-			mpcpcevalEnd[cpcMove] - mpcpcevalEnd[~cpcMove], phaseEnd); 
+			mpcpcevalMid[cpcEval] - mpcpcevalMid[~cpcEval], phaseMid, 
+			mpcpcevalEnd[cpcEval] - mpcpcevalEnd[~cpcEval], phaseEnd); 
 	
-	return mpcpcevalEnd[cpcMove] - mpcpcevalEnd[~cpcMove];
+	return mpcpcevalEnd[cpcEval] - mpcpcevalEnd[~cpcEval];
 }
+
 
 EVAL PLAI::EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int phase2) const noexcept
 {
@@ -631,7 +628,7 @@ EVAL mpapcsqdevalOpening[APC::ActMax][64] = {
 	  -5,   0,   5,   5,   5,   5,   0,  -5,
 	   0,   0,  15,  25,  25,   0,   0,   0,
 	   5,   5,   5,  10,  10,   0,   5,   5,
-	   5,   0,  -5, -25, -25,  10,   0,   5,
+	   5,   5,  -5, -25, -25,  10,   5,   5,
 	   0,   0,   0,   0,   0,   0,   0,   0},
 	{-50, -40, -30, -30, -30, -30, -40, -50,	// Knight
 	 -40, -20,   0,   0,   0,   0, -20, -40,
@@ -853,8 +850,7 @@ EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 {
 	cmvevEval++;
 
-	EVAL evalNext = EvalPstFromCpc(bdg, bdg.cpcToMove);
-	EVAL evalSelf = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
+	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
 	if (!fFull) {
 		/* make a guess that this is a bad move if we're moving to an attacked square
 		   that isn't defended, which will improve alpha-beta pruning, but not something
@@ -862,11 +858,10 @@ EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 		   to exchange until quiescence */
 		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
 				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
-			evalSelf -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
+			evalMat -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
 	}
-	EVAL evalMat = evalSelf - evalNext;
 	if (fFull) {
-		LogData(L"Material " + to_wstring(evalSelf) + L"-" + to_wstring(evalNext));
+		LogData(L"Material " + to_wstring(evalMat));
 	}
 	return evalMat + EvalTempo(bdg.cpcToMove);
 }
