@@ -127,7 +127,7 @@ UIBD::UIBD(GA* pga) : UIP(pga),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(CPC::White), 
 		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		shfDragInit(SHF()), shfHover(SHF())
+		sqDragInit(SQ()), sqHover(SQ())
 {
 }
 
@@ -200,7 +200,7 @@ void UIBD::MakeMv(MV mv, SPMV spmv)
 {
 	for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
 		MV mvDrag = gmvDrag[imv];
-		if (mvDrag.shfFrom() == mv.shfFrom() && mvDrag.shfTo() == mv.shfTo())
+		if (mvDrag.sqFrom() == mv.sqFrom() && mvDrag.sqTo() == mv.sqTo())
 			goto FoundMove;
 	}
 	throw 1;
@@ -220,7 +220,7 @@ void UIBD::UndoMv(SPMV spmv)
 {
 	if (FSpmvAnimate(spmv) && ga.bdg.imvCur >= 0) {
 		MV mv = ga.bdg.vmvGame[ga.bdg.imvCur];
-		AnimateShfToShf(mv.shfTo(), mv.shfFrom(), DframeFromSpmv(spmv));
+		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	ga.bdg.UndoMv();
 	ga.bdg.GenGmv(gmvDrag, RMCHK::Remove);
@@ -288,7 +288,7 @@ void UIBD::Draw(const RC& rcDraw)
 	DrawGameState();
 	}
 
-	if (!shfDragInit.fIsNil())
+	if (!sqDragInit.fIsNil())
 		DrawDragPc(rcDragPc);
 }
 
@@ -327,13 +327,13 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
 	for (int rank = rankFirst; rank <= rankLast; rank++)
 		for (int file = fileFirst; file <= fileLast; file++) {
-			SHF shf(rank, file);
+			SQ sq(rank, file);
 			if ((rank + file) % 2 == 0)
-				FillRc(RcFromShf(shf), pbrDark);
+				FillRc(RcFromSq(sq), pbrDark);
 			MV mv;
-			if (FHoverShf(shf, mv))
+			if (FHoverSq(sq, mv))
 				DrawHoverMv(mv);
-			DrawPieceShf(shf);
+			DrawPieceSq(sq);
 		}
 }
 
@@ -351,7 +351,7 @@ void UIBD::DrawFileLabels(int fileFirst, int fileLast)
 	float yTop = rcSquares.bottom + dxyBorder+dxyOutline + dxyBorder;
 	float yBot = yTop + dyLabel;
 	for (int file = 0; file <= fileLast; file++) {
-		RC rc(RcFromShf(SHF(0, file)));
+		RC rc(RcFromSq(SQ(0, file)));
 		DrawSzCenter(wstring(szLabel), ptxLabel, RC(rc.left, yTop, rc.right, yBot), pbrDark);
 		szLabel[0]++;
 	}
@@ -372,7 +372,7 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 	float dxRight = rcSquares.left - (dxyBorder + dxyOutline + dxyBorder) - dxLabel/2.0f;
 	float dxLeft = dxRight - dxLabel;
 	for (int rank = rankFirst; rank <= rankLast; rank++) {
-		RC rc = RcFromShf(SHF(rank, 0));
+		RC rc = RcFromSq(SQ(rank, 0));
 		DrawSzCenter(wstring(szLabel), ptxLabel, RC(dxLeft, (rc.top + rc.bottom - dyLabel) / 2, dxRight, rc.bottom), pbrDark);
 		szLabel[0]++;
 	}
@@ -399,13 +399,13 @@ void UIBD::DrawGameState(void)
 }
 
 
-/*	UIBD::RcFromShf
+/*	UIBD::RcFromSq
  *
  *	Returns the rectangle of the given square on the screen
  */
-RC UIBD::RcFromShf(SHF shf) const
+RC UIBD::RcFromSq(SQ sq) const
 {
-	int rank = shf.rank(), file = shf.file();
+	int rank = sq.rank(), file = sq.file();
 	if (cpcPointOfView == CPC::White)
 		rank = rankMax - 1 - rank;
 	else
@@ -415,17 +415,17 @@ RC UIBD::RcFromShf(SHF shf) const
 }
 
 
-/*	UIBD::FHoverShf
+/*	UIBD::FHoverSq
  *
  *	Returns true if the square is the destination of move that originates in the
  *	tracking square sqHover. Returns the move itself in mv. 
  */
-bool UIBD::FHoverShf(SHF shf, MV& mv)
+bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
-	if (shfHover.fIsNil() || ga.bdg.gs != GS::Playing)
+	if (sqHover.fIsNil() || ga.bdg.gs != GS::Playing)
 		return false;
 	for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
-		if (gmvDrag[imv].shfFrom() == shfHover && gmvDrag[imv].shfTo() == shf) {
+		if (gmvDrag[imv].sqFrom() == sqHover && gmvDrag[imv].sqTo() == sq) {
 			mv = gmvDrag[imv];
 			return true;
 		}
@@ -445,7 +445,7 @@ void UIBD::DrawHoverMv(MV mv)
 {
 	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
-	RC rc = RcFromShf(mv.shfTo());
+	RC rc = RcFromSq(mv.sqTo());
 	if (!ga.bdg.FMvIsCapture(mv)) {
 		/* moving to an empty square - draw a circle */
 		ELL ell(rc.PtCenter(), PT(dxySquare / 5, dxySquare / 5));
@@ -466,16 +466,16 @@ void UIBD::DrawHoverMv(MV mv)
 }
 
 
-/*	UIBD::DrawPieceShf
+/*	UIBD::DrawPieceSq
  *
  *	Draws pieces on the board. 
  */
-void UIBD::DrawPieceShf(SHF shf)
+void UIBD::DrawPieceSq(SQ sq)
 {
-	if (shf.fIsNil())
+	if (sq.fIsNil())
 		return;
-	float opacity = shfDragInit == shf ? 0.2f : 1.0f;
-	DrawPc(RcFromShf(shf), opacity, ga.bdg.CpcFromShf(shf), ga.bdg.ApcFromShf(shf));
+	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
+	DrawPc(RcFromSq(sq), opacity, ga.bdg.CpcFromSq(sq), ga.bdg.ApcFromSq(sq));
 }
 
 
@@ -487,8 +487,8 @@ void UIBD::DrawPieceShf(SHF shf)
  */
 void UIBD::DrawDragPc(const RC& rc)
 {
-	assert(!shfDragInit.fIsNil());
-	DrawPc(rc, 1.0f, ga.bdg.CpcFromShf(shfDragInit), ga.bdg.ApcFromShf(shfDragInit));
+	assert(!sqDragInit.fIsNil());
+	DrawPc(rc, 1.0f, ga.bdg.CpcFromSq(sqDragInit), ga.bdg.ApcFromSq(sqDragInit));
 }
 
 
@@ -504,7 +504,7 @@ void UIBD::FillRcBack(const RC& rc) const
  */
 RC UIBD::RcGetDrag(void)
 {
-	RC rcInit = RcFromShf(shfDragInit);
+	RC rcInit = RcFromSq(sqDragInit);
 	RC rc(0, 0, dxySquare, dxySquare);
 	float dxInit = ptDragInit.x - rcInit.left;
 	float dyInit = ptDragInit.y - rcInit.top;
@@ -537,15 +537,15 @@ void UIBD::DrawPc(const RC& rcPc, float opacity, CPC cpc, APC apc)
 
 void UIBD::AnimateMv(MV mv, unsigned dframe)
 {
-	AnimateShfToShf(mv.shfFrom(), mv.shfTo(), dframe);
+	AnimateSqToSq(mv.sqFrom(), mv.sqTo(), dframe);
 }
 
 
-void UIBD::AnimateShfToShf(SHF shfFrom, SHF shfTo, unsigned framefMax)
+void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned framefMax)
 {
-	shfDragInit = shfFrom;
-	RC rcFrom = RcFromShf(shfDragInit);
-	RC rcTo = RcFromShf(shfTo);
+	sqDragInit = sqFrom;
+	RC rcFrom = RcFromSq(sqDragInit);
+	RC rcTo = RcFromSq(sqTo);
 	ptDragInit = rcFrom.PtTopLeft();
 	RC rcFrame = rcFrom;
 	for (unsigned framef = 0; framef < framefMax; framef++) {
@@ -556,7 +556,7 @@ void UIBD::AnimateShfToShf(SHF shfFrom, SHF shfTo, unsigned framefMax)
 		Redraw(rcFrame|rcDragPc);
 		rcFrame = rcDragPc;
 	}
-	shfDragInit = SHF();
+	sqDragInit = SQ();
 }
 
 
@@ -569,20 +569,20 @@ void UIBD::DrawAnnotations(void)
 {
 	OPACITYBR oopacitybr(pbrAnnotation, 0.5f);
 	for (ANO& ano : vano) {
-		if (ano.shfTo.fIsNil())
-			DrawSquareAnnotation(ano.shfFrom);
+		if (ano.sqTo.fIsNil())
+			DrawSquareAnnotation(ano.sqFrom);
 		else
-			DrawArrowAnnotation(ano.shfFrom, ano.shfTo);
+			DrawArrowAnnotation(ano.sqFrom, ano.sqTo);
 	}
 }
 
 
-void UIBD::DrawSquareAnnotation(SHF shf)
+void UIBD::DrawSquareAnnotation(SQ sq)
 {
 }
 
 
-void UIBD::DrawArrowAnnotation(SHF shfFrom, SHF shfTo)
+void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 {
 }
 
@@ -616,7 +616,7 @@ void UIBD::FlipBoard(CPC cpcNew)
  *
  *	The point is in global coordinates.
  */
-HTBD UIBD::HtbdHitTest(const PT& pt, SHF* pshf) const
+HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 {
 	if (!RcInterior().FContainsPt(pt))
 		return HTBD::None;
@@ -628,13 +628,13 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SHF* pshf) const
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
-	*pshf = SHF(rank, file);
-	if (ga.bdg.FIsEmpty(*pshf))
+	*psq = SQ(rank, file);
+	if (ga.bdg.FIsEmpty(*psq))
 		return HTBD::Empty;
-	if (ga.bdg.CpcFromShf(*pshf) != ga.bdg.cpcToMove)
+	if (ga.bdg.CpcFromSq(*psq) != ga.bdg.cpcToMove)
 		return HTBD::OpponentPc;
 
-	if (FMoveablePc(*pshf))
+	if (FMoveablePc(*psq))
 		return HTBD::MoveablePc;
 	else
 		return HTBD::UnmoveablePc;
@@ -646,11 +646,11 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SHF* pshf) const
  *	Returns true if the square contains a piece that has a
  *	legal move
  */
-bool UIBD::FMoveablePc(SHF shf) const
+bool UIBD::FMoveablePc(SQ sq) const
 {
-	assert(ga.bdg.CpcFromShf(shf) == ga.bdg.cpcToMove);
+	assert(ga.bdg.CpcFromSq(sq) == ga.bdg.cpcToMove);
 	for (int imv = 0; imv < gmvDrag.cmv(); imv++)
-		if (gmvDrag[imv].shfFrom() == shf)
+		if (gmvDrag[imv].sqFrom() == sq)
 			return true;
 	return false;
 }
@@ -662,14 +662,14 @@ bool UIBD::FMoveablePc(SHF shf) const
  */
 void UIBD::StartLeftDrag(const PT& pt)
 {
-	SHF shf;
-	HTBD htbd = HtbdHitTest(pt, &shf);
-	shfHover = SHF();
+	SQ sq;
+	HTBD htbd = HtbdHitTest(pt, &sq);
+	sqHover = SQ();
 	SetCapt(this);
 
 	if (htbd == HTBD::MoveablePc) {
 		ptDragInit = pt;
-		shfDragInit = shf;
+		sqDragInit = sq;
 		ptDragCur = pt;
 		rcDragPc = RcGetDrag();
 		Redraw();
@@ -683,16 +683,16 @@ void UIBD::StartLeftDrag(const PT& pt)
 void UIBD::EndLeftDrag(const PT& pt)
 {
 	ReleaseCapt();
-	if (shfDragInit.fIsNil())
+	if (sqDragInit.fIsNil())
 		return;
-	SHF shfFrom = shfDragInit;
-	shfDragInit = SHF();
-	SHF shfTo;
-	HtbdHitTest(pt, &shfTo);
-	if (!shfTo.fIsNil()) {
+	SQ sqFrom = sqDragInit;
+	sqDragInit = SQ();
+	SQ sqTo;
+	HtbdHitTest(pt, &sqTo);
+	if (!sqTo.fIsNil()) {
 		for (int imv = 0; imv < gmvDrag.cmv(); imv++) {
 			MV mv = gmvDrag[imv];
-			if (mv.shfFrom() == shfFrom && mv.shfTo() == shfTo) {
+			if (mv.sqFrom() == sqFrom && mv.sqTo() == sqTo) {
 				ga.PplFromCpc(ga.bdg.cpcToMove)->ReceiveMv(mv, SPMV::Fast);
 				goto Done;
 			}
@@ -716,9 +716,9 @@ Done:
  */
 void UIBD::LeftDrag(const PT& pt)
 {
-	SHF shf;
-	HtbdHitTest(pt, &shf);
-	if (shfDragInit.fIsNil()) {
+	SQ sq;
+	HtbdHitTest(pt, &sq);
+	if (sqDragInit.fIsNil()) {
 		EndLeftDrag(pt);
 		return;
 	}
@@ -738,9 +738,9 @@ void UIBD::LeftDrag(const PT& pt)
  */
 void UIBD::MouseHover(const PT& pt, MHT mht)
 {
-	SHF shf;
-	HTBD htbd = HtbdHitTest(pt, &shf);
-	HiliteLegalMoves(htbd == HTBD::MoveablePc ? shf : SHF());
+	SQ sq;
+	HTBD htbd = HtbdHitTest(pt, &sq);
+	HiliteLegalMoves(htbd == HTBD::MoveablePc ? sq : SQ());
 	switch (htbd) {
 	case HTBD::MoveablePc:
 		::SetCursor(ga.app.hcurHand);
@@ -763,11 +763,11 @@ void UIBD::MouseHover(const PT& pt, MHT mht)
  *	be redrawn with squares that the piece can move to with a
  *	hilight. If sq is sqNil, no hilights are drawn.
  */
-void UIBD::HiliteLegalMoves(SHF shf)
+void UIBD::HiliteLegalMoves(SQ sq)
 {
-	if (shf == shfHover)
+	if (sq == sqHover)
 		return;
-	shfHover = shf;
+	sqHover = sq;
 	Redraw();
 }
 

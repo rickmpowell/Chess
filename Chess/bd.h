@@ -146,8 +146,8 @@ inline APC& operator+=(APC& apc, int dapc)
 
 class MV {
 private:
-	uint32_t shfFromGrf : 6,
-		shfToGrf : 6,
+	uint32_t sqFromGrf : 6,
+		sqToGrf : 6,
 		csGrf : 4,
 		apcMoveGrf : 3,
 		apcCaptGrf : 3,
@@ -162,10 +162,10 @@ public:
 		*(uint32_t*)this = 0;
 	}
 
-	inline MV(SHF shfFrom, SHF shfTo, APC apcPromote = APC::Null) {
+	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
 		*(uint32_t*)this = 0;
-		shfFromGrf = shfFrom;
-		shfToGrf = shfTo;
+		sqFromGrf = sqFrom;
+		sqToGrf = sqTo;
 		apcPromoteGrf = apcPromote;
 		padding = 0;
 		apcMoveGrf = APC::Null;
@@ -176,14 +176,14 @@ public:
 		return *(uint32_t*)this;
 	}
 
-	inline SHF shfFrom(void) const
+	inline SQ sqFrom(void) const
 	{
-		return shfFromGrf;
+		return sqFromGrf;
 	}
 
-	inline SHF shfTo(void) const
+	inline SQ sqTo(void) const
 	{
-		return shfToGrf;
+		return sqToGrf;
 	}
 	
 	inline APC apcPromote(void) const 
@@ -193,7 +193,7 @@ public:
 
 	inline bool fIsNil(void) const 
 	{
-		return shfFromGrf == 0 && shfToGrf == 0;
+		return sqFromGrf == 0 && sqToGrf == 0;
 	}
 
 	inline MV& SetApcPromote(APC apc)
@@ -208,12 +208,12 @@ public:
 		return *this;  
 	}
 
-	inline MV& SetCsEp(int cs, SHF shfEP)
+	inline MV& SetCsEp(int cs, SQ sqEnPassant)
 	{
 		csGrf = cs;
-		fEnPassantGrf = !shfEP.fIsNil();
+		fEnPassantGrf = !sqEnPassant.fIsNil();
 		if (fEnPassantGrf)
-			fileEnPassantGrf = shfEP.file();
+			fileEnPassantGrf = sqEnPassant.file();
 		return *this;
 	}
 
@@ -402,13 +402,13 @@ public:
 		assert(FValid());
 	}
 
-	inline void AppendMv(SHF shfFrom, SHF shfTo)
+	inline void AppendMv(SQ sqFrom, SQ sqTo)
 	{
 		assert(FValid());
 		if (cmvCur < cmvPreMax) 
-			amv[cmvCur++] = MV(shfFrom, shfTo);
+			amv[cmvCur++] = MV(sqFrom, sqTo);
 		else
-			AppendMvOverflow(MV(shfFrom, shfTo));
+			AppendMvOverflow(MV(sqFrom, sqTo));
 	}
 
 	void Resize(int cmvNew)
@@ -572,9 +572,9 @@ public:
 	 *
 	 *	Toggles the square/ipc in the hash at the given square.
 	 */
-	inline void TogglePiece(HABD& habd, SHF shf, CPC cpc, APC apc) const
+	inline void TogglePiece(HABD& habd, SQ sq, CPC cpc, APC apc) const
 	{
-		habd ^= rghabdPiece[shf][apc][cpc];
+		habd ^= rghabdPiece[sq][apc][cpc];
 	}
 
 
@@ -638,7 +638,7 @@ public:
 	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
 	BB bbUnoccupied;	// empty squares
 	CPC cpcToMove;	/* side with the move */
-	SHF shfEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
+	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	uint8_t csCur;	/* castle sides */
 	HABD habd;	/* board hash */
@@ -646,7 +646,7 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), shfEnPassant(bd.shfEnPassant), csCur(bd.csCur), habd(bd.habd)
+	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
 	{
 		memcpy(mpapcbb, bd.mpapcbb, sizeof(mpapcbb));
 		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
@@ -667,12 +667,12 @@ public:
 	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
 	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
 	void GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const;
-	void GenGmvCastle(GMV& gmv, SHF shfFrom, CPC cpcMove) const;
+	void GenGmvCastle(GMV& gmv, SQ sqFrom, CPC cpcMove) const;
 	void AddGmvMvPromotions(GMV& gmv, MV mv) const;
-	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dshf) const;
+	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq) const;
 	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq) const;
-	void GenGmvBbMvs(GMV& gmv, SHF shfFrom, BB bbTo) const;
-	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dshf) const;
+	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo) const;
+	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dsq) const;
 	
 	/*
 	 *	checking squares for attack 
@@ -690,16 +690,16 @@ public:
 
 	/*	BD::FSqAttacked
 	 *	
-	 *	Returns true if shfAttacked is attacked by some piece of the color cpcBy. The piece
-	 *	on shfAttacked is not considered to be attacking shfAttacked.
+	 *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
+	 *	on sqAttacked is not considered to be attacking sqAttacked.
 	 */
-	inline bool FSqAttacked(SHF shfAttacked, CPC cpcBy) const noexcept
+	inline bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
 	{
-		return FBbAttacked(BB(shfAttacked), cpcBy);
+		return FBbAttacked(BB(sqAttacked), cpcBy);
 	}
 
-	BB BbFwdSlideAttacks(DIR dir, SHF shfFrom) const noexcept;
-	BB BbRevSlideAttacks(DIR dir, SHF shfFrom) const noexcept;
+	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
 	BB BbPawnAttacked(CPC cpcBy) const noexcept;
 	BB BbKingAttacked(CPC cpcBy) const noexcept;
 	BB BbKnightAttacked(CPC cpcBy) const noexcept;
@@ -711,40 +711,40 @@ public:
 	
 	inline bool FMvEnPassant(MV mv) const noexcept
 	{
-		return mv.shfTo() == shfEnPassant && ApcFromShf(mv.shfFrom()) == APC::Pawn;
+		return mv.sqTo() == sqEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const noexcept
 	{
-		return !FIsEmpty(mv.shfTo()) || FMvEnPassant(mv);
+		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
 	}
 
-	inline void SetEnPassant(SHF shf) noexcept
+	inline void SetEnPassant(SQ sq) noexcept
 	{
-		if (!shfEnPassant.fIsNil())
-			genhabd.ToggleEnPassant(habd, shfEnPassant.file());
-		shfEnPassant = shf;
-		if (!shfEnPassant.fIsNil())
-			genhabd.ToggleEnPassant(habd, shfEnPassant.file());
+		if (!sqEnPassant.fIsNil())
+			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
+		sqEnPassant = sq;
+		if (!sqEnPassant.fIsNil())
+			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
 	}
 	
-	inline APC ApcFromShf(SHF shf) const noexcept
+	inline APC ApcFromSq(SQ sq) const noexcept
 	{
-		CPC cpc = CpcFromShf(shf);
+		CPC cpc = CpcFromSq(sq);
 		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
-			if (mpapcbb[cpc][apc].fSet(shf))
+			if (mpapcbb[cpc][apc].fSet(sq))
 				return apc;
 		return APC::Null;
 	}
 	
-	inline CPC CpcFromShf(SHF shf) const noexcept
+	inline CPC CpcFromSq(SQ sq) const noexcept
 	{ 
-		return mpcpcbb[CPC::White].fSet(shf) ? CPC::White : CPC::Black;
+		return mpcpcbb[CPC::White].fSet(sq) ? CPC::White : CPC::Black;
 	}
 	
-	inline bool FIsEmpty(SHF shf) const noexcept
+	inline bool FIsEmpty(SQ sq) const noexcept
 	{
-		return bbUnoccupied.fSet(shf);
+		return bbUnoccupied.fSet(sq);
 	}
 
 	inline bool FCanCastle(CPC cpc, int csSide) const noexcept
@@ -788,13 +788,13 @@ public:
 	 *	state to have a square set by both colors. When making moves, clear before 
 	 *	you set and you shouldn't get in any trouble.
 	 */
-	inline void SetBB(CPC cpc, APC apc, SHF shf) noexcept
+	inline void SetBB(CPC cpc, APC apc, SQ sq) noexcept
 	{
-		BB bb(shf);
+		BB bb(sq);
 		mpapcbb[cpc][apc] += bb;
 		mpcpcbb[cpc] += bb;
 		bbUnoccupied -= bb;
-		genhabd.TogglePiece(habd, shf, cpc, apc);
+		genhabd.TogglePiece(habd, sq, cpc, apc);
 	}
 
 
@@ -807,14 +807,14 @@ public:
 	 *	theoretically have a piece in that square. It's up to the calling code to
 	 *	make sure this doesn't happen.
 	 */
-	inline void ClearBB(CPC cpc, APC apc, SHF shf) noexcept
+	inline void ClearBB(CPC cpc, APC apc, SQ sq) noexcept
 	{
-		BB bb(shf);
+		BB bb(sq);
 		mpapcbb[cpc][apc] -= bb;
 		mpcpcbb[cpc] -= bb;
-		assert(!mpcpcbb[~cpc].fSet(shf));
+		assert(!mpcpcbb[~cpc].fSet(sq));
 		bbUnoccupied += bb;
-		genhabd.TogglePiece(habd, shf, cpc, apc);
+		genhabd.TogglePiece(habd, sq, cpc, apc);
 	}
 
 	void ToggleToMove(void) noexcept
@@ -827,7 +827,7 @@ public:
 	 *	getting piece value of pieces/squares
 	 */
 
-	EVAL VpcFromShf(SHF shf) const noexcept;
+	EVAL VpcFromSq(SQ sq) const noexcept;
 	EVAL VpcTotalFromCpc(CPC cpc) const noexcept;
 
 	/*
@@ -835,7 +835,7 @@ public:
 	 */
 
 	void InitFENPieces(const wchar_t*& szFEN);
-	void AddPieceFEN(SHF shf, CPC cpc, APC apc);
+	void AddPieceFEN(SQ sq, CPC cpc, APC apc);
 	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENCastle(const wchar_t*& sz);
 	void InitFENEnPassant(const wchar_t*& sz);
@@ -848,10 +848,10 @@ public:
 
 #ifndef NDEBUG
 	void Validate(void) const;
-	void ValidateBB(CPC cpc, APC apc, SHF shf) const;
+	void ValidateBB(CPC cpc, APC apc, SQ sq) const;
 #else
 	inline void Validate(void) const { }
-	inline void ValidateBB(CPC cpc, APC apc, SHF shf) const { }
+	inline void ValidateBB(CPC cpc, APC apc, SQ sq) const { }
 #endif
 };
 
@@ -963,13 +963,13 @@ public:
 
 	ERR ParseMv(const char*& pch, MV& mv) const;
 	ERR ParsePieceMv(const GMV& gmv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseSquareMv(const GMV& gmv, SHF shf, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseSquareMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
-	ERR ParseFileMv(const GMV& gmv, SHF shf, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseRankMv(const GMV& gmv, SHF shf, const char* pchInit, const char*& pch, MV& mv) const;
-	MV MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SHF shfTo, const char* pchFirst, const char* pchLim) const;
-	MV MvMatchFromTo(const GMV& gmv, SHF shfFrom, SHF shfTo, const char* pchFirst, const char* pchLim) const;
-	TKMV TkmvScan(const char*& pch, SHF& shf) const;
+	ERR ParseFileMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseRankMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	MV MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	MV MvMatchFromTo(const GMV& gmv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 
 	/*
 	 *	importing FEN strings 
@@ -986,6 +986,15 @@ public:
 	wstring SzFEN(void) const;
 	operator wstring() const { return SzFEN(); }
 
+
+	/*	BDG::CpcMoveFromImv
+	 *
+	 *	Returns the color of the side that moved move imv
+	 */
+	inline CPC CpcMoveFromImv(int imv) const noexcept
+	{
+		return (CPC)(imv & 1);
+	}
 };
 
 
@@ -1003,12 +1012,12 @@ public:
 class ANO
 {
 	friend class UIBD;
-	SHF shfFrom, shfTo;
+	SQ sqFrom, sqTo;
 public:
 	ANO(void) { }
 	~ANO(void) { }
-	ANO(SHF shf) : shfFrom(shf), shfTo(SHF()) { }
-	ANO(SHF shfFrom, SHF shfTo) : shfFrom(shfFrom), shfTo(shfTo) { }
+	ANO(SQ sq) : sqFrom(sq), sqTo(SQ()) { }
+	ANO(SQ sqFrom, SQ sqTo) : sqFrom(sqFrom), sqTo(sqTo) { }
 };
 
 

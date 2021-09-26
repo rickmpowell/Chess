@@ -164,25 +164,25 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 	GenGmv(gmv, RMCHK::NoRemove);
 
 	/* if destination square is unique, just include the destination square */
-	SHF shfFrom = mv.shfFrom();
-	APC apc = ApcFromShf(shfFrom);
-	SHF shfTo = mv.shfTo();
-	SHF shfCapture = shfTo;
+	SQ sqFrom = mv.sqFrom();
+	APC apc = ApcFromSq(sqFrom);
+	SQ sqTo = mv.sqTo();
+	SQ sqCapture = sqTo;
 
 	wchar_t sz[16];
 	wchar_t* pch = sz;
 
 	switch (apc) {
 	case APC::Pawn:
-		if (shfTo == shfEnPassant)
-			shfCapture = SHF(shfTo.rank() ^ 1, shfTo.file());
+		if (sqTo == sqEnPassant)
+			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
 		break;
 
 	case APC::King:
-		if (shfFrom.file() == fileKing) {
-			if (shfTo.file() == fileKingKnight)
+		if (sqFrom.file() == fileKing) {
+			if (sqTo.file() == fileKingKnight)
 				goto FinishCastle;
-			if (shfTo.file() == fileQueenBishop) {
+			if (sqTo.file() == fileQueenBishop) {
 				*pch++ = L'O';
 				*pch++ = chMinus;
 FinishCastle:
@@ -207,7 +207,7 @@ FinishCastle:
 		if (!fPretty)
 			*pch++ = mpapcch[apc];
 		else
-			*pch++ = mpapcchFig[CpcFromShf(shfFrom)][apc];
+			*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
 	}
 
 	/* for ambiguous moves, we need to add various from square qualifiers depending
@@ -215,24 +215,24 @@ FinishCastle:
 
 	if (FMvApcAmbiguous(gmv, mv)) {
 		if (!FMvApcFileAmbiguous(gmv, mv))
-			*pch++ = L'a' + shfFrom.file();
+			*pch++ = L'a' + sqFrom.file();
 		else {
 			if (FMvApcRankAmbiguous(gmv, mv))
-				*pch++ = L'a' + shfFrom.file();
-			*pch++ = L'1' + shfFrom.rank();
+				*pch++ = L'a' + sqFrom.file();
+			*pch++ = L'1' + sqFrom.rank();
 		}
 	}
-	else if (apc == APC::Pawn && !FIsEmpty(shfCapture))
-		*pch++ = L'a' + shfFrom.file();
+	else if (apc == APC::Pawn && !FIsEmpty(sqCapture))
+		*pch++ = L'a' + sqFrom.file();
 
 	/* if we fall out, there is no ambiguity with the apc moving to the
 	   destination square */
-	if (!FIsEmpty(shfCapture))
+	if (!FIsEmpty(sqCapture))
 		*pch++ = fPretty ? chMultiply : 'x';
-	*pch++ = L'a' + shfTo.file();
-	*pch++ = L'1' + shfTo.rank();
+	*pch++ = L'a' + sqTo.file();
+	*pch++ = L'1' + sqTo.rank();
 
-	if (apc == APC::Pawn && shfTo == shfEnPassant) {
+	if (apc == APC::Pawn && sqTo == sqEnPassant) {
 		if (fPretty)
 			*pch++ = chNonBreakingSpace;	
 		*pch++ = L'e';
@@ -257,13 +257,13 @@ FinishMove:
 
 bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
 {
-	SHF shfFrom = mv.shfFrom();
-	SHF shfTo = mv.shfTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvOther = gmv[imv];
-		if (mvOther.shfTo() != shfTo || mvOther.shfFrom() == shfFrom)
+		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromShf(mvOther.shfFrom()) == ApcFromShf(shfFrom))
+		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom))
 			return true;
 	}
 	return false;
@@ -272,13 +272,13 @@ bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
 
 bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
 {
-	SHF shfFrom = mv.shfFrom();
-	SHF shfTo = mv.shfTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvOther = gmv[imv];
-		if (mvOther.shfTo() != shfTo || mvOther.shfFrom() == shfFrom)
+		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromShf(mvOther.shfFrom()) == ApcFromShf(shfFrom) && mvOther.shfFrom().rank() == shfFrom.rank())
+		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
@@ -287,13 +287,13 @@ bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
 
 bool BDG::FMvApcFileAmbiguous(const GMV& gmv, MV mv) const
 {
-	SHF shfFrom = mv.shfFrom();
-	SHF shfTo = mv.shfTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvOther = gmv[imv];
-		if (mvOther.shfTo() != shfTo || mvOther.shfFrom() == shfFrom)
+		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromShf(mvOther.shfFrom()) == ApcFromShf(shfFrom) && mvOther.shfFrom().file() == shfFrom.file())
+		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;
@@ -331,15 +331,15 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
  */
 wstring BDG::SzDecodeMvPost(MV mv) const
 {
-	SHF shfFrom = mv.shfFrom();
-	SHF shfTo = mv.shfTo();
+	SQ sqFrom = mv.sqFrom();
+	SQ sqTo = mv.sqTo();
 	wstring sz;
-	sz += L'a' + shfFrom.file();
-	sz += to_wstring(shfFrom.rank() + 1);
+	sz += L'a' + sqFrom.file();
+	sz += to_wstring(sqFrom.rank() + 1);
 	if (mv.fIsCapture())
 		sz += L'x';
-	sz += L'a' + shfTo.file();
-	sz += to_wstring(shfTo.rank() + 1);
+	sz += L'a' + sqTo.file();
+	sz += to_wstring(sqTo.rank() + 1);
 	if (mv.apcPromote() != APC::Null) {
 		sz += chEqual;
 		sz += mpapcch[mv.apcPromote()];

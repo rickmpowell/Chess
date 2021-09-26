@@ -532,9 +532,9 @@ EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 		   that isn't defended, which will improve alpha-beta pruning, but not something 
 		   we want to do on real board evaluation; someday, a better heuristic would be 
 		   to exchange until quiescence */
-		if (bdg.FSqAttacked(mvev.mv.shfTo(), bdg.cpcToMove) &&
-				!bdg.FSqAttacked(mvev.mv.shfTo(), ~bdg.cpcToMove))
-			evalSelf -= EvalBaseApc(bdg.ApcFromShf(mvev.mv.shfTo()));
+		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
+				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
+			evalSelf -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
 	}
 	EVAL evalMat = evalSelf - evalNext;
 
@@ -576,12 +576,12 @@ EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcMove) const noexcept
 		phase += bdg.mpapcbb[CPC::Black][apc].csq() * mpapcphase[apc];
 		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc) {
 			for (BB bb = bdg.mpapcbb[cpc][apc]; bb; bb.ClearLow()) {
-				SHF shf = bb.shfLow();
+				SQ sq = bb.sqLow();
 				if (cpcMove == CPC::White)
-					shf = shf ^ SHF(rankMax - 1, 0);
-				mpcpcevalOpening[cpc] += mpapcsqevalOpening[apc][shf];
-				mpcpcevalMid[cpc] += mpapcsqevalMiddleGame[apc][shf];
-				mpcpcevalEnd[cpc] += mpapcsqevalEndGame[apc][shf];
+					sq = sq ^ SQ(rankMax - 1, 0);
+				mpcpcevalOpening[cpc] += mpapcsqevalOpening[apc][sq];
+				mpcpcevalMid[cpc] += mpapcsqevalMiddleGame[apc][sq];
+				mpcpcevalEnd[cpc] += mpapcsqevalEndGame[apc][sq];
 			}
 		}
 	}
@@ -813,12 +813,12 @@ void PLAI::InitWeightTables(void)
 	InitWeightTable(mpapcevalEndGame, mpapcsqdevalEndGame, mpapcsqevalEndGame);
 }
 
-void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcshfdeval[APC::ActMax][64], EVAL mpapcshfeval[APC::ActMax][64])
+void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][64], EVAL mpapcsqeval[APC::ActMax][64])
 {
-	memset(&mpapcshfeval[APC::Null], 0, 64 * sizeof(EVAL));
+	memset(&mpapcsqeval[APC::Null], 0, 64 * sizeof(EVAL));
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
-		for (uint64_t shf = 0; shf < 64; shf++)
-			mpapcshfeval[apc][shf] = mpapceval[apc] + mpapcshfdeval[apc][shf];
+		for (uint64_t sq = 0; sq < 64; sq++)
+			mpapcsqeval[apc][sq] = mpapceval[apc] + mpapcsqdeval[apc][sq];
 }
 
 
@@ -860,9 +860,9 @@ EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
 		   that isn't defended, which will improve alpha-beta pruning, but not something
 		   we want to do on real board evaluation; someday, a better heuristic would be
 		   to exchange until quiescence */
-		if (bdg.FSqAttacked(mvev.mv.shfTo(), bdg.cpcToMove) &&
-				!bdg.FSqAttacked(mvev.mv.shfTo(), ~bdg.cpcToMove))
-			evalSelf -= EvalBaseApc(bdg.ApcFromShf(mvev.mv.shfTo()));
+		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
+				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
+			evalSelf -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
 	}
 	EVAL evalMat = evalSelf - evalNext;
 	if (fFull) {

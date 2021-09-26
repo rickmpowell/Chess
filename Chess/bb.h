@@ -42,19 +42,19 @@ enum {
 const int rankMax = 8;
 
 
-class SHF
+class SQ
 {
 	uint8_t grf;
 public:
-	inline SHF(void) noexcept : grf(0xc0)
+	inline SQ(void) noexcept : grf(0xc0)
 	{
 	}
 
-	inline SHF(uint8_t grf) noexcept : grf(grf)
+	inline SQ(uint8_t grf) noexcept : grf(grf)
 	{
 	}
 
-	inline SHF(int rank, int file) noexcept : grf((rank << 3) | file)
+	inline SQ(int rank, int file) noexcept : grf((rank << 3) | file)
 	{
 	}
 
@@ -86,36 +86,36 @@ public:
 		return grf == 0xc0;
 	}
 
-	inline SHF& operator+=(int dsq) noexcept
+	inline SQ& operator+=(int dsq) noexcept
 	{
 		grf += dsq;
 		return *this;
 	}
 
-	inline SHF operator+(int dsq) const noexcept
+	inline SQ operator+(int dsq) const noexcept
 	{
-		return SHF(grf + dsq);
+		return SQ(grf + dsq);
 	}
 
-	inline SHF operator++(int) noexcept
+	inline SQ operator++(int) noexcept
 	{
 		uint8_t grfT = grf++;
-		return SHF(grfT);
+		return SQ(grfT);
 	}
 
-	inline SHF operator-(int dsq) const noexcept
+	inline SQ operator-(int dsq) const noexcept
 	{
-		return SHF((uint8_t)(grf - dsq));
+		return SQ((uint8_t)(grf - dsq));
 	}
 
-	inline int operator-(const SHF& shf) const noexcept
+	inline int operator-(const SQ& sq) const noexcept
 	{
-		return (int)grf - (int)shf.grf;
+		return (int)grf - (int)sq.grf;
 	}
 
-	inline SHF shfFlip(void) noexcept
+	inline SQ sqFlip(void) noexcept
 	{
-		return SHF(rankMax - 1 - rank(), file());
+		return SQ(rankMax - 1 - rank(), file());
 	}
 
 	inline operator string() const noexcept
@@ -276,7 +276,7 @@ public:
 	{
 	}
 
-	inline BB(SHF shf) noexcept : grf(shf.fgrf())
+	inline BB(SQ sq) noexcept : grf(sq.fgrf())
 	{
 	}
 
@@ -345,25 +345,25 @@ public:
 		return BB(~grf);
 	}
 
-	inline BB operator<<(int dshf) const noexcept
+	inline BB operator<<(int dsq) const noexcept
 	{
-		return BB(grf << dshf);
+		return BB(grf << dsq);
 	}
 
-	inline BB& operator<<=(int dshf) noexcept
+	inline BB& operator<<=(int dsq) noexcept
 	{
-		grf <<= dshf;
+		grf <<= dsq;
 		return *this;
 	}
 
-	inline BB operator>>(int dshf) const noexcept
+	inline BB operator>>(int dsq) const noexcept
 	{
-		return BB(grf >> dshf);
+		return BB(grf >> dsq);
 	}
 
-	inline BB& operator>>=(int dshf) noexcept
+	inline BB& operator>>=(int dsq) noexcept
 	{
-		grf >>= dshf;
+		grf >>= dsq;
 		return *this;
 	}
 
@@ -392,16 +392,16 @@ public:
 		return popcount(grf);
 	}
 
-	inline SHF shfLow(void) const noexcept
+	inline SQ sqLow(void) const noexcept
 	{
 		assert(grf);
-		return SHF(bitscan(grf));
+		return SQ(bitscan(grf));
 	}
 
-	inline SHF shfHigh(void) const noexcept
+	inline SQ sqHigh(void) const noexcept
 	{
 		assert(grf);
-		return SHF(bitscanRev(grf));
+		return SQ(bitscanRev(grf));
 	}
 
 	inline void ClearLow(void) noexcept
@@ -409,9 +409,9 @@ public:
 		grf &= grf - 1;
 	}
 
-	inline bool fSet(SHF shf) const noexcept
+	inline bool fSet(SQ sq) const noexcept
 	{
-		return (grf & shf.fgrf()) != 0;
+		return (grf & sq.fgrf()) != 0;
 	}
 };
 
@@ -554,26 +554,26 @@ inline int DfileFromDir(DIR dir) noexcept
 
 class MPBB
 {
-	BB mpshfdirbbSlide[64][8];
-	BB mpshfbbKing[64];
-	BB mpshfbbKnight[64];
+	BB mpsqdirbbSlide[64][8];
+	BB mpsqbbKing[64];
+	BB mpsqbbKnight[64];
 public:
 	MPBB(void);
 	
-	inline BB BbSlideTo(SHF shf, DIR dir) noexcept
+	inline BB BbSlideTo(SQ sq, DIR dir) noexcept
 	{
-		assert(shf < 64);
+		assert(sq < 64);
 		assert((int)dir < 8);
-		return mpshfdirbbSlide[shf][(unsigned)dir];
+		return mpsqdirbbSlide[sq][(unsigned)dir];
 	}
 
-	inline BB BbKingTo(SHF shf) noexcept
+	inline BB BbKingTo(SQ sq) noexcept
 	{
-		return mpshfbbKing[shf];
+		return mpsqbbKing[sq];
 	}
 
-	inline BB BbKnightTo(uint8_t shf) noexcept
+	inline BB BbKnightTo(uint8_t sq) noexcept
 	{
-		return mpshfbbKnight[shf];
+		return mpsqbbKnight[sq];
 	}
 };

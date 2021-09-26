@@ -58,10 +58,10 @@ public:
 	float dyLabel;
 	float angle;	// angle for rotation animation
 
-	SHF shfDragInit;
+	SQ sqDragInit;
 	PT ptDragInit;
 	PT ptDragCur;
-	SHF shfHover;
+	SQ sqHover;
 	RC rcDragPc;	// rectangle the dragged piece was last drawn in
 	GMV gmvDrag;	// legal moves in the UI
 
@@ -87,35 +87,35 @@ public:
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
-	bool FHoverShf(SHF shf, MV& mv);
+	bool FHoverSq(SQ sq, MV& mv);
 	void DrawHoverMv(MV mv);
-	void DrawPieceShf(SHF shf);
+	void DrawPieceSq(SQ sq);
 	void DrawAnnotations(void);
-	void DrawSquareAnnotation(SHF shf);
-	void DrawArrowAnnotation(SHF shfFrom, SHF shfTo);
+	void DrawSquareAnnotation(SQ sq);
+	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);
 
 	void DrawHilites(void);
 	void DrawGameState(void);
 	void DrawPc(const RC& rc, float opacity, CPC cpc, APC apc);
 	void AnimateMv(MV mv, unsigned dframe);
-	void AnimateShfToShf(SHF shfFrom, SHF shfTo, unsigned dframe);
+	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	void DrawDragPc(const RC& rc);
 	RC RcGetDrag(void);
 	void InvalOutsideRc(const RC& rc) const;
-	void HiliteLegalMoves(SHF shf);
-	RC RcFromShf(SHF shf) const;
+	void HiliteLegalMoves(SQ sq);
+	RC RcFromSq(SQ sq) const;
 
 	virtual void FillRcBack(const RC& rc) const;
 
 	void FlipBoard(CPC cpcNew);
 
-	HTBD HtbdHitTest(const PT& pt, SHF* pshf) const;
+	HTBD HtbdHitTest(const PT& pt, SQ* psq) const;
 	virtual void StartLeftDrag(const PT& pt);
 	virtual void EndLeftDrag(const PT& pt);
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 
-	bool FMoveablePc(SHF shf) const;
+	bool FMoveablePc(SQ sq) const;
 };
 
 
