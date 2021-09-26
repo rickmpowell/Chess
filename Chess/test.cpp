@@ -219,7 +219,7 @@ void TEST::ValidatePieces(const char*& sz) const
 CheckPiece:
 			cpc = islower(*sz) ? CPC::Black : CPC::White;
 			if (ga.bdg.ApcFromShf(shf) != apc || ga.bdg.CpcFromShf(shf) != cpc)
-				throw EXFAILTEST("FEN piece mismatch at " + (string)SqFromShf(shf));
+				throw EXFAILTEST("FEN piece mismatch at " + (string)shf);
 			shf++; 
 			break;
 		case '1':
@@ -232,7 +232,7 @@ CheckPiece:
 		case '8':
 			for (int dshf = *sz - L'0'; dshf > 0; dshf--, shf++) {
 				if (!ga.bdg.FIsEmpty(shf))
-					throw EXFAILTEST("FEN piece mismatch at " + (string)SqFromShf(shf));
+					throw EXFAILTEST("FEN piece mismatch at " + (string)shf);
 			}
 			break;
 		default: 
@@ -575,7 +575,8 @@ uint64_t GA::CmvPerft(int depth)
 	bdg.GenGmv(gmv, RMCHK::Remove);
 	uint64_t cmv = 0;
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		bdg.MakeMv(gmv[imv]);
+		MV mv = gmv[imv];
+		bdg.MakeMv(mv);
 		cmv += CmvPerft(depth - 1);
 		bdg.UndoMv();
 	}
@@ -590,7 +591,8 @@ uint64_t GA::CmvPerftBulk(int depth)
 		return gmv.cmv();
 	uint64_t cmv = 0;
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		bdg.MakeMv(gmv[imv]);
+		MV mv = gmv[imv];
+		bdg.MakeMv(mv);
 		cmv += CmvPerftBulk(depth - 1);
 		bdg.UndoMv();
 	}
@@ -611,12 +613,13 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 	BDG bdgInit = bdg;
 #endif
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		bdg.MakeMv(gmv[imv]);
-		LogOpen(TAG(bdg.SzDecodeMvPost(gmv[imv]), ATTR(L"FEN", (wstring)bdg)), L"");
+		MV mv = gmv[imv];
+		bdg.MakeMv(mv);
+		LogOpen(TAG(bdg.SzDecodeMvPost(mv), ATTR(L"FEN", (wstring)bdg)), L"");
 		uint64_t cmvMove = CmvPerft(depthPerft - 1);
 		cmv += cmvMove;
 		bdg.UndoMv();
-		LogClose(bdg.SzDecodeMvPost(gmv[imv]), to_wstring(cmvMove), LGF::Normal);
+		LogClose(bdg.SzDecodeMvPost(mv), to_wstring(cmvMove), LGF::Normal);
 		assert(bdg == bdgInit);
 	}
 	return cmv;
@@ -637,6 +640,7 @@ struct {
 	unsigned long long rgull[20];
 	int cull;
 } rgperfttest[] = {
+#ifdef LATER
 	/*
 	 * perft tests from chessprogramming.org 
 	 */
@@ -650,6 +654,7 @@ struct {
 	{ L"Position 6", L"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
 			{ 1ULL, 46ULL, 2079ULL, 89890ULL, 3894594ULL, 164075551ULL, 6923051137ULL, 287188994746ULL, 11923589843526ULL,
 			  490154852788714ULL }, 5 },
+#endif
 	/*
 	 *	perft test suite from algerbrex
 	 *	https://github.com/algerbrex/blunder/blob/main/tests/perftsuite.txt

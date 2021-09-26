@@ -82,11 +82,12 @@ void GA::SerializeHeader(ostream& os, const string& szTag, const string& szVal)
 
 void GA::SerializeMoveList(ostream& os)
 {
-	BDG bdgSav;
-	bdgSav.InitGame(szInitFEN);
+	BDG bdgSav = bdgInit;
 	string szLine;
 	for (unsigned imv = 0; imv < (unsigned)bdg.vmvGame.size(); imv++) {
 		MV mv = bdg.vmvGame[imv];
+		if (mv.fIsNil())
+			continue;
 		if (imv % 2 == 0)
 			WriteSzLine80(os, szLine, to_string(imv/2 + 1) + ". ");
 		wstring wsz = bdgSav.SzDecodeMv(mv, false);

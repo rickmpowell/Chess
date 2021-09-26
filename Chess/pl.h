@@ -117,6 +117,9 @@ public:
 class PLAI : public PL
 {
 protected:
+	EVAL mpapcsqevalOpening[APC::ActMax][64];
+	EVAL mpapcsqevalMiddleGame[APC::ActMax][64];
+	EVAL mpapcsqevalEndGame[APC::ActMax][64];
 	uint16_t rgfAICoeffNum[3];	/* coefficient is this number divided by 100 */
 	uint16_t cYield;
 
@@ -145,14 +148,13 @@ protected:
 	void StartMoveLog(void);
 	void EndMoveLog(void);
 
-	EVAL VpcFromCpc(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcOpening(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcEarlyMidGame(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcMiddleGame(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcLateMidGame(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcEndGame(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcLateEndGame(const BDG& bdg, CPC cpcMove) const noexcept;
-	EVAL VpcWeightTable(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[APC::ActMax][64]) const noexcept;
+	EVAL EvalBaseApc(APC apc) const;
+	void InitWeightTables(void);
+	void InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][64], EVAL mpapcsqeval[APC::ActMax][64]);
+	EVAL EvalPstFromCpc(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int phase2) const noexcept;
+
+	EVAL EvalPst(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[APC::ActMax][64]) const noexcept;
 };
 
 

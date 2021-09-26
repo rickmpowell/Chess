@@ -117,109 +117,6 @@ public:
 	{
 		return SHF(rankMax - 1 - rank(), file());
 	}
-};
-
-
-/*
- *
- *	SQ type
- *
- *	A square is file and rank encoded into a single byte. This implementation is a 0x88 type
- *	square, which uses the extra bits to let us know if certain squares are "off-board".
- *	The off-board bits get set when offsetting causes overflow of the rank and/or file
- * 
- *	+---+---+---+---+---+---+---+---+
- *  | ov|    rank   | ov|    file   |
- *  +---+-----------+---+-----------+
- * 
- */
-
-
-class SQ {
-private:
-	friend class MV;
-	uint8_t grf;
-public:
-
-	inline SQ(void) noexcept : grf(0xff) 
-	{ 
-	}
-
-	inline SQ(uint8_t grf) noexcept : grf(grf) 
-	{ 
-	}
-	
-	inline SQ(int rank, int file) noexcept
-	{ 
-		grf = (rank << 4) | file; 
-	}
-	
-	inline int file(void) const noexcept
-	{ 
-		return grf & 0x07; 
-	}
-	
-	inline int rank(void) const noexcept
-	{
-		return (grf >> 4) & 0x07; 
-	}
-	
-	inline bool fIsNil(void) const noexcept
-	{
-		return grf == 0xff; 
-	}
-	
-	inline bool fIsOffBoard(void) const noexcept
-	{
-		return grf & 0x88; 
-	}
-	
-	inline SQ& operator+=(int dsq) noexcept
-	{
-		grf += dsq; 
-		return *this; 
-	}
-	
-	inline SQ operator+(int dsq) const noexcept
-	{ 
-		return SQ(grf + dsq); 
-	}
-	
-	inline operator uint8_t() const noexcept
-	{
-		return grf; 
-	}
-
-	inline SQ operator++(int) noexcept
-	{ 
-		BYTE grfT = grf++; 
-		return SQ(grfT); 
-	}
-	
-	inline SQ operator-(int dsq) const noexcept 
-	{
-		return SQ((uint8_t)(grf - dsq)); 
-	}
-	
-	inline int operator-(const SQ& sq) const noexcept
-	{
-		return (int)grf - (int)sq.grf; 
-	}
-	
-	inline SQ sqFlip(void) noexcept
-	{
-		return SQ(rankMax - 1 - rank(), file()); 
-	}
-	
-	inline SHF shf(void) const noexcept
-	{
-		return SHF(rank(), file());
-	}
-	
-	inline uint64_t fgrf(void) const noexcept
-	{ 
-		return 1ULL << shf(); 
-	}
 
 	inline operator string() const noexcept
 	{
@@ -231,11 +128,8 @@ public:
 		sz[2] = 0;
 		return string(sz);
 	}
+
 };
-
-const SQ sqNil;
-
-
 
 
 /*
@@ -343,13 +237,6 @@ inline int bitscanRev(uint64_t grf) noexcept
 }
 
 
-inline SQ SqFromShf(SHF shf)
-{
-	return SQ((uint8_t)shf >> 3, (uint8_t)shf & 7);
-}
-
-
-
 /*
  *
  *	BB type
@@ -393,24 +280,9 @@ public:
 	{
 	}
 
-	inline BB(SQ sq) noexcept : grf(sq.fgrf())
-	{
-	}
-
 	inline BB& clear(void) noexcept
 	{
 		grf = 0;
-		return *this;
-	}
-
-	inline BB operator+(SQ sq) const noexcept
-	{
-		return BB(grf | sq.fgrf());
-	}
-
-	inline BB& operator+=(SQ sq) noexcept
-	{
-		grf |= sq.fgrf();
 		return *this;
 	}
 
@@ -425,16 +297,6 @@ public:
 		return *this;
 	}
 
-	inline BB operator|(SQ sq) const noexcept
-	{
-		return *this + sq;
-	}
-
-	inline BB& operator|=(SQ sq) noexcept
-	{
-		return *this += sq;
-	}
-
 	inline BB operator|(BB bb) const noexcept
 	{
 		return *this + bb;
@@ -443,17 +305,6 @@ public:
 	inline BB& operator|=(BB bb) noexcept
 	{
 		return *this += bb;
-	}
-
-	inline BB operator-(SQ sq) const noexcept
-	{
-		return BB(grf & ~sq.fgrf());
-	}
-
-	inline BB& operator-=(SQ sq) noexcept
-	{
-		grf &= ~sq.fgrf();
-		return *this;
 	}
 
 	inline BB operator-(BB bb) const noexcept
@@ -467,17 +318,6 @@ public:
 		return *this;
 	}
 
-	inline BB operator&(SQ sq) const noexcept
-	{
-		return BB(grf & sq.fgrf());
-	}
-
-	inline BB operator&=(SQ sq) noexcept
-	{
-		grf &= sq.fgrf();
-		return *this;
-	}
-
 	inline BB operator&(BB bb) const noexcept
 	{
 		return BB(grf & bb.grf);
@@ -486,17 +326,6 @@ public:
 	inline BB& operator&=(BB bb) noexcept
 	{
 		grf &= bb.grf;
-		return *this;
-	}
-
-	inline BB operator^(SQ sq) const noexcept
-	{
-		return BB(grf ^ sq.fgrf());
-	}
-
-	inline BB& operator^=(SQ sq) noexcept
-	{
-		grf ^= sq.fgrf();
 		return *this;
 	}
 
@@ -516,25 +345,25 @@ public:
 		return BB(~grf);
 	}
 
-	inline BB operator<<(int dsq) const noexcept
+	inline BB operator<<(int dshf) const noexcept
 	{
-		return BB(grf << dsq);
+		return BB(grf << dshf);
 	}
 
-	inline BB& operator<<=(int dsq) noexcept
+	inline BB& operator<<=(int dshf) noexcept
 	{
-		grf <<= dsq;
+		grf <<= dshf;
 		return *this;
 	}
 
-	inline BB operator>>(int dsq) const noexcept
+	inline BB operator>>(int dshf) const noexcept
 	{
-		return BB(grf >> dsq);
+		return BB(grf >> dshf);
 	}
 
-	inline BB& operator>>=(int dsq) noexcept
+	inline BB& operator>>=(int dshf) noexcept
 	{
-		grf >>= dsq;
+		grf >>= dshf;
 		return *this;
 	}
 

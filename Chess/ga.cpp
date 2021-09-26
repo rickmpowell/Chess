@@ -188,6 +188,7 @@ void GA::InitGame(const wchar_t* szFEN, SPMV spmv)
 {
 	InitClocks();
 	bdg.InitGame(szFEN);
+	bdgInit = bdg;
 
 	uibd.InitGame();
 	uiml.InitGame();

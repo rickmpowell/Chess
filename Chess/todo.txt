@@ -1,4 +1,3 @@
-  BD: remove x88 board
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
@@ -84,6 +83,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* BD: remove x88 board
 * Move gen: bitboard king
 * Move gen: bitboard bishops, rooks, and queens
 * Move gen: bitboard knights

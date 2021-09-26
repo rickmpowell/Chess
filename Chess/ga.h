@@ -116,6 +116,7 @@ public:
 
 public:
 	BDG bdg;	// board
+	BDG bdgInit;	// initial board used to start the game (used on FEN load)
 	PL* mpcpcppl[CPC::ColorMax];	// players
 	RULE* prule;
 	PROCPGN* pprocpgn;	/* process pgn file handler */

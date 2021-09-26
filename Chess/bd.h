@@ -50,52 +50,6 @@ public:
 };
 
 
-enum TPC {
-	tpcPieceMin = 0,
-	tpcQueenRook = 0,
-	tpcQueenKnight = 1,
-	tpcQueenBishop = 2,
-	tpcQueen = 3,
-	tpcKing = 4,
-	tpcKingBishop = 5,
-	tpcKingKnight = 6,
-	tpcKingRook = 7,
-	tpcPawnFirst = 8,
-	tpcPawnQR = 8,
-	tpcPawnQN = 9,
-	tpcPawnQB = 10,
-	tpcPawnQ = 11,
-	tpcPawnK = 12,
-	tpcPawnKB = 13,
-	tpcPawnKN = 14,
-	tpcPawnKR = 15,
-	tpcPawnLim = 16,
-	tpcPieceMax = 16,
-};
-
-
-inline TPC operator++(TPC& tpc)
-{
-	tpc = (TPC)(((int)tpc) + 1);
-	return tpc;
-}
-
-inline TPC TpcOpposite(TPC tpc)
-{
-	return (TPC)((int)tpc ^ 0x07);
-}
-
-inline TPC TpcQueenSide(TPC tpc)
-{
-	return !((int)tpc & 0x4) ? tpc : TpcOpposite(tpc);
-}
-
-inline TPC TpcKingSide(TPC tpc)
-{
-	return ((int)tpc & 0x4) ? tpc : TpcOpposite(tpc);
-}
-
-
 /*
  *
  *	CPC enumeration
@@ -144,7 +98,6 @@ enum APC {
 	King = 6,
 	ActMax = 7,
 	Bishop2 = 7,	// only used for draw detection computation to keep track of bishop square color
-	RookCastleable = 7,	// only used in MV.apcCapt when capturing rooks that are eligible for castle 
 	ActMax2 = 8
 };
 
@@ -158,78 +111,6 @@ inline APC& operator+=(APC& apc, int dapc)
 {
 	apc = static_cast<APC>(static_cast<int>(apc) + dapc);
 	return apc;
-}
-
-class IPC
-{
-	uint8_t tpcGrf : 4,
-		apcGrf : 3,
-		cpcGrf : 1;
-
-public:
-	inline IPC(void) : tpcGrf(tpcPieceMin), apcGrf(APC::ActMax), cpcGrf(CPC::Black)
-	{
-	}
-
-	inline IPC(TPC tpc, CPC cpc, APC apc) : tpcGrf(tpc), apcGrf(apc), cpcGrf(cpc)
-	{
-	}
-
-	inline CPC cpc(void) const
-	{
-		return (CPC)cpcGrf;
-	}
-
-	inline TPC tpc(void) const
-	{
-		return (TPC)tpcGrf;
-	}
-
-	inline APC apc(void) const
-	{
-		return (APC)apcGrf;
-	}
-
-	inline IPC& SetApc(APC apc)
-	{
-		this->apcGrf = apc;
-		return *this;
-	}
-
-	inline bool fIsNil(void) const
-	{
-		return apcGrf == APC::ActMax;
-	}
-
-	inline bool fIsEmpty(void) const
-	{
-		return apcGrf == APC::Null;
-	}
-
-	inline bool operator!=(IPC ipc) const
-	{
-		return apcGrf != ipc.apcGrf || tpcGrf != ipc.tpcGrf || cpcGrf != ipc.cpcGrf;
-	}
-
-	inline bool operator==(IPC ipc) const
-	{
-		return apcGrf == ipc.apcGrf && tpcGrf == ipc.tpcGrf && cpcGrf == ipc.cpcGrf;
-	}
-
-	inline operator uint8_t() const
-	{
-		return *(uint8_t*)this;
-	}
-};
-
-static const IPC ipcNil((TPC)0, CPC::Black, APC::ActMax);
-static const IPC ipcEmpty((TPC)0, CPC::Black, APC::Null);
-
-
-inline IPC IpcSetApc(IPC ipc, APC apc) 
-{
-	assert(apc >= APC::Pawn && apc <= APC::King);
-	return ipc.SetApc(apc); 
 }
 
 
@@ -255,25 +136,25 @@ inline IPC IpcSetApc(IPC ipc, APC apc)
  * 
  *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
  *  +-----------+--------+--------+--------+--------+
- *  |           |       to        |      from       |
+ *  |     cs    |       to        |      from       |
  *  +-----------+--------+--------+--------+--------+
- *  +--------+-----+--------+--+--------+-----------+
- *  | promote|  cs | ep file|ep| cap apc|  cap tpc  |
- *  +--------+-----+--------+--+--------+-----------+
+ *  +--------+--------+--------+--+--------+--------+
+ *  |        | promote| ep file|ep| cap apc|move apc|
+ *  +--------+--------+--------+--+--------+--------+
  *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
  */
 
 class MV {
 private:
-	uint32_t shfFromGrf: 6,
+	uint32_t shfFromGrf : 6,
 		shfToGrf : 6,
-		csGrf: 4,
-		tpcCaptGrf : 4,
+		csGrf : 4,
+		apcMoveGrf : 3,
 		apcCaptGrf : 3,
 		fEnPassantGrf : 1,
 		fileEnPassantGrf : 3,
-		padding : 2,
-		apcPromoteGrf : 3;
+		apcPromoteGrf : 3,
+		padding : 3;
 
 public:
 	inline MV(void) 
@@ -287,6 +168,7 @@ public:
 		shfToGrf = shfTo;
 		apcPromoteGrf = apcPromote;
 		padding = 0;
+		apcMoveGrf = APC::Null;
 	}
 
 	inline operator uint32_t() const
@@ -320,10 +202,9 @@ public:
 		return *this;
 	}
 
-	inline MV& SetCapture(APC apc, TPC tpc) 
+	inline MV& SetCapture(APC apc) 
 	{
 		apcCaptGrf = apc;
-		tpcCaptGrf = tpc;
 		return *this;  
 	}
 
@@ -359,11 +240,6 @@ public:
 	inline bool fIsCapture(void) const 
 	{
 		return apcCapture() != APC::Null; 
-	}
-
-	inline TPC tpcCapture(void) const 
-	{ 
-		return (TPC)tpcCaptGrf; 
 	}
 
 	inline bool operator==(const MV& mv) const 
@@ -758,11 +634,9 @@ class BD
 {
 	static const EVAL mpapcvpc[];
 public:
-	uint8_t mpsqipc[64+64];	/* the board itself (maps square to piece) */
 	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards for the pieces
 	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
 	BB bbUnoccupied;	// empty squares
-	uint8_t mptpcsq[CPC::ColorMax][tpcPieceMax]; // reverse mapping of mpsqtpc
 	CPC cpcToMove;	/* side with the move */
 	SHF shfEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
@@ -774,8 +648,6 @@ public:
 
 	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), shfEnPassant(bd.shfEnPassant), csCur(bd.csCur), habd(bd.habd)
 	{
-		memcpy(mpsqipc, bd.mpsqipc, sizeof(mpsqipc));
-		memcpy(mptpcsq, bd.mptpcsq, sizeof(mptpcsq));
 		memcpy(mpapcbb, bd.mpapcbb, sizeof(mpapcbb));
 		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
 	}
@@ -855,67 +727,7 @@ public:
 		if (!shfEnPassant.fIsNil())
 			genhabd.ToggleEnPassant(habd, shfEnPassant.file());
 	}
-
-	inline IPC& operator()(int rank, int file) noexcept 
-	{ 
-		return *(IPC*)&mpsqipc[rank * 16 + file]; 
-	}
-
-	inline IPC& operator()(SHF shf) noexcept
-	{
-		return *(IPC*)&mpsqipc[SqFromShf(shf)]; 
-	}
-
-	inline const IPC& operator()(SHF shf) const noexcept
-	{
-		return *(IPC*)&mpsqipc[SqFromShf(shf)];
-	}
-
-	inline const IPC& operator()(int rank, int file) const noexcept
-	{
-		return *(IPC*)&mpsqipc[rank * 16 + file];
-	}
-
-	inline SQ& SqFromTpc(TPC tpc, CPC cpc) noexcept
-	{
-		return *(SQ*)&mptpcsq[cpc][tpc]; 
-	}
 	
-	inline SQ& SqFromIpc(IPC ipc) noexcept
-	{
-		return SqFromTpc(ipc.tpc(), ipc.cpc()); 
-	}
-	
-	inline SQ SqFromTpc(TPC tpc, CPC cpc) const noexcept
-	{
-		return *(SQ*)&mptpcsq[cpc][tpc]; 
-	}
-
-	inline SQ SqFromIpc(IPC ipc) const noexcept 
-	{
-		return SqFromTpc(ipc.tpc(), ipc.cpc()); 
-	}
-
-	inline SQ& operator()(TPC tpc, CPC cpc) noexcept
-	{
-		return SqFromTpc(tpc, cpc);
-	}
-	
-	inline SQ operator()(TPC tpc, CPC cpc) const noexcept
-	{
-		return SqFromTpc(tpc, cpc);
-	}
-
-	inline SQ& operator()(IPC ipc) 
-	{
-		return SqFromIpc(ipc);
-	}
-	
-	inline const SQ operator()(IPC ipc) const noexcept
-	{
-		return SqFromIpc(ipc);
-	}
-
 	inline APC ApcFromShf(SHF shf) const noexcept
 	{
 		CPC cpc = CpcFromShf(shf);
@@ -925,11 +737,6 @@ public:
 		return APC::Null;
 	}
 	
-	inline TPC TpcFromShf(SHF shf) const noexcept
-	{
-		return (*this)(shf).tpc();
-	}
-	
 	inline CPC CpcFromShf(SHF shf) const noexcept
 	{ 
 		return mpcpcbb[CPC::White].fSet(shf) ? CPC::White : CPC::Black;
@@ -937,7 +744,7 @@ public:
 	
 	inline bool FIsEmpty(SHF shf) const noexcept
 	{
-		return (*this)(shf).fIsEmpty();
+		return bbUnoccupied.fSet(shf);
 	}
 
 	inline bool FCanCastle(CPC cpc, int csSide) const noexcept
@@ -1028,12 +835,10 @@ public:
 	 */
 
 	void InitFENPieces(const wchar_t*& szFEN);
-	void AddPieceFEN(SHF shf, TPC tpc, CPC cpc, APC apc);
+	void AddPieceFEN(SHF shf, CPC cpc, APC apc);
 	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENCastle(const wchar_t*& sz);
 	void InitFENEnPassant(const wchar_t*& sz);
-	TPC TpcUnusedPawn(CPC cpc) const;
-	void EnsureCastleRook(CPC cpc, TPC tpcRook);
 	void SkipToNonSpace(const wchar_t*& sz);
 	void SkipToSpace(const wchar_t*& sz);
 
