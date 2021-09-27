@@ -165,7 +165,7 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mv.sqFrom();
-	APC apc = ApcFromSq(sqFrom);
+	APC apc = mv.apcMove();
 	SQ sqTo = mv.sqTo();
 	SQ sqCapture = sqTo;
 
@@ -263,7 +263,7 @@ bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
 		MV mvOther = gmv[imv];
 		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom))
+		if (mvOther.apcMove() == mv.apcMove())
 			return true;
 	}
 	return false;
@@ -278,7 +278,7 @@ bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
 		MV mvOther = gmv[imv];
 		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().rank() == sqFrom.rank())
+		if (mvOther.apcMove() == mv.apcMove() && mvOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
@@ -293,7 +293,7 @@ bool BDG::FMvApcFileAmbiguous(const GMV& gmv, MV mv) const
 		MV mvOther = gmv[imv];
 		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
 			continue;
-		if (ApcFromSq(mvOther.sqFrom()) == ApcFromSq(sqFrom) && mvOther.sqFrom().file() == sqFrom.file())
+		if (mvOther.apcMove() == mv.apcMove() && mvOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;

@@ -17,7 +17,6 @@
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
   AI: Consider a different board evaluation for pre-sorting alpha-beta pruning
-  AI: Can we search for already evaluated board positions? Could save a lot of time in end game.
   AI: Do a multithreaded lookup
   AI: build and keep lookahead tree 
   AI: Play through until no checks (quiescence) before evaluation
@@ -30,6 +29,7 @@
   Move gen: Use magic bitboards for attack squares
   Log: Should we hash tags?
   Log: File logging and UIDB logging need to have their own depth
+  Log: when hovering over log entries with FEN attributes, hover a mini-board
   UI: Add a new game panel
   UI: try to pixel align as many borders as possible
   UI: Move as many drawing objects into classes as possible
@@ -83,6 +83,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Take advantage of apcMove and cpcMove in the MV
+* UndoMv does not restore last pawn or capture move correctly
+* Add apcMove and cpcMove to the MV 
 * BD: remove x88 board
 * Move gen: bitboard king
 * Move gen: bitboard bishops, rooks, and queens

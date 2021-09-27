@@ -455,7 +455,7 @@ ERR BDG::ParseMv(const char*& pch, MV& mv) const
 		file = fileQueenBishop;
 BuildCastle:
 		rank = RankBackFromCpc(cpcToMove);
-		mv = MV(SQ(rank, fileKing), SQ(rank, file));
+		mv = MV(SQ(rank, fileKing), SQ(rank, file), cpcToMove, APC::King);
 		return ERR::None;
 	case TKMV::WhiteWins:
 	case TKMV::BlackWins:
@@ -661,7 +661,7 @@ MV BDG::MvMatchPieceTo(const GMV& gmv, APC apc, int rankFrom, int fileFrom, SQ s
 {
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mvSearch = gmv[imv];
-		if (mvSearch.sqTo() == sqTo && ApcFromSq(mvSearch.sqFrom()) == apc) {
+		if (mvSearch.sqTo() == sqTo && mvSearch.apcMove() == apc) {
 			if (fileFrom != -1 && fileFrom != mvSearch.sqFrom().file())
 				continue;
 			if (rankFrom != -1 && rankFrom != mvSearch.sqFrom().rank())

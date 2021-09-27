@@ -640,7 +640,6 @@ struct {
 	unsigned long long rgull[20];
 	int cull;
 } rgperfttest[] = {
-#ifdef LATER
 	/*
 	 * perft tests from chessprogramming.org 
 	 */
@@ -654,15 +653,14 @@ struct {
 	{ L"Position 6", L"r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
 			{ 1ULL, 46ULL, 2079ULL, 89890ULL, 3894594ULL, 164075551ULL, 6923051137ULL, 287188994746ULL, 11923589843526ULL,
 			  490154852788714ULL }, 5 },
-#endif
 	/*
 	 *	perft test suite from algerbrex
-	 *	https://github.com/algerbrex/blunder/blob/main/tests/perftsuite.txt
+	 *	https://github.com/algerbrex/blunder/blob/main/testdata/perftsuite.epd
 	 */
-	{L"Mini White King-Side Castle", L"4k3/8/8/8/8/8/8/4K2R w K - 0 1", {1ULL, 15ULL, 66ULL, 1197ULL, 7059ULL, 133987ULL, 764643ULL}, 6},
-	{L"Mini White Queen-Side Castle", L"4k3/8/8/8/8/8/8/R3K3 w Q - 0 1", {1ULL, 16ULL, 71ULL, 1287ULL, 7626ULL, 145232ULL, 846648ULL}, 6},
-	{L"Mini Black King-Side Castle", L"4k2r/8/8/8/8/8/8/4K3 w k - 0 1", {1ULL, 5ULL, 75ULL, 459ULL, 8290ULL, 47635ULL, 899442ULL}, 6},
-	{L"Mini Black Queen-Side Castle", L"r3k3/8/8/8/8/8/8/4K3 w q - 0 1", {1ULL, 5ULL, 80ULL, 493ULL, 8897ULL, 52710ULL, 1001523ULL}, 6},
+	{L"Perftsuite 3", L"4k3/8/8/8/8/8/8/4K2R w K - 0 1", {1ULL, 15ULL, 66ULL, 1197ULL, 7059ULL, 133987ULL, 764643ULL}, 6},
+	{L"Perftsuite 4", L"4k3/8/8/8/8/8/8/R3K3 w Q - 0 1", {1ULL, 16ULL, 71ULL, 1287ULL, 7626ULL, 145232ULL, 846648ULL}, 6},
+	{L"Perftsuite 5", L"4k2r/8/8/8/8/8/8/4K3 w k - 0 1", {1ULL, 5ULL, 75ULL, 459ULL, 8290ULL, 47635ULL, 899442ULL}, 6},
+	{L"Perftsuite 6", L"r3k3/8/8/8/8/8/8/4K3 w q - 0 1", {1ULL, 5ULL, 80ULL, 493ULL, 8897ULL, 52710ULL, 1001523ULL}, 6},
 	{L"Perftsuite 7", L"4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1", {1ULL, 26ULL, 112ULL, 3189ULL, 17945ULL, 532933ULL, 2788982ULL}, 6},
 	{L"Perftsuite 8", L"r3k2r/8/8/8/8/8/8/4K3 w kq - 0 1", {1ULL, 5ULL, 130ULL, 782ULL, 22180ULL, 118882ULL, 3517770ULL}, 6},
 	{L"Perftsuite 9", L"8/8/8/8/8/8/6k1/4K2R w K - 0 1", {1ULL, 12ULL, 38ULL, 564ULL, 2219ULL, 37735ULL, 185867ULL}, 6},

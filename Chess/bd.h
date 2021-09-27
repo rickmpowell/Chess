@@ -147,107 +147,118 @@ inline APC& operator+=(APC& apc, int dapc)
 class MV {
 private:
 	uint32_t sqFromGrf : 6,
-		sqToGrf : 6,
-		csGrf : 4,
-		apcMoveGrf : 3,
-		apcCaptGrf : 3,
-		fEnPassantGrf : 1,
-		fileEnPassantGrf : 3,
-		apcPromoteGrf : 3,
-		padding : 3;
+		sqToGrf : 6,	
+		apcMoveGrf : 3,	// the piece that is moving
+		cpcMoveGrf : 1,
+		csGrf : 4,		// saved castle state
+		apcCaptGrf : 3,	// for captures, the piece we take
+		fEnPassantGrf : 1,	// en passant state
+		fileEnPassantGrf : 3,	
+		apcPromoteGrf : 3,	// for promotion, the piece we promote to
+		padding : 2;
 
 public:
-	inline MV(void) 
+	inline MV(void) noexcept
 	{
 		*(uint32_t*)this = 0;
 	}
 
-	inline MV(SQ sqFrom, SQ sqTo, APC apcPromote = APC::Null) {
+	inline MV(SQ sqFrom, SQ sqTo, CPC cpcMove, APC apcMove) noexcept
+	{
+		assert(apcMove != APC::Null);
 		*(uint32_t*)this = 0;
 		sqFromGrf = sqFrom;
 		sqToGrf = sqTo;
-		apcPromoteGrf = apcPromote;
+		cpcMoveGrf = cpcMove;
+		apcMoveGrf = apcMove;
 		padding = 0;
-		apcMoveGrf = APC::Null;
 	}
 
-	inline operator uint32_t() const
+	inline operator uint32_t() const noexcept
 	{
 		return *(uint32_t*)this;
 	}
 
-	inline SQ sqFrom(void) const
+	inline SQ sqFrom(void) const noexcept
 	{
 		return sqFromGrf;
 	}
 
-	inline SQ sqTo(void) const
+	inline SQ sqTo(void) const noexcept
 	{
 		return sqToGrf;
 	}
 	
-	inline APC apcPromote(void) const 
+	inline APC apcMove(void) const noexcept
+	{
+		return (APC)apcMoveGrf;
+	}
+
+	inline CPC cpcMove(void) const noexcept
+	{
+		return (CPC)cpcMoveGrf;
+	}
+
+	inline APC apcPromote(void) const noexcept
 	{
 		return (APC)apcPromoteGrf;
 	}
 
-	inline bool fIsNil(void) const 
+	inline bool fIsNil(void) const noexcept
 	{
 		return sqFromGrf == 0 && sqToGrf == 0;
 	}
 
-	inline MV& SetApcPromote(APC apc)
+	inline MV& SetApcPromote(APC apc) noexcept
 	{
 		apcPromoteGrf = apc;
 		return *this;
 	}
 
-	inline MV& SetCapture(APC apc) 
+	inline void SetCapture(APC apc) noexcept
 	{
 		apcCaptGrf = apc;
-		return *this;  
 	}
 
-	inline MV& SetCsEp(int cs, SQ sqEnPassant)
+	inline void SetCsEp(int cs, SQ sqEnPassant) noexcept
 	{
 		csGrf = cs;
 		fEnPassantGrf = !sqEnPassant.fIsNil();
 		if (fEnPassantGrf)
 			fileEnPassantGrf = sqEnPassant.file();
-		return *this;
 	}
 
-	inline int csPrev(void) const 
+	inline int csPrev(void) const noexcept
 	{
 		return csGrf;
 	}
 
-	inline int fileEpPrev(void) const 
+	inline int fileEpPrev(void) const noexcept
 	{
 		return fileEnPassantGrf;
 	}
 
-	inline bool fEpPrev(void) const 
+	inline bool fEpPrev(void) const noexcept
 	{
 		return fEnPassantGrf;
 	}
 
-	inline APC apcCapture(void) const 
+	inline APC apcCapture(void) const noexcept
 	{
 		return (APC)apcCaptGrf;
 	}
 
-	inline bool fIsCapture(void) const 
+	inline bool fIsCapture(void) const noexcept
 	{
 		return apcCapture() != APC::Null; 
 	}
 
-	inline bool operator==(const MV& mv) const 
+	inline bool operator==(const MV& mv) const noexcept
 	{
 		return *(uint32_t*)this == (uint32_t)mv;
 	}
 
-	inline bool operator!=(const MV& mv) const 
+	inline bool operator!=(const MV& mv) const noexcept
 	{
 		return *(uint32_t*)this != (uint32_t)mv;
 	}
@@ -352,13 +363,14 @@ public:
 #endif
 
 	
-	inline int cmv(void) const {
+	inline int cmv(void) const noexcept
+	{
 		assert(FValid());
 		return cmvCur;
 	}
 
 
-	inline MV& operator[](int imv)
+	inline MV& operator[](int imv) noexcept
 	{
 		assert(FValid());
 		assert(imv >= 0 && imv < cmvCur);
@@ -370,7 +382,7 @@ public:
 		}
 	}
 
-	inline MV operator[](int imv) const
+	inline MV operator[](int imv) const noexcept
 	{
 		assert(FValid());
 		assert(imv >= 0 && imv < cmvCur);
@@ -402,13 +414,13 @@ public:
 		assert(FValid());
 	}
 
-	inline void AppendMv(SQ sqFrom, SQ sqTo)
+	inline void AppendMv(SQ sqFrom, SQ sqTo, CPC cpcMove, APC apcMove)
 	{
 		assert(FValid());
 		if (cmvCur < cmvPreMax) 
-			amv[cmvCur++] = MV(sqFrom, sqTo);
+			amv[cmvCur++] = MV(sqFrom, sqTo, cpcMove, apcMove);
 		else
-			AppendMvOverflow(MV(sqFrom, sqTo));
+			AppendMvOverflow(MV(sqFrom, sqTo, cpcMove, apcMove));
 	}
 
 	void Resize(int cmvNew)
@@ -438,7 +450,7 @@ public:
 		pvmvOverflow->reserve(cmv - cmvPreMax);
 	}
 
-	void Clear(void)
+	void Clear(void) noexcept
 	{
 		if (pvmvOverflow) {
 			delete pvmvOverflow;
@@ -523,6 +535,30 @@ inline int RankBackFromCpc(CPC cpc)
 {
 	/* white -> 0, black -> 7 */
 	return (-(int)cpc) & 7;
+}
+
+
+/*	RankTakeEpFromCpc
+ *
+ *	The taken pawn rank for en passant. Will be the rank of the opposite color
+ *	pawn taken during the en passant capture
+ */
+inline int RankTakeEpFromCpc(CPC cpc)
+{
+	/* white -> 4, black -> 3 */
+	return 4 - (int)cpc;
+}
+
+
+/*	RankToEpFromCpc
+ *
+ *	The destination rank of en passant captures (where the capturing pawn ends
+ *	up).
+ */
+inline int RankToEpFromCpc(CPC cpc)
+{
+	/* white -> 5, black -> 2 */
+	return (5 ^ -(int)cpc) & 7;
 }
 
 
@@ -669,9 +705,9 @@ public:
 	void GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const;
 	void GenGmvCastle(GMV& gmv, SQ sqFrom, CPC cpcMove) const;
 	void AddGmvMvPromotions(GMV& gmv, MV mv) const;
-	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq) const;
-	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq) const;
-	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo) const;
+	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const;
+	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq, CPC cpcMove, APC apcMove) const;
+	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo, CPC cpcMove, APC apcMove) const;
 	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dsq) const;
 	
 	/*
@@ -712,7 +748,7 @@ public:
 	
 	inline bool FMvEnPassant(MV mv) const noexcept
 	{
-		return mv.sqTo() == sqEnPassant && ApcFromSq(mv.sqFrom()) == APC::Pawn;
+		return mv.sqTo() == sqEnPassant && mv.apcMove() == APC::Pawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const noexcept

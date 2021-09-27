@@ -392,7 +392,12 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, EVAL 
  */
 EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, EVAL evalAlpha, EVAL evalBeta)
 {
-	/* we need to evaluate the board before we remove moves from the move list, 
+	/* keep messages a-pumpin' */
+
+	if (++cYield % dcYield == 0)
+		ga.PumpMsg();
+
+	/* we need to full evaluate the board before we remove moves from the move list, 
 	   because the un-processed move list is used to compute mobility */
 
 	EVAL eval = EvalBdg(bdg, mvevEval, true);
@@ -416,11 +421,6 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, EVAL evalAlpha,
 		return -eval;
 	}
 
-	/* keep messages a-pumpin' */
-
-	if (++cYield % dcYield == 0)
-		ga.PumpMsg();
-
 	/* only noisy moves are left. there shouldn't be very many of them, so don't
 	   bother with sorting */
 
@@ -432,6 +432,7 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, EVAL evalAlpha,
 	cmvevGen += vmvev.size();
 	EVAL evalBest = -evalInf;
 	int cmv = 0;
+	//int cmvNoisy = 0;
 
 	for (MVEV& mvev : vmvev) {
 	
