@@ -142,19 +142,18 @@ protected:
 	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev);
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
-	virtual EVAL EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
+	virtual EVAL EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull) noexcept;
 	float CmvFromLevel(int level) const noexcept;
 
 	void StartMoveLog(void);
 	void EndMoveLog(void);
 
-	EVAL EvalBaseApc(APC apc) const;
+	EVAL EvalBaseApc(APC apc) const noexcept;
 	void InitWeightTables(void);
 	void InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][64], EVAL mpapcsqeval[APC::ActMax][64]);
 	EVAL EvalPstFromCpc(const BDG& bdg, CPC cpcMove) const noexcept;
 	EVAL EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int phase2) const noexcept;
-
-	EVAL EvalPst(const BDG& bdg, CPC cpcMove, const EVAL mpapcsqeval[APC::ActMax][64]) const noexcept;
+	EVAL EvalBdgAttackDefend(BDG& bdg, SQ sqTo) const noexcept;
 };
 
 
@@ -163,7 +162,7 @@ class PLAI2 : public PLAI
 public:
 	PLAI2(GA& ga);
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
-	virtual EVAL EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull);
+	virtual EVAL EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull) noexcept;
 };
 
 

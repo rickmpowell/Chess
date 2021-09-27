@@ -515,26 +515,45 @@ inline EVAL EvalTempo(CPC cpc)
 }
 
 
+/*	PLAI::EvalBdgAttackDefend
+ *
+ *	Little heuristic for board evaluation that tries to detect bad moves, which are
+ *	if we have moved ot an attacked square that isn't defended. This is only useful
+ *	for pre-sorting alpha-beta pruning, because it's somewhat more accurate, but it's 
+ *	good enough for real static board evaluation. Someday, a better heuristic would
+ *	be to exchange until quiescence.
+ * 
+ *	The board should already have the move made on it. Destination square of the move 
+ *	is sqTo. Returns the amount to adjust the evaluation by.
+ */
+EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, SQ sqTo) const noexcept
+{
+	APC apcMove = bdg.ApcFromSq(sqTo);
+	APC apcAttacker = bdg.ApcSqAttacked(sqTo, bdg.cpcToMove);
+	if (apcAttacker != APC::Null) {
+		if (apcAttacker < apcMove)
+			return -EvalBaseApc(apcMove);
+		APC apcDefended = bdg.ApcSqAttacked(sqTo, ~bdg.cpcToMove);
+		if (apcDefended == APC::Null)
+			return -EvalBaseApc(apcMove);
+	}
+	return 0;
+}
+
+
 /*	PLAI::EvalBdg
  *
  *	Evaluates the board from the point of view of the color that just moved.
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
+EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull) noexcept
 {
 	cmvevEval++;
 
 	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
-	if (!fFull) {
-		/* make a guess that this is a bad move if we're moving to an attacked square
-		   that isn't defended, which will improve alpha-beta pruning, but not something 
-		   we want to do on real board evaluation; someday, a better heuristic would be 
-		   to exchange until quiescence */
-		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
-				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
-			evalMat -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
-	}
+	if (!fFull)
+		evalMat += EvalBdgAttackDefend(bdg, mvev.mv.sqTo());
 
 	static GMV gmvSelf;
 	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
@@ -796,7 +815,7 @@ const EVAL mpapcsqdevalEndGame[APC::ActMax][64] = {
 };
 		
 
-EVAL PLAI::EvalBaseApc(APC apc) const
+EVAL PLAI::EvalBaseApc(APC apc) const noexcept
 {
 	EVAL mpapceval[APC::ActMax] = { 0, 100, 275, 300, 500, 900, 200 };
 	return mpapceval[apc];
@@ -846,23 +865,18 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 }
 
 
-EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull)
+EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull) noexcept
 {
 	cmvevEval++;
 
 	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
-	if (!fFull) {
-		/* make a guess that this is a bad move if we're moving to an attacked square
-		   that isn't defended, which will improve alpha-beta pruning, but not something
-		   we want to do on real board evaluation; someday, a better heuristic would be
-		   to exchange until quiescence */
-		if (bdg.FSqAttacked(mvev.mv.sqTo(), bdg.cpcToMove) &&
-				!bdg.FSqAttacked(mvev.mv.sqTo(), ~bdg.cpcToMove))
-			evalMat -= EvalBaseApc(bdg.ApcFromSq(mvev.mv.sqTo()));
-	}
+	if (!fFull)
+		evalMat += EvalBdgAttackDefend(bdg, mvev.mv.sqTo());
+
 	if (fFull) {
 		LogData(L"Material " + to_wstring(evalMat));
 	}
+
 	return evalMat + EvalTempo(bdg.cpcToMove);
 }
 

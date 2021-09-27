@@ -682,20 +682,21 @@ public:
 	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
 	bool FMvIsQuiescent(MV mv, CPC cpc) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
-	bool FBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
+	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
 	bool FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept;
 	bool FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept;
 	bool FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept;
 
 
-	/*	BD::FSqAttacked
+	/*	BD::ApcSqAttacked
 	 *	
-	 *	Returns true if sqAttacked is attacked by some piece of the color cpcBy. The piece
-	 *	on sqAttacked is not considered to be attacking sqAttacked.
+	 *	Returns the lowest piece type of the pieces attacking sqAttacked. The piece
+	 *	on sqAttacked is not considered to be attacking sqAttacked. Returns 
+	 *	APC::Null if no pieces are attacking the square.
 	 */
-	inline bool FSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
+	inline APC ApcSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
 	{
-		return FBbAttacked(BB(sqAttacked), cpcBy);
+		return ApcBbAttacked(BB(sqAttacked), cpcBy);
 	}
 
 	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;

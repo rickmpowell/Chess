@@ -550,7 +550,7 @@ bool BD::FMvIsQuiescent(MV mv, CPC cpcMove) const noexcept
  */
 bool BD::FInCheck(CPC cpc) const noexcept
 {
-	return FSqAttacked(mpapcbb[cpc][APC::King].sqLow(), ~cpc);
+	return ApcSqAttacked(mpapcbb[cpc][APC::King].sqLow(), ~cpc) != APC::Null;
 }
 
 
@@ -682,25 +682,26 @@ BB BD::BbKingAttacked(CPC cpcBy) const noexcept
 }
 
 
-/*	BD::FBbAttacked
+/*	BD::ApcBbAttacked
  *
- *	Returns true if the given bitboard is attacked by someone of the color cpcBy.
+ *	Returns the piece type of the lowest valued piece if the given bitboard is attacked 
+ *	by someone of the color cpcBy. Returns APC::Null if no pieces are attacking.
  */
-bool BD::FBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
+APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 {
 	if (BbPawnAttacked(cpcBy) & bbAttacked)
-		return true;
+		return APC::Pawn;
 	if (BbKnightAttacked(cpcBy) & bbAttacked)
-		return true;
+		return APC::Knight;
 	if (FBbAttackedByBishop(bbAttacked, cpcBy))
-		return true;
+		return APC::Bishop;
 	if (FBbAttackedByRook(bbAttacked, cpcBy))
-		return true;
+		return APC::Rook;
 	if (FBbAttackedByQueen(bbAttacked, cpcBy))
-		return true;
+		return APC::Queen;
 	if (BbKingAttacked(cpcBy) & bbAttacked)
-		return true;
-	return false;
+		return APC::King;
+	return APC::Null;
 }
 
 
@@ -872,11 +873,11 @@ void BD::GenGmvCastle(GMV& gmv, SQ sqKing, CPC cpcMove) const
 {
 	BB bbKing = BB(sqKing);
 	if (FCanCastle(cpcMove, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
-		if (!FBbAttacked(bbKing | (bbKing << 1), ~cpcMove))
+		if (ApcBbAttacked(bbKing | (bbKing << 1), ~cpcMove) == APC::Null)
 			gmv.AppendMv(sqKing, sqKing + 2);
 	}
 	if (FCanCastle(cpcMove, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
-		if (!FBbAttacked(bbKing | (bbKing >> 1), ~cpcMove)) 
+		if (ApcBbAttacked(bbKing | (bbKing >> 1), ~cpcMove) == APC::Null) 
 			gmv.AppendMv(sqKing, sqKing - 2);
 	}
 }
