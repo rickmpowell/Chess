@@ -206,7 +206,7 @@ public:
 	void PauseClock(CPC cpc, DWORD tmCur);
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);
-	void MoveToImv(int imv, SPMV spmv);
+	void MoveToImv(int64_t imv, SPMV spmv);
 	void GenGmv(GMV& gmv);
 
 	/*	
@@ -218,6 +218,7 @@ public:
 	virtual void ClearLog(void);
 	virtual void SetDepthLog(int depth);
 	virtual void InitLog(int depth);
+	virtual int DepthLog(void) const;
 
 	/*
 	 *	Deserializing 

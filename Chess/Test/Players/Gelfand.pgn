@@ -61198,7 +61198,7 @@
 9.Bd3 Be6 10.Qe2 b4 11.Ne4 Bd5 12.h4 g4 13.Nh2 h5 14.f3 Qd7 15.fxg4 Qa4 16.Bg5 Qxa2
 17.exd6 Qa1+ 18.Kd2 Qxb2 19.Nf3 hxg4 20.Ne5 Qxd4 21.d7+ Kd8 22.Nxg4 f5 23.Ngf2 fxe4
 24.Nxe4 Nc4+ 25.Ke1 Nb2 26.Be3 Nxd3+ 27.cxd3 Qb2 28.Rd2 Bc3 29.Nxc3 Qxc3
-30.Bg5 Nf6 31.Qxe1 Qd4  0-1
+30.Bg5 Nf6 { [rp] Qxe1 is an illegal move 31.Qxe1 Qd4 }  0-1
 
 [Event "World Blitz 2019"]
 [Site "Moscow RUS"]

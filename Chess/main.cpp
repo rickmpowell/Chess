@@ -859,7 +859,7 @@ public:
     }
 };
 
-DDPERFT CMDPERFTDIVIDE::ddperft = { TPERFT::Divide, 3 };
+DDPERFT CMDPERFTDIVIDE::ddperft = { TPERFT::Bulk, 6 };
 
 
 /*
@@ -1089,7 +1089,7 @@ public:
     
     virtual wstring SzTip(void) const
     {
-        return app.SzLoad(idsTipPlayerLvlUp+icmd-cmdPlayerLvlUp);
+        return app.SzLoad(idsTipPlayerLvlUp+(int)icmd-cmdPlayerLvlUp);
     }
 };
 

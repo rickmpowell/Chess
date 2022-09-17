@@ -186,7 +186,7 @@ void UIBD::Layout(void)
  */
 void UIBD::InitGame(void)
 {
-	ga.bdg.GenGmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.GenGmv(gmvDrag, GG::Legal);
 }
 
 
@@ -209,7 +209,7 @@ FoundMove:
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	ga.bdg.MakeMv(mv);
-	ga.bdg.GenGmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.GenGmv(gmvDrag, GG::Legal);
 	ga.bdg.SetGameOver(gmvDrag, *ga.prule);
 	if (spmv != SPMV::Hidden)
 		Redraw();
@@ -223,7 +223,7 @@ void UIBD::UndoMv(SPMV spmv)
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	ga.bdg.UndoMv();
-	ga.bdg.GenGmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.GenGmv(gmvDrag, GG::Legal);
 	ga.bdg.SetGs(GS::Playing);
 	if (spmv != SPMV::Hidden)
 		Redraw();
@@ -237,7 +237,7 @@ void UIBD::RedoMv(SPMV spmv)
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	ga.bdg.RedoMv();
-	ga.bdg.GenGmv(gmvDrag, RMCHK::Remove);
+	ga.bdg.GenGmv(gmvDrag, GG::Legal);
 	ga.bdg.SetGameOver(gmvDrag, *ga.prule);
 	if (spmv != SPMV::Hidden)
 		Redraw();

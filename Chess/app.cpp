@@ -60,7 +60,7 @@ D2::D2(void) : pfactd2(nullptr), pfactwic(nullptr), pfactdwr(nullptr)
 				reinterpret_cast<IUnknown**>(&pfactdwr))) != S_OK)
 			throw err;
 	}
-	catch (int err) {
+	catch (...) {
 		Cleanup();
 		throw;
 	}
@@ -112,10 +112,10 @@ CMDLIST::~CMDLIST(void)
  */
 void CMDLIST::Add(CMD* pcmd)
 {
-	int ccmd = (int)vpcmd.size();
+	size_t ccmd = vpcmd.size();
 	if (pcmd->icmd >= ccmd) {
 		vpcmd.resize(pcmd->icmd + 1);
-		for (int icmd = ccmd; icmd < pcmd->icmd + 1; icmd++)
+		for (size_t icmd = ccmd; icmd < pcmd->icmd + 1; icmd++)
 			vpcmd[icmd] = nullptr;
 	}
 	assert(vpcmd[pcmd->icmd] == nullptr);
@@ -167,7 +167,7 @@ wstring CMDLIST::SzTip(int icmd)
  */
 
 
-CMD::CMD(APP& app, int icmd) : app(app), icmd(icmd)
+CMD::CMD(APP& app, size_t icmd) : app(app), icmd(icmd)
 {
 }
 
@@ -208,7 +208,8 @@ void CMD::InitMenu(HMENU hmenu)
 	if (!FCustomSzMenu())
 		return;
 	int mf = MF_UNCHECKED | MF_ENABLED;
-	::ModifyMenuW(hmenu, icmd, MF_BYCOMMAND | MF_STRING | mf, icmd, SzMenu().c_str());
+	UINT cmd = (UINT)icmd;
+	::ModifyMenuW(hmenu, cmd, MF_BYCOMMAND | MF_STRING | mf, cmd, SzMenu().c_str());
 }
 
 

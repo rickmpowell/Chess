@@ -39,7 +39,7 @@
 #include <intrin.h>
 #include <immintrin.h>
 
-
+#include <format>
 #include <cmath>
 #include <algorithm>
 #include <random>
@@ -51,7 +51,7 @@
 #include <iomanip>
 #include <fstream>
 #include <filesystem>
-#include <format>
+#include <streambuf>
 
 
 using namespace D2D1;
@@ -193,8 +193,8 @@ struct PT : public D2D1_POINT_2F
 
 	inline PT(DWORD pt)
 	{
-		this->x = GET_X_LPARAM(pt);
-		this->y = GET_Y_LPARAM(pt);
+		this->x = (float)GET_X_LPARAM(pt);
+		this->y = (float)GET_Y_LPARAM(pt);
 	}
 
 

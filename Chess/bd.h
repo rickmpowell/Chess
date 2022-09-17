@@ -114,6 +114,70 @@ inline APC& operator+=(APC& apc, int dapc)
 }
 
 
+/*
+ *
+ *	PC class
+ * 
+ *	Simple class for typing piece/color combination
+ */
+
+
+class PC
+{
+	uint8_t grf;
+public:
+	
+	PC(uint8_t grf) noexcept : grf(grf)
+	{
+	}
+
+	PC(CPC cpc, APC apc) noexcept : grf((cpc << 3) | apc)
+	{
+	}
+
+	APC apc(void) const noexcept
+	{
+		return (APC)(grf & 7);
+	}
+
+	CPC cpc(void) const noexcept
+	{
+		return (CPC)((grf >> 3) & 1);
+	}
+
+	inline operator uint8_t() const noexcept
+	{
+		return grf;
+	}
+
+	inline PC& operator++()
+	{
+		grf++;
+		return *this;
+	}
+
+	inline PC operator++(int)
+	{
+		uint8_t grfT = grf++;
+		return PC(grfT);
+	}
+};
+
+const uint8_t pcMax = 2*8;
+const PC pcWhitePawn(CPC::White, APC::Pawn);
+const PC pcBlackPawn(CPC::Black, APC::Pawn);
+const PC pcWhiteKnight(CPC::White, APC::Knight);
+const PC pcBlackKnight(CPC::Black, APC::Knight);
+const PC pcWhiteBishop(CPC::White, APC::Bishop);
+const PC pcBlackBishop(CPC::Black, APC::Bishop);
+const PC pcWhiteRook(CPC::White, APC::Rook);
+const PC pcBlackRook(CPC::Black, APC::Rook);
+const PC pcWhiteQueen(CPC::White, APC::Queen);
+const PC pcBlackQueen(CPC::Black, APC::Queen);
+const PC pcWhiteKing(CPC::White, APC::King);
+const PC pcBlackKing(CPC::Black, APC::King);
+
+
 /*	
  * 
  *	MV type
@@ -121,26 +185,21 @@ inline APC& operator+=(APC& apc, int dapc)
  *	A move is a from and to square, with a little extra info for
  *	weird moves, along with enough information to undo the move.
  * 
- *	Low 8 bits is the source square, the next 8 bits are the 
- *	destination square. The rest of the bottom word is currently
- *	unused, reserved for a change in board representation.
+ *	Low word is the from/to square, along with the type of piece
+ *	that is moving. We store the piece with apc and color
  *	
- *	The high word is mostly used for undo information. On captures
- *	the tpc of the captured piece is in the bottom 4 bits, and
- *	the next 3 bits are the apc of the captured piece. If the capture
- *	apc is apcNull, then the move was not a capture. The next bit
- *	is 1 if en passant capture was possible in previous position. 
- *	The next three bits are the file of the en passant piece if en
- *	passant is true. The next two bits are the previous castle bits.
- *	The top 3 bits are the apc of the new piece on pawn promotions. 
+ *	The high word is mostly used for undo information and includes
+ *	previous castle state, the type of piece captured (if a capture),
+ *	and en passant state. It also includes the piece promoted to for
+ *	pawn promotions.
  * 
  *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
- *  +-----------+--------+--------+--------+--------+
- *  |     cs    |       to        |      from       |
- *  +-----------+--------+--------+--------+--------+
- *  +--------+--------+--------+--+--------+--------+
- *  |        | promote| ep file|ep| cap apc|move apc|
- *  +--------+--------+--------+--+--------+--------+
+ *  +--+--------+--------+--------+--------+--------+
+ *  |    pc move|       to        |      from       |
+ *  +--+--------+--------+--------+--------+--------+
+ *  +-----+--------+--------+--+--------+-----------+
+ *  | XXX |apc prom|ep file |ep|apc capt| cs state  |
+ *  +-----+--------+--------+--+--------+-----------+
  *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
  */
 
@@ -148,8 +207,7 @@ class MV {
 private:
 	uint32_t sqFromGrf : 6,
 		sqToGrf : 6,	
-		apcMoveGrf : 3,	// the piece that is moving
-		cpcMoveGrf : 1,
+		pcMoveGrf : 4,	// the piece that is moving
 		csGrf : 4,		// saved castle state
 		apcCaptGrf : 3,	// for captures, the piece we take
 		fEnPassantGrf : 1,	// en passant state
@@ -158,20 +216,21 @@ private:
 		padding : 2;
 
 public:
+
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	inline MV(void) noexcept
 	{
+		assert(sizeof(MV) == sizeof(uint32_t));
 		*(uint32_t*)this = 0;
 	}
 
-	inline MV(SQ sqFrom, SQ sqTo, CPC cpcMove, APC apcMove) noexcept
+	inline MV(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
-		assert(apcMove != APC::Null);
-		*(uint32_t*)this = 0;
+		assert(pcMove.apc() != APC::Null);
+		*(uint32_t*)this = 0;	// initialize everything else to 0
 		sqFromGrf = sqFrom;
 		sqToGrf = sqTo;
-		cpcMoveGrf = cpcMove;
-		apcMoveGrf = apcMove;
-		padding = 0;
+		pcMoveGrf = pcMove;
 	}
 
 	inline operator uint32_t() const noexcept
@@ -191,12 +250,17 @@ public:
 	
 	inline APC apcMove(void) const noexcept
 	{
-		return (APC)apcMoveGrf;
+		return PC(pcMoveGrf).apc();
 	}
 
 	inline CPC cpcMove(void) const noexcept
 	{
-		return (CPC)cpcMoveGrf;
+		return PC(pcMoveGrf).cpc();
+	}
+
+	inline PC pcMove(void) const noexcept
+	{
+		return PC(pcMoveGrf);
 	}
 
 	inline APC apcPromote(void) const noexcept
@@ -286,6 +350,7 @@ private:
 public:
 	GMV() : cmvCur(0), pvmvOverflow(nullptr) 
 	{
+		amv[0] = 0;
 	}
 
 	~GMV() 
@@ -354,6 +419,7 @@ public:
 		return *this;
 	}
 
+
 #ifndef NDEBUG
 	bool FValid(void) const
 	{
@@ -414,13 +480,15 @@ public:
 		assert(FValid());
 	}
 
-	inline void AppendMv(SQ sqFrom, SQ sqTo, CPC cpcMove, APC apcMove)
+	inline void AppendMv(SQ sqFrom, SQ sqTo, PC pcMove)
 	{
 		assert(FValid());
-		if (cmvCur < cmvPreMax) 
-			amv[cmvCur++] = MV(sqFrom, sqTo, cpcMove, apcMove);
+		if (cmvCur < cmvPreMax) {
+			amv[cmvCur] = MV(sqFrom, sqTo, pcMove);
+			cmvCur++;
+		}
 		else
-			AppendMvOverflow(MV(sqFrom, sqTo, cpcMove, apcMove));
+			AppendMvOverflow(MV(sqFrom, sqTo, pcMove));
 	}
 
 	void Resize(int cmvNew)
@@ -592,8 +660,7 @@ class BD;
 class GENHABD
 {
 private:
-	/* TODO: rearrange this to be 64 x cpc x apc */
-	HABD rghabdPiece[8 * 8][APC::ActMax][CPC::ColorMax];
+	HABD rghabdPiece[sqMax][pcMax];
 	HABD rghabdCastle[16];
 	HABD rghabdEnPassant[8];
 	HABD habdMove;
@@ -608,9 +675,9 @@ public:
 	 *
 	 *	Toggles the square/ipc in the hash at the given square.
 	 */
-	inline void TogglePiece(HABD& habd, SQ sq, CPC cpc, APC apc) const
+	inline void TogglePiece(HABD& habd, SQ sq, PC pc) const
 	{
-		habd ^= rghabdPiece[sq][apc][cpc];
+		habd ^= rghabdPiece[sq][pc];
 	}
 
 
@@ -661,16 +728,15 @@ extern GENHABD genhabd;
  */
 
 
-enum class RMCHK {	// GenGmv Option to optionally remove checks
-	Remove,
-	NoRemove
+enum class GG {	// GenGmv Option to optionally remove checks
+	Legal,
+	Pseudo
 };
 
 class BD
 {
-	static const EVAL mpapcvpc[];
 public:
-	BB mpapcbb[CPC::ColorMax][APC::ActMax];	// bitboards for the pieces
+	BB mppcbb[pcMax];	// bitboards for the pieces
 	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
 	BB bbUnoccupied;	// empty squares
 	CPC cpcToMove;	/* side with the move */
@@ -684,7 +750,7 @@ public:
 
 	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
 	{
-		memcpy(mpapcbb, bd.mpapcbb, sizeof(mpapcbb));
+		memcpy(mppcbb, bd.mppcbb, sizeof(mppcbb));
 		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
 	}
 
@@ -699,15 +765,15 @@ public:
 
 	/* move generation */
 	
-	void GenGmv(GMV& gmv, RMCHK rmchk) const;
-	void GenGmv(GMV& gmv, CPC cpcMove, RMCHK rmchk) const;
+	void GenGmv(GMV& gmv, GG gg) const;
+	void GenGmv(GMV& gmv, CPC cpcMove, GG gg) const;
 	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
 	void GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const;
 	void GenGmvCastle(GMV& gmv, SQ sqFrom, CPC cpcMove) const;
 	void AddGmvMvPromotions(GMV& gmv, MV mv) const;
 	void GenGmvBbPawnMvs(GMV& gmv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const;
-	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq, CPC cpcMove, APC apcMove) const;
-	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo, CPC cpcMove, APC apcMove) const;
+	void GenGmvBbMvs(GMV& gmv, BB bbTo, int dsq, PC pcMove) const;
+	void GenGmvBbMvs(GMV& gmv, SQ sqFrom, BB bbTo, PC pcMove) const;
 	void GenGmvBbPromotionMvs(GMV& gmv, BB bbTo, int dsq) const;
 	
 	/*
@@ -715,8 +781,7 @@ public:
 	 */
 
 	void RemoveInCheckMoves(GMV& gmv, CPC cpc) const;
-	void RemoveQuiescentMoves(GMV& gmv, CPC cpcMove) const;
-	bool FMvIsQuiescent(MV mv, CPC cpc) const noexcept;
+	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
 	bool FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept;
@@ -765,20 +830,27 @@ public:
 			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
 	}
 	
-	inline APC ApcFromSq(SQ sq) const noexcept
-	{
-		CPC cpc = CpcFromSq(sq);
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
-			if (mpapcbb[cpc][apc].fSet(sq))
-				return apc;
-		return APC::Null;
-	}
-	
 	inline CPC CpcFromSq(SQ sq) const noexcept
 	{ 
 		return mpcpcbb[CPC::White].fSet(sq) ? CPC::White : CPC::Black;
 	}
-	
+
+	inline PC PcFromSq(SQ sq) const noexcept
+	{
+		CPC cpc = CpcFromSq(sq);
+		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
+			if (mppcbb[PC(cpc, apc)].fSet(sq))
+				return PC(cpc, apc);
+		return PC(cpc, APC::Null);
+	}
+
+
+	inline APC ApcFromSq(SQ sq) const noexcept
+	{
+		return PcFromSq(sq).apc();
+	}
+
+
 	inline bool FIsEmpty(SQ sq) const noexcept
 	{
 		return bbUnoccupied.fSet(sq);
@@ -825,13 +897,13 @@ public:
 	 *	state to have a square set by both colors. When making moves, clear before 
 	 *	you set and you shouldn't get in any trouble.
 	 */
-	inline void SetBB(CPC cpc, APC apc, SQ sq) noexcept
+	inline void SetBB(PC pc, SQ sq) noexcept
 	{
 		BB bb(sq);
-		mpapcbb[cpc][apc] += bb;
-		mpcpcbb[cpc] += bb;
+		mppcbb[pc] += bb;
+		mpcpcbb[pc.cpc()] += bb;
 		bbUnoccupied -= bb;
-		genhabd.TogglePiece(habd, sq, cpc, apc);
+		genhabd.TogglePiece(habd, sq, pc);
 	}
 
 
@@ -844,14 +916,14 @@ public:
 	 *	theoretically have a piece in that square. It's up to the calling code to
 	 *	make sure this doesn't happen.
 	 */
-	inline void ClearBB(CPC cpc, APC apc, SQ sq) noexcept
+	inline void ClearBB(PC pc, SQ sq) noexcept
 	{
 		BB bb(sq);
-		mpapcbb[cpc][apc] -= bb;
-		mpcpcbb[cpc] -= bb;
-		assert(!mpcpcbb[~cpc].fSet(sq));
+		mppcbb[pc] -= bb;
+		mpcpcbb[pc.cpc()] -= bb;
+		assert(!mpcpcbb[~pc.cpc()].fSet(sq));
 		bbUnoccupied += bb;
-		genhabd.TogglePiece(habd, sq, cpc, apc);
+		genhabd.TogglePiece(habd, sq, pc);
 	}
 
 	void ToggleToMove(void) noexcept
@@ -872,7 +944,7 @@ public:
 	 */
 
 	void InitFENPieces(const wchar_t*& szFEN);
-	void AddPieceFEN(SQ sq, CPC cpc, APC apc);
+	void AddPieceFEN(SQ sq, PC pc);
 	void InitFENSideToMove(const wchar_t*& sz);
 	void InitFENCastle(const wchar_t*& sz);
 	void InitFENEnPassant(const wchar_t*& sz);
@@ -885,10 +957,10 @@ public:
 
 #ifndef NDEBUG
 	void Validate(void) const;
-	void ValidateBB(CPC cpc, APC apc, SQ sq) const;
+	void ValidateBB(PC pc, SQ sq) const;
 #else
 	inline void Validate(void) const { }
-	inline void ValidateBB(CPC cpc, APC apc, SQ sq) const { }
+	inline void ValidateBB(PC pck, SQ sq) const { }
 #endif
 };
 
@@ -954,8 +1026,8 @@ class BDG : public BD
 public:
 	GS gs;
 	vector<MV> vmvGame;	// the game moves that resulted in bd board state
-	int imvCur;
-	int imvPawnOrTakeLast;	/* index of last pawn or capture move (used directly for 50-move 
+	int64_t imvCur;
+	int64_t imvPawnOrTakeLast;	/* index of last pawn or capture move (used directly for 50-move 
 							   draw detection), but it is also a bound on how far back we need 
 							   to search for 3-move repetition draws */
 
@@ -967,7 +1039,7 @@ public:
 	 *	making moves 
 	 */
 
-	void MakeMv(MV mv);
+	void MakeMv(MV& mv);
 	void UndoMv(void);
 	void RedoMv(void);
 	
@@ -979,7 +1051,7 @@ public:
 	void SetGameOver(const GMV& gmv, const RULE& rule);
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
-	bool FDraw50Move(int cmvDraw) const;
+	bool FDraw50Move(int64_t cmvDraw) const;
 	void SetGs(GS gs); 
 
 	/*
@@ -1031,6 +1103,28 @@ public:
 	inline CPC CpcMoveFromImv(int imv) const noexcept
 	{
 		return (CPC)(imv & 1);
+	}
+};
+
+
+/*
+ *
+ *	Little helper class for making/undo-ing a move
+ * 
+ */
+
+class MAKEMV
+{
+	BDG& bdg;
+public:
+	MAKEMV(BDG& bdg, MV& mv) : bdg(bdg)
+	{
+		bdg.MakeMv(mv);
+	}
+
+	~MAKEMV(void)
+	{
+		bdg.UndoMv();
 	}
 };
 

@@ -161,7 +161,7 @@ const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
 wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
 {
 	GMV gmv;
-	GenGmv(gmv, RMCHK::NoRemove);
+	GenGmv(gmv, GG::Pseudo);
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mv.sqFrom();

@@ -411,6 +411,7 @@ public:
 			LogClose(ffd.cFileName, L"Passed", LGF::Normal);
 		}
 		catch (EX& ex) {
+			(void)ex;
 			LogClose(ffd.cFileName, L"Failed", LGF::Normal);
 			throw;
 		}
@@ -572,7 +573,7 @@ uint64_t GA::CmvPerft(int depth)
 	if (depth == 0)
 		return 1;
 	GMV gmv;
-	bdg.GenGmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, GG::Legal);
 	uint64_t cmv = 0;
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mv = gmv[imv];
@@ -586,7 +587,7 @@ uint64_t GA::CmvPerft(int depth)
 uint64_t GA::CmvPerftBulk(int depth)
 {
 	GMV gmv;
-	bdg.GenGmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, GG::Legal);
 	if (depth <= 1)
 		return gmv.cmv();
 	uint64_t cmv = 0;
@@ -605,7 +606,7 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 		return 1;
 	assert(depthPerft >= 1);
 	GMV gmv;
-	bdg.GenGmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, GG::Legal);
 	if (depthPerft == 1)
 		return gmv.cmv();
 	uint64_t cmv = 0;

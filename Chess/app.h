@@ -65,10 +65,10 @@ class CMD
 
 protected:
 	APP& app;
-	int icmd;
+	size_t icmd;
 
 public:
-	CMD(APP& app, int icmd);
+	CMD(APP& app, size_t icmd);
 	virtual ~CMD(void) { }
 	virtual int Execute(void);
 	virtual bool FEnabled(void) const;

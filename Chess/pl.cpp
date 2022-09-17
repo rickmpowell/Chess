@@ -35,18 +35,18 @@ PL::~PL(void)
  *	Evaluation manipulators and constants
  */
 
-const EVAL evalInf = 10000 * 100;	/* largest possible evaluation */
+const EVAL evalInf = 1000*100;	/* largest possible evaluation */
 const EVAL evalMate = evalInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
-const EVAL evalMateMin = evalMate - 100;
+const EVAL evalMateMin = evalMate - 63;
 const EVAL evalTempo = 33;	/* evaluation of a single move advantage */
 const EVAL evalDraw = 0;	/* evaluation of a draw */
+const EVAL evalQuiescent = evalInf + 1;
 
 
 bool FEvalIsMate(EVAL eval)
 {
 	return eval >= evalMateMin;
 }
-
 
 
 wstring SzFromEval(EVAL eval)
@@ -58,7 +58,13 @@ wstring SzFromEval(EVAL eval)
 		*pch++ = L'-';
 		eval = -eval;
 	}
-	if (FEvalIsMate(eval)) {
+	if (eval == evalInf)
+		*pch++ = L'\x221e';
+	else if (eval == evalQuiescent)
+		*pch++ = L'Q';
+	else if (eval > evalInf)
+		*pch++ = L'*';
+	else if (FEvalIsMate(eval)) {
 		*pch++ = L'#';
 		pch = PchDecodeInt((evalMate - eval + 1) / 2, pch);
 	}
@@ -91,26 +97,41 @@ void PL::ReceiveMv(MV mv, SPMV spmv)
 	}
 }
 
+
 bool PL::FDepthLog(LGT lgt, int& depth)
 {
 	return ga.FDepthLog(lgt, depth);
 }
+
 
 void PL::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {
 	ga.AddLog(lgt, lgf, depth, tag, szData);
 }
 
+
+int PL::DepthLog(void) const
+{
+	return ga.DepthLog();
+}
+
+
+void PL::SetDepthLog(int depthNew)
+{
+	ga.SetDepthLog(depthNew);
+}
+
+
 /*
  *
- *	PLAI and PLAI2
+ *	PLAI
  * 
  *	AI computer players. Base PLAI implements alpha-beta pruned look ahead tree.
  * 
  */
 
 
-PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cmvevEval(0), cmvevGen(0), cmvevPrune(0)
+PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cmvevEval(0), cmvevNode(0)
 {
 	rgfAICoeffNum[0] = 100;
 	rgfAICoeffNum[1] = 20;
@@ -146,18 +167,17 @@ void PLAI::SetLevel(int level) noexcept
 float PLAI::CmvFromLevel(int level) const noexcept
 {
 	switch (level) {
-	case 1: return 500.0f;
-	case 2: return 2000.0f;
-	case 3: return 1.0e+5f;
-	case 4: return 1.0e+6f;
-	case 5: return 2.0e+6f;
-	case 6: return 5.0e+6f;
-	case 7: return 8.0e+6f;
-	case 8: return 1.0e+7f;
-	case 9: return 2.0e+7f;
-	case 10: return 5.0e+7f;
+	case 1: return 100.0f;
+	case 2: return 8.0e+3f;
+	case 3: return 3.2e+4f;
+	case 4: return 1.2e+5f;
 	default:
-		return 1.0e+6f;
+	case 5: return 5.0e+5f;
+	case 6: return 2.0e+6f;
+	case 7: return 8.0e+6f;
+	case 8: return 3.2e+7f;
+	case 9: return 1.2e+8f;
+	case 10: return 5.0e+8f;
 	}
 }
 
@@ -172,6 +192,7 @@ int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 	return depthMax;
 }
 
+
 /*	PLAI::StartMoveLog
  *
  *	Opens a log entry for AI move generation. Must be paired with a corresponding
@@ -181,7 +202,7 @@ void PLAI::StartMoveLog(void)
 {
 	tpStart = high_resolution_clock::now();
 	cmvevEval = 0L;
-	cmvevPrune = 0L;
+	cmvevNode = 0L;
 	LogOpen(TAG(ga.bdg.cpcToMove == CPC::White ? L"White" : L"Black", ATTR(L"FEN", ga.bdg)),
 		L"(" + szName + L")");
 }
@@ -189,20 +210,115 @@ void PLAI::StartMoveLog(void)
 
 /*	PLAI::EndMoveLog
  *
- *	Closes the move generation logging entry for A?I move generation.
+ *	Closes the move generation logging entry for AI move generation.
  */
 void PLAI::EndMoveLog(void)
 {
 	time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
 	LogData(L"Evaluated " + to_wstring(cmvevEval) + L" boards");
-	LogData(L"Pruned: " + to_wstring((int)roundf(100.f * (float)cmvevPrune / (float)cmvevGen)) + L"%");
+	LogData(L"Nodes: " + to_wstring(cmvevNode));
 	duration dtp = tpEnd - tpStart;
 	milliseconds ms = duration_cast<milliseconds>(dtp);
 	LogData(L"Time: " + to_wstring(ms.count()) + L"ms");
-	float sp = (float)cmvevEval / (float)ms.count();
-	LogData(L"Speed: " + to_wstring((int)round(sp)) + L" nodes/ms");
+	float sp = (float)cmvevNode / (float)ms.count();
+ 	LogData(L"Speed: " + to_wstring((int)round(sp)) + L" n/ms");
 	LogClose(L"", L"", LGF::Normal);
 }
+
+
+/*
+ *
+ *	LOGOPENMVEV
+ * 
+ *	Little open/close log wrapper
+ * 
+ */
+class LOGOPENMVEV
+{
+	PL& pl;
+	const BDG& bdg;
+	MVEV& mvev;
+	wstring szData;
+	LGF lgf;
+	int depthLogSav;
+	int imvExpandSav;
+
+	static int imvExpand;
+	static MV rgmv[8];
+
+public:
+	inline LOGOPENMVEV(PL& pl, const BDG& bdg, MVEV& mvev, 
+			EVAL evalAlpha, EVAL evalBeta, int depth, wchar_t chType=L' ') : 
+		pl(pl), bdg(bdg), mvev(mvev), szData(L""), lgf(LGF::Normal)
+	{
+		depthLogSav = DepthLog();
+		imvExpandSav = imvExpand;
+		if (FExpandLog(mvev))
+			SetDepthLog(depthLogSav + 1);
+		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)),
+				to_wstring(chType) + to_wstring(depth) + L" " + SzFromEval(mvev.eval) + 
+					L" [" + SzFromEval(evalAlpha) + L", " + SzFromEval(evalBeta) + L"] ");
+	}
+
+	inline void SetData(const wstring& szNew, LGF lgfNew)
+	{
+		szData = szNew;
+		lgf = lgfNew;
+	}
+
+	inline ~LOGOPENMVEV()
+	{
+		LogClose(bdg.SzDecodeMvPost(mvev.mv), 
+			szData.size() > 0 ? szData : 
+				SzFromEval(mvev.eval) /*+ L" (" + bdg.SzDecodeMvPost(mvev.mvReplyBest) + L")"*/,
+			lgf);
+		SetDepthLog(depthLogSav);
+		imvExpand = imvExpandSav;
+	}
+
+	inline bool FExpandLog(MVEV& mvev) const
+	{
+		if (mvev.mv.sqFrom() != rgmv[imvExpand].sqFrom() ||	
+				mvev.mv.sqTo() != rgmv[imvExpand].sqTo() ||
+				mvev.mv.apcPromote() != rgmv[imvExpand].apcPromote())
+			return false;
+		imvExpand++;
+		return true;
+	}
+
+	inline void SetDepthLog(int depth)
+	{
+		pl.SetDepthLog(depth);
+	}
+
+	inline int DepthLog(void) const
+	{
+		return pl.DepthLog();
+	}
+
+	inline bool FDepthLog(LGT lgt, int& depth)
+	{
+		return pl.FDepthLog(lgt, depth);
+	}
+
+	inline void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+	{
+		pl.AddLog(lgt, lgf, depth, tag, szData);
+	}
+};
+
+/* a little debugging aid to trigger a change in log depth after a 
+   specific sequence of moves */
+int LOGOPENMVEV::imvExpand = 0;
+MV LOGOPENMVEV::rgmv[] = { /*
+	   MV(sqD2, sqD4, pcWhitePawn),
+	   MV(sqD7, sqD6, pcBlackPawn),
+	   MV(sqC1, sqG5, pcWhiteBishop),
+	   MV(sqE7, sqE5, pcBlackPawn),
+	   MV(sqG5, sqD8, pcWhiteBishop), */
+	   MV()
+};
+
 
 
 /*	PLAI::MvGetNext
@@ -213,270 +329,182 @@ void PLAI::EndMoveLog(void)
 MV PLAI::MvGetNext(SPMV& spmv)
 {
 	spmv = SPMV::Animate;
+	cYield = 0;
 
 	StartMoveLog();
 
-	/* generate all moves without removing checks. we'll use this as a heuristic for the 
-	   amount of mobillity on the board, which we can use to estimate the depth we can 
-	   search */
-
-	BDG bdg = ga.bdg;
-	GMV gmv;
-	bdg.GenGmv(gmv, RMCHK::NoRemove);
-	if (gmv.cmv() == 0) {
-		EndMoveLog();
-		return MV();
-	}
-	int depthMax = peg(DepthMax(bdg, gmv), 2, 13);
-	LogData(L"Search depth: " + to_wstring(depthMax));
-	
-	/* generate all legal moves and do a quick pre-sort on them to improve quality
-	   of our alpha-beta pruning */
-
-	bdg.GenGmv(gmv, RMCHK::Remove);
-	vector<MVEV> vmvev;
-	PreSortVmvev(bdg, gmv, vmvev);
-
-	cYield = 0;
 	MV mvBest;
 	EVAL evalAlpha = -evalInf, evalBeta = evalInf;
-	cmvevGen = vmvev.size();
+	int depthMax;
 
-	for (MVEV& mvev : vmvev) {
+	GMV gmv;
+	BDG bdg = ga.bdg;
+	vector<MVEV> vmvev;
+	const MVEV* pmvevBest = nullptr;
 
-		/* recursively evaluate the move to target depth */
+	/* figure out how deep we're going to search */
 
-		bdg.MakeMv(mvev.mv);
-		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)), SzFromEval(mvev.eval));
-		EVAL eval;
-		try {
-			eval = -EvalBdgDepth(bdg, mvev, 0, depthMax, -evalBeta, -evalAlpha, *ga.prule);
-		}
-		catch (...) {
-			LogClose(bdg.SzDecodeMvPost(mvev.mv), L"(interrupted)", LGF::Italic);
-			if (mvBest.fIsNil()) {
-				ga.bdg.RemoveInCheckMoves(gmv, ga.bdg.cpcToMove);
-				mvBest = gmv[0];
-			}
-			break;
-		}
-		bdg.UndoMv();
+	bdg.GenGmv(gmv, GG::Pseudo);
+	depthMax = peg(DepthMax(bdg, gmv), 2, 14);
+	LogData(L"Search depth: " + to_wstring(depthMax));
 
-		/* keep track of best move */
+	/* pre-sort to improve quality of alpha-beta pruning */
 
-		LGF lgf = LGF::Normal;
-		if (eval > evalAlpha) {
-			lgf = LGF::Bold;
-			evalAlpha = eval;
-			mvBest = mvev.mv;
-			if (FEvalIsMate(eval))
-				depthMax = min(depthMax, evalMate - eval);
-		}
+	PreSortVmvev(bdg, gmv, vmvev);
 		
-		LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval), lgf);
+	try {
+		for (MVEV& mvev : vmvev) {
+			MAKEMV makemv(bdg, mvev.mv);
+			if (bdg.FInCheck(~bdg.cpcToMove))
+				continue;
+			EVAL eval = -EvalBdgDepth(bdg, mvev, 1, depthMax, -evalBeta, -evalAlpha);
+			if (eval > evalAlpha) {
+				evalAlpha = eval;
+				pmvevBest = &mvev;
+			}
+		}
+	}
+	catch (...) {
+		/* force aborted games to return nil */
+		pmvevBest = nullptr;
 	}
 
 	EndMoveLog();
-
-	/* and return the best move */
-
-	assert(!mvBest.fIsNil());
-	return mvBest;
+	return pmvevBest == nullptr ? MV() : pmvevBest->mv;
 }
 
 
 /*	PLAI::EvalBdgDepth
  *
- *	Evaluates the board from the point of view of the person who last moved,
- *	i.e., the previous move. Evaluates to the target depth depthMax; current depth
- *	is depth. Uses alpha-beta pruning.
+ *	Evaluates the board/move from the point of view of the person who just moved,
+ *	Evaluates to the target depth depthMax; depth is current. Uses alpha-beta pruning.
  * 
- *	On entry mvevEval has the move we're evaluating. It will also contain pseudo-legal 
+ *	On entry mvevLast has the move we're evaluating. It will also contain pseudo-legal 
  *	moves for the next player to move (i.e., some moves may leave king in check).
  * 
- *	Returns board evaluation in centi-pawns.
+ *	Returns board evaluation in centi-pawns from the point of view of the side that
+ *	made the last move.
  */
-EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevEval, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta, const RULE& rule)
+EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta)
 {
-	/* if we've reached target depth, switch over to quiescent search */
-
 	if (depth >= depthMax)
-		return EvalBdgQuiescent(bdg, mvevEval, depth, evalAlpha, evalBeta);
+		return EvalBdgQuiescent(bdg, mvevLast, depth, evalAlpha, evalBeta);
 
-	/* keep UI messages pumpin' */
-
-	if (++cYield % dcYield == 0)
-		ga.PumpMsg();
+	cmvevNode++;
+	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evalAlpha, evalBeta, depth, L' ');
+	PumpMsg();
 
 	/* pre-sort the pseudo-legal moves in mvevEval */
-
 	vector<MVEV> vmvev;
-	PreSortVmvev(bdg, mvevEval.gmvReplyAll, vmvev);
-
-	/* keep track of stats, number of legal moves we've evaluated, and the best move */
-
+	PreSortVmvev(bdg, mvevLast.gmvPseudoReply, vmvev);
 	int cmvLegal = 0;
-	cmvevGen += vmvev.size();
-	EVAL evalBest = -evalInf;
 
-	for (MVEV& mvev: vmvev) {
-		
-		/* make move and make sure it's legal */
-
-		bdg.MakeMv(mvev.mv);
-		if (bdg.FInCheck(~bdg.cpcToMove)) {
-			bdg.UndoMv();
-			continue;
-		}
-		cmvLegal++;
-
-		/* recursively evaluate the move to target depth, using alpha-beta pruning */
-
-		LGF lgf = LGF::Normal;
-		EVAL eval;
-		try {
-			LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", (wstring)bdg)), SzFromEval(mvev.eval));
-			eval = -EvalBdgDepth(bdg, mvev, depth + 1, depthMax, -evalBeta, -evalAlpha, rule);
-			bdg.UndoMv();
-
-			/* do our alpha-beta pruning */
-
-			if (eval >= evalBeta) {
-				cmvevPrune += vmvev.size() - cmvLegal;
-				LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval) + L" (Pruning)", lgf);
-				return eval;
-			}
-			if (eval > evalBest) {
-				evalBest = eval;
-				if (eval > evalAlpha) {
-					evalAlpha = eval;
-					if (FEvalIsMate(eval))
-						depthMax = min(depthMax, evalMate - eval);
-					lgf = LGF::Bold;
-				}
-			}
-			LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval), lgf);
-		}
-		catch (...) {
-			bdg.UndoMv();
-			LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval) + L" (interrupted)", LGF::Italic);
-			throw;
+	try {
+		for (MVEV& mvev : vmvev) {
+			MAKEMV makevmv(bdg, mvev.mv);
+			if (bdg.FInCheck(~bdg.cpcToMove))
+				continue;
+			cmvLegal++;
+			EVAL eval = -EvalBdgDepth(bdg, mvev, depth + 1, depthMax, -evalBeta, -evalAlpha);
+			if (eval >= evalBeta)
+				return mvevLast.eval = evalBeta;
+			if (eval > evalAlpha)
+				evalAlpha = eval;
 		}
 	}
-
-	/* if no legal moves, we either have checkmate or stalemate */
-
-	if (cmvLegal == 0) {
-		if (bdg.FInCheck(bdg.cpcToMove))
-			return -(evalMate - depth);
-		else
-			return evalDraw;
+	catch (...) {
+		logopenmvev.SetData(L"(interrupt)", LGF::Italic);
+		throw;
 	}
 
-	/* checkmates were already detected, so GsTestGameOver can only find our more
-	   obscure draw situations */
+	/* test for checkmates, stalemates, and other draws */
 
-	GS gs = bdg.GsTestGameOver(mvevEval.gmvReplyAll, *ga.prule);
-	assert(gs != GS::BlackCheckMated && gs != GS::WhiteCheckMated);
-	if (gs != GS::Playing)
-		return evalDraw;
-
-	return evalBest;
+	if (cmvLegal == 0) 
+		evalAlpha = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
+	else if (bdg.GsTestGameOver(mvevLast.gmvPseudoReply, *ga.prule) != GS::Playing)
+		evalAlpha = evalDraw;
+	return mvevLast.eval = evalAlpha;
 }
 
 
 /*	PLAI::EvalBdgQuiescent
  *
- *	Returns the quiescent evaluation of the board from the point of view of the 
- *	previous move player, i.e., it evaluates the previous move.
+ *	Returns the evaluation after the given board/last move from the point of view of the
+ *	player that made the last move. Alpha-beta prunes. 
  */
-EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevEval, int depth, EVAL evalAlpha, EVAL evalBeta)
+EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha, EVAL evalBeta)
 {
-	/* keep messages a-pumpin' */
+	cmvevNode++;
+	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evalAlpha, evalBeta, depth, L'Q');
+	PumpMsg();
 
-	if (++cYield % dcYield == 0)
-		ga.PumpMsg();
+	int cmvLegal = 0;
 
-	/* we need to full evaluate the board before we remove moves from the move list, 
-	   because the un-processed move list is used to compute mobility */
+	/* first off, check current board already in a pruning situations and fill mvevEval 
+	   with full static eval */
 
-	EVAL eval = EvalBdg(bdg, mvevEval, true);
-	
-	/* check for mates and stalemates */
+	EVAL eval = -EvalBdgStatic(bdg, mvevLast, true);
+	if (eval >= evalBeta)
+		return mvevLast.eval = evalBeta;
+	if (eval > evalAlpha)
+		evalAlpha = eval;
 
-	bdg.RemoveInCheckMoves(mvevEval.gmvReplyAll, bdg.cpcToMove);
-	if (mvevEval.gmvReplyAll.cmv() == 0) {
-		if (bdg.FInCheck(bdg.cpcToMove))
-			return -(evalMate - (EVAL)depth);
-		else
-			return 0;	
-	}
-
-	/* remove any "quiet" moves; once only quiet moves are left, we can
-	   safely return the board evaluation */
-
-	bdg.RemoveQuiescentMoves(mvevEval.gmvReplyAll, bdg.cpcToMove);
-	if (mvevEval.gmvReplyAll.cmv() == 0) {
-		LogData(L"Total " + SzFromEval(eval));
-		return -eval;
-	}
-
-	/* only noisy moves are left. there shouldn't be very many of them, so don't
-	   bother with sorting */
+	/* don't bother pre-sorting moves during quiescent search because noisy moves are 
+	   rare */
 
 	vector<MVEV> vmvev;
-	FillVmvev(bdg, mvevEval.gmvReplyAll, vmvev);
-	
-	/* keepin track of stats and best move */
+	FillVmvev(bdg, mvevLast.gmvPseudoReply, vmvev);
 
-	cmvevGen += vmvev.size();
-	EVAL evalBest = -evalInf;
-	int cmv = 0;
-	//int cmvNoisy = 0;
+	try {
+		/* recursively evaluate more moves */
 
-	for (MVEV& mvev : vmvev) {
-	
-		/* recursively evaluate the quiescent move */
-
-		bdg.MakeMv(mvev.mv);
-		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)), SzFromEval(mvev.eval));
-		EVAL eval = -EvalBdgQuiescent(bdg, mvev, depth + 1, -evalBeta, -evalAlpha);
-		bdg.UndoMv();
-		cmv++;
-
-		/* keep track of best continuation and alpha-beta prune */
-
-		LGF lgf = LGF::Normal;
-		if (eval >= evalBeta) {
-			cmvevPrune += vmvev.size() - cmv;
-			LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval) + L" (Pruning)", LGF::Normal);
-			return eval;
-		}
-		if (eval > evalBest) {
-			evalBest = eval;
-			if (eval > evalAlpha) {
+		for (MVEV& mvev : vmvev) {
+			MAKEMV makemv(bdg, mvev.mv);
+			if (bdg.FInCheck(~bdg.cpcToMove))
+				continue;
+			cmvLegal++;
+			if (bdg.FMvIsQuiescent(mvev.mv))
+				continue;
+			bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);	// these aren't generated by FillVmvev
+			EVAL eval = -EvalBdgQuiescent(bdg, mvev, depth + 1, -evalBeta, -evalAlpha);
+			if (eval >= evalBeta)
+				return mvevLast.eval = evalBeta;
+			if (eval > evalAlpha)
 				evalAlpha = eval;
-				lgf = LGF::Bold;
-			}
 		}
-		LogClose(bdg.SzDecodeMvPost(mvev.mv), SzFromEval(eval), lgf);
+	}
+	catch (...) {
+		logopenmvev.SetData(L"(interrupt)", LGF::Italic);
+		throw;
 	}
 
-	return evalBest;
+	/* checkmate and stalemate - checking for repeat draws during quiescent search 
+	   doesn't work because we don't evaluate every move */
+
+	if (cmvLegal == 0)
+		evalAlpha = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
+
+	return mvevLast.eval = evalAlpha;
+}
+
+
+void PLAI::PumpMsg(void)
+{
+	if (++cYield % dcYield == 0)
+		ga.PumpMsg();
 }
 
 
 /*	PLAI::FillVmvev
  *
  *	Fills the BDGMV array with the moves in gmv. Does not pre-sort the array.
+ *	The mvev's evaluation and reply all list are not filled in.
  */
-void PLAI::FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev)
+void PLAI::FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept
 {
 	vmvev.reserve(gmv.cmv());
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		MVEV mvev(bdg, gmv[imv]);
-		mvev.eval = EvalBdg(bdg, mvev, false);
-		bdg.UndoMv();
+		MVEV mvev(gmv[imv]);
 		vmvev.push_back(move(mvev));
 	}
 }
@@ -488,14 +516,16 @@ void PLAI::FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev)
  *	evaluation to optimize the benefits of alpha-beta pruning. Sorted BDGMV
  *	list is returned in vbdgmv.
  */
-void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev)
+void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept
 {
 	/* insertion sort */
 
 	vmvev.reserve(gmv.cmv());
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		MVEV mvev(bdg, gmv[imv]);
-		mvev.eval = EvalBdg(bdg, mvev, false);
+		MVEV mvev(gmv[imv]);
+		bdg.MakeMv(mvev.mv);
+		bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);
+		mvev.eval = EvalBdgStatic(bdg, mvev, false);
 		bdg.UndoMv();
 		size_t imvFirst, imvLim;
 		for (imvFirst = 0, imvLim = vmvev.size(); imvFirst != imvLim; ) {
@@ -510,9 +540,9 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev)
 	}
 }
 
-inline EVAL EvalTempo(CPC cpc)
+EVAL PLAI::EvalTempo(const BDG& bdg, CPC cpc) const noexcept
 {
-	return cpc == CPC::White ? evalTempo : -evalTempo;
+	return cpc == bdg.cpcToMove ? evalTempo : -evalTempo;
 }
 
 
@@ -542,29 +572,32 @@ EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, SQ sqTo) const noexcept
 }
 
 
-/*	PLAI::EvalBdg
+/*	PLAI::EvalBdgStatic
  *
  *	Evaluates the board from the point of view of the color that just moved.
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-EVAL PLAI::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull) noexcept
+EVAL PLAI::EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept
 {
-	cmvevEval++;
-
 	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
 	if (!fFull)
 		evalMat += EvalBdgAttackDefend(bdg, mvev.mv.sqTo());
 
 	static GMV gmvSelf;
 	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
-	EVAL evalMob = 20*(gmvSelf.cmv() - mvev.gmvReplyAll.cmv());
+	EVAL evalMob = 20*(gmvSelf.cmv() - mvev.gmvPseudoReply.cmv());
+	cmvevEval++;
+	EVAL eval = (rgfAICoeffNum[0] * evalMat + rgfAICoeffNum[1] * evalMob + 50) / 100 + EvalTempo(bdg, ~bdg.cpcToMove);
 
 	if (fFull) {
-		LogData(L"Material " + to_wstring(evalMat));
-		LogData(L"Mobility " + to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(mvev.gmvReplyAll.cmv()));
+		cmvevEval++;
+		LogData(L"Mobility " + to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(mvev.gmvPseudoReply.cmv()));
+		LogData(L"Material " + SzFromEval(evalMat));
+		LogData(L"Total " + SzFromEval(eval));
 	}
-	return (rgfAICoeffNum[0] * evalMat + rgfAICoeffNum[1] * evalMob + 50) / 100 + EvalTempo(bdg.cpcToMove);
+
+	return eval;
 }
 
 enum PHASE {
@@ -588,10 +621,10 @@ EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcEval) const noexcept
 	EVAL mpcpcevalEnd[2] = { 0, 0 };
 
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		phase += bdg.mpapcbb[CPC::White][apc].csq() * mpapcphase[apc];
-		phase += bdg.mpapcbb[CPC::Black][apc].csq() * mpapcphase[apc];
+		phase += bdg.mppcbb[PC(CPC::White, apc)].csq() * mpapcphase[apc];
+		phase += bdg.mppcbb[PC(CPC::Black, apc)].csq() * mpapcphase[apc];
 		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc) {
-			for (BB bb = bdg.mpapcbb[cpc][apc]; bb; bb.ClearLow()) {
+			for (BB bb = bdg.mppcbb[PC(cpc, apc)]; bb; bb.ClearLow()) {
 				SQ sq = bb.sqLow();
 				if (cpc == CPC::White)
 					sq = sq ^ SQ(rankMax - 1, 0);
@@ -632,8 +665,8 @@ EVAL PLAI::EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int ph
 
 
 /* these values are taken from "simplified evaluation function */
-int mpapcevalOpening[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
-EVAL mpapcsqdevalOpening[APC::ActMax][64] = {
+const EVAL mpapcevalOpening[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
+const EVAL mpapcsqdevalOpening[APC::ActMax][sqMax] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -694,8 +727,8 @@ EVAL mpapcsqdevalOpening[APC::ActMax][64] = {
 
 
 /* these constants are taken from pesto evaluator */
-int mpapcevalMiddleGame[APC::ActMax] = { 0, 82, 337, 365, 477, 1025, 200 };
-const EVAL mpapcsqdevalMiddleGame[APC::ActMax][64] = {
+const EVAL mpapcevalMiddleGame[APC::ActMax] = { 0, 82, 337, 365, 477, 1025, 200 };
+const EVAL mpapcsqdevalMiddleGame[APC::ActMax][sqMax] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -755,8 +788,8 @@ const EVAL mpapcsqdevalMiddleGame[APC::ActMax][64] = {
 };
 
 /* these constants are taken from pesto evaluator */
-int mpapcevalEndGame[APC::ActMax] = { 0, 94, 281, 297, 512, 936, 200 };
-const EVAL mpapcsqdevalEndGame[APC::ActMax][64] = {
+const EVAL mpapcevalEndGame[APC::ActMax] = { 0, 94, 281, 297, 512, 936, 200 };
+const EVAL mpapcsqdevalEndGame[APC::ActMax][sqMax] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -830,11 +863,11 @@ void PLAI::InitWeightTables(void)
 	InitWeightTable(mpapcevalEndGame, mpapcsqdevalEndGame, mpapcsqevalEndGame);
 }
 
-void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][64], EVAL mpapcsqeval[APC::ActMax][64])
+void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][sqMax], EVAL mpapcsqeval[APC::ActMax][sqMax])
 {
-	memset(&mpapcsqeval[APC::Null], 0, 64 * sizeof(EVAL));
+	memset(&mpapcsqeval[APC::Null], 0, sqMax * sizeof(EVAL));
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
-		for (uint64_t sq = 0; sq < 64; sq++)
+		for (uint64_t sq = 0; sq < sqMax; sq++)
 			mpapcsqeval[apc][sq] = mpapceval[apc] + mpapcsqdeval[apc][sq];
 }
 
@@ -866,19 +899,24 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 }
 
 
-EVAL PLAI2::EvalBdg(BDG& bdg, const MVEV& mvev, bool fFull) noexcept
+EVAL PLAI2::EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept
 {
-	cmvevEval++;
-
 	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
 	if (!fFull)
 		evalMat += EvalBdgAttackDefend(bdg, mvev.mv.sqTo());
 
 	if (fFull) {
-		LogData(L"Material " + to_wstring(evalMat));
+		evalMat += 1;	// just to make full evals different than partials so we can tell them apart when debugging
+		cmvevEval++;
 	}
 
-	return evalMat + EvalTempo(bdg.cpcToMove);
+	EVAL eval = evalMat + EvalTempo(bdg, ~bdg.cpcToMove);
+
+	if (fFull) {
+		LogData(L"Material " + SzFromEval(evalMat));
+		LogData(L"Total " + SzFromEval(eval));
+	}
+	return eval;
 }
 
 
@@ -899,9 +937,9 @@ PLHUMAN::PLHUMAN(GA& ga, wstring szName) : PL(ga, szName)
 MV PLHUMAN::MvGetNext(SPMV& spmv)
 {
 	mvNext = MV();
-	do {
+	do
 		ga.PumpMsg();
-	} while (mvNext.fIsNil());
+	while (mvNext.fIsNil());
 	MV mv = mvNext;
 	spmv = spmvNext;
 	mvNext = MV();
@@ -924,8 +962,7 @@ RGINFOPL::RGINFOPL(void)
 	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"SQ Mathilda", 3));
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Rick Powell"));
 	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Hazel the Dog"));
-	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Al de Leon"));
-
+	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Allain de Leon"));
 }
 
 

@@ -28723,7 +28723,7 @@
 16.Bd2 Nc6 17.dxc6 Rxe6 18.Qb3 c4 19.Qd1 d5 20.Qg4 Rae8 21.O-O Qc5 22.Qg5 Re5
 23.Qg3 d4 24.Ne2 R5e7 25.Bg5 Rf7 26.Rfe1 Qxc6 27.Rad1 Qb6 28.Bc1 Bb7 29.Qh4 Qc5
 30.Ng3 Qc6 31.Re2 e3 32.fxe3 d3 33.Red2 Rxe3 34.Nf1 Re4 35.Qg3 Be5 36.Qg5 Qb6+
-37.Kh1 Bf4 38.Bf3 Re1 39.Qd8+ Qxd8  0-1
+37.Kh1 Bf4 { [rp] Bf3 is an illegal move 38.Bf3 Re1 39.Qd8+ Qxd8 }  0-1
 
 [Event "1st German Masters Frauen"]
 [Site "Dresden GER"]

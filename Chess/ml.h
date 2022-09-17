@@ -169,10 +169,10 @@ class UIML : public UIPS
 	float XFromCol(int col) const;
 	float DxFromCol(int col) const;
 	RC RcFromCol(float y, int col) const;
-	RC RcFromImv(int imv) const;
+	RC RcFromImv(int64_t imv) const;
 
 	BDG bdgInit;	// initial board at the start of the game list
-	int imvSel;
+	int64_t imvSel;
 	UIPL* mpcpcpuipl[CPC::ColorMax];
 	UICLOCK* mpcpcpuiclock[CPC::ColorMax];
 	UIGC uigc;
@@ -198,14 +198,14 @@ public:
 
 	void DrawAndMakeMv(const RC& rc, BDG& bdg, MV mv);
 	void DrawMoveNumber(const RC& rc, int imv);
-	void DrawSel(int imv);
-	void SetSel(int imv, SPMV spmv);
+	void DrawSel(int64_t imv);
+	void SetSel(int64_t imv, SPMV spmv);
 
-	bool FMakeVis(int imv);
+	bool FMakeVis(int64_t imv);
 	void UpdateContSize(void);
 	virtual float DyLine(void) const;
 
-	HTML HtmlHitTest(const PT& pt, int* pimv);
+	HTML HtmlHitTest(const PT& pt, int64_t* pimv);
 	virtual void StartLeftDrag(const PT& pt);
 	virtual void EndLeftDrag(const PT& pt);
 	virtual void LeftDrag(const PT& pt);

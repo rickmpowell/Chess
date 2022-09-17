@@ -190,7 +190,7 @@ void UIDB::DrawContent(const RC& rcCont)
 	rc.left += 4.0f;
 	rc.right = rc.left + 1000.0f;
 	
-	size_t ilgentryFirst = IlgentryFromY(RcView().top);
+	size_t ilgentryFirst = IlgentryFromY((int)RcView().top);
 	rc.top = RcContent().top + vlgentry[ilgentryFirst].dyTop;
 
 	for (size_t ilgentry = ilgentryFirst; ilgentry < vlgentry.size() && rc.top < RcView().bottom; ilgentry++) {
@@ -329,7 +329,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 		lgentry.dyTop = vlgentry.back().dyTop + vlgentry.back().dyHeight;
 
 	if (posLog && lgentry.lgt != LGT::Temp) {
-		*posLog << string(4 * lgentry.depth, ' ');
+		*posLog << string(4 * (int64_t)lgentry.depth, ' ');
 		if (lgentry.tag.sz.size() > 0) {
 			*posLog << SzFlattenWsz(lgentry.tag.sz);
 			*posLog << ' ';

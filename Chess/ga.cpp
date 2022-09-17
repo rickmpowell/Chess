@@ -166,6 +166,7 @@ void GA::Layout(void)
 
 	rc.left = rc.right + dxyMargin;
 	rc.right = rc.left + uidb.SizLayoutPreferred().width;
+	rc.right = max(rc.right, rcBounds.right - dxyMargin);
 	uidb.SetBounds(rc);
 }
 
@@ -405,9 +406,9 @@ void GA::RedoMv(SPMV spmv)
  *	current game speed mode. imv can be -1 to go to the start of the game, up to
  *	the last move the game.
  */
-void GA::MoveToImv(int imv, SPMV spmv)
+void GA::MoveToImv(int64_t imv, SPMV spmv)
 {
-	imv = peg(imv, -1, (int)bdg.vmvGame.size() - 1);
+	imv = peg(imv, (int64_t)-1, (int64_t)bdg.vmvGame.size() - 1);
 	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
 		spmv = SPMV::AnimateFast;
 		if (abs(bdg.imvCur - imv) > 5)
@@ -425,7 +426,7 @@ void GA::MoveToImv(int imv, SPMV spmv)
 
 void GA::GenGmv(GMV& gmv)
 {
-	bdg.GenGmv(gmv, RMCHK::Remove);
+	bdg.GenGmv(gmv, GG::Legal);
 }
 
 
@@ -449,14 +450,16 @@ int GA::Play(void)
 			PL* ppl = mpcpcppl[bdg.cpcToMove];
 			SPMV spmv = SPMV::Animate;
 			MV mv = ppl->MvGetNext(spmv);
-			assert(!mv.fIsNil());
+			if (mv.fIsNil())
+				throw EXINT();;
 			MakeMv(mv, spmv);
 			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
 		} while (bdg.gs == GS::Playing);
 	}
-	catch (int err) {
+	catch (...) {
+		LogClose(L"Game", L"Game aborted", LGF::Bold);
 		app.Error(L"Game play has been aborted.", MB_OK);
-		return err;
+		return 1;
 	}
 	LogClose(L"Game", L"", LGF::Normal);
 	return 0;
@@ -523,4 +526,10 @@ void GA::SetDepthLog(int depth)
 void GA::InitLog(int depth)
 {
 	uidb.InitLog(depth);
+}
+
+
+int GA::DepthLog(void) const
+{
+	return uidb.DepthLog();
 }

@@ -1,3 +1,4 @@
+  Test: option to stop or continue on errors 
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
@@ -10,7 +11,7 @@
   Test: PGN games should feed moves through a PL
   AI: Implement transposition tables and use in alpha-beta search
   AI: I think when we're ahead, we permit 3-fold draws too easily
-  AI: Communicate best continuation back
+  AI: Communicate best continuation back (principle variation)
   AI: spin off AI into its own thread
   AI: annotate candidate best moves on board while thinking
   AI: interruptible

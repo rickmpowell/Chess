@@ -22,21 +22,37 @@
 
 enum {
 	fileQueenRook = 0,		/* a */
+	fileA = 0,
 	fileQueenKnight = 1,	/* b */
+	fileB = 1,
 	fileQueenBishop = 2,	/* c */
+	fileC = 2,
 	fileQueen = 3,			/* d */
+	fileD = 3,
 	fileKing = 4,			/* e */
+	fileE = 4,
 	fileKingBishop = 5,		/* f */
+	fileF = 5,
 	fileKingKnight = 6,		/* g */
+	fileG = 6,
 	fileKingRook = 7,		/* h */
+	fileH = 7,
 	fileMax = 8
 };
 
 enum {
 	rankWhiteBack = 0,
+	rank1 = 0,
 	rankWhitePawn = 1,
+	rank2 = 1,
+	rank3 = 2,
+	rank4 = 3,
+	rank5 = 4,
+	rank6 = 5,
 	rankBlackPawn = 6,
-	rankBlackBack = 7
+	rank7 = 6,
+	rankBlackBack = 7,
+	rank8 = 7
 };
 
 const int rankMax = 8;
@@ -132,6 +148,39 @@ public:
 };
 
 
+const uint8_t sqMax = 64;
+
+const SQ sqB1(rank1, fileB);
+
+const SQ sqC1(rank1, fileC);
+const SQ sqC2(rank2, fileC);
+const SQ sqC3(rank3, fileC);
+
+const SQ sqD1(rank1, fileD);
+const SQ sqD2(rank2, fileD);
+const SQ sqD3(rank3, fileD);
+const SQ sqD4(rank4, fileD);
+const SQ sqD5(rank5, fileD);
+const SQ sqD6(rank6, fileD);
+const SQ sqD7(rank7, fileD);
+const SQ sqD8(rank8, fileD);
+
+const SQ sqE5(rank5, fileE);
+const SQ sqE6(rank6, fileE);
+const SQ sqE7(rank7, fileE);
+const SQ sqE8(rank8, fileE);
+
+const SQ sqF1(rank1, fileF);
+const SQ sqF2(rank2, fileF);
+const SQ sqF3(rank3, fileF);
+
+const SQ sqG1(rank1, fileG);
+const SQ sqG2(rank2, fileG);
+const SQ sqG3(rank3, fileG);
+const SQ sqG4(rank4, fileG);
+const SQ sqG5(rank5, fileG);
+
+
 /*
  *
  *	Some magic functions for manipulatng 64-bit numbers. On some architectures, there are
@@ -162,7 +211,7 @@ inline int popcount(uint64_t grf) noexcept
 	grfT = (grfT + (grfT >> 4)) & k4;
 	return (int)((grfT * kf) >> 56);
 #else
-	return __builtin_popcountll(grf);
+	return (int)_mm_popcnt_u64(grf);
 #endif
 }
 

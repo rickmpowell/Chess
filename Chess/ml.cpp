@@ -146,7 +146,7 @@ void UIPL::DrawChooserItem(const INFOPL& infopl, RC& rc)
 	rcTo.right = rcTo.left + rcTo.DyHeight() / siz.height * siz.width;
 	DrawBmp(rcTo, pbmpLogo, RC(PT(0, 0), siz));
 	SafeRelease(&pbmpLogo);
-	DrawSz(sz, ptxText, RC(rcTo.right+13.0f, rcTo.top+2.0, rc.right, rcTo.bottom-2.0f));
+	DrawSz(sz, ptxText, RC(rcTo.right+13.0f, rcTo.top+2.0f, rc.right, rcTo.bottom-2.0f));
 
 	rc.top = rc.bottom;
 }
@@ -177,7 +177,7 @@ void UIPL::StartLeftDrag(const PT& pt)
 {
 	SetFocus(this);
 	if (fChooser)
-		iinfoplHit = (pt.y - RcInterior().top) / dyLine;
+		iinfoplHit = (int)((pt.y - RcInterior().top) / dyLine);
 }
 
 
@@ -185,7 +185,7 @@ void UIPL::EndLeftDrag(const PT& pt)
 {
 	SetFocus(nullptr);
 	if (fChooser) {
-		int iinfopl = (pt.y - RcInterior().top) / dyLine;
+		int iinfopl = (int)((pt.y - RcInterior().top) / dyLine);
 		if (iinfopl == iinfoplHit)
 			Ga().SetPl(cpc, rginfopl.PplFactory(Ga(), iinfopl));
 	}
@@ -653,9 +653,9 @@ void UIML::SetPl(CPC cpc, PL* ppl)
  *	are relative to the content rectangle, which is in turn relative to
  *	the panel.
  */
-RC UIML::RcFromImv(int imv) const
+RC UIML::RcFromImv(int64_t imv) const
 {
-	int rw = imv / 2;
+	int rw = (int)(imv / 2);
 	float y = RcContent().top + 4.0f + rw * dyList;
 	return RcFromCol(y, 1 + (imv % 2));
 }
@@ -690,7 +690,7 @@ void UIML::DrawContent(const RC& rcCont)
  *
  *	Sets the selection
  */
-void UIML::SetSel(int imv, SPMV spmv)
+void UIML::SetSel(int64_t imv, SPMV spmv)
 {
 	imvSel = imv;
 	if (spmv != SPMV::Hidden)
@@ -703,7 +703,7 @@ void UIML::SetSel(int imv, SPMV spmv)
  *
  *	Draws the selection in the move list.
  */
-void UIML::DrawSel(int imv)
+void UIML::DrawSel(int64_t imv)
 {
 }
 
@@ -788,12 +788,12 @@ void UIML::UpdateContSize(void)
 }
 
 
-bool UIML::FMakeVis(int imv)
+bool UIML::FMakeVis(int64_t imv)
 {
 	return UIPS::FMakeVis(RcContent().top + 4.0f + (imv / 2) * dyList, dyList);
 }
 
-HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
+HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 {
 	if (pt.x < 0 || pt.x >= RcContent().right)
 		return HTML::Miss;
@@ -805,14 +805,14 @@ HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
 	int li = (int)floor((pt.y - RcContent().top) / DyLine());
 	if (pt.x < mpcoldx[0])
 		return HTML::MoveNumber;
-	int imv = -1;
+	int64_t imv = -1;
 	if (pt.x < mpcoldx[0] + mpcoldx[1])
-		imv = li * 2;
+		imv = (int64_t)li * 2;
 	else if (pt.x < mpcoldx[0] + mpcoldx[1] + mpcoldx[2])
-		imv = li * 2 + 1;
+		imv = (int64_t)li * 2 + 1;
 	if (imv < 0)
 		return HTML::EmptyBefore;
-	if (imv >= (int)ga.bdg.vmvGame.size())
+	if (imv >= (int64_t)ga.bdg.vmvGame.size())
 		return HTML::EmptyAfter;
 	*pimv = imv;
 	return HTML::List;
@@ -820,7 +820,7 @@ HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
 
 void UIML::StartLeftDrag(const PT& pt)
 {
-	int imv;
+	int64_t imv;
 	HTML html = HtmlHitTest(pt, &imv);
 	if (html != HTML::List)
 		return;

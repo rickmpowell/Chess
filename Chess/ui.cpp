@@ -236,7 +236,7 @@ UI* UI::PuiNextSib(void) const
 {
 	if (puiParent == nullptr)
 		return nullptr;
-	for (int ipui = 0; ipui < (int)puiParent->vpuiChild.size() - 1; ipui++)
+	for (int64_t ipui = 0; ipui < (int64_t)puiParent->vpuiChild.size() - 1; ipui++)
 		if (puiParent->vpuiChild[ipui] == this)
 			return puiParent->vpuiChild[ipui + 1];
 	return nullptr;
@@ -869,7 +869,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 	/* if the text fits, just blast it out */
 
 	IDWriteTextLayout* play = nullptr;
-	App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(), ptxBase, 1.0e+6, rcFit.DyHeight(), &play);
+	App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptxBase, 1.0e+6, rcFit.DyHeight(), &play);
 	if (play == nullptr)
 		throw 1;
 	DWRITE_TEXT_METRICS tm;
@@ -900,7 +900,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 			dyFont, L"", &ptx);
 		if (ptx == nullptr)
 			throw 1;
-		App().pfactdwr->CreateTextLayout(sz.c_str(), sz.size(),
+		App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(),
 			ptx, rcGlobal.DxWidth(), rcGlobal.DyHeight(), &play);
 		if (play == nullptr)
 			throw 1;

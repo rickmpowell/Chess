@@ -7,7 +7,7 @@
  */
 
 #include "ga.h"
-#include <streambuf>
+
 
 
 EXPARSE::EXPARSE(const string& szMsg) : EX(szMsg)
@@ -69,7 +69,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
 			return err;
 		DeserializeMoveList(istkpgn);
 	}
-	catch (exception& ex) {
+	catch (...) {
 		NewGame(new RULE(0, 0, 0), SPMV::Hidden);
 		throw;
 	}
@@ -96,6 +96,7 @@ ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 			return err;
 	}
 	catch (EXPARSE& ex) {
+		(void)ex;
 		istkpgn.ScanToBlankLine();
 		istkpgn.ScanToBlankLine();
 		throw;
@@ -104,6 +105,7 @@ ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 		err = DeserializeMoveList(istkpgn);
 	}
 	catch (EXPARSE& ex) {
+		(void)ex;
 		istkpgn.ScanToBlankLine();
 		throw;
 	}
@@ -427,7 +429,7 @@ string to_string(TKMV tkmv)
 ERR BDG::ParseMv(const char*& pch, MV& mv) const
 {
 	GMV gmv;
-	GenGmv(gmv, RMCHK::Remove);
+	GenGmv(gmv, GG::Legal);
 
 	const char* pchInit = pch;
 	int rank, file;
@@ -455,7 +457,7 @@ ERR BDG::ParseMv(const char*& pch, MV& mv) const
 		file = fileQueenBishop;
 BuildCastle:
 		rank = RankBackFromCpc(cpcToMove);
-		mv = MV(SQ(rank, fileKing), SQ(rank, file), cpcToMove, APC::King);
+		mv = MV(SQ(rank, fileKing), SQ(rank, file), PC(cpcToMove, APC::King));
 		return ERR::None;
 	case TKMV::WhiteWins:
 	case TKMV::BlackWins:
