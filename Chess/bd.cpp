@@ -509,12 +509,25 @@ bool BD::FMvIsQuiescent(MV mv) const noexcept
 
 /*	BD::FInCheck
  *
- *	Returns true if the given color's king is in check. Does not require ComputeAttacked,
- *	and does a complete scan of the opponent pieces to find checks.
+ *	Returns true if the given color's king is in check.
  */
 bool BD::FInCheck(CPC cpc) const noexcept
 {
-	return ApcSqAttacked(mppcbb[PC(cpc, APC::King)].sqLow(), ~cpc) != APC::Null;
+	BB bbKing = mppcbb[PC(cpc, APC::King)].sqLow();
+
+	CPC cpcBy = ~cpc;
+	if (BbKnightAttacked(mppcbb[PC(cpcBy, APC::Knight)], cpcBy) & bbKing)
+		return true;
+	BB bbQueen = mppcbb[PC(cpcBy, APC::Queen)];
+	if (FBbAttackedByBishop(mppcbb[PC(cpcBy, APC::Bishop)] | bbQueen, bbKing, cpcBy))
+		return true;
+	if (FBbAttackedByRook(mppcbb[PC(cpcBy, APC::Rook)] | bbQueen, bbKing, cpcBy))
+		return true;
+	if (BbPawnAttacked(mppcbb[PC(cpcBy, APC::Pawn)], cpcBy) & bbKing)
+		return true;
+	if (BbKingAttacked(mppcbb[PC(cpcBy, APC::King)], cpcBy) & bbKing)
+		return true;
+	return false;
 }
 
 
@@ -522,11 +535,10 @@ bool BD::FInCheck(CPC cpc) const noexcept
  *
  *	Returns bitboard of all squares all pawns attack.
  */
-BB BD::BbPawnAttacked(CPC cpcBy) const noexcept
+BB BD::BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept
 {
-	BB bbPawn = mppcbb[PC(cpcBy, APC::Pawn)];
-	bbPawn = cpcBy == CPC::White ? BbNorthOne(bbPawn) : BbSouthOne(bbPawn);
-	BB bbPawnAttacked = BbEastOne(bbPawn) | BbWestOne(bbPawn);
+	bbPawns = cpcBy == CPC::White ? BbNorthOne(bbPawns) : BbSouthOne(bbPawns);
+	BB bbPawnAttacked = BbEastOne(bbPawns) | BbWestOne(bbPawns);
 	return bbPawnAttacked;
 }
 
@@ -535,9 +547,8 @@ BB BD::BbPawnAttacked(CPC cpcBy) const noexcept
  *
  *	Returns a bitboard of all squares a knight attacks.
  */
-BB BD::BbKnightAttacked(CPC cpcBy) const noexcept
+BB BD::BbKnightAttacked(BB bbKnights, CPC cpcBy) const noexcept
 {
-	BB bbKnights = mppcbb[PC(cpcBy, APC::Knight)];
 	BB bb1 = BbWestOne(bbKnights) | BbEastOne(bbKnights);
 	BB bb2 = BbWestTwo(bbKnights) | BbEastTwo(bbKnights);
 	return BbNorthTwo(bb1) | BbSouthTwo(bb1) | BbNorthOne(bb2) | BbSouthOne(bb2);
@@ -577,9 +588,9 @@ BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept
 }
 
 
-bool BD::FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept
+bool BD::FBbAttackedByBishop(BB bbBishops, BB bb, CPC cpcBy) const noexcept
 {
-	for (BB bbBishops = mppcbb[PC(cpcBy, APC::Bishop)]; bbBishops; bbBishops.ClearLow()) {
+	for ( ; bbBishops; bbBishops.ClearLow()) {
 		SQ sq = bbBishops.sqLow();
 		if (BbFwdSlideAttacks(DIR::NorthEast, sq) & bb)
 			return true;
@@ -594,9 +605,9 @@ bool BD::FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept
 }
 
 
-bool BD::FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept
+bool BD::FBbAttackedByRook(BB bbRooks, BB bb, CPC cpcBy) const noexcept
 {
-	for (BB bbRooks = mppcbb[PC(cpcBy, APC::Rook)]; bbRooks; bbRooks.ClearLow()) {
+	for ( ; bbRooks; bbRooks.ClearLow()) {
 		SQ sq = bbRooks.sqLow();
 		if (BbFwdSlideAttacks(DIR::North, sq) & bb)
 			return true;
@@ -611,9 +622,9 @@ bool BD::FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept
 }
 
 
-bool BD::FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept
+bool BD::FBbAttackedByQueen(BB bbQueens, BB bb, CPC cpcBy) const noexcept
 {
-	for (BB bbQueens = mppcbb[PC(cpcBy, APC::Queen)]; bbQueens; bbQueens.ClearLow()) {
+	for ( ; bbQueens; bbQueens.ClearLow()) {
 		SQ sq = bbQueens.sqLow();
 		if (BbFwdSlideAttacks(DIR::North, sq) & bb)
 			return true;
@@ -636,9 +647,8 @@ bool BD::FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept
 }
 
 
-BB BD::BbKingAttacked(CPC cpcBy) const noexcept
+BB BD::BbKingAttacked(BB bbKing, CPC cpcBy) const noexcept
 {
-	BB bbKing = mppcbb[PC(cpcBy, APC::King)];
 	return mpbb.BbKingTo(bbKing.sqLow());
 }
 
@@ -650,17 +660,17 @@ BB BD::BbKingAttacked(CPC cpcBy) const noexcept
  */
 APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 {
-	if (BbPawnAttacked(cpcBy) & bbAttacked)
+	if (BbPawnAttacked(mppcbb[PC(cpcBy, APC::Pawn)], cpcBy) & bbAttacked)
 		return APC::Pawn;
-	if (BbKnightAttacked(cpcBy) & bbAttacked)
+	if (BbKnightAttacked(mppcbb[PC(cpcBy, APC::Knight)], cpcBy) & bbAttacked)
 		return APC::Knight;
-	if (FBbAttackedByBishop(bbAttacked, cpcBy))
+	if (FBbAttackedByBishop(mppcbb[PC(cpcBy, APC::Bishop)], bbAttacked, cpcBy))
 		return APC::Bishop;
-	if (FBbAttackedByRook(bbAttacked, cpcBy))
+	if (FBbAttackedByRook(mppcbb[PC(cpcBy, APC::Rook)], bbAttacked, cpcBy))
 		return APC::Rook;
-	if (FBbAttackedByQueen(bbAttacked, cpcBy))
+	if (FBbAttackedByQueen(mppcbb[PC(cpcBy, APC::Queen)], bbAttacked, cpcBy))
 		return APC::Queen;
-	if (BbKingAttacked(cpcBy) & bbAttacked)
+	if (BbKingAttacked(mppcbb[PC(cpcBy, APC::King)], cpcBy) & bbAttacked)
 		return APC::King;
 	return APC::Null;
 }

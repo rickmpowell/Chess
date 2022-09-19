@@ -784,27 +784,26 @@ public:
 	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
-	bool FBbAttackedByQueen(BB bb, CPC cpcBy) const noexcept;
-	bool FBbAttackedByRook(BB bb, CPC cpcBy) const noexcept;
-	bool FBbAttackedByBishop(BB bb, CPC cpcBy) const noexcept;
+	bool FBbAttackedByQueen(BB bbQueens, BB bb, CPC cpcBy) const noexcept;
+	bool FBbAttackedByRook(BB bbRooks, BB bb, CPC cpcBy) const noexcept;
+	bool FBbAttackedByBishop(BB bbBishops, BB bb, CPC cpcBy) const noexcept;
 
-
+	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	BB BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept;
+	BB BbKingAttacked(BB bbKing, CPC cpcBy) const noexcept;
+	BB BbKnightAttacked(BB bbKnights, CPC cpcBy) const noexcept;
+	
 	/*	BD::ApcSqAttacked
-	 *	
+	 *
 	 *	Returns the lowest piece type of the pieces attacking sqAttacked. The piece
-	 *	on sqAttacked is not considered to be attacking sqAttacked. Returns 
+	 *	on sqAttacked is not considered to be attacking sqAttacked. Returns
 	 *	APC::Null if no pieces are attacking the square.
 	 */
 	inline APC ApcSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
 	{
 		return ApcBbAttacked(BB(sqAttacked), cpcBy);
 	}
-
-	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
-	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
-	BB BbPawnAttacked(CPC cpcBy) const noexcept;
-	BB BbKingAttacked(CPC cpcBy) const noexcept;
-	BB BbKnightAttacked(CPC cpcBy) const noexcept;
 
 	/*
 	 *	move, square, and piece convenience functions. most of these need to be highly

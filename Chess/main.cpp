@@ -814,14 +814,17 @@ class CMDPERFTDIVIDE : public CMD
 public:
 
     static DDPERFT ddperft;
+    bool fPrompt;
 
 public:
-    CMDPERFTDIVIDE(APP& app, int icmd) : CMD(app, icmd) { }
+    CMDPERFTDIVIDE(APP& app, int icmd, bool fPrompt) : CMD(app, icmd), fPrompt(fPrompt) {}
 
     virtual int Execute(void)
     {
-        if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddTestPerft), app.hwnd, TestPerftDlgProc, (LPARAM)&ddperft) != IDOK)
-            return 1;
+        if (fPrompt) {
+            if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddTestPerft), app.hwnd, TestPerftDlgProc, (LPARAM)&ddperft) != IDOK)
+                return 1;
+        }
 
         app.pga->XLogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth));
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
@@ -855,7 +858,7 @@ public:
 
     virtual wstring SzMenu(void) const
     {
-        return wstring(L"perft ") + to_wstring(ddperft.depth);
+        return wstring(L"perft ") + to_wstring(ddperft.depth) + L"\tCtrl+P";
     }
 };
 
@@ -1271,7 +1274,8 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUpBlack));
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDown));
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDownBlack));
-    cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivide));
+    cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivide, true));
+    cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivideGo, false));
 }
 
 

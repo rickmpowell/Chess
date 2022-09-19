@@ -65,7 +65,8 @@
 #define cmdPlayerLvlDown	23
 #define cmdPlayerLvlDownBlack	24
 #define cmdPerftDivide      25
-#define cmdMax				26
+#define cmdPerftDivideGo	26
+#define cmdMax				27
 
 /*
  *	icons
