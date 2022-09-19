@@ -765,8 +765,8 @@ public:
 
 	/* move generation */
 	
-	void GenGmv(GMV& gmv, GG gg) const;
-	void GenGmv(GMV& gmv, CPC cpcMove, GG gg) const;
+	void GenGmv(GMV& gmv, GG gg);
+	void GenGmv(GMV& gmv, CPC cpcMove, GG gg);
 	void GenGmvColor(GMV& gmv, CPC cpcMove) const;
 	void GenGmvPawnMvs(GMV& gmv, BB bbPawns, CPC cpcMove) const;
 	void GenGmvCastle(GMV& gmv, SQ sqFrom, CPC cpcMove) const;
@@ -780,7 +780,7 @@ public:
 	 *	checking squares for attack 
 	 */
 
-	void RemoveInCheckMoves(GMV& gmv, CPC cpc) const;
+	void RemoveInCheckMoves(GMV& gmv, CPC cpc);
 	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
@@ -1059,7 +1059,7 @@ public:
 	 */
 
 	wstring SzMoveAndDecode(MV mv);
-	wstring SzDecodeMv(MV mv, bool fPretty) const;
+	wstring SzDecodeMv(MV mv, bool fPretty);
 	bool FMvApcAmbiguous(const GMV& gmv, MV mv) const;
 	bool FMvApcRankAmbiguous(const GMV& gmv, MV mv) const;
 	bool FMvApcFileAmbiguous(const GMV& gmv, MV mv) const;
@@ -1070,7 +1070,7 @@ public:
 	 *	parsing moves 
 	 */
 
-	ERR ParseMv(const char*& pch, MV& mv) const;
+	ERR ParseMv(const char*& pch, MV& mv);
 	ERR ParsePieceMv(const GMV& gmv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseSquareMv(const GMV& gmv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;

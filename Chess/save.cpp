@@ -158,7 +158,7 @@ const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
 	{ chSpace, chBlackPawn, chBlackKnight, chBlackBishop, chBlackRook, chBlackQueen, chBlackKing }
 };
 
-wstring BDG::SzDecodeMv(MV mv, bool fPretty) const
+wstring BDG::SzDecodeMv(MV mv, bool fPretty)
 {
 	GMV gmv;
 	GenGmv(gmv, GG::Pseudo);

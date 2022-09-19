@@ -426,7 +426,7 @@ string to_string(TKMV tkmv)
  *	File loading code needs to intercept this exception and add more information
  *	to make the error message complete.
  */
-ERR BDG::ParseMv(const char*& pch, MV& mv) const
+ERR BDG::ParseMv(const char*& pch, MV& mv)
 {
 	GMV gmv;
 	GenGmv(gmv, GG::Legal);

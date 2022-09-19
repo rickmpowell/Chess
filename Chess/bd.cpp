@@ -462,7 +462,7 @@ void BD::UndoMvSq(MV mv)
  *	Optionally doesn't bother to remove moves that would leave the
  *	king in check.
  */
-void BD::GenGmv(GMV& gmv, GG gg) const
+void BD::GenGmv(GMV& gmv, GG gg)
 {
 	GenGmv(gmv, cpcToMove, gg);
 }
@@ -474,7 +474,7 @@ void BD::GenGmv(GMV& gmv, GG gg) const
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenGmv(GMV& gmv, CPC cpcMove, GG gg) const
+void BD::GenGmv(GMV& gmv, CPC cpcMove, GG gg)
 {
 	Validate();
 	GenGmvColor(gmv, cpcMove);
@@ -483,16 +483,15 @@ void BD::GenGmv(GMV& gmv, CPC cpcMove, GG gg) const
 }
 
 
-void BD::RemoveInCheckMoves(GMV& gmv, CPC cpcMove) const
+void BD::RemoveInCheckMoves(GMV& gmv, CPC cpcMove)
 {
  	unsigned imvDest = 0;
-	BD bd(*this);
 	for (int imv = 0; imv < gmv.cmv(); imv++) {
 		MV mv = gmv[imv];
-		bd.MakeMvSq(mv);
-		if (!bd.FInCheck(cpcMove))
+		MakeMvSq(mv);
+		if (!FInCheck(cpcMove))
 			gmv[imvDest++] = mv;
-		bd.UndoMvSq(mv);
+		UndoMvSq(mv);
 	}
 	gmv.Resize(imvDest);
 }
