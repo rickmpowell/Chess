@@ -1,6 +1,8 @@
 /*
  *
  *	ti.h
+ * 
+ *	Title block panel
  *
  */
 
@@ -75,4 +77,51 @@ public:
 	void SetPl(CPC cpc, PL* ppl);
 	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
+};
+
+
+/*
+ *
+ *	UIPVTPL
+ * 
+ *	Displays piece value table for the player
+ * 
+ */
+
+
+class UIPVTPL : public UI
+{
+private:
+	PL* ppl;
+	PHASE phase;
+	ColorF CoFromApcSq(APC apc, SQ sq) const;
+public:
+	UIPVTPL(UI* puiParent, PHASE phase);
+	void Draw(const RC& rcUpdate);
+	void SetPl(PL* ppl);
+	void SetPhase(PHASE phase);
+};
+
+
+/*
+ *
+ *	UIPVT
+ *
+ *	The piece value table panel. A simple little panel that just shows
+ *	a graphical representation of the PLAI and PLAI2 piece value tables.
+ *	Not usually useful, so we don't show it by default.
+ *
+ */
+
+
+class UIPVT : public UIP
+{
+private:
+	UIPVTPL uipvtplOpening, uipvtplMidGame, uipvtplEndGame;
+
+public:
+	UIPVT(GA* pga);
+	virtual void Layout(void);
+	virtual void Draw(const RC& rcUpdate);
+	void SetPl(CPC cpc, PL* ppl);
 };

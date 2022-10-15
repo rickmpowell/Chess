@@ -867,6 +867,39 @@ DDPERFT CMDPERFTDIVIDE::ddperft = { TPERFT::Bulk, 6 };
 
 /*
  *
+ *  CMDSHOWPIECEVALUES
+ * 
+ *  Commannd to show a visual respresentation of the piece value tables
+ *  in the PLAI classes.
+ *
+ */
+
+
+class CMDSHOWPIECEVALUES : public CMD
+{
+public:
+    CMDSHOWPIECEVALUES(APP& app, int icmd) : CMD(app, icmd) {}
+
+    virtual int Execute(void)
+    {
+        app.pga->uipvt.Show(!app.pga->uipvt.FVisible());
+        return 1;
+    }
+
+    virtual bool FCustomSzMenu(void) const
+    {
+        return true;
+    }
+
+    virtual int IdsMenu(void) const
+    {
+        return app.pga->uipvt.FVisible() ? idsHidePieceValues: idsShowPieceValues;
+    }
+};
+
+
+/*
+ *
  *  CMDSAVEPGN
  * 
  *  Saves the current board state as a PGN file
@@ -1276,6 +1309,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDownBlack));
     cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivide, true));
     cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivideGo, false));
+    cmdlist.Add(new CMDSHOWPIECEVALUES(*this, cmdShowPieceValues));
 }
 
 

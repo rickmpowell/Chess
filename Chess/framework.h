@@ -569,17 +569,6 @@ typedef UINT_PTR TID;
 extern mt19937 rgen;
 
 
-/*	peg
- *
- *	A little helper function for pegging a value between first and last values.
- *	After pegging, the return value is guaranteed to be greater or equal to
- *	tFirst and less than or equal to tLast.
- */
-template<class T> inline T peg(const T& t, const T& tFirst, const T& tLast)
-{
-	return min(max(t, tFirst), tLast);
-}
-
 template<class T> inline bool in_range(const T& t, const T& tFirst, const T& tLast)
 {
 	return t >= tFirst && t <= tLast;

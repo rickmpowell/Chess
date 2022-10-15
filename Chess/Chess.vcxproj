@@ -109,6 +109,8 @@
     <ClInclude Include="bb.h" />
     <ClInclude Include="bd.h" />
     <ClInclude Include="debug.h" />
+    <ClInclude Include="eval_plai.h" />
+    <ClInclude Include="eval_plai2.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ga.h" />
     <ClInclude Include="app.h" />
@@ -145,6 +147,10 @@
     <Image Include="Resources\logo.ico" />
     <Image Include="Resources\small.ico" />
     <Image Include="Resources\white-flag.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="Chess.natvis" />
+    <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

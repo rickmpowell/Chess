@@ -92,6 +92,7 @@ class GA : public UI
 	friend class UIBD;
 	friend class UIML;
 	friend class UIDB;
+	friend class UIPVT;
 
 protected:
 	static BRS* pbrDesktop;
@@ -106,6 +107,7 @@ public:
 	UIML uiml;
 	UIDB uidb;
 	UITIP uitip;
+	UIPVT uipvt;
 
 	UI* puiCapt;	/* mouse capture */
 	UI* puiFocus;	/* keyboard focus */

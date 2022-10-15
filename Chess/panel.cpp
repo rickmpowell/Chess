@@ -436,7 +436,7 @@ float SBAR::DyThumb(void) const
 	float dyThumb = dyThumbMin;
 	if (yBotCont - yTopCont > 0)
 		dyThumb = rcRange.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
-	dyThumb = peg(dyThumb, dyThumbMin, rcRange.DyHeight());
+	dyThumb = clamp(dyThumb, dyThumbMin, rcRange.DyHeight());
 	return dyThumb;
 }
 
@@ -579,7 +579,7 @@ void SBAR::LeftDrag(const PT& ptMouse)
 	RC rcThumb = RcThumb();
 	float yThumbTopMin = RcInterior().top + 3.0f;
 	float yThumbTopMax = RcInterior().bottom - 3.0f - rcThumb.DyHeight();
-	float yThumbTopNew = peg(ptThumbTopInit.y - ptMouseInit.y + ptMouse.y, yThumbTopMin, yThumbTopMax);
+	float yThumbTopNew = clamp(ptThumbTopInit.y - ptMouseInit.y + ptMouse.y, yThumbTopMin, yThumbTopMax);
 	float pct = (yThumbTopNew - yThumbTopMin) / (yThumbTopMax - yThumbTopMin);
 	float yTopContNew = yTopView - pct * (yBotCont - yTopCont);
 	

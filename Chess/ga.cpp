@@ -52,7 +52,7 @@ void GA::DiscardRsrcClass(void)
 
 
 GA::GA(APP& app) : UI(nullptr), app(app),
-	uiti(this), uibd(this), uiml(this), uidb(this), uitip(this),
+	uiti(this), uibd(this), uiml(this), uipvt(this), uidb(this), uitip(this),
 	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
 	fInPlay(false), prule(nullptr), pprocpgn(nullptr), tidClock(0)
 {
@@ -86,6 +86,7 @@ void GA::SetPl(CPC cpc, PL* ppl)
 	mpcpcppl[cpc] = ppl;
 	uiml.SetPl(cpc, ppl);
 	uiti.SetPl(cpc, ppl);
+	uipvt.SetPl(cpc, ppl);
 }
 
 
@@ -147,9 +148,20 @@ void GA::Layout(void)
 {
 	float dxyMargin = 10.0f;
 
-	RC rc(dxyMargin, dxyMargin, dxyMargin+210.0f, dxyMargin+240.0f);
+	/* title box panel */
+	
+	RC rc(dxyMargin, dxyMargin, dxyMargin + 210.0f, dxyMargin + 240.0f);
 	uiti.SetBounds(rc);
 
+	/* piece value table panel */
+
+	rc.top = rc.bottom + dxyMargin;
+	rc.bottom = rcBounds.bottom - dxyMargin;
+	uipvt.SetBounds(rc);
+
+	/* board panel */
+	
+	rc.top = dxyMargin;
 	rc.left = rc.right + dxyMargin;
 	/* make board a multiple of 8 pixels wide, which makes squares an even number of pixels
 	   in size, so we get consistent un-antialiased square borders */
@@ -160,9 +172,13 @@ void GA::Layout(void)
 	rc.right = rc.left + rc.DyHeight();
 	uibd.SetBounds(rc);
 
+	/* move list panel */
+
 	rc.left = rc.right + dxyMargin;
 	rc.right = rc.left + uiml.SizLayoutPreferred().width;
 	uiml.SetBounds(rc);
+
+	/* debug panel */
 
 	rc.left = rc.right + dxyMargin;
 	rc.right = rc.left + uidb.SizLayoutPreferred().width;
@@ -408,7 +424,7 @@ void GA::RedoMv(SPMV spmv)
  */
 void GA::MoveToImv(int64_t imv, SPMV spmv)
 {
-	imv = peg(imv, (int64_t)-1, (int64_t)bdg.vmvGame.size() - 1);
+	imv = clamp(imv, (int64_t)-1, (int64_t)bdg.vmvGame.size() - 1);
 	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
 		spmv = SPMV::AnimateFast;
 		if (abs(bdg.imvCur - imv) > 5)
@@ -476,11 +492,6 @@ void GA::PumpMsg(void)
 	MSG msg;
 	while (::PeekMessageW(&msg, nullptr, 0, 0, PM_NOREMOVE|PM_NOYIELD)) {
 		switch (msg.message) {
-		case WM_KEYDOWN:
-			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
-			if (msg.wParam == VK_ESCAPE)
-				throw EXINT();
-			break;
 		case WM_TIMER:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
 			DispatchTimer(msg.wParam, msg.time);
@@ -489,6 +500,8 @@ void GA::PumpMsg(void)
 			throw EXINT();
 		default:
 			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
+			if (msg.message == WM_KEYDOWN && msg.wParam == VK_ESCAPE)
+				throw EXINT();
 			break;
 		}
 	if (::TranslateAccelerator(msg.hwnd, app.haccel, &msg))

@@ -98,6 +98,19 @@ void PL::ReceiveMv(MV mv, SPMV spmv)
 }
 
 
+EVAL PL::EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
+{
+	return EvalBaseApc(apc);
+}
+
+
+EVAL PL::EvalBaseApc(APC apc) const noexcept
+{
+	EVAL mpapceval[APC::ActMax] = { 0, 100, 275, 300, 500, 900, 200 };
+	return mpapceval[apc];
+}
+
+
 bool PL::FDepthLog(LGT lgt, int& depth)
 {
 	return ga.FDepthLog(lgt, depth);
@@ -131,10 +144,15 @@ void PL::SetDepthLog(int depthNew)
  */
 
 
-PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), cYield(0), cmvevEval(0), cmvevNode(0)
+PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), evalRandomDist(-1, 1), 
+		cYield(0), cmvevEval(0), cmvevNode(0)
 {
-	rgfAICoeffNum[0] = 100;
-	rgfAICoeffNum[1] = 20;
+	fecoMaterial = 100;
+	fecoMobility = 10;
+	fecoKingSafety = 20;
+	fecoPawnStructure = 20;
+	fecoTempo = 100;
+	fecoRandom = 0;
 	InitWeightTables();
 }
 
@@ -155,7 +173,7 @@ bool PLAI::FHasLevel(void) const noexcept
  */
 void PLAI::SetLevel(int level) noexcept
 {
-	this->level = peg(level, 1, 10);
+	this->level = clamp(level, 1, 10);
 }
 
 
@@ -180,6 +198,7 @@ float PLAI::CmvFromLevel(int level) const noexcept
 	case 10: return 5.0e+8f;
 	}
 }
+
 
 int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
 {
@@ -256,7 +275,7 @@ public:
 		if (FExpandLog(mvev))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)),
-				to_wstring(chType) + to_wstring(depth) + L" " + SzFromEval(mvev.eval) + 
+				wstring(1, chType) + to_wstring(depth) + L" " + SzFromEval(mvev.eval) + 
 					L" [" + SzFromEval(evalAlpha) + L", " + SzFromEval(evalBeta) + L"] ");
 	}
 
@@ -333,34 +352,43 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 	StartMoveLog();
 
-	MV mvBest;
-	EVAL evalAlpha = -evalInf, evalBeta = evalInf;
+	InitWeightTables();
 	int depthMax;
 
 	GMV gmv;
 	BDG bdg = ga.bdg;
 	vector<MVEV> vmvev;
-	const MVEV* pmvevBest = nullptr;
 
 	/* figure out how deep we're going to search */
 
 	bdg.GenGmv(gmv, GG::Pseudo);
-	depthMax = peg(DepthMax(bdg, gmv), 2, 14);
+	depthMax = clamp(DepthMax(bdg, gmv), 2, 14);
 	LogData(L"Search depth: " + to_wstring(depthMax));
 
 	/* pre-sort to improve quality of alpha-beta pruning */
 
 	PreSortVmvev(bdg, gmv, vmvev);
-		
+
+	EVAL evalAlpha = -evalInf, evalBeta = evalInf;
+	EVAL evalBest = -evalInf;
+	const MVEV* pmvevBest = nullptr;
+
 	try {
 		for (MVEV& mvev : vmvev) {
 			MAKEMV makemv(bdg, mvev.mv);
 			if (bdg.FInCheck(~bdg.cpcToMove))
 				continue;
 			EVAL eval = -EvalBdgDepth(bdg, mvev, 1, depthMax, -evalBeta, -evalAlpha);
+			if (eval > evalBest) {
+				evalBest = eval;
+				pmvevBest = &mvev;
+			}
+			// no pruning at top level 
+			assert(eval < evalBeta);
 			if (eval > evalAlpha) {
 				evalAlpha = eval;
-				pmvevBest = &mvev;
+				if (FEvalIsMate(eval))
+					depthMax = evalMate - eval;
 			}
 		}
 	}
@@ -376,14 +404,14 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 /*	PLAI::EvalBdgDepth
  *
- *	Evaluates the board/move from the point of view of the person who just moved,
+ *	Evaluates the board/move from the point of view of the person who has the move,
  *	Evaluates to the target depth depthMax; depth is current. Uses alpha-beta pruning.
  * 
- *	On entry mvevLast has the move we're evaluating. It will also contain pseudo-legal 
+ *	On entry mvevLast has the last move made. It will also contain pseudo-legal 
  *	moves for the next player to move (i.e., some moves may leave king in check).
  * 
- *	Returns board evaluation in centi-pawns from the point of view of the side that
- *	made the last move.
+ *	Returns board evaluation in centi-pawns from the point of view of the side with
+ *	the move.
  */
 EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta)
 {
@@ -397,7 +425,10 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL 
 	/* pre-sort the pseudo-legal moves in mvevEval */
 	vector<MVEV> vmvev;
 	PreSortVmvev(bdg, mvevLast.gmvPseudoReply, vmvev);
+	
 	int cmvLegal = 0;
+	EVAL evalBest = -evalInf;
+	const MVEV* pmvevBest = nullptr;
 
 	try {
 		for (MVEV& mvev : vmvev) {
@@ -406,10 +437,17 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL 
 				continue;
 			cmvLegal++;
 			EVAL eval = -EvalBdgDepth(bdg, mvev, depth + 1, depthMax, -evalBeta, -evalAlpha);
+			if (eval > evalBest) {
+				evalBest = eval;
+				pmvevBest = &mvev;
+			}
 			if (eval >= evalBeta)
-				return mvevLast.eval = evalBeta;
-			if (eval > evalAlpha)
+				return mvevLast.eval = evalBest;
+			if (eval > evalAlpha) {
 				evalAlpha = eval;
+				if (FEvalIsMate(eval))
+					depthMax = evalMate - eval;
+			}
 		}
 	}
 	catch (...) {
@@ -420,17 +458,17 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL 
 	/* test for checkmates, stalemates, and other draws */
 
 	if (cmvLegal == 0) 
-		evalAlpha = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
+		evalBest = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
 	else if (bdg.GsTestGameOver(mvevLast.gmvPseudoReply, *ga.prule) != GS::Playing)
-		evalAlpha = evalDraw;
-	return mvevLast.eval = evalAlpha;
+		evalBest = evalDraw;
+	return mvevLast.eval = evalBest;
 }
 
 
 /*	PLAI::EvalBdgQuiescent
  *
  *	Returns the evaluation after the given board/last move from the point of view of the
- *	player that made the last move. Alpha-beta prunes. 
+ *	player next to move. Alpha-beta prunes. 
  */
 EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha, EVAL evalBeta)
 {
@@ -440,14 +478,15 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha,
 
 	int cmvLegal = 0;
 
-	/* first off, check current board already in a pruning situations and fill mvevEval 
-	   with full static eval */
+	/* first off, get full static eval and check current board already in a pruning 
+	   situations */
 
-	EVAL eval = -EvalBdgStatic(bdg, mvevLast, true);
-	if (eval >= evalBeta)
-		return mvevLast.eval = evalBeta;
-	if (eval > evalAlpha)
-		evalAlpha = eval;
+	EVAL evalBest = EvalBdgStatic(bdg, mvevLast, true);
+	MVEV* pmvevBest = nullptr;
+	if (evalBest >= evalBeta)
+		return mvevLast.eval = evalBest;
+	if (evalBest > evalAlpha)
+		evalAlpha = evalBest;
 
 	/* don't bother pre-sorting moves during quiescent search because noisy moves are 
 	   rare */
@@ -467,8 +506,12 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha,
 				continue;
 			bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);	// these aren't generated by FillVmvev
 			EVAL eval = -EvalBdgQuiescent(bdg, mvev, depth + 1, -evalBeta, -evalAlpha);
+			if (eval > evalBest) {
+				evalBest = eval;
+				pmvevBest = &mvev;
+			}
 			if (eval >= evalBeta)
-				return mvevLast.eval = evalBeta;
+				return mvevLast.eval = evalBest;
 			if (eval > evalAlpha)
 				evalAlpha = eval;
 		}
@@ -482,9 +525,9 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha,
 	   doesn't work because we don't evaluate every move */
 
 	if (cmvLegal == 0)
-		evalAlpha = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
+		evalBest = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
 
-	return mvevLast.eval = evalAlpha;
+	return mvevLast.eval = evalBest;
 }
 
 
@@ -525,7 +568,7 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept
 		MVEV mvev(gmv[imv]);
 		bdg.MakeMv(mvev.mv);
 		bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);
-		mvev.eval = EvalBdgStatic(bdg, mvev, false);
+		mvev.eval = -EvalBdgStatic(bdg, mvev, false);
 		bdg.UndoMv();
 		size_t imvFirst, imvLim;
 		for (imvFirst = 0, imvLim = vmvev.size(); imvFirst != imvLim; ) {
@@ -540,6 +583,7 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept
 	}
 }
 
+
 EVAL PLAI::EvalTempo(const BDG& bdg, CPC cpc) const noexcept
 {
 	return cpc == bdg.cpcToMove ? evalTempo : -evalTempo;
@@ -549,24 +593,24 @@ EVAL PLAI::EvalTempo(const BDG& bdg, CPC cpc) const noexcept
 /*	PLAI::EvalBdgAttackDefend
  *
  *	Little heuristic for board evaluation that tries to detect bad moves, which are
- *	if we have moved ot an attacked square that isn't defended. This is only useful
- *	for pre-sorting alpha-beta pruning, because it's somewhat more accurate, but it's 
- *	good enough for real static board evaluation. Someday, a better heuristic would
- *	be to exchange until quiescence.
+ *	if we have moved to an attacked square that isn't defended. This is only useful
+ *	for pre-sorting alpha-beta pruning, because it's somewhat more accurate than not
+ *	doing it at all, but it's not good enough for full static board evaluation. 
+ *	Someday, a better heuristic would be to exchange until quiescence.
  * 
- *	The board should already have the move made on it. Destination square of the move 
- *	is sqTo. Returns the amount to adjust the evaluation by.
+ *	Destination square of the previous move is in sqTo. Returns the amount to adjust 
+ *	the evaluation by.
  */
-EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, SQ sqTo) const noexcept
+EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept
 {
-	APC apcMove = bdg.ApcFromSq(sqTo);
-	APC apcAttacker = bdg.ApcSqAttacked(sqTo, bdg.cpcToMove);
+	APC apcMove = bdg.ApcFromSq(mvPrev.sqTo());
+	APC apcAttacker = bdg.ApcSqAttacked(mvPrev.sqTo(), bdg.cpcToMove);
 	if (apcAttacker != APC::Null) {
 		if (apcAttacker < apcMove)
-			return -EvalBaseApc(apcMove);
-		APC apcDefended = bdg.ApcSqAttacked(sqTo, ~bdg.cpcToMove);
+			return EvalBaseApc(apcMove);
+		APC apcDefended = bdg.ApcSqAttacked(mvPrev.sqTo(), ~bdg.cpcToMove);
 		if (apcDefended == APC::Null)
-			return -EvalBaseApc(apcMove);
+			return EvalBaseApc(apcMove);
 	}
 	return 0;
 }
@@ -574,45 +618,87 @@ EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, SQ sqTo) const noexcept
 
 /*	PLAI::EvalBdgStatic
  *
- *	Evaluates the board from the point of view of the color that just moved.
+ *	Evaluates the board from the point of view of the color with the 
+ *	move. Previous move is in mvevPrev, which should be pre-populated 
+ *	with the legal move list for the player with the move.
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-EVAL PLAI::EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept
+EVAL PLAI::EvalBdgStatic(BDG& bdg, MVEV& mvevPrev, bool fFull) noexcept
 {
-	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
-	if (!fFull)
-		evalMat += EvalBdgAttackDefend(bdg, mvev.mv.sqTo());
+	EVAL evalMaterial = 0, evalMobility = 0, evalKingSafety = 0, evalPawnStructure = 0;
+	EVAL evalTempo = 0, evalRandom = 0;
+
+	if (fecoMaterial) {
+		evalMaterial = EvalPstFromCpc(bdg);
+		if (!fFull)
+			evalMaterial += EvalBdgAttackDefend(bdg, mvevPrev.mv);
+	}
 
 	static GMV gmvSelf;
-	bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
-	EVAL evalMob = 20*(gmvSelf.cmv() - mvev.gmvPseudoReply.cmv());
+	if (fecoMobility) {
+		bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
+		evalMobility = mvevPrev.gmvPseudoReply.cmv() - gmvSelf.cmv();
+	}
+
+	/* slow factors aren't used for pre-sorting */
+
+	EVAL evalPawnToMove, evalPawnDef;
+	EVAL evalKingToMove, evalKingDef;
+	if (fFull) {
+		if (fecoKingSafety) {
+			evalKingToMove = EvalBdgKingSafety(bdg, bdg.cpcToMove);
+			evalKingDef = EvalBdgKingSafety(bdg, ~bdg.cpcToMove);
+			evalKingSafety = evalKingToMove - evalKingDef;
+		}
+		if (fecoPawnStructure) {
+			evalPawnToMove = EvalBdgPawnStructure(bdg, bdg.cpcToMove);
+			evalPawnDef = EvalBdgPawnStructure(bdg, ~bdg.cpcToMove);
+			evalPawnStructure = evalPawnToMove - evalPawnDef;
+		}
+		if (fecoRandom)
+			evalRandom = evalRandomDist(rgen); /* distribution already scaled by fecoRandom */
+		if (fecoTempo)
+			evalTempo = EvalTempo(bdg, bdg.cpcToMove);
+	}
+	
 	cmvevEval++;
-	EVAL eval = (rgfAICoeffNum[0] * evalMat + rgfAICoeffNum[1] * evalMob + 50) / 100 + EvalTempo(bdg, ~bdg.cpcToMove);
+	EVAL eval = (fecoMaterial * evalMaterial +
+			fecoMobility * evalMobility +
+			fecoKingSafety * evalKingSafety +
+			fecoPawnStructure * evalPawnStructure +
+			fecoTempo * evalTempo +
+			evalRandom +
+		50) / 100;
 
 	if (fFull) {
 		cmvevEval++;
-		LogData(L"Mobility " + to_wstring(gmvSelf.cmv()) + L"-" + to_wstring(mvev.gmvPseudoReply.cmv()));
-		LogData(L"Material " + SzFromEval(evalMat));
+		LogData(bdg.cpcToMove == CPC::White ? L"White" : L"Black");
+		if (fecoMaterial)
+			LogData(L"Material " + SzFromEval(evalMaterial));
+		if (fecoMobility)
+			LogData(L"Mobility " + to_wstring(mvevPrev.gmvPseudoReply.cmv()) + L" - " + to_wstring(gmvSelf.cmv()));
+		if (fecoKingSafety)
+			LogData(L"King Safety " + to_wstring(evalKingToMove) + L" - " + to_wstring(evalKingDef));
+		if (fecoPawnStructure)
+			LogData(L"Pawn Structure " + to_wstring(evalPawnToMove) + L" - " + to_wstring(evalPawnDef));
+		if (fecoTempo)
+			LogData(L"Tempo " + SzFromEval(evalTempo));
+		if (fecoRandom)
+			LogData(L"Random " + SzFromEval(evalRandom/100));
 		LogData(L"Total " + SzFromEval(eval));
 	}
 
 	return eval;
 }
 
-enum PHASE {
-	phaseMax = 24,
-	phaseOpening = 22,
-	phaseMid = 20,
-	phaseEnd = 6
-};
-
 
 /*	PLAI:EvalPstFromCpc
  *
- *	Returns the board evaluation for the given color. 
+ *	Returns the piece value table board evaluation for the side with 
+ *	the move. 
  */
-EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcEval) const noexcept
+EVAL PLAI::EvalPstFromCpc(const BDG& bdg) const noexcept
 {
 	static const int mpapcphase[APC::ActMax] = { 0, 0, 1, 1, 2, 4, 0 };
 	int phase = 0;
@@ -627,7 +713,7 @@ EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcEval) const noexcept
 			for (BB bb = bdg.mppcbb[PC(cpc, apc)]; bb; bb.ClearLow()) {
 				SQ sq = bb.sqLow();
 				if (cpc == CPC::White)
-					sq = sq ^ SQ(rankMax - 1, 0);
+					sq = sq.sqFlip();
 				mpcpcevalOpening[cpc] += mpapcsqevalOpening[apc][sq];
 				mpcpcevalMid[cpc] += mpapcsqevalMiddleGame[apc][sq];
 				mpcpcevalEnd[cpc] += mpapcsqevalEndGame[apc][sq];
@@ -637,19 +723,19 @@ EVAL PLAI::EvalPstFromCpc(const BDG& bdg, CPC cpcEval) const noexcept
 	phase = min(phase, phaseMax);
 
 	if (phase > phaseOpening)
-		return mpcpcevalOpening[cpcEval] - mpcpcevalOpening[~cpcEval];
+		return mpcpcevalOpening[bdg.cpcToMove] - mpcpcevalOpening[~bdg.cpcToMove];
 	
 	if (phase > phaseMid)
 		return EvalInterpolate(phase, 
-			mpcpcevalOpening[cpcEval] - mpcpcevalOpening[~cpcEval], phaseOpening,
-			mpcpcevalMid[cpcEval] - mpcpcevalMid[~cpcEval], phaseMid);
+			mpcpcevalOpening[bdg.cpcToMove] - mpcpcevalOpening[~bdg.cpcToMove], phaseOpening,
+			mpcpcevalMid[bdg.cpcToMove] - mpcpcevalMid[~bdg.cpcToMove], phaseMid);
 		
 	if (phase > phaseEnd)
 		return EvalInterpolate(phase, 
-			mpcpcevalMid[cpcEval] - mpcpcevalMid[~cpcEval], phaseMid, 
-			mpcpcevalEnd[cpcEval] - mpcpcevalEnd[~cpcEval], phaseEnd); 
+			mpcpcevalMid[bdg.cpcToMove] - mpcpcevalMid[~bdg.cpcToMove], phaseMid, 
+			mpcpcevalEnd[bdg.cpcToMove] - mpcpcevalEnd[~bdg.cpcToMove], phaseEnd); 
 	
-	return mpcpcevalEnd[cpcEval] - mpcpcevalEnd[~cpcEval];
+	return mpcpcevalEnd[bdg.cpcToMove] - mpcpcevalEnd[~bdg.cpcToMove];
 }
 
 
@@ -664,195 +750,14 @@ EVAL PLAI::EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int ph
 }
 
 
-/* these values are taken from "simplified evaluation function */
-const EVAL mpapcevalOpening[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
-const EVAL mpapcsqdevalOpening[APC::ActMax][sqMax] = {
-	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0},
-	{  0,   0,   0,   0,   0,   0,   0,   0,	// Pawn
-	  50,  50,  50,  50,  50,  50,  50,  50,
-	  20,  20,  20,  20,  20,  20,  20,  20,
-	  -5,   0,   5,   5,   5,   5,   0,  -5,
-	   0,   0,  15,  25,  25,   0,   0,   0,
-	   5,   5,   5,  10,  10,   0,   5,   5,
-	   5,   5,  -5, -25, -25,  10,   5,   5,
-	   0,   0,   0,   0,   0,   0,   0,   0},
-	{-50, -40, -30, -30, -30, -30, -40, -50,	// Knight
-	 -40, -20,   0,   0,   0,   0, -20, -40,
-	 -30,   0,  10,  15,  15,  10,   0, -30,
-	 -30,   0,  15,  20,  20,  15,   0, -30,
-	 -30,   0,  15,  20,  20,  15,   0, -30,
-	 -30,   0,  10,  15,  15,  10,   0, -30,
-	 -40, -20,  0,    0,   0,   0, -20, -40,
-	 -50, -40, -30, -30, -30, -30, -40, -50},
-	{-20, -10, -10, -10, -10, -10, -10, -20,	// Bishop
-	 -10,   0,   0,   0,   0,   0,   0, -10,
-	 -10,   0,   5,  10,  10,   5,   0, -10,
-	 -10,   5,   5,  10,  10,   5,   5, -10,
-	 -10,   0,  10,  10,  10,  10,   0, -10,
-	 -10,  10,  10,  10,  10,  10,  10, -10,
-	 -10,  10,   0,   0,   0,   0,  10, -10,
-	 -20, -10, -10, -10, -10, -10, -10, -20},
-	{  0,   0,   0,   0,   0,   0,   0,   0,	// Rook
-	   0,   0,   0,   0,   0,   0,   0,   0,
-	  -5,   0,   0,   0,   0,   0,   0,  -5,
-	  -5,   0,   0,   0,   0,   0,   0,  -5,
-	  -5,   0,   0,   0,   0,   0,   0,  -5,
-	  -5,   0,   0,   0,   0,   0,   0,  -5,
-	   5,   5,   5,   5,   5,   5,   5,   5,
-	   5,   5,   5,  10,   5,  10,   5,   5},
-	{-20, -10, -10,  -5,  -5, -10, -10, -20,	// Queen
-	 -10,   0,   5,   5,   5,   5,   0, -10,
-	 -10,  -5, -10, -10, -10, -10,  -5, -10,
-	  -5,  -5,  -5,  -5,  -5,  -5,  -5,  -5,
-	  -5,  -5,  -5,  -5,  -5,  -5,  -5,  -5,
-	  -5,   0,   0,   0,   0,   0,   0,  -5,
-	   0,  10,  10,  10,  10,  10,  10,   0,
-	 -10, -10, -10,   0,   0, -10, -10, -10},
-	{-30, -40, -40, -50, -50, -40, -40, -30,	// King
-	 -30, -40, -40, -50, -50, -40, -40, -30,
-	 -30, -40, -40, -50, -50, -40, -40, -30,
-	 -30, -40, -40, -50, -50, -40, -40, -30,
-	 -20, -30, -30, -40, -40, -30, -30, -20,
-	 -10, -20, -30, -30, -30, -30, -20, -10,
-	  20,  20,   0,  -5,  -5,   0,  20,  20,
-	  20,  30,  10,  -5,  -5,  10,  35,  25}
-};
-
-
-/* these constants are taken from pesto evaluator */
-const EVAL mpapcevalMiddleGame[APC::ActMax] = { 0, 82, 337, 365, 477, 1025, 200 };
-const EVAL mpapcsqdevalMiddleGame[APC::ActMax][sqMax] = {
-	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0},
-	{   0,   0,   0,   0,   0,   0,   0,    0,	// Pawn
-	   98, 134,  61,  95,  68, 126,  34,  -11,
-	   -6,   7,  26,  31,  65,  56,  25,  -20,
-	  -14,  13,   6,  21,  23,  12,  17,  -23,
-	  -27,  -2,  -5,  12,  17,   6,  10,  -25,
-	  -26,  -4,  -4, -10,   3,   3,  33,  -12,
-	  -35,  -1, -20, -23, -15,  24,  38,  -22,
-	    0,   0,   0,   0,   0,   0,   0,    0},
-	{-167, -89, -34, -49,  61, -97, -15, -107,	// Knight
-	  -73, -41,  72,  36,  23,  62,   7,  -17,
-	  -47,  60,  37,  65,  84, 129,  73,   44,
-	   -9,  17,  19,  53,  37,  69,  18,   22,
-	  -13,   4,  16,  13,  28,  19,  21,   -8,
-	  -23,  -9,  12,  10,  19,  17,  25,  -16,
-	  -29, -53, -12,  -3,  -1,  18, -14,  -19,
-	 -105, -21, -58, -33, -17, -28, -19,  -23},
-	 {-29,   4, -82, -37, -25, -42,   7,   -8,	// Bishop
-	  -26,  16, -18, -13,  30,  59,  18,  -47,
-	  -16,  37,  43,  40,  35,  50,  37,   -2,
-	   -4,   5,  19,  50,  37,  37,   7,   -2,
-	   -6,  13,  13,  26,  34,  12,  10,    4,
-	    0,  15,  15,  15,  14,  27,  18,   10,
-	    4,  15,  16,   0,   7,  21,  33,    1,
-	  -33,  -3, -14, -21, -13, -12, -39,  -21},
-	 { 32,  42,  32,  51,  63,   9,  31,   43,	// Rook
-	   27,  32,  58,  62,  80,  67,  26,   44,
-	   -5,  19,  26,  36,  17,  45,  61,   16,
-	  -24, -11,   7,  26,  24,  35,  -8,  -20,
-	  -36, -26, -12,  -1,   9,  -7,   6,  -23,
-	  -45, -25, -16, -17,   3,   0,  -5,  -33,
-	  -44, -16, -20,  -9,  -1,  11,  -6,  -71,
-	  -19, -13,   1,  17,  16,   7, -37,  -26},	
-	 {-28,   0,  29,  12,  59,  44,  43,   45,	// Queen
-	  -24, -39,  -5,   1, -16,  57,  28,   54,
-	  -13, -17,   7,   8,  29,  56,  47,   57,
-	  -27, -27, -16, -16,  -1,  17,  -2,    1,
-	   -9, -26,  -9, -10,  -2,  -4,   3,   -3,
-	  -14,   2, -11,  -2,  -5,   2,  14,    5,
-	  -35,  -8,  11,   2,   8,  15,  -3,    1,
-	   -1, -18,  -9,  10, -15, -25, -31,  -50},
-	 {-65,  23,  16, -15, -56, -34,   2,   13,	// King
-	   29,  -1, -20,  -7,  -8,  -4, -38,  -29,
-	   -9,  24,   2, -16, -20,   6,  22,  -22,
-	  -17, -20, -12, -27, -30, -25, -14,  -36,
-	  -49,  -1, -27, -39, -46, -44, -33,  -51,
-	  -14, -14, -22, -46, -44, -30, -15,  -27,
-		1,   7,  -8, -64, -43, -16,   9,    8,
-	  -15,  36,  12, -54,   8, -28,  24,   14}
-};
-
-/* these constants are taken from pesto evaluator */
-const EVAL mpapcevalEndGame[APC::ActMax] = { 0, 94, 281, 297, 512, 936, 200 };
-const EVAL mpapcsqdevalEndGame[APC::ActMax][sqMax] = {
-	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0,
-	 0, 0, 0, 0, 0, 0, 0, 0},
-	{  0,   0,   0,   0,   0,   0,   0,   0,	// Pawn
-	 178, 173, 158, 134, 147, 132, 165, 187,
-	  94, 100,  85,  67,  56,  53,  82,  84,
-	  32,  24,  13,   5,  -2,   4,  17,  17,
-	  13,   9,  -3,  -7,  -7,  -8,   3,  -1,
-	   4,   7,  -6,   1,   0,  -5,  -1,  -8,
-	  13,   8,   8,  10,  13,   0,   2,  -7,
-	   0,   0,   0,   0,   0,   0,   0,   0},
-	{-58, -38, -13, -28, -31, -27, -63, -99,	// Knight
-	 -25,  -8, -25,  -2,  -9, -25, -24, -52,
-	 -24, -20,  10,   9,  -1,  -9, -19, -41,
-	 -17,   3,  22,  22,  22,  11,   8, -18,
-	 -18,  -6,  16,  25,  16,  17,   4, -18,
-	 -23,  -3,  -1,  15,  10,  -3, -20, -22,
-	 -42, -20, -10,  -5,  -2, -20, -23, -44,
-	 -29, -51, -23, -15, -22, -18, -50, -64},
-	{-14, -21, -11,  -8,  -7,  -9, -17, -24,	// Bishop
-	  -8,  -4,   7, -12,  -3, -13,  -4, -14,
-	   2,  -8,   0,  -1,  -2,   6,   0,   4,
-	  -3,   9,  12,   9,  14,  10,   3,   2,
-	  -6,   3,  13,  19,   7,  10,  -3,  -9,
-	 -12,  -3,   8,  10,  13,   3,  -7, -15,
-	 -14, -18,  -7,  -1,   4,  -9, -15, -27,
-	 -23,  -9, -23,  -5,  -9, -16,  -5, -17},
-	{ 13,  10,  18,  15,  12,  12,   8,   5,	// Rook
-	  11,  13,  13,  11,  -3,   3,   8,   3,
-	   7,   7,   7,   5,   4,  -3,  -5,  -3,
-	   4,   3,  13,   1,   2,   1,  -1,   2,
-	   3,   5,   8,   4,  -5,  -6,  -8, -11,
-	  -4,   0,  -5,  -1,  -7, -12,  -8, -16,
-	  -6,  -6,   0,   2,  -9,  -9, -11,  -3,
-	  -9,   2,   3,  -1,  -5, -13,   4, -20},
-	{ -9,  22,  22,  27,  27,  19,  10,  20,	// Queen
-	 -17,  20,  32,  41,  58,  25,  30,   0,
-	 -20,   6,   9,  49,  47,  35,  19,   9,
-	   3,  22,  24,  45,  57,  40,  57,  36,
-	 -18,  28,  19,  47,  31,  34,  39,  23,
-	 -16, -27,  15,   6,   9,  17,  10,   5,
-	 -22, -23, -30, -16, -16, -23, -36, -32,
-	 -33, -28, -22, -43,  -5, -32, -20, -41},
-	{-74, -35, -18, -18, -11,  15,   4, -17,	// King
-	 -12,  17,  14,  17,  17,  38,  23,  11,
-	  10,  17,  23,  15,  20,  45,  44,  13,
-	  -8,  22,  24,  27,  26,  33,  26,   3,
-	 -18,  -4,  21,  24,  27,  23,   9, -11,
-	 -19,  -3,  11,  21,  23,  16,   7,  -9,
-	 -27, -11,   4,  13,  14,   4,  -5, -17,
-	 -53, -34, -21, -11, -28, -14, -24, -43}
-};
-		
-
-EVAL PLAI::EvalBaseApc(APC apc) const noexcept
+EVAL PLAI::EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
 {
-	EVAL mpapceval[APC::ActMax] = { 0, 100, 275, 300, 500, 900, 200 };
-	return mpapceval[apc];
+	if (phase <= phaseEnd)
+		return mpapcsqevalEndGame[apc][sq];
+	else if (phase <= phaseMid)
+		return mpapcsqevalMiddleGame[apc][sq];
+	else
+		return mpapcsqevalOpening[apc][sq];
 }
 
 
@@ -863,12 +768,83 @@ void PLAI::InitWeightTables(void)
 	InitWeightTable(mpapcevalEndGame, mpapcsqdevalEndGame, mpapcsqevalEndGame);
 }
 
+
 void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][sqMax], EVAL mpapcsqeval[APC::ActMax][sqMax])
 {
 	memset(&mpapcsqeval[APC::Null], 0, sqMax * sizeof(EVAL));
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
 		for (uint64_t sq = 0; sq < sqMax; sq++)
 			mpapcsqeval[apc][sq] = mpapceval[apc] + mpapcsqdeval[apc][sq];
+}
+
+
+EVAL PLAI::EvalBdgKingSafety(BDG& bdg, CPC cpc) noexcept
+{
+	return 0;
+}
+
+
+/*	PLAI::CfileDoubledPawns
+ *
+ *	Returns the number of doubled pawns the side cpc has, i.e.,
+ *	the number of files that contain multiple pawns.
+ */
+int PLAI::CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept
+{
+	int cfile = 0;
+	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
+	BB bbFile = bbFileA;
+	for (int file = 0; file < fileMax; file++, bbFile <<= 1) {
+		int csq = (bbPawn & bbFile).csq();
+		if (csq)
+			cfile += csq - 1;
+	}
+	return cfile;
+}
+
+
+/*	PLAI::CfileIsoPawns
+ *
+ *	Returns the number of isolated pawns the side cpc has; i.e., 
+ *	the number of files that have pawns when neither adjacent file
+ *	have pawns.
+ */
+int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
+{
+	int cfile = 0;
+	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
+
+	cfile += (bbPawn & bbFileA) && !(bbPawn & bbFileB);
+	cfile += (bbPawn & bbFileH) && !(bbPawn & bbFileG);
+	BB bbFile = bbFileB;
+	BB bbAdj = bbFileA | bbFileC;
+	for (int file = fileB; file <= fileG; file++, bbFile <<= 1, bbAdj <<= 1)
+		cfile += (bbPawn & bbFile) && !(bbPawn & bbAdj);
+	return cfile;
+}
+
+
+/*	PLAI::EvalBdgPawnStructure
+ *
+ *	Returns the pawn structure evaluation of the board position from the
+ *	point of view of cpc.
+ */
+EVAL PLAI::EvalBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
+{
+	EVAL eval = 0;
+
+	eval -= CfileDoubledPawns(bdg, cpc);
+	eval -= CfileIsoPawns(bdg, cpc);
+
+	/* backwards pawns */
+	/* overextended pawns */
+
+	/* passed pawns */
+	/* connected pawns */
+	
+	/* open and half-open files */
+
+	return eval;
 }
 
 
@@ -881,9 +857,15 @@ void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsq
 
 PLAI2::PLAI2(GA& ga) : PLAI(ga)
 {
-	rgfAICoeffNum[0] = 100;
-	rgfAICoeffNum[1] = 100;
+	fecoMaterial = 100;	
+	fecoMobility = 0;	
+	fecoKingSafety = 0;	
+	fecoPawnStructure = 0;	
+	fecoTempo = 100;
+	fecoRandom = 5;
+	evalRandomDist = uniform_int_distribution<int32_t>(-fecoRandom*100, fecoRandom*100);
 	SetName(L"SQ Mathilda");
+	InitWeightTables();
 }
 
 
@@ -899,24 +881,11 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 }
 
 
-EVAL PLAI2::EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept
+void PLAI2::InitWeightTables(void)
 {
-	EVAL evalMat = EvalPstFromCpc(bdg, ~bdg.cpcToMove);
-	if (!fFull)
-		evalMat += EvalBdgAttackDefend(bdg, mvev.mv.sqTo());
-
-	if (fFull) {
-		evalMat += 1;	// just to make full evals different than partials so we can tell them apart when debugging
-		cmvevEval++;
-	}
-
-	EVAL eval = evalMat + EvalTempo(bdg, ~bdg.cpcToMove);
-
-	if (fFull) {
-		LogData(L"Material " + SzFromEval(evalMat));
-		LogData(L"Total " + SzFromEval(eval));
-	}
-	return eval;
+	InitWeightTable(mpapcevalOpening2, mpapcsqdevalOpening2, mpapcsqevalOpening);
+	InitWeightTable(mpapcevalMiddleGame2, mpapcsqdevalMiddleGame2, mpapcsqevalMiddleGame);
+	InitWeightTable(mpapcevalEndGame2, mpapcsqdevalEndGame2, mpapcsqevalEndGame);
 }
 
 
@@ -1003,3 +972,5 @@ int RGINFOPL::IdbFromInfopl(const INFOPL& infopl) const
 	}
 	return idbHumanLogo;
 }
+
+

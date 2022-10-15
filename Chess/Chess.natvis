@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+	<Type Name="MV">
+		<DisplayString>{(unsigned short)(((sqFromGrf%8)+10)%16*4096+(sqFromGrf/8+1)*256+(sqToGrf%8+10)%16*16+(sqToGrf/8+1)),xb}</DisplayString>
+	</Type>
+
+	<Type Name="BB">
+		<DisplayString>
+			{(uint8_t)(grf>>56),bb}-
+			{(uint8_t)(grf>>48),bb}-
+			{(uint8_t)(grf>>40),bb}-
+			{(uint8_t)(grf>>32),bb}-
+			{(uint8_t)(grf>>24),bb}-
+			{(uint8_t)(grf>>16),bb}-
+			{(uint8_t)(grf>>8),bb}-
+			{(uint8_t)(grf),bb}
+		</DisplayString>
+	</Type>
+</AutoVisualizer>

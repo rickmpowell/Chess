@@ -54,6 +54,12 @@
     <ClInclude Include="panel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="eval_plai.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="eval_plai2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ga.cpp">
@@ -120,5 +126,9 @@
     <Image Include="Resources\logo.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="Chess.natvis" />
+    <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
 </Project>

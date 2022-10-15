@@ -14,13 +14,15 @@
 #define idsTipTest      9
 #define idsTipUndoMove  10
 #define idsTipRedoMove  11
-#define idsTipLogDepthUp			12
-#define idsTipLogDepthDown			13
-#define idsTipLogFileToggle			14
-#define idsTipPlayerLvlUp			15
-#define idsTipPlayerLvlUpBlack		16
-#define idsTipPlayerLvlDown			17
+#define idsTipLogDepthUp	12
+#define idsTipLogDepthDown	13
+#define idsTipLogFileToggle	14
+#define idsTipPlayerLvlUp	15
+#define idsTipPlayerLvlUpBlack	16
+#define idsTipPlayerLvlDown	17
 #define idsTipPlayerLvlDownBlack	18
+#define idsShowPieceValues	19
+#define idsHidePieceValues	20
 
 /*
  *	Dialog definitions
@@ -66,7 +68,8 @@
 #define cmdPlayerLvlDownBlack	24
 #define cmdPerftDivide      25
 #define cmdPerftDivideGo	26
-#define cmdMax				27
+#define cmdShowPieceValues  27
+#define cmdMax				28
 
 /*
  *	icons

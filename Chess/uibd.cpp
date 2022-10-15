@@ -264,10 +264,10 @@ void UIBD::Draw(const RC& rcDraw)
 	int fileFirst = (int)floor((rcDraw.left - rcSquares.left) / dxySquare);
 	float dx = (rcDraw.right - rcSquares.left) / dxySquare;
 	int fileLast = (int)floor(dx) - (int)(floor(dx) == dx);
-	rankFirst = peg(rankFirst, 0, rankMax - 1);
-	rankLast = peg(rankLast, 0, rankMax - 1);
-	fileFirst = peg(fileFirst, 0, fileMax - 1);
-	fileLast = peg(fileLast, 0, fileMax - 1);
+	rankFirst = clamp(rankFirst, 0, rankMax - 1);
+	rankLast = clamp(rankLast, 0, rankMax - 1);
+	fileFirst = clamp(fileFirst, 0, fileMax - 1);
+	fileLast = clamp(fileLast, 0, fileMax - 1);
 	if (cpcPointOfView == CPC::White) {
 		rankFirst = rankMax - rankFirst - 1;
 		rankLast = rankMax - rankLast - 1;

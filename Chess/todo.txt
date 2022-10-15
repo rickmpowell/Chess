@@ -1,3 +1,4 @@
+  UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
   Test: option to stop or continue on errors 
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
@@ -9,8 +10,10 @@
   Test: if no pgn files in a directory, file enumeration crashes
   Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Test: PGN games should feed moves through a PL
+  AI: Add more complex pawn structure
+  AI: Implement incremental depth search
   AI: Implement transposition tables and use in alpha-beta search
-  AI: I think when we're ahead, we permit 3-fold draws too easily
+  AI: Implement king safety evaluator
   AI: Communicate best continuation back (principle variation)
   AI: spin off AI into its own thread
   AI: annotate candidate best moves on board while thinking
@@ -19,7 +22,6 @@
   AI: take clock time into account
   AI: Consider a different board evaluation for pre-sorting alpha-beta pruning
   AI: Do a multithreaded lookup
-  AI: build and keep lookahead tree 
   AI: Play through until no checks (quiescence) before evaluation
   AI: use custom allocators for lookahead allocations
   Eval: Add square control factor to evaluation function
@@ -28,6 +30,7 @@
   Can we make things like Undo work while AI is thinking?
   Move gen: Use magic bitboards for move generation
   Move gen: Use magic bitboards for attack squares
+  Log: Need a fancy search log that displays candidate move list
   Log: Should we hash tags?
   Log: File logging and UIDB logging need to have their own depth
   Log: when hovering over log entries with FEN attributes, hover a mini-board
@@ -84,6 +87,8 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* AI: Implement pawn structure evaluator
+* Test: implement panel for showing piece value table heat map
 * Take advantage of apcMove and cpcMove in the MV
 * UndoMv does not restore last pawn or capture move correctly
 * Add apcMove and cpcMove to the MV 

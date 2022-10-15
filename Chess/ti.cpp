@@ -164,3 +164,128 @@ void UITI::SetPl(CPC cpc, PL* ppl)
 	else
 		uiplBlack.SetPl(ppl);
 }
+
+
+
+/*
+ *
+ *	UIPVTPL
+ * 
+ *	Displays the piece value table for the given player
+ * 
+ */
+
+
+UIPVTPL::UIPVTPL(UI* puiParent, PHASE phase) : UI(puiParent), ppl(nullptr), phase(phase)
+{
+}
+
+
+ColorF CoGradient(ColorF co1, ColorF co2, float pct)
+{
+	if (pct <= 0.0f)
+		pct = 0.0f;
+	else if (pct > 1.0f)
+		pct = 1.0f;
+	return ColorF(co1.r * (1.0f - pct) + co2.r * pct,
+		co1.g * (1.0f - pct) + co2.g * pct,
+		co1.b * (1.0f - pct) + co2.b * pct);
+}
+
+
+ColorF UIPVTPL::CoFromApcSq(APC apc, SQ sq) const
+{
+	EVAL deval = ppl->EvalFromPhaseApcSq(phase, apc, sq) - ppl->EvalBaseApc(apc);
+	if (deval < 0)
+		return ColorF(CoGradient(ColorF::White, ColorF::Red, -(float)deval/100.0f));
+	else
+		return ColorF(CoGradient(ColorF::White, ColorF::Green, (float)deval/100.0f));
+}
+
+
+void UIPVTPL::Draw(const RC& rcUpdate)
+{
+	float dxyGutter = 5.0;
+	float dxyPiece = (RcInterior().DyHeight() - dxyGutter) / 6 - dxyGutter;
+	dxyPiece = min(dxyPiece, RcInterior().DxWidth());
+
+	RC rc;
+	rc.left = RcInterior().PtCenter().x - dxyPiece / 2;
+	rc.right = rc.left + dxyPiece;
+	rc.top = dxyGutter;
+	rc.bottom = rc.top + dxyPiece;
+
+	BRS* pbrVal = nullptr;
+	App().pdc->CreateSolidColorBrush(ColorF(ColorF::Blue), &pbrVal);
+
+	float dxySq = rc.DxWidth() / 8;
+	for (APC apc = APC::Pawn; apc <= APC::King; ++apc) {
+		RC rcSq(rc.left, rc.top, rc.left + dxySq, rc.top + dxySq);
+		for (int rank = rankMax-1; rank >= 0; rank--) {
+			for (int file = 0; file < fileMax; file++) {
+				pbrVal->SetColor(CoFromApcSq(apc, SQ(rank, file).sqFlip()));
+				FillRc(rcSq, pbrVal);
+				rcSq.Offset(dxySq, 0);
+			}
+			rcSq.Offset(-8*dxySq, dxySq);
+		}
+		rc.Offset(0, dxyPiece + dxyGutter);
+	}
+	SafeRelease(&pbrVal);
+}
+
+
+void UIPVTPL::SetPl(PL* ppl)
+{
+	this->ppl = ppl;
+}
+
+
+void UIPVTPL::SetPhase(PHASE phase)
+{
+	this->phase = phase;
+}
+
+/*
+ *	UIPVT
+ *
+ *	Panel for displaying piece value tables of the current players.
+ *	Only displays something useful for PLAI derived players. Since
+ *	piece tables are static, this is a very dull panel.
+ *
+ */
+
+
+UIPVT::UIPVT(GA* pga) : UIP(pga), 
+	uipvtplOpening(this, phaseOpening), uipvtplMidGame(this, phaseMid), uipvtplEndGame(this, phaseEnd)
+{
+}
+
+
+void UIPVT::Layout(void)
+{
+	float dxyGutter = 5.0;
+	RC rc = RcInterior();
+	rc.left += dxyGutter;
+	float dxyWidth = rc.DxWidth() / 3 - dxyGutter;
+	rc.right = rc.left + dxyWidth;
+	uipvtplOpening.SetBounds(rc);
+	uipvtplMidGame.SetBounds(rc.Offset(dxyWidth+dxyGutter, 0));
+	uipvtplEndGame.SetBounds(rc.Offset(dxyWidth+dxyGutter, 0));
+}
+
+
+void UIPVT::Draw(const RC& rcUpdate)
+{
+	FillRc(rcUpdate, pbrGridLine);
+}
+
+
+void UIPVT::SetPl(CPC cpc, PL* ppl)
+{
+	if (cpc == CPC::White) {
+		uipvtplOpening.SetPl(ppl);
+		uipvtplMidGame.SetPl(ppl);
+		uipvtplEndGame.SetPl(ppl);
+	}
+}

@@ -11,7 +11,6 @@
 #include "bd.h"
 
 
-
 /*
  *
  *	MVEV structure
@@ -33,6 +32,14 @@ public:
 	MVEV(MV mv=MV()) : mv(mv), eval(0), mvReplyBest(MV())
 	{
 	}
+};
+
+
+enum PHASE {
+	phaseMax = 24,
+	phaseOpening = 22,
+	phaseMid = 20,
+	phaseEnd = 6
 };
 
 
@@ -90,6 +97,9 @@ public:
 
 	void ReceiveMv(MV mv, SPMV spmv);
 
+	virtual EVAL EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
+	virtual EVAL EvalBaseApc(APC apc) const noexcept;
+
 	bool FDepthLog(LGT lgt, int& depth);
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
 	int DepthLog(void) const;
@@ -110,10 +120,18 @@ public:
 class PLAI : public PL
 {
 protected:
+	/* piece value tables */
 	EVAL mpapcsqevalOpening[APC::ActMax][sqMax];
 	EVAL mpapcsqevalMiddleGame[APC::ActMax][sqMax];
 	EVAL mpapcsqevalEndGame[APC::ActMax][sqMax];
-	uint16_t rgfAICoeffNum[3];	/* coefficient is this number divided by 100 */
+	/* piece weight tables used to initialize piece tables above */
+#include "eval_plai.h"
+
+	/* coefficients this divided by 100 */
+	uint16_t fecoMaterial, fecoMobility, fecoKingSafety, fecoPawnStructure, fecoTempo, fecoRandom;
+	mt19937 rgen;	/* random number generator */
+	uniform_int_distribution<int32_t> evalRandomDist;
+
 	uint16_t cYield;
 
 	/* logging statistics */
@@ -127,37 +145,47 @@ public:
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
 
+	EVAL EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
+
 protected:
 	EVAL EvalBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta);
 	EVAL EvalBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, EVAL evalAlpha, EVAL evalBeta); 
-	bool FAlphaBetaPrune(const MVEV& mvev, MVEV& mvevBest, EVAL& evalAlpha, EVAL& evalBeta, int& depthMax) const noexcept;
 	void PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
 	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
 	void PumpMsg(void);
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
 	virtual EVAL EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept;
+	EVAL EvalBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
+	EVAL EvalBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	float CmvFromLevel(int level) const noexcept;
 
 	void StartMoveLog(void);
 	void EndMoveLog(void);
 
-	EVAL EvalBaseApc(APC apc) const noexcept;
-	void InitWeightTables(void);
+	virtual void InitWeightTables(void);
 	void InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][64], EVAL mpapcsqeval[APC::ActMax][64]);
-	EVAL EvalPstFromCpc(const BDG& bdg, CPC cpcMove) const noexcept;
+	EVAL EvalPstFromCpc(const BDG& bdg) const noexcept;
 	EVAL EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int phase2) const noexcept;
-	EVAL EvalBdgAttackDefend(BDG& bdg, SQ sqTo) const noexcept;
+	EVAL EvalBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
 	EVAL EvalTempo(const BDG& bdg, CPC cpc) const noexcept;
+
+	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
+	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;
+
 };
 
 
 class PLAI2 : public PLAI
 {
+protected:
+#include "eval_plai2.h"
+
 public:
 	PLAI2(GA& ga);
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
-	virtual EVAL EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept;
+protected:
+	virtual void InitWeightTables(void);
 };
 
 
@@ -179,7 +207,6 @@ public:
 };
 
 
-
 /*
  *
  *	RGINFOPL
@@ -187,6 +214,7 @@ public:
  *	The list of available players we have to play a game.
  * 
  */
+
 
 enum class TPL	// types of players
 {
