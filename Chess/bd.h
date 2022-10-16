@@ -13,7 +13,7 @@
 
 
 
-typedef int32_t EVAL;
+typedef int32_t EV;
 
 
 /*
@@ -935,8 +935,8 @@ public:
 	 *	getting piece value of pieces/squares
 	 */
 
-	EVAL VpcFromSq(SQ sq) const noexcept;
-	EVAL VpcTotalFromCpc(CPC cpc) const noexcept;
+	EV EvFromSq(SQ sq) const noexcept;
+	EV EvTotalFromCpc(CPC cpc) const noexcept;
 
 	/*
 	 *	reading FEN strings 

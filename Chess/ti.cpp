@@ -195,11 +195,11 @@ ColorF CoGradient(ColorF co1, ColorF co2, float pct)
 
 ColorF UIPVTPL::CoFromApcSq(APC apc, SQ sq) const
 {
-	EVAL deval = ppl->EvalFromPhaseApcSq(phase, apc, sq) - ppl->EvalBaseApc(apc);
-	if (deval < 0)
-		return ColorF(CoGradient(ColorF::White, ColorF::Red, -(float)deval/100.0f));
+	EV dev = ppl->EvFromPhaseApcSq(phase, apc, sq) - ppl->EvBaseApc(apc);
+	if (dev < 0)
+		return ColorF(CoGradient(ColorF::White, ColorF::Red, -(float)dev/100.0f));
 	else
-		return ColorF(CoGradient(ColorF::White, ColorF::Green, (float)deval/100.0f));
+		return ColorF(CoGradient(ColorF::White, ColorF::Green, (float)dev/100.0f));
 }
 
 

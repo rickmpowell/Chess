@@ -854,25 +854,25 @@ void BD::GenGmvCastle(GMV& gmv, SQ sqKing, CPC cpcMove) const
 }
 
 
-EVAL BD::VpcFromSq(SQ sq) const noexcept
+EV BD::EvFromSq(SQ sq) const noexcept
 {
-	static const EVAL mpapcvpc[] = { 0, 100, 300, 300, 500, 900, 10000, -1 };
-	return mpapcvpc[ApcFromSq(sq)];
+	static const EV mpapcev[] = { 0, 100, 300, 300, 500, 900, 10000, -1 };
+	return mpapcev[ApcFromSq(sq)];
 }
 
 
-/*	BD::VpcTotalFromCpc
+/*	BD::EvTotalFromCpc
  *
  *	Piece value of the entire board for the given color
  */
-EVAL BD::VpcTotalFromCpc(CPC cpc) const noexcept
+EV BD::EvTotalFromCpc(CPC cpc) const noexcept
 {
-	EVAL vpc = 0;
+	EV ev = 0;
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
 		for (BB bb = mppcbb[PC(cpc, apc)]; bb; bb.ClearLow())
-			vpc += VpcFromSq(bb.sqLow());
+			ev += EvFromSq(bb.sqLow());
 	}
-	return vpc;
+	return ev;
 }
 
 

@@ -1,3 +1,9 @@
+  Move: incrementally track game phase
+  Search: quiescent search doesn't detect draws. Can it?
+  XP: alloc/delete transposition table at beginning/end of each ai move
+  XP: use transposition table evals in pre-sort
+  XP: create transposition table on every full eval
+  Eval: random eval should be some transform on the hash of the board to stabilize the randomness
   UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
   Test: option to stop or continue on errors 
   Test: Add option to draw or not draw moves during test run

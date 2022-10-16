@@ -25,11 +25,11 @@ class MVEV
 {
 public:
 	MV mv;
-	EVAL eval;
+	EV ev;
 	MV mvReplyBest;
 	GMV gmvPseudoReply;	// all reply pseudo moves
 
-	MVEV(MV mv=MV()) : mv(mv), eval(0), mvReplyBest(MV())
+	MVEV(MV mv=MV()) : mv(mv), ev(0), mvReplyBest(MV())
 	{
 	}
 };
@@ -97,8 +97,8 @@ public:
 
 	void ReceiveMv(MV mv, SPMV spmv);
 
-	virtual EVAL EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
-	virtual EVAL EvalBaseApc(APC apc) const noexcept;
+	virtual EV EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
+	virtual EV EvBaseApc(APC apc) const noexcept;
 
 	bool FDepthLog(LGT lgt, int& depth);
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
@@ -121,9 +121,9 @@ class PLAI : public PL
 {
 protected:
 	/* piece value tables */
-	EVAL mpapcsqevalOpening[APC::ActMax][sqMax];
-	EVAL mpapcsqevalMiddleGame[APC::ActMax][sqMax];
-	EVAL mpapcsqevalEndGame[APC::ActMax][sqMax];
+	EV mpapcsqevOpening[APC::ActMax][sqMax];
+	EV mpapcsqevMiddleGame[APC::ActMax][sqMax];
+	EV mpapcsqevEndGame[APC::ActMax][sqMax];
 	/* piece weight tables used to initialize piece tables above */
 #include "eval_plai.h"
 
@@ -145,30 +145,30 @@ public:
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
 
-	EVAL EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
+	EV EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
 
 protected:
-	EVAL EvalBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta);
-	EVAL EvalBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, EVAL evalAlpha, EVAL evalBeta); 
+	EV EvBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, EV evAlpha, EV evBeta);
+	EV EvBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, EV evAlpha, EV evBeta); 
 	void PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
 	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
 	void PumpMsg(void);
 
 	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
-	virtual EVAL EvalBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept;
-	EVAL EvalBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
-	EVAL EvalBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
+	virtual EV EvBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept;
+	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
+	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	float CmvFromLevel(int level) const noexcept;
 
 	void StartMoveLog(void);
 	void EndMoveLog(void);
 
 	virtual void InitWeightTables(void);
-	void InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][64], EVAL mpapcsqeval[APC::ActMax][64]);
-	EVAL EvalPstFromCpc(const BDG& bdg) const noexcept;
-	EVAL EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int phase2) const noexcept;
-	EVAL EvalBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
-	EVAL EvalTempo(const BDG& bdg, CPC cpc) const noexcept;
+	void InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][64], EV mpapcsqev[APC::ActMax][64]);
+	EV EvPstFromCpc(const BDG& bdg) const noexcept;
+	EV EvInterpolate(int phase, EV ev1, int phase1, EV ev2, int phase2) const noexcept;
+	EV EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
+	EV EvTempo(const BDG& bdg, CPC cpc) const noexcept;
 
 	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;

@@ -35,45 +35,45 @@ PL::~PL(void)
  *	Evaluation manipulators and constants
  */
 
-const EVAL evalInf = 1000*100;	/* largest possible evaluation */
-const EVAL evalMate = evalInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
-const EVAL evalMateMin = evalMate - 63;
-const EVAL evalTempo = 33;	/* evaluation of a single move advantage */
-const EVAL evalDraw = 0;	/* evaluation of a draw */
-const EVAL evalQuiescent = evalInf + 1;
+const EV evInf = 1000*100;	/* largest possible evaluation */
+const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
+const EV evMateMin = evMate - 63;
+const EV evTempo = 33;	/* evaluation of a single move advantage */
+const EV evDraw = 0;	/* evaluation of a draw */
+const EV evQuiescent = evInf + 1;
 
 
-bool FEvalIsMate(EVAL eval)
+bool FEvIsMate(EV ev)
 {
-	return eval >= evalMateMin;
+	return ev >= evMateMin;
 }
 
 
-wstring SzFromEval(EVAL eval)
+wstring SzFromEv(EV ev)
 {
 	wchar_t sz[20], *pch = sz;
-	if (eval >= 0)
+	if (ev >= 0)
 		*pch++ = L'+';
 	else {
 		*pch++ = L'-';
-		eval = -eval;
+		ev = -ev;
 	}
-	if (eval == evalInf)
+	if (ev == evInf)
 		*pch++ = L'\x221e';
-	else if (eval == evalQuiescent)
+	else if (ev == evQuiescent)
 		*pch++ = L'Q';
-	else if (eval > evalInf)
+	else if (ev > evInf)
 		*pch++ = L'*';
-	else if (FEvalIsMate(eval)) {
+	else if (FEvIsMate(ev)) {
 		*pch++ = L'#';
-		pch = PchDecodeInt((evalMate - eval + 1) / 2, pch);
+		pch = PchDecodeInt((evMate - ev + 1) / 2, pch);
 	}
 	else {
-		pch = PchDecodeInt(eval / 100, pch);
-		eval %= 100;
+		pch = PchDecodeInt(ev / 100, pch);
+		ev %= 100;
 		*pch++ = L'.';
-		*pch++ = L'0' + eval / 10;
-		*pch++ = L'0' + eval % 10;
+		*pch++ = L'0' + ev / 10;
+		*pch++ = L'0' + ev % 10;
 	}
 	*pch = 0;
 	return wstring(sz);
@@ -98,16 +98,16 @@ void PL::ReceiveMv(MV mv, SPMV spmv)
 }
 
 
-EVAL PL::EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
+EV PL::EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
 {
-	return EvalBaseApc(apc);
+	return EvBaseApc(apc);
 }
 
 
-EVAL PL::EvalBaseApc(APC apc) const noexcept
+EV PL::EvBaseApc(APC apc) const noexcept
 {
-	EVAL mpapceval[APC::ActMax] = { 0, 100, 275, 300, 500, 900, 200 };
-	return mpapceval[apc];
+	EV mpapcev[APC::ActMax] = { 0, 100, 275, 300, 500, 900, 200 };
+	return mpapcev[apc];
 }
 
 
@@ -267,7 +267,7 @@ class LOGOPENMVEV
 
 public:
 	inline LOGOPENMVEV(PL& pl, const BDG& bdg, MVEV& mvev, 
-			EVAL evalAlpha, EVAL evalBeta, int depth, wchar_t chType=L' ') : 
+			EV evAlpha, EV evBeta, int depth, wchar_t chType=L' ') : 
 		pl(pl), bdg(bdg), mvev(mvev), szData(L""), lgf(LGF::Normal)
 	{
 		depthLogSav = DepthLog();
@@ -275,8 +275,8 @@ public:
 		if (FExpandLog(mvev))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(depth) + L" " + SzFromEval(mvev.eval) + 
-					L" [" + SzFromEval(evalAlpha) + L", " + SzFromEval(evalBeta) + L"] ");
+				wstring(1, chType) + to_wstring(depth) + L" " + SzFromEv(mvev.ev) + 
+					L" [" + SzFromEv(evAlpha) + L", " + SzFromEv(evBeta) + L"] ");
 	}
 
 	inline void SetData(const wstring& szNew, LGF lgfNew)
@@ -289,7 +289,7 @@ public:
 	{
 		LogClose(bdg.SzDecodeMvPost(mvev.mv), 
 			szData.size() > 0 ? szData : 
-				SzFromEval(mvev.eval) /*+ L" (" + bdg.SzDecodeMvPost(mvev.mvReplyBest) + L")"*/,
+				SzFromEv(mvev.ev) /*+ L" (" + bdg.SzDecodeMvPost(mvev.mvReplyBest) + L")"*/,
 			lgf);
 		SetDepthLog(depthLogSav);
 		imvExpand = imvExpandSav;
@@ -369,8 +369,8 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 	PreSortVmvev(bdg, gmv, vmvev);
 
-	EVAL evalAlpha = -evalInf, evalBeta = evalInf;
-	EVAL evalBest = -evalInf;
+	EV evAlpha = -evInf, evBeta = evInf;
+	EV evBest = -evInf;
 	const MVEV* pmvevBest = nullptr;
 
 	try {
@@ -378,17 +378,17 @@ MV PLAI::MvGetNext(SPMV& spmv)
 			MAKEMV makemv(bdg, mvev.mv);
 			if (bdg.FInCheck(~bdg.cpcToMove))
 				continue;
-			EVAL eval = -EvalBdgDepth(bdg, mvev, 1, depthMax, -evalBeta, -evalAlpha);
-			if (eval > evalBest) {
-				evalBest = eval;
+			EV ev = -EvBdgDepth(bdg, mvev, 1, depthMax, -evBeta, -evAlpha);
+			if (ev > evBest) {
+				evBest = ev;
 				pmvevBest = &mvev;
 			}
 			// no pruning at top level 
-			assert(eval < evalBeta);
-			if (eval > evalAlpha) {
-				evalAlpha = eval;
-				if (FEvalIsMate(eval))
-					depthMax = evalMate - eval;
+			assert(ev < evBeta);
+			if (ev > evAlpha) {
+				evAlpha = ev;
+				if (FEvIsMate(ev))
+					depthMax = evMate - ev;
 			}
 		}
 	}
@@ -413,13 +413,13 @@ MV PLAI::MvGetNext(SPMV& spmv)
  *	Returns board evaluation in centi-pawns from the point of view of the side with
  *	the move.
  */
-EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL evalAlpha, EVAL evalBeta)
+EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EV evAlpha, EV evBeta)
 {
 	if (depth >= depthMax)
-		return EvalBdgQuiescent(bdg, mvevLast, depth, evalAlpha, evalBeta);
+		return EvBdgQuiescent(bdg, mvevLast, depth, evAlpha, evBeta);
 
 	cmvevNode++;
-	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evalAlpha, evalBeta, depth, L' ');
+	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evAlpha, evBeta, depth, L' ');
 	PumpMsg();
 
 	/* pre-sort the pseudo-legal moves in mvevEval */
@@ -427,7 +427,7 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL 
 	PreSortVmvev(bdg, mvevLast.gmvPseudoReply, vmvev);
 	
 	int cmvLegal = 0;
-	EVAL evalBest = -evalInf;
+	EV evBest = -evInf;
 	const MVEV* pmvevBest = nullptr;
 
 	try {
@@ -436,17 +436,17 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL 
 			if (bdg.FInCheck(~bdg.cpcToMove))
 				continue;
 			cmvLegal++;
-			EVAL eval = -EvalBdgDepth(bdg, mvev, depth + 1, depthMax, -evalBeta, -evalAlpha);
-			if (eval > evalBest) {
-				evalBest = eval;
+			EV ev = -EvBdgDepth(bdg, mvev, depth + 1, depthMax, -evBeta, -evAlpha);
+			if (ev > evBest) {
+				evBest = ev;
 				pmvevBest = &mvev;
 			}
-			if (eval >= evalBeta)
-				return mvevLast.eval = evalBest;
-			if (eval > evalAlpha) {
-				evalAlpha = eval;
-				if (FEvalIsMate(eval))
-					depthMax = evalMate - eval;
+			if (ev >= evBeta)
+				return mvevLast.ev = evBest;
+			if (ev > evAlpha) {
+				evAlpha = ev;
+				if (FEvIsMate(ev))
+					depthMax = evMate - ev;
 			}
 		}
 	}
@@ -458,22 +458,22 @@ EVAL PLAI::EvalBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EVAL 
 	/* test for checkmates, stalemates, and other draws */
 
 	if (cmvLegal == 0) 
-		evalBest = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
+		evBest = bdg.FInCheck(bdg.cpcToMove) ? -(evMate - depth) : evDraw;
 	else if (bdg.GsTestGameOver(mvevLast.gmvPseudoReply, *ga.prule) != GS::Playing)
-		evalBest = evalDraw;
-	return mvevLast.eval = evalBest;
+		evBest = evDraw;
+	return mvevLast.ev = evBest;
 }
 
 
-/*	PLAI::EvalBdgQuiescent
+/*	PLAI::EvBdgQuiescent
  *
  *	Returns the evaluation after the given board/last move from the point of view of the
  *	player next to move. Alpha-beta prunes. 
  */
-EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha, EVAL evalBeta)
+EV PLAI::EvBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EV evAlpha, EV evBeta)
 {
 	cmvevNode++;
-	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evalAlpha, evalBeta, depth, L'Q');
+	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evAlpha, evBeta, depth, L'Q');
 	PumpMsg();
 
 	int cmvLegal = 0;
@@ -481,12 +481,12 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha,
 	/* first off, get full static eval and check current board already in a pruning 
 	   situations */
 
-	EVAL evalBest = EvalBdgStatic(bdg, mvevLast, true);
+	EV evBest = EvBdgStatic(bdg, mvevLast, true);
 	MVEV* pmvevBest = nullptr;
-	if (evalBest >= evalBeta)
-		return mvevLast.eval = evalBest;
-	if (evalBest > evalAlpha)
-		evalAlpha = evalBest;
+	if (evBest >= evBeta)
+		return mvevLast.ev = evBest;
+	if (evBest > evAlpha)
+		evAlpha = evBest;
 
 	/* don't bother pre-sorting moves during quiescent search because noisy moves are 
 	   rare */
@@ -505,15 +505,15 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha,
 			if (bdg.FMvIsQuiescent(mvev.mv))
 				continue;
 			bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);	// these aren't generated by FillVmvev
-			EVAL eval = -EvalBdgQuiescent(bdg, mvev, depth + 1, -evalBeta, -evalAlpha);
-			if (eval > evalBest) {
-				evalBest = eval;
+			EV ev = -EvBdgQuiescent(bdg, mvev, depth + 1, -evBeta, -evAlpha);
+			if (ev > evBest) {
+				evBest = ev;
 				pmvevBest = &mvev;
 			}
-			if (eval >= evalBeta)
-				return mvevLast.eval = evalBest;
-			if (eval > evalAlpha)
-				evalAlpha = eval;
+			if (ev >= evBeta)
+				return mvevLast.ev = evBest;
+			if (ev > evAlpha)
+				evAlpha = ev;
 		}
 	}
 	catch (...) {
@@ -525,9 +525,9 @@ EVAL PLAI::EvalBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EVAL evalAlpha,
 	   doesn't work because we don't evaluate every move */
 
 	if (cmvLegal == 0)
-		evalBest = bdg.FInCheck(bdg.cpcToMove) ? -(evalMate - depth) : evalDraw;
+		evBest = bdg.FInCheck(bdg.cpcToMove) ? -(evMate - depth) : evDraw;
 
-	return mvevLast.eval = evalBest;
+	return mvevLast.ev = evBest;
 }
 
 
@@ -568,13 +568,13 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept
 		MVEV mvev(gmv[imv]);
 		bdg.MakeMv(mvev.mv);
 		bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);
-		mvev.eval = -EvalBdgStatic(bdg, mvev, false);
+		mvev.ev = -EvBdgStatic(bdg, mvev, false);
 		bdg.UndoMv();
 		size_t imvFirst, imvLim;
 		for (imvFirst = 0, imvLim = vmvev.size(); imvFirst != imvLim; ) {
 			size_t imvMid = (imvFirst + imvLim) / 2;
 			assert(imvMid < imvLim);
-			if (vmvev[imvMid].eval < mvev.eval)
+			if (vmvev[imvMid].ev < mvev.ev)
 				imvLim = imvMid;
 			else
 				imvFirst = imvMid+1;
@@ -584,13 +584,13 @@ void PLAI::PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept
 }
 
 
-EVAL PLAI::EvalTempo(const BDG& bdg, CPC cpc) const noexcept
+EV PLAI::EvTempo(const BDG& bdg, CPC cpc) const noexcept
 {
-	return cpc == bdg.cpcToMove ? evalTempo : -evalTempo;
+	return cpc == bdg.cpcToMove ? evTempo : -evTempo;
 }
 
 
-/*	PLAI::EvalBdgAttackDefend
+/*	PLAI::EvBdgAttackDefend
  *
  *	Little heuristic for board evaluation that tries to detect bad moves, which are
  *	if we have moved to an attacked square that isn't defended. This is only useful
@@ -601,22 +601,22 @@ EVAL PLAI::EvalTempo(const BDG& bdg, CPC cpc) const noexcept
  *	Destination square of the previous move is in sqTo. Returns the amount to adjust 
  *	the evaluation by.
  */
-EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept
+EV PLAI::EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept
 {
 	APC apcMove = bdg.ApcFromSq(mvPrev.sqTo());
 	APC apcAttacker = bdg.ApcSqAttacked(mvPrev.sqTo(), bdg.cpcToMove);
 	if (apcAttacker != APC::Null) {
 		if (apcAttacker < apcMove)
-			return EvalBaseApc(apcMove);
+			return EvBaseApc(apcMove);
 		APC apcDefended = bdg.ApcSqAttacked(mvPrev.sqTo(), ~bdg.cpcToMove);
 		if (apcDefended == APC::Null)
-			return EvalBaseApc(apcMove);
+			return EvBaseApc(apcMove);
 	}
 	return 0;
 }
 
 
-/*	PLAI::EvalBdgStatic
+/*	PLAI::EvBdgStatic
  *
  *	Evaluates the board from the point of view of the color with the 
  *	move. Previous move is in mvevPrev, which should be pre-populated 
@@ -624,87 +624,87 @@ EVAL PLAI::EvalBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-EVAL PLAI::EvalBdgStatic(BDG& bdg, MVEV& mvevPrev, bool fFull) noexcept
+EV PLAI::EvBdgStatic(BDG& bdg, MVEV& mvevPrev, bool fFull) noexcept
 {
-	EVAL evalMaterial = 0, evalMobility = 0, evalKingSafety = 0, evalPawnStructure = 0;
-	EVAL evalTempo = 0, evalRandom = 0;
+	EV evMaterial = 0, evMobility = 0, evKingSafety = 0, evPawnStructure = 0;
+	EV evTempo = 0, evRandom = 0;
 
 	if (fecoMaterial) {
-		evalMaterial = EvalPstFromCpc(bdg);
+		evMaterial = EvPstFromCpc(bdg);
 		if (!fFull)
-			evalMaterial += EvalBdgAttackDefend(bdg, mvevPrev.mv);
+			evMaterial += EvBdgAttackDefend(bdg, mvevPrev.mv);
 	}
 
 	static GMV gmvSelf;
 	if (fecoMobility) {
 		bdg.GenGmvColor(gmvSelf, ~bdg.cpcToMove);
-		evalMobility = mvevPrev.gmvPseudoReply.cmv() - gmvSelf.cmv();
+		evMobility = mvevPrev.gmvPseudoReply.cmv() - gmvSelf.cmv();
 	}
 
 	/* slow factors aren't used for pre-sorting */
 
-	EVAL evalPawnToMove, evalPawnDef;
-	EVAL evalKingToMove, evalKingDef;
+	EV evPawnToMove, evPawnDef;
+	EV evKingToMove, evKingDef;
 	if (fFull) {
 		if (fecoKingSafety) {
-			evalKingToMove = EvalBdgKingSafety(bdg, bdg.cpcToMove);
-			evalKingDef = EvalBdgKingSafety(bdg, ~bdg.cpcToMove);
-			evalKingSafety = evalKingToMove - evalKingDef;
+			evKingToMove = EvBdgKingSafety(bdg, bdg.cpcToMove);
+			evKingDef = EvBdgKingSafety(bdg, ~bdg.cpcToMove);
+			evKingSafety = evKingToMove - evKingDef;
 		}
 		if (fecoPawnStructure) {
-			evalPawnToMove = EvalBdgPawnStructure(bdg, bdg.cpcToMove);
-			evalPawnDef = EvalBdgPawnStructure(bdg, ~bdg.cpcToMove);
-			evalPawnStructure = evalPawnToMove - evalPawnDef;
+			evPawnToMove = EvBdgPawnStructure(bdg, bdg.cpcToMove);
+			evPawnDef = EvBdgPawnStructure(bdg, ~bdg.cpcToMove);
+			evPawnStructure = evPawnToMove - evPawnDef;
 		}
 		if (fecoRandom)
-			evalRandom = evalRandomDist(rgen); /* distribution already scaled by fecoRandom */
+			evRandom = evalRandomDist(rgen); /* distribution already scaled by fecoRandom */
 		if (fecoTempo)
-			evalTempo = EvalTempo(bdg, bdg.cpcToMove);
+			evTempo = EvTempo(bdg, bdg.cpcToMove);
 	}
 	
 	cmvevEval++;
-	EVAL eval = (fecoMaterial * evalMaterial +
-			fecoMobility * evalMobility +
-			fecoKingSafety * evalKingSafety +
-			fecoPawnStructure * evalPawnStructure +
-			fecoTempo * evalTempo +
-			evalRandom +
+	EV ev = (fecoMaterial * evMaterial +
+			fecoMobility * evMobility +
+			fecoKingSafety * evKingSafety +
+			fecoPawnStructure * evPawnStructure +
+			fecoTempo * evTempo +
+			evRandom +
 		50) / 100;
 
 	if (fFull) {
 		cmvevEval++;
 		LogData(bdg.cpcToMove == CPC::White ? L"White" : L"Black");
 		if (fecoMaterial)
-			LogData(L"Material " + SzFromEval(evalMaterial));
+			LogData(L"Material " + SzFromEv(evMaterial));
 		if (fecoMobility)
 			LogData(L"Mobility " + to_wstring(mvevPrev.gmvPseudoReply.cmv()) + L" - " + to_wstring(gmvSelf.cmv()));
 		if (fecoKingSafety)
-			LogData(L"King Safety " + to_wstring(evalKingToMove) + L" - " + to_wstring(evalKingDef));
+			LogData(L"King Safety " + to_wstring(evKingToMove) + L" - " + to_wstring(evKingDef));
 		if (fecoPawnStructure)
-			LogData(L"Pawn Structure " + to_wstring(evalPawnToMove) + L" - " + to_wstring(evalPawnDef));
+			LogData(L"Pawn Structure " + to_wstring(evPawnToMove) + L" - " + to_wstring(evPawnDef));
 		if (fecoTempo)
-			LogData(L"Tempo " + SzFromEval(evalTempo));
+			LogData(L"Tempo " + SzFromEv(evTempo));
 		if (fecoRandom)
-			LogData(L"Random " + SzFromEval(evalRandom/100));
-		LogData(L"Total " + SzFromEval(eval));
+			LogData(L"Random " + SzFromEv(evRandom/100));
+		LogData(L"Total " + SzFromEv(ev));
 	}
 
-	return eval;
+	return ev;
 }
 
 
-/*	PLAI:EvalPstFromCpc
+/*	PLAI:EvPstFromCpc
  *
  *	Returns the piece value table board evaluation for the side with 
  *	the move. 
  */
-EVAL PLAI::EvalPstFromCpc(const BDG& bdg) const noexcept
+EV PLAI::EvPstFromCpc(const BDG& bdg) const noexcept
 {
 	static const int mpapcphase[APC::ActMax] = { 0, 0, 1, 1, 2, 4, 0 };
 	int phase = 0;
-	EVAL mpcpcevalOpening[2] = { 0, 0 };
-	EVAL mpcpcevalMid[2] = { 0, 0 };
-	EVAL mpcpcevalEnd[2] = { 0, 0 };
+	EV mpcpcevOpening[2] = { 0, 0 };
+	EV mpcpcevMid[2] = { 0, 0 };
+	EV mpcpcevEnd[2] = { 0, 0 };
 
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
 		phase += bdg.mppcbb[PC(CPC::White, apc)].csq() * mpapcphase[apc];
@@ -714,71 +714,71 @@ EVAL PLAI::EvalPstFromCpc(const BDG& bdg) const noexcept
 				SQ sq = bb.sqLow();
 				if (cpc == CPC::White)
 					sq = sq.sqFlip();
-				mpcpcevalOpening[cpc] += mpapcsqevalOpening[apc][sq];
-				mpcpcevalMid[cpc] += mpapcsqevalMiddleGame[apc][sq];
-				mpcpcevalEnd[cpc] += mpapcsqevalEndGame[apc][sq];
+				mpcpcevOpening[cpc] += mpapcsqevOpening[apc][sq];
+				mpcpcevMid[cpc] += mpapcsqevMiddleGame[apc][sq];
+				mpcpcevEnd[cpc] += mpapcsqevEndGame[apc][sq];
 			}
 		}
 	}
 	phase = min(phase, phaseMax);
 
 	if (phase > phaseOpening)
-		return mpcpcevalOpening[bdg.cpcToMove] - mpcpcevalOpening[~bdg.cpcToMove];
+		return mpcpcevOpening[bdg.cpcToMove] - mpcpcevOpening[~bdg.cpcToMove];
 	
 	if (phase > phaseMid)
-		return EvalInterpolate(phase, 
-			mpcpcevalOpening[bdg.cpcToMove] - mpcpcevalOpening[~bdg.cpcToMove], phaseOpening,
-			mpcpcevalMid[bdg.cpcToMove] - mpcpcevalMid[~bdg.cpcToMove], phaseMid);
+		return EvInterpolate(phase, 
+			mpcpcevOpening[bdg.cpcToMove] - mpcpcevOpening[~bdg.cpcToMove], phaseOpening,
+			mpcpcevMid[bdg.cpcToMove] - mpcpcevMid[~bdg.cpcToMove], phaseMid);
 		
 	if (phase > phaseEnd)
-		return EvalInterpolate(phase, 
-			mpcpcevalMid[bdg.cpcToMove] - mpcpcevalMid[~bdg.cpcToMove], phaseMid, 
-			mpcpcevalEnd[bdg.cpcToMove] - mpcpcevalEnd[~bdg.cpcToMove], phaseEnd); 
+		return EvInterpolate(phase, 
+			mpcpcevMid[bdg.cpcToMove] - mpcpcevMid[~bdg.cpcToMove], phaseMid, 
+			mpcpcevEnd[bdg.cpcToMove] - mpcpcevEnd[~bdg.cpcToMove], phaseEnd); 
 	
-	return mpcpcevalEnd[bdg.cpcToMove] - mpcpcevalEnd[~bdg.cpcToMove];
+	return mpcpcevEnd[bdg.cpcToMove] - mpcpcevEnd[~bdg.cpcToMove];
 }
 
 
-EVAL PLAI::EvalInterpolate(int phase, EVAL eval1, int phase1, EVAL eval2, int phase2) const noexcept
+EV PLAI::EvInterpolate(int phase, EV ev1, int phase1, EV ev2, int phase2) const noexcept
 {
 	/* careful - phases are a decreasing function */
 	assert(phase1 > phase2);
 	assert(phase >= phase2);
 	assert(phase <= phase1);
 	int dphase = phase1 - phase2;
-	return (eval1 * (phase - phase2) + eval2 * (phase1 - phase) + dphase/2) / dphase;
+	return (ev1 * (phase - phase2) + ev2 * (phase1 - phase) + dphase/2) / dphase;
 }
 
 
-EVAL PLAI::EvalFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
+EV PLAI::EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
 {
 	if (phase <= phaseEnd)
-		return mpapcsqevalEndGame[apc][sq];
+		return mpapcsqevEndGame[apc][sq];
 	else if (phase <= phaseMid)
-		return mpapcsqevalMiddleGame[apc][sq];
+		return mpapcsqevMiddleGame[apc][sq];
 	else
-		return mpapcsqevalOpening[apc][sq];
+		return mpapcsqevOpening[apc][sq];
 }
 
 
 void PLAI::InitWeightTables(void)
 {
-	InitWeightTable(mpapcevalOpening, mpapcsqdevalOpening, mpapcsqevalOpening);
-	InitWeightTable(mpapcevalMiddleGame, mpapcsqdevalMiddleGame, mpapcsqevalMiddleGame);
-	InitWeightTable(mpapcevalEndGame, mpapcsqdevalEndGame, mpapcsqevalEndGame);
+	InitWeightTable(mpapcevOpening, mpapcsqdevOpening, mpapcsqevOpening);
+	InitWeightTable(mpapcevMiddleGame, mpapcsqdevMiddleGame, mpapcsqevMiddleGame);
+	InitWeightTable(mpapcevEndGame, mpapcsqdevEndGame, mpapcsqevEndGame);
 }
 
 
-void PLAI::InitWeightTable(const EVAL mpapceval[APC::ActMax], const EVAL mpapcsqdeval[APC::ActMax][sqMax], EVAL mpapcsqeval[APC::ActMax][sqMax])
+void PLAI::InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][sqMax], EV mpapcsqev[APC::ActMax][sqMax])
 {
-	memset(&mpapcsqeval[APC::Null], 0, sqMax * sizeof(EVAL));
+	memset(&mpapcsqev[APC::Null], 0, sqMax * sizeof(EV));
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
 		for (uint64_t sq = 0; sq < sqMax; sq++)
-			mpapcsqeval[apc][sq] = mpapceval[apc] + mpapcsqdeval[apc][sq];
+			mpapcsqev[apc][sq] = mpapcev[apc] + mpapcsqdev[apc][sq];
 }
 
 
-EVAL PLAI::EvalBdgKingSafety(BDG& bdg, CPC cpc) noexcept
+EV PLAI::EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept
 {
 	return 0;
 }
@@ -824,27 +824,27 @@ int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 }
 
 
-/*	PLAI::EvalBdgPawnStructure
+/*	PLAI::EvBdgPawnStructure
  *
  *	Returns the pawn structure evaluation of the board position from the
  *	point of view of cpc.
  */
-EVAL PLAI::EvalBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
+EV PLAI::EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
 {
-	EVAL eval = 0;
+	EV ev = 0;
 
-	eval -= CfileDoubledPawns(bdg, cpc);
-	eval -= CfileIsoPawns(bdg, cpc);
+	ev -= CfileDoubledPawns(bdg, cpc);
+	ev -= CfileIsoPawns(bdg, cpc);
 
-	/* backwards pawns */
 	/* overextended pawns */
 
+	/* backwards pawns */
 	/* passed pawns */
 	/* connected pawns */
 	
 	/* open and half-open files */
 
-	return eval;
+	return ev;
 }
 
 
@@ -883,9 +883,9 @@ int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
 
 void PLAI2::InitWeightTables(void)
 {
-	InitWeightTable(mpapcevalOpening2, mpapcsqdevalOpening2, mpapcsqevalOpening);
-	InitWeightTable(mpapcevalMiddleGame2, mpapcsqdevalMiddleGame2, mpapcsqevalMiddleGame);
-	InitWeightTable(mpapcevalEndGame2, mpapcsqdevalEndGame2, mpapcsqevalEndGame);
+	InitWeightTable(mpapcevOpening2, mpapcsqdevOpening2, mpapcsqevOpening);
+	InitWeightTable(mpapcevMiddleGame2, mpapcsqdevMiddleGame2, mpapcsqevMiddleGame);
+	InitWeightTable(mpapcevEndGame2, mpapcsqdevEndGame2, mpapcsqevEndGame);
 }
 
 
