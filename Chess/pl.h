@@ -148,13 +148,13 @@ public:
 	EV EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
 
 protected:
-	EV EvBdgDepth(BDG& bdg, MVEV& mvev, int depth, int depthMax, EV evAlpha, EV evBeta);
-	EV EvBdgQuiescent(BDG& bdg, MVEV& mvev, int depth, EV evAlpha, EV evBeta); 
+	EV EvBdgDepth(BDG& bdg, MVEV& mvev, int ply, int plyLim, EV evAlpha, EV evBeta);
+	EV EvBdgQuiescent(BDG& bdg, MVEV& mvev, int ply, EV evAlpha, EV evBeta); 
 	void PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
 	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
 	void PumpMsg(void);
 
-	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
+	virtual int PlyLim(const BDG& bdg, const GMV& gmv) const;
 	virtual EV EvBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
@@ -183,7 +183,7 @@ protected:
 
 public:
 	PLAI2(GA& ga);
-	virtual int DepthMax(const BDG& bdg, const GMV& gmv) const;
+	virtual int PlyLim(const BDG& bdg, const GMV& gmv) const;
 protected:
 	virtual void InitWeightTables(void);
 };

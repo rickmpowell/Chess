@@ -35,17 +35,27 @@ PL::~PL(void)
  *	Evaluation manipulators and constants
  */
 
-const EV evInf = 1000*100;	/* largest possible evaluation */
+const int plyMax = 127;
+const EV evInf = 640*100;	/* largest possible evaluation, in centi-pawns */
 const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
-const EV evMateMin = evMate - 63;
+const EV evMateMin = evMate - plyMax;
 const EV evTempo = 33;	/* evaluation of a single move advantage */
 const EV evDraw = 0;	/* evaluation of a draw */
 const EV evQuiescent = evInf + 1;
 
+inline EV EvMate(int ply)
+{
+	return evMate - ply;
+}
 
-bool FEvIsMate(EV ev)
+inline bool FEvIsMate(EV ev)
 {
 	return ev >= evMateMin;
+}
+
+inline int PlyFromEvMate(EV ev)
+{
+	return evMate - ev;
 }
 
 
@@ -66,7 +76,7 @@ wstring SzFromEv(EV ev)
 		*pch++ = L'*';
 	else if (FEvIsMate(ev)) {
 		*pch++ = L'#';
-		pch = PchDecodeInt((evMate - ev + 1) / 2, pch);
+		pch = PchDecodeInt((PlyFromEvMate(ev)+1) / 2, pch);
 	}
 	else {
 		pch = PchDecodeInt(ev / 100, pch);
@@ -200,15 +210,15 @@ float PLAI::CmvFromLevel(int level) const noexcept
 }
 
 
-int PLAI::DepthMax(const BDG& bdg, const GMV& gmv) const
+int PLAI::PlyLim(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
 	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove);
 	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return depthMax;
+	int plyLim = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return plyLim;
 }
 
 
@@ -267,7 +277,7 @@ class LOGOPENMVEV
 
 public:
 	inline LOGOPENMVEV(PL& pl, const BDG& bdg, MVEV& mvev, 
-			EV evAlpha, EV evBeta, int depth, wchar_t chType=L' ') : 
+			EV evAlpha, EV evBeta, int ply, wchar_t chType=L' ') : 
 		pl(pl), bdg(bdg), mvev(mvev), szData(L""), lgf(LGF::Normal)
 	{
 		depthLogSav = DepthLog();
@@ -275,7 +285,7 @@ public:
 		if (FExpandLog(mvev))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(mvev.mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(depth) + L" " + SzFromEv(mvev.ev) + 
+				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(mvev.ev) + 
 					L" [" + SzFromEv(evAlpha) + L", " + SzFromEv(evBeta) + L"] ");
 	}
 
@@ -353,7 +363,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	StartMoveLog();
 
 	InitWeightTables();
-	int depthMax;
+	int plyLim;
 
 	GMV gmv;
 	BDG bdg = ga.bdg;
@@ -362,8 +372,8 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	/* figure out how deep we're going to search */
 
 	bdg.GenGmv(gmv, GG::Pseudo);
-	depthMax = clamp(DepthMax(bdg, gmv), 2, 14);
-	LogData(L"Search depth: " + to_wstring(depthMax));
+	plyLim = clamp(PlyLim(bdg, gmv), 2, 14);
+	LogData(L"Search depth: " + to_wstring(plyLim));
 
 	/* pre-sort to improve quality of alpha-beta pruning */
 
@@ -378,7 +388,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 			MAKEMV makemv(bdg, mvev.mv);
 			if (bdg.FInCheck(~bdg.cpcToMove))
 				continue;
-			EV ev = -EvBdgDepth(bdg, mvev, 1, depthMax, -evBeta, -evAlpha);
+			EV ev = -EvBdgDepth(bdg, mvev, 1, plyLim, -evBeta, -evAlpha);
 			if (ev > evBest) {
 				evBest = ev;
 				pmvevBest = &mvev;
@@ -388,7 +398,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 			if (ev > evAlpha) {
 				evAlpha = ev;
 				if (FEvIsMate(ev))
-					depthMax = evMate - ev;
+					plyLim = PlyFromEvMate(ev);
 			}
 		}
 	}
@@ -413,13 +423,13 @@ MV PLAI::MvGetNext(SPMV& spmv)
  *	Returns board evaluation in centi-pawns from the point of view of the side with
  *	the move.
  */
-EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EV evAlpha, EV evBeta)
+EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int ply, int plyLim, EV evAlpha, EV evBeta)
 {
-	if (depth >= depthMax)
-		return EvBdgQuiescent(bdg, mvevLast, depth, evAlpha, evBeta);
+	if (ply >= plyLim)
+		return EvBdgQuiescent(bdg, mvevLast, ply, evAlpha, evBeta);
 
 	cmvevNode++;
-	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evAlpha, evBeta, depth, L' ');
+	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evAlpha, evBeta, ply, L' ');
 	PumpMsg();
 
 	/* pre-sort the pseudo-legal moves in mvevEval */
@@ -436,7 +446,7 @@ EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EV evAlph
 			if (bdg.FInCheck(~bdg.cpcToMove))
 				continue;
 			cmvLegal++;
-			EV ev = -EvBdgDepth(bdg, mvev, depth + 1, depthMax, -evBeta, -evAlpha);
+			EV ev = -EvBdgDepth(bdg, mvev, ply + 1, plyLim, -evBeta, -evAlpha);
 			if (ev > evBest) {
 				evBest = ev;
 				pmvevBest = &mvev;
@@ -446,7 +456,7 @@ EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EV evAlph
 			if (ev > evAlpha) {
 				evAlpha = ev;
 				if (FEvIsMate(ev))
-					depthMax = evMate - ev;
+					plyLim = PlyFromEvMate(ev);
 			}
 		}
 	}
@@ -458,7 +468,7 @@ EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EV evAlph
 	/* test for checkmates, stalemates, and other draws */
 
 	if (cmvLegal == 0) 
-		evBest = bdg.FInCheck(bdg.cpcToMove) ? -(evMate - depth) : evDraw;
+		evBest = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
 	else if (bdg.GsTestGameOver(mvevLast.gmvPseudoReply, *ga.prule) != GS::Playing)
 		evBest = evDraw;
 	return mvevLast.ev = evBest;
@@ -470,10 +480,10 @@ EV PLAI::EvBdgDepth(BDG& bdg, MVEV& mvevLast, int depth, int depthMax, EV evAlph
  *	Returns the evaluation after the given board/last move from the point of view of the
  *	player next to move. Alpha-beta prunes. 
  */
-EV PLAI::EvBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EV evAlpha, EV evBeta)
+EV PLAI::EvBdgQuiescent(BDG& bdg, MVEV& mvevLast, int ply, EV evAlpha, EV evBeta)
 {
 	cmvevNode++;
-	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evAlpha, evBeta, depth, L'Q');
+	LOGOPENMVEV logopenmvev(*this, bdg, mvevLast, evAlpha, evBeta, ply, L'Q');
 	PumpMsg();
 
 	int cmvLegal = 0;
@@ -505,7 +515,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EV evAlpha, EV evBe
 			if (bdg.FMvIsQuiescent(mvev.mv))
 				continue;
 			bdg.GenGmv(mvev.gmvPseudoReply, GG::Pseudo);	// these aren't generated by FillVmvev
-			EV ev = -EvBdgQuiescent(bdg, mvev, depth + 1, -evBeta, -evAlpha);
+			EV ev = -EvBdgQuiescent(bdg, mvev, ply + 1, -evBeta, -evAlpha);
 			if (ev > evBest) {
 				evBest = ev;
 				pmvevBest = &mvev;
@@ -525,7 +535,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, MVEV& mvevLast, int depth, EV evAlpha, EV evBe
 	   doesn't work because we don't evaluate every move */
 
 	if (cmvLegal == 0)
-		evBest = bdg.FInCheck(bdg.cpcToMove) ? -(evMate - depth) : evDraw;
+		evBest = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
 
 	return mvevLast.ev = evBest;
 }
@@ -869,15 +879,15 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 }
 
 
-int PLAI2::DepthMax(const BDG& bdg, const GMV& gmv) const
+int PLAI2::PlyLim(const BDG& bdg, const GMV& gmv) const
 {
 	static GMV gmvOpp;
 	bdg.GenGmvColor(gmvOpp, ~bdg.cpcToMove);
 	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
 	const float fracAlphaBeta = 0.33f; // alpha-beta pruning cuts moves we analyze by this factor.
 	float size2 = (float)(gmv.cmv() * gmvOpp.cmv());
-	int depthMax = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return depthMax;
+	int plyLim = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
+	return plyLim;
 }
 
 
