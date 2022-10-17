@@ -1,4 +1,3 @@
-  Move: incrementally track game phase
   Search: quiescent search doesn't detect draws. Can it?
   XP: alloc/delete transposition table at beginning/end of each ai move
   XP: use transposition table evals in pre-sort
@@ -93,6 +92,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Move: incrementally track game phase
 * AI: Implement pawn structure evaluator
 * Test: implement panel for showing piece value table heat map
 * Take advantage of apcMove and cpcMove in the MV

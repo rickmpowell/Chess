@@ -108,7 +108,7 @@ void PL::ReceiveMv(MV mv, SPMV spmv)
 }
 
 
-EV PL::EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
+EV PL::EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept
 {
 	return EvBaseApc(apc);
 }
@@ -710,15 +710,12 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVEV& mvevPrev, bool fFull) noexcept
  */
 EV PLAI::EvPstFromCpc(const BDG& bdg) const noexcept
 {
-	static const int mpapcphase[APC::ActMax] = { 0, 0, 1, 1, 2, 4, 0 };
-	int phase = 0;
+	GPH gph = bdg.GphCur();
 	EV mpcpcevOpening[2] = { 0, 0 };
 	EV mpcpcevMid[2] = { 0, 0 };
 	EV mpcpcevEnd[2] = { 0, 0 };
 
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		phase += bdg.mppcbb[PC(CPC::White, apc)].csq() * mpapcphase[apc];
-		phase += bdg.mppcbb[PC(CPC::Black, apc)].csq() * mpapcphase[apc];
 		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc) {
 			for (BB bb = bdg.mppcbb[PC(cpc, apc)]; bb; bb.ClearLow()) {
 				SQ sq = bb.sqLow();
@@ -730,41 +727,43 @@ EV PLAI::EvPstFromCpc(const BDG& bdg) const noexcept
 			}
 		}
 	}
-	phase = min(phase, phaseMax);
+	gph = min(gph, GPH::Max);
 
-	if (phase > phaseOpening)
+	if (gph > GPH::Opening)
 		return mpcpcevOpening[bdg.cpcToMove] - mpcpcevOpening[~bdg.cpcToMove];
 	
-	if (phase > phaseMid)
-		return EvInterpolate(phase, 
-			mpcpcevOpening[bdg.cpcToMove] - mpcpcevOpening[~bdg.cpcToMove], phaseOpening,
-			mpcpcevMid[bdg.cpcToMove] - mpcpcevMid[~bdg.cpcToMove], phaseMid);
+	if (gph > GPH::MidGame)
+		return EvInterpolate(gph, 
+			mpcpcevOpening[bdg.cpcToMove] - mpcpcevOpening[~bdg.cpcToMove], GPH::Opening,
+			mpcpcevMid[bdg.cpcToMove] - mpcpcevMid[~bdg.cpcToMove], GPH::MidGame);
 		
-	if (phase > phaseEnd)
-		return EvInterpolate(phase, 
-			mpcpcevMid[bdg.cpcToMove] - mpcpcevMid[~bdg.cpcToMove], phaseMid, 
-			mpcpcevEnd[bdg.cpcToMove] - mpcpcevEnd[~bdg.cpcToMove], phaseEnd); 
+	if (gph > GPH::EndGame)
+		return EvInterpolate(gph, 
+			mpcpcevMid[bdg.cpcToMove] - mpcpcevMid[~bdg.cpcToMove], GPH::MidGame, 
+			mpcpcevEnd[bdg.cpcToMove] - mpcpcevEnd[~bdg.cpcToMove], GPH::EndGame); 
 	
 	return mpcpcevEnd[bdg.cpcToMove] - mpcpcevEnd[~bdg.cpcToMove];
 }
 
 
-EV PLAI::EvInterpolate(int phase, EV ev1, int phase1, EV ev2, int phase2) const noexcept
+EV PLAI::EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept
 {
 	/* careful - phases are a decreasing function */
-	assert(phase1 > phase2);
-	assert(phase >= phase2);
-	assert(phase <= phase1);
-	int dphase = phase1 - phase2;
-	return (ev1 * (phase - phase2) + ev2 * (phase1 - phase) + dphase/2) / dphase;
+	assert(gph1 > gph2);
+	assert(gph >= gph2);
+	assert(gph <= gph1);
+	int dphase = static_cast<int>(gph1) - static_cast<int>(gph2);
+	return (ev1 * (static_cast<int>(gph) - static_cast<int>(gph2)) + 
+			ev2 * (static_cast<int>(gph1) - static_cast<int>(gph)) + 
+			dphase/2) / dphase;
 }
 
 
-EV PLAI::EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept
+EV PLAI::EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept
 {
-	if (phase <= phaseEnd)
+	if (gph <= GPH::EndGame)
 		return mpapcsqevEndGame[apc][sq];
-	else if (phase <= phaseMid)
+	else if (gph <= GPH::MidGame)
 		return mpapcsqevMiddleGame[apc][sq];
 	else
 		return mpapcsqevOpening[apc][sq];
@@ -828,7 +827,7 @@ int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 	cfile += (bbPawn & bbFileH) && !(bbPawn & bbFileG);
 	BB bbFile = bbFileB;
 	BB bbAdj = bbFileA | bbFileC;
-	for (int file = fileB; file <= fileG; file++, bbFile <<= 1, bbAdj <<= 1)
+	for (int file = fileA+1; file < fileMax-1; file++, bbFile <<= 1, bbAdj <<= 1)
 		cfile += (bbPawn & bbFile) && !(bbPawn & bbAdj);
 	return cfile;
 }

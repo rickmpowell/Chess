@@ -137,6 +137,11 @@ MPBB::MPBB(void)
  */
 
 
+/* game phase, whiich is a running sum of the types of pieces on the board,
+   which is handy for AI eval */
+static const GPH mpapcgph[APC::ActMax] = { GPH::None, GPH::None, GPH::Minor, GPH::Minor,
+										   GPH::Rook, GPH::Queen, GPH::None };
+
 BD::BD(void)
 {
 	SetEmpty();
@@ -157,6 +162,7 @@ void BD::SetEmpty(void) noexcept
 	sqEnPassant = SQ();
 	
 	habd = 0L;
+	gph = GPH::None;
 }
 
 
@@ -245,6 +251,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
 void BD::AddPieceFEN(SQ sq, PC pc)
 {
 	SetBB(pc, sq);
+	AddApcToGph(pc.apc());
 }
 
 
@@ -346,6 +353,7 @@ void BD::MakeMvSq(MV& mv)
 		APC apcTake = ApcFromSq(sqTake);
 		mv.SetCapture(apcTake);
 		ClearBB(PC(~cpcFrom, apcTake), sqTake);
+		RemoveApcFromGph(apcTake);
 		if (apcTake == APC::Rook) {
 			if (sqTake == SQ(RankBackFromCpc(~cpcFrom), fileKingRook))
 				ClearCastle(~cpcFrom, csKing);
@@ -370,6 +378,8 @@ void BD::MakeMvSq(MV& mv)
 			/* pawn promotion on last rank */
 			ClearBB(PC(cpcFrom, APC::Pawn), sqTo);
 			SetBB(PC(cpcFrom, mv.apcPromote()), sqTo);
+			RemoveApcFromGph(APC::Pawn);
+			AddApcToGph(mv.apcPromote());
 		} 
 		break;
 
@@ -423,7 +433,13 @@ void BD::UndoMvSq(MV mv)
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
 
-	ClearBB(PC(cpcMove, mv.apcPromote() ? mv.apcPromote() : mv.apcMove()), mv.sqTo());
+	if (!mv.apcPromote())
+		ClearBB(PC(cpcMove, mv.apcMove()), mv.sqTo());
+	else {
+		ClearBB(PC(cpcMove, mv.apcPromote()), mv.sqTo());
+		RemoveApcFromGph(mv.apcPromote());
+		AddApcToGph(APC::Pawn);
+	}
 	SetBB(mv.pcMove(), mv.sqFrom());
 
 	/* if move was a capture, put the captured piece back on the board; otherwise
@@ -434,6 +450,7 @@ void BD::UndoMvSq(MV mv)
 		if (sqTake == sqEnPassant)
 			sqTake = SQ(RankTakeEpFromCpc(cpcMove), sqEnPassant.file());
 		SetBB(PC(~cpcMove, mv.apcCapture()), sqTake);
+		AddApcToGph(mv.apcCapture());
 	}
 
 	/* undoing a castle means we need to undo the rook, too */
@@ -876,6 +893,32 @@ EV BD::EvTotalFromCpc(CPC cpc) const noexcept
 }
 
 
+GPH BD::GphCompute(void) const noexcept
+{
+	GPH gph = GPH::None;
+	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
+		gph = static_cast<GPH>(static_cast<int>(gph) +
+							   mppcbb[PC(CPC::White, apc)].csq() * static_cast<int>(mpapcgph[apc]) +
+							   mppcbb[PC(CPC::Black, apc)].csq() * static_cast<int>(mpapcgph[apc]));
+	}
+	return gph;
+}
+
+void BD::RecomputeGph(void) noexcept
+{
+	gph = GphCompute();
+}
+
+void BD::AddApcToGph(APC apc) noexcept
+{
+	gph = static_cast<GPH>(static_cast<int>(gph) + static_cast<int>(mpapcgph[apc]));
+}
+
+void BD::RemoveApcFromGph(APC apc) noexcept
+{
+	gph = static_cast<GPH>(static_cast<int>(gph) - static_cast<int>(mpapcgph[apc]));
+}
+
 /*	BD::Validate
  *
  *	Checks the board state for internal consistency
@@ -933,6 +976,10 @@ void BD::Validate(void) const
 
 	if (!sqEnPassant.fIsNil()) {
 	}
+
+	/* game phase should be accurate */
+
+	assert(gph == GphCompute());
 
 	/* make sure hash is kept accurate */
 

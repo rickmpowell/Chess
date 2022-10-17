@@ -176,7 +176,7 @@ void UITI::SetPl(CPC cpc, PL* ppl)
  */
 
 
-UIPVTPL::UIPVTPL(UI* puiParent, PHASE phase) : UI(puiParent), ppl(nullptr), phase(phase)
+UIPVTPL::UIPVTPL(UI* puiParent, GPH gph) : UI(puiParent), ppl(nullptr), gph(gph)
 {
 }
 
@@ -195,7 +195,7 @@ ColorF CoGradient(ColorF co1, ColorF co2, float pct)
 
 ColorF UIPVTPL::CoFromApcSq(APC apc, SQ sq) const
 {
-	EV dev = ppl->EvFromPhaseApcSq(phase, apc, sq) - ppl->EvBaseApc(apc);
+	EV dev = ppl->EvFromGphApcSq(gph, apc, sq) - ppl->EvBaseApc(apc);
 	if (dev < 0)
 		return ColorF(CoGradient(ColorF::White, ColorF::Red, -(float)dev/100.0f));
 	else
@@ -241,9 +241,9 @@ void UIPVTPL::SetPl(PL* ppl)
 }
 
 
-void UIPVTPL::SetPhase(PHASE phase)
+void UIPVTPL::SetGph(GPH gph)
 {
-	this->phase = phase;
+	this->gph = gph;
 }
 
 /*
@@ -257,7 +257,7 @@ void UIPVTPL::SetPhase(PHASE phase)
 
 
 UIPVT::UIPVT(GA* pga) : UIP(pga), 
-	uipvtplOpening(this, phaseOpening), uipvtplMidGame(this, phaseMid), uipvtplEndGame(this, phaseEnd)
+	uipvtplOpening(this, GPH::Opening), uipvtplMidGame(this, GPH::MidGame), uipvtplEndGame(this, GPH::EndGame)
 {
 }
 

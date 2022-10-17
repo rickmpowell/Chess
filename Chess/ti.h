@@ -93,13 +93,13 @@ class UIPVTPL : public UI
 {
 private:
 	PL* ppl;
-	PHASE phase;
+	GPH gph;
 	ColorF CoFromApcSq(APC apc, SQ sq) const;
 public:
-	UIPVTPL(UI* puiParent, PHASE phase);
+	UIPVTPL(UI* puiParent, GPH gph);
 	void Draw(const RC& rcUpdate);
 	void SetPl(PL* ppl);
-	void SetPhase(PHASE phase);
+	void SetGph(GPH gph);
 };
 
 

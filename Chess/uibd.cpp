@@ -62,7 +62,7 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 
 	/* brushes */
 
-	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.6f, 0.4f), &pbrDark);
+	pdc->CreateSolidColorBrush(ColorF(0.42f, 0.54f, 0.32f), &pbrDark);
 	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.95f), &pbrLight);
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Black), &pbrBlack);
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);

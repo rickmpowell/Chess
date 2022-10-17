@@ -35,14 +35,6 @@ public:
 };
 
 
-enum PHASE {
-	phaseMax = 24,
-	phaseOpening = 22,
-	phaseMid = 20,
-	phaseEnd = 6
-};
-
-
 /*
  *
  *	PL class
@@ -97,7 +89,7 @@ public:
 
 	void ReceiveMv(MV mv, SPMV spmv);
 
-	virtual EV EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
+	virtual EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	virtual EV EvBaseApc(APC apc) const noexcept;
 
 	bool FDepthLog(LGT lgt, int& depth);
@@ -145,7 +137,7 @@ public:
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
 
-	EV EvFromPhaseApcSq(PHASE phase, APC apc, SQ sq) const noexcept;
+	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 
 protected:
 	EV EvBdgDepth(BDG& bdg, MVEV& mvev, int ply, int plyLim, EV evAlpha, EV evBeta);
@@ -166,7 +158,7 @@ protected:
 	virtual void InitWeightTables(void);
 	void InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][64], EV mpapcsqev[APC::ActMax][64]);
 	EV EvPstFromCpc(const BDG& bdg) const noexcept;
-	EV EvInterpolate(int phase, EV ev1, int phase1, EV ev2, int phase2) const noexcept;
+	EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
 	EV EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
 	EV EvTempo(const BDG& bdg, CPC cpc) const noexcept;
 

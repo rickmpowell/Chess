@@ -733,22 +733,43 @@ enum class GG {	// GenGmv Option to optionally remove checks
 	Pseudo
 };
 
+enum class GPH {	// game phase
+	Max = 24,
+	Opening = 22,
+	MidGame = 20,
+	EndGame = 6,
+	Queen = 4,
+	Rook = 2,
+	Minor = 1,
+	None = 0,
+	Nil = -1
+};
+
+
 class BD
 {
 public:
-	BB mppcbb[pcMax];	// bitboards for the pieces
-	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
-	BB bbUnoccupied;	// empty squares
+	/* minimal board state, defines a position exactly */
+
+	BB mppcbb[pcMax];	/* bitboards for the pieces */
 	CPC cpcToMove;	/* side with the move */
 	SQ sqEnPassant;	/* non-nil when previous move was a two-square pawn move, destination
 					   of en passant capture */
 	uint8_t csCur;	/* castle sides */
+
+	/* everything below is derived from previous state */
+
+	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
+	BB bbUnoccupied;	// empty squares
 	HABD habd;	/* board hash */
+	GPH gph;	/* game phase */
 
 public:
 	BD(void);
 
-	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd)
+	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), 
+			sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd),
+			gph(bd.gph)
 	{
 		memcpy(mppcbb, bd.mppcbb, sizeof(mppcbb));
 		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
@@ -855,6 +876,7 @@ public:
 		return bbUnoccupied.fSet(sq);
 	}
 
+
 	inline bool FCanCastle(CPC cpc, int csSide) const noexcept
 	{
 		return (csCur & (csSide << (int)cpc)) != 0;
@@ -949,6 +971,25 @@ public:
 	void InitFENEnPassant(const wchar_t*& sz);
 	void SkipToNonSpace(const wchar_t*& sz);
 	void SkipToSpace(const wchar_t*& sz);
+
+
+	/*	BD::GphCur
+	 *
+	 *	Returns the current game phase (opening, mid, or end game).
+	 *	Note that this is a continuum and we use cut-offs to specify when
+	 *	the phases transition.
+	 */
+	GPH GphCur(void) const noexcept
+	{
+		return gph;
+	}
+
+	GPH GphCompute(void) const noexcept;
+	void RecomputeGph(void) noexcept;
+
+	inline void AddApcToGph(APC apc) noexcept;
+	inline void RemoveApcFromGph(APC apc) noexcept;
+
 
 	/*
 	 *	debug and validation
