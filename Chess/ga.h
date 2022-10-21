@@ -209,7 +209,7 @@ public:
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);
 	void MoveToImv(int64_t imv, SPMV spmv);
-	void GenGmv(GMV& gmv);
+	void GenGemv(GEMV& gemv);
 
 	/*	
 	 *	Logging

@@ -160,8 +160,8 @@ const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
 
 wstring BDG::SzDecodeMv(MV mv, bool fPretty)
 {
-	GMV gmv;
-	GenGmv(gmv, GG::Pseudo);
+	GEMV gemv;
+	GenGemv(gemv, GG::Pseudo);
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mv.sqFrom();
@@ -213,11 +213,11 @@ FinishCastle:
 	/* for ambiguous moves, we need to add various from square qualifiers depending
 	 * on where the ambiguity is */
 
-	if (FMvApcAmbiguous(gmv, mv)) {
-		if (!FMvApcFileAmbiguous(gmv, mv))
+	if (FMvApcAmbiguous(gemv, mv)) {
+		if (!FMvApcFileAmbiguous(gemv, mv))
 			*pch++ = L'a' + sqFrom.file();
 		else {
-			if (FMvApcRankAmbiguous(gmv, mv))
+			if (FMvApcRankAmbiguous(gemv, mv))
 				*pch++ = L'a' + sqFrom.file();
 			*pch++ = L'1' + sqFrom.rank();
 		}
@@ -255,45 +255,42 @@ FinishMove:
 }
 
 
-bool BDG::FMvApcAmbiguous(const GMV& gmv, MV mv) const
+bool BDG::FMvApcAmbiguous(const GEMV& gemv, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		MV mvOther = gmv[imv];
-		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
+	for (EMV emvOther : gemv) {
+		if (emvOther.mv.sqTo() != sqTo || emvOther.mv.sqFrom() == sqFrom)
 			continue;
-		if (mvOther.apcMove() == mv.apcMove())
+		if (emvOther.mv.apcMove() == mv.apcMove())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvApcRankAmbiguous(const GMV& gmv, MV mv) const
+bool BDG::FMvApcRankAmbiguous(const GEMV& gemv, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		MV mvOther = gmv[imv];
-		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
+	for (EMV emvOther : gemv) {
+		if (emvOther.mv.sqTo() != sqTo || emvOther.mv.sqFrom() == sqFrom)
 			continue;
-		if (mvOther.apcMove() == mv.apcMove() && mvOther.sqFrom().rank() == sqFrom.rank())
+		if (emvOther.mv.apcMove() == mv.apcMove() && emvOther.mv.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvApcFileAmbiguous(const GMV& gmv, MV mv) const
+bool BDG::FMvApcFileAmbiguous(const GEMV& gemv, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (int imv = 0; imv < gmv.cmv(); imv++) {
-		MV mvOther = gmv[imv];
-		if (mvOther.sqTo() != sqTo || mvOther.sqFrom() == sqFrom)
+	for (EMV emvOther : gemv) {
+		if (emvOther.mv.sqTo() != sqTo || emvOther.mv.sqFrom() == sqFrom)
 			continue;
-		if (mvOther.apcMove() == mv.apcMove() && mvOther.sqFrom().file() == sqFrom.file())
+		if (emvOther.mv.apcMove() == mv.apcMove() && emvOther.mv.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;

@@ -11,28 +11,6 @@
 #include "bd.h"
 
 
-/*
- *
- *	MVEV structure
- * 
- *	Just a little holder of move evaluation information which is used for 
- *	generating AI move lists and alpha-beta pruning.
- * 
- */
-
-
-class MVEV 
-{
-public:
-	MV mv;
-	EV ev;
-	MV mvReplyBest;
-	GMV gmvPseudoReply;	// all reply pseudo moves
-
-	MVEV(MV mv=MV()) : mv(mv), ev(0), mvReplyBest(MV())
-	{
-	}
-};
 
 
 /*
@@ -125,11 +103,12 @@ protected:
 	uniform_int_distribution<int32_t> evalRandomDist;
 
 	uint16_t cYield;
+	bool fAbort;
 
 	/* logging statistics */
 	time_point<high_resolution_clock> tpStart;
-	size_t cmvevEval;
-	size_t cmvevNode;
+	size_t cemvEval;
+	size_t cemvNode;
 
 public:
 	PLAI(GA& ga);
@@ -140,14 +119,17 @@ public:
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 
 protected:
-	EV EvBdgDepth(BDG& bdg, MVEV& mvev, int ply, int plyLim, EV evAlpha, EV evBeta);
-	EV EvBdgQuiescent(BDG& bdg, MVEV& mvev, int ply, EV evAlpha, EV evBeta); 
-	void PreSortVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
-	void FillVmvev(BDG& bdg, const GMV& gmv, vector<MVEV>& vmvev) noexcept;
-	void PumpMsg(void);
+	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, EV evAlpha, EV evBeta) noexcept; 
+	void PreSortGemv(BDG& bdg, GEMV& gemv) noexcept;
+	void FillGemv(BDG& bdg, GEMV& gemv) noexcept;
+	inline bool FAlphaBetaPrune(EMV& emv, EV& evBest, EV& evAlpha, EV evBeta, const EMV*& pemvBest, int& plyLim) const noexcept;
+	inline void CheckForMates(BDG& bdg, EV& evBest, int cmvLegal, int ply) const noexcept;
 
-	virtual int PlyLim(const BDG& bdg, const GMV& gmv) const;
-	virtual EV EvBdgStatic(BDG& bdg, MVEV& mvev, bool fFull) noexcept;
+	void PumpMsg(void) noexcept;
+
+	virtual int PlyLim(const BDG& bdg, const GEMV& gemv) const;
+	virtual EV EvBdgStatic(BDG& bdg, MV mv, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	float CmvFromLevel(int level) const noexcept;
@@ -157,8 +139,8 @@ protected:
 
 	virtual void InitWeightTables(void);
 	void InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][64], EV mpapcsqev[APC::ActMax][64]);
-	EV EvPstFromCpc(const BDG& bdg) const noexcept;
-	EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
+	EV EvFromPst(const BDG& bdg) const noexcept;
+	inline EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
 	EV EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
 	EV EvTempo(const BDG& bdg, CPC cpc) const noexcept;
 
@@ -175,7 +157,7 @@ protected:
 
 public:
 	PLAI2(GA& ga);
-	virtual int PlyLim(const BDG& bdg, const GMV& gmv) const;
+	virtual int PlyLim(const BDG& bdg, const GEMV& gemv) const;
 protected:
 	virtual void InitWeightTables(void);
 };

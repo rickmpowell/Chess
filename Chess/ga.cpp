@@ -440,9 +440,9 @@ void GA::MoveToImv(int64_t imv, SPMV spmv)
 }
 
 
-void GA::GenGmv(GMV& gmv)
+void GA::GenGemv(GEMV& gemv)
 {
-	bdg.GenGmv(gmv, GG::Legal);
+	bdg.GenGemv(gemv, GG::Legal);
 }
 
 

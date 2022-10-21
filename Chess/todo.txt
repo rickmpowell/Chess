@@ -1,3 +1,5 @@
+  Make pawn promotions not-quiescent (noisy)
+  Can we incrementally keep whether someone is in check in the BD?
   Search: quiescent search doesn't detect draws. Can it?
   XP: alloc/delete transposition table at beginning/end of each ai move
   XP: use transposition table evals in pre-sort
@@ -15,9 +17,8 @@
   Test: if no pgn files in a directory, file enumeration crashes
   Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Test: PGN games should feed moves through a PL
-  AI: Add more complex pawn structure
+  AI: Add more complex pawn structure eval
   AI: Implement incremental depth search
-  AI: Implement transposition tables and use in alpha-beta search
   AI: Implement king safety evaluator
   AI: Communicate best continuation back (principle variation)
   AI: spin off AI into its own thread
