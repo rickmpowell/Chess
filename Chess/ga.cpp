@@ -463,9 +463,8 @@ int GA::Play(void)
 	LogOpen(L"Game", L"");
 	try {
 		do {
-			PL* ppl = mpcpcppl[bdg.cpcToMove];
 			SPMV spmv = SPMV::Animate;
-			MV mv = ppl->MvGetNext(spmv);
+			MV mv = PplToMove()->MvGetNext(spmv);
 			if (mv.fIsNil())
 				throw EXINT();;
 			MakeMv(mv, spmv);

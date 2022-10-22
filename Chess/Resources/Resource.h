@@ -69,7 +69,8 @@
 #define cmdPerftDivide      25
 #define cmdPerftDivideGo	26
 #define cmdShowPieceValues  27
-#define cmdMax				28
+#define cmdAISpeedTest		28
+#define cmdMax				29
 
 /*
  *	icons

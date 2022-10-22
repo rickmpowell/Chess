@@ -65,6 +65,10 @@ public:
 		this->level = level;
 	}
 
+	virtual void SetFecoRandom(uint16_t) noexcept
+	{
+	}
+
 	void ReceiveMv(MV mv, SPMV spmv);
 
 	virtual EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
@@ -115,6 +119,7 @@ public:
 	virtual MV MvGetNext(SPMV& spmv);
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
+	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
 
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 

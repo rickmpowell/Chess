@@ -139,10 +139,16 @@ public:
 		return mpcpcppl[cpc]; 
 	}
 	
-	inline PL* PplFromCpc(CPC cpc) 
+	inline PL* PplFromCpc(CPC cpc)
 	{
 		return PlFromCpc(cpc); 
 	}
+
+	inline PL* PplToMove(void)
+	{
+		return PplFromCpc(bdg.cpcToMove);
+	}
+
 
 	void SetPl(CPC cpc, PL* ppl);
 
@@ -255,8 +261,6 @@ public:
 	 */
 
 	void Test(void);
-
-
 	void PerftTest(void);
 	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
 	uint64_t CmvPerft(int depth);
