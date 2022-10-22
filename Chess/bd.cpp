@@ -32,16 +32,16 @@ GENHABD::GENHABD(void)
 	rghabdPiece[0][0] = 0;	// shut up the compiler warning about uninitialized array
 	for (SQ sq = 0; sq < sqMax; sq++)
 		for (PC pc = 0; pc < pcMax; pc++)
-			rghabdPiece[sq][pc] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+			rghabdPiece[sq][pc] = HabdFromDist(rgen, grfDist);;
 
 	rghabdCastle[0] = 0;
 	for (int ics = 1; ics < CArray(rghabdCastle); ics++)
-		rghabdCastle[ics] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+		rghabdCastle[ics] = HabdFromDist(rgen, grfDist);
 
 	for (int iep = 0; iep < CArray(rghabdEnPassant); iep++)
-		rghabdEnPassant[iep] = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+		rghabdEnPassant[iep] = HabdFromDist(rgen, grfDist); 
 
-	habdMove = ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+	habdMove = HabdFromDist(rgen, grfDist);
 }
 
 

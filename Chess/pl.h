@@ -100,8 +100,8 @@ protected:
 	/* coefficients this divided by 100 */
 	uint16_t fecoMaterial, fecoMobility, fecoKingSafety, fecoPawnStructure, fecoTempo, fecoRandom;
 	mt19937 rgen;	/* random number generator */
-	uniform_int_distribution<int32_t> evalRandomDist;
-
+	uint64_t habdRand;	/* random number generated at the start of every search used to add randomness
+						   to board eval - which is generated from the Zobrist hash */
 	uint16_t cYield;
 	bool fAbort;
 

@@ -161,15 +161,16 @@ void PL::SetDepthLog(int depthNew)
  */
 
 
-PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), evalRandomDist(-1, 1), 
+PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
 		cYield(0), cemvEval(0), cemvNode(0)
 {
-	fecoMaterial = 100;
-	fecoMobility = 10;
-	fecoKingSafety = 20;
-	fecoPawnStructure = 20;
-	fecoTempo = 100;
-	fecoRandom = 0;
+	fecoMaterial = 1*100;
+	fecoMobility = 3*100;	/* this is small because Material already includes
+							   some mobility in the piece value tables */
+	fecoKingSafety = 10*100;
+	fecoPawnStructure = 10*100;
+	fecoTempo = 1*100;
+	fecoRandom = 0*100;
 	InitWeightTables();
 }
 
@@ -203,16 +204,18 @@ float PLAI::CmvFromLevel(int level) const noexcept
 {
 	switch (level) {
 	case 1: return 100.0f;
-	case 2: return 8.0e+3f;
-	case 3: return 3.2e+4f;
-	case 4: return 1.2e+5f;
+	case 2: return 8000.0f;
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8:
+	case 9:
+	case 10:
+		return 4.0f * CmvFromLevel(level - 1);
 	default:
-	case 5: return 5.0e+5f;
-	case 6: return 2.0e+6f;
-	case 7: return 8.0e+6f;
-	case 8: return 3.2e+7f;
-	case 9: return 1.2e+8f;
-	case 10: return 5.0e+8f;
+		return CmvFromLevel(5);
 	}
 }
 
@@ -294,7 +297,7 @@ public:
 		if (FExpandLog(emv))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(emv.ev) + 
+				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(/**/-emv.ev) + 
 					L" [" + SzFromEv(evAlpha) + L", " + SzFromEv(evBeta) + L"] ");
 	}
 
@@ -417,6 +420,9 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	StartMoveLog();
 
 	InitWeightTables();
+	/* generate a random board hash value used to add randomness to eval */ 
+	uniform_int_distribution<uint32_t> grfDist(0L, 0xffffffffUL);
+	habdRand = HabdFromDist(rgen, grfDist);
 
 	BDG bdg = ga.bdg;
 
@@ -449,7 +455,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 }
 
 
-/*	PLAI::EvalBdgDepth
+/*	PLAI::EvBdgDepth
  *
  *	Evaluates the board/move from the point of view of the person who has the move,
  *	Evaluates to the target depth depthMax; depth is current. Uses alpha-beta pruning.
@@ -582,14 +588,17 @@ void PLAI::PreSortGemv(BDG& bdg, GEMV& gemv) noexcept
 	bdg.GenGemv(gemv, GG::Pseudo);
 	for (EMV& emv : gemv) {
 		MAKEMV makemv(bdg, emv.mv);
-		emv.ev = -EvBdgStatic(bdg, emv.mv, false);
+		emv.ev = /*-*/EvBdgStatic(bdg, emv.mv, false);
 	}
+#ifdef NO
 	sort(gemv.begin(), gemv.end(), 
 			 [](const EMV& emv1, const EMV& emv2) 
 			 {
 				 return emv1 > emv2; 
 			 }
 		);
+#endif
+	sort(gemv.begin(), gemv.end());
 }
 
 
@@ -643,7 +652,14 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 		if (!fFull)
 			evMaterial += EvBdgAttackDefend(bdg, mvPrev);
 	}
-
+	if (fecoRandom) {
+		/* if we want randomness in the board eval, we need it to be stable randomness,
+		 * so we use the Zobrist hash of the board and xor it with a random number we
+		 * generate at the start of search and use that to generate our random number
+		 * within the range */
+		uint64_t habdT = (bdg.habd ^ habdRand);
+		evRandom = (EV)(habdT % (fecoRandom * 2 + 1)) - fecoRandom; /* +/- fecoRandom */
+	}
 
 	/* slow factors aren't used for pre-sorting */
 
@@ -666,8 +682,6 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 			evPawnDef = EvBdgPawnStructure(bdg, ~bdg.cpcToMove);
 			evPawnStructure = evPawnToMove - evPawnDef;
 		}
-		if (fecoRandom)
-			evRandom = evalRandomDist(rgen); /* distribution already scaled by fecoRandom */
 		if (fecoTempo)
 			evTempo = EvTempo(bdg, bdg.cpcToMove);
 	}
@@ -935,8 +949,7 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	fecoKingSafety = 0;	
 	fecoPawnStructure = 0;	
 	fecoTempo = 100;
-	fecoRandom = 5;
-	evalRandomDist = uniform_int_distribution<int32_t>(-fecoRandom*100, fecoRandom*100);
+	fecoRandom = 10*100;	/* +/-10 centipawns */
 	SetName(L"SQ Mathilda");
 	InitWeightTables();
 }

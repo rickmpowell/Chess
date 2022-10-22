@@ -193,26 +193,10 @@ const SQ sqG5(rank5, fileG);
  *
  *	Returns the "population count" of the 64-bit number. Population count is the number
  *	of 1 bits in the 64-bit word.
- * 
- *	Uses SIMD (single instruction, multiple data) techniques.
- * 
- *	This is a divide-and-conquer SWAR (SIMD in a register) approach to the bit-counting 
- *	problem. 
  */
 inline int popcount(uint64_t grf) noexcept
 {
-#ifdef NO_INTRINSICS
-	const uint64_t k1 = 0x5555555555555555LL;
-	const uint64_t k2 = 0x3333333333333333LL;
-	const uint64_t k4 = 0x0f0f0f0f0f0f0f0fLL;
-	const uint64_t kf = 0x0101010101010101LL;
-	uint64_t grfT = grf - ((grf >> 1) & k1);
-	grfT = (grfT & k2) + ((grfT >> 2) & k2);
-	grfT = (grfT + (grfT >> 4)) & k4;
-	return (int)((grfT * kf) >> 56);
-#else
-	return (int)_mm_popcnt_u64(grf);
-#endif
+	return (int)__popcnt64(grf);
 }
 
 
@@ -222,67 +206,22 @@ inline int popcount(uint64_t grf) noexcept
  *	least significant bit and 63 is the most.
  * 
  *	Does not work on 0.
- * 
- *	Uses De Bruijn multiplication, as devised by Lauter (1997).
  */
-
-#ifndef NO_INTRINSICS
-const int rgbsFwd64[64] = {
-	0,  1, 48,  2, 57, 49, 28,  3,
-   61, 58, 50, 42, 38, 29, 17,  4,
-   62, 55, 59, 36, 53, 51, 43, 22,
-   45, 39, 33, 30, 24, 18, 12,  5,
-   63, 47, 56, 27, 60, 41, 37, 16,
-   54, 35, 52, 21, 44, 32, 23, 11,
-   46, 26, 40, 15, 34, 20, 31, 10,
-   25, 14, 19,  9, 13,  8,  7,  6
-};
-
-const uint64_t debruijn64 = 0x03f79d71b4cb0a89LL;
-#endif
 
 inline int bitscan(uint64_t grf) noexcept
 {
 	assert(grf);
-#ifndef NO_INTRINSICS
 	unsigned long shf;
 	_BitScanForward64(&shf, grf);
 	return shf;
-#else
-	int ibs = (int)(((grf & -grf) * debruijn64) >> 58);
-	return rgbsFwd64[ibs];
-#endif
 }
-
-#ifndef NO_INTRINSICS
-const int rgbsRev64[64] = {
-	0, 47,  1, 56, 48, 27,  2, 60,
-   57, 49, 41, 37, 28, 16,  3, 61,
-   54, 58, 35, 52, 50, 42, 21, 44,
-   38, 32, 29, 23, 17, 11,  4, 62,
-   46, 55, 26, 59, 40, 36, 15, 53,
-   34, 51, 20, 43, 31, 22, 10, 45,
-   25, 39, 14, 33, 19, 30,  9, 24,
-   13, 18,  8, 12,  7,  6,  5, 63
-};
-#endif
 
 inline int bitscanRev(uint64_t grf) noexcept
 {
 	assert(grf);
-#ifndef NO_INTRINSICS
 	unsigned long shf;
 	_BitScanReverse64(&shf, grf);
 	return shf;
-#else
-	grf |= grf >> 1;
-	grf |= grf >> 2;
-	grf |= grf >> 4;
-	grf |= grf >> 8;
-	grf |= grf >> 16;
-	grf |= grf >> 32;
-	return rgbsRev64[(grf * debruijn64) >> 58];
-#endif
 }
 
 

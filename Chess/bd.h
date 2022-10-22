@@ -842,6 +842,11 @@ inline int RankToEpFromCpc(CPC cpc)
 
 typedef uint64_t HABD;
 
+inline HABD HabdFromDist(mt19937& rgen, uniform_int_distribution<uint32_t>& grfDist)
+{
+	return ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
+}
+
 
 /*
  *
