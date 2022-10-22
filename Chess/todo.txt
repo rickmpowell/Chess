@@ -1,4 +1,5 @@
-  Exported PGN files don't always display result right in headers
+  How to deal with 3-repeat draws in transposition table?
+  Hook up transposition table to the main eval function
   Display debug build somewhere on screen
   Pre-compiled headers?
   Make pawn promotions not-quiescent (noisy)
@@ -91,6 +92,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Exported PGN files don't always display result right in headers
 * XP: alloc/delete transposition table at beginning/end of each ai move
 * XP: use transposition table evals in pre-sort
 * XP: create transposition table on every full eval

@@ -56,12 +56,12 @@ void GA::SerializeHeaders(ostream& os)
 	case GS::BlackCheckMated:
 	case GS::BlackResigned:
 	case GS::BlackTimedOut:
-		SerializeHeader(os, "Result", "0-1");
+		SerializeHeader(os, "Result", "1-0");
 		break;
 	case GS::WhiteCheckMated:
 	case GS::WhiteResigned:
 	case GS::WhiteTimedOut:
-		SerializeHeader(os, "Result", "1-0");
+		SerializeHeader(os, "Result", "0-1");
 		break;
 	case GS::Playing:
 		break;
