@@ -502,7 +502,7 @@ public:
 	/* iterator and const iterator for the arrays */
 
 	class iterator {
-		GEMV& gemv;
+		GEMV* pgemv;
 		int iemv;
 	public:
 		using difference_type = int;
@@ -511,28 +511,28 @@ public:
 		using reference = EMV&;
 		using iterator_category = random_access_iterator_tag;
 
-		inline iterator(GEMV& gemv, difference_type iemv) noexcept : gemv(gemv), iemv(iemv)
+		inline iterator(GEMV* pgemv, difference_type iemv) noexcept : pgemv(pgemv), iemv(iemv)
 		{
 		}
-		inline iterator(const iterator& it) noexcept : gemv(it.gemv), iemv(it.iemv) 
+		inline iterator(const iterator& it) noexcept : pgemv(it.pgemv), iemv(it.iemv) 
 		{
 		}
 		inline iterator& operator=(const iterator& it) noexcept 
 		{ 
-			gemv = it.gemv; iemv = it.iemv; return *this; 
+			pgemv = it.pgemv; iemv = it.iemv; return *this;
 		}
 
 		inline reference operator[](difference_type diemv) const noexcept 
 		{ 
-			return gemv[iemv + diemv]; 
+			return (*pgemv)[iemv + diemv]; 
 		}
 		inline reference operator*() const noexcept 
 		{ 
-			return gemv[iemv]; 
+			return (*pgemv)[iemv]; 
 		}
 		inline pointer operator->() const noexcept 
 		{
-			return &gemv[iemv]; 
+			return &(*pgemv)[iemv]; 
 		}
 
 		inline iterator& operator++() noexcept 
@@ -541,7 +541,7 @@ public:
 		}
 		inline iterator operator++(int) noexcept 
 		{
-			int iemvT = iemv; iemv++; return iterator(gemv, iemvT);
+			int iemvT = iemv; iemv++; return iterator(pgemv, iemvT);
 		}
 		inline iterator& operator--() noexcept 
 		{
@@ -549,16 +549,16 @@ public:
 		}
 		inline iterator operator--(int) noexcept 
 		{ 
-			int iemvT = iemv; iemv--; return iterator(gemv, iemvT);
+			int iemvT = iemv; iemv--; return iterator(pgemv, iemvT);
 		}
 
 		inline iterator operator+(difference_type diemv) const noexcept 
 		{
-			return iterator(gemv, iemv + diemv); 
+			return iterator(pgemv, iemv + diemv); 
 		}
 		inline iterator operator-(difference_type diemv) const noexcept 
 		{ 
-			return iterator(gemv, iemv - diemv); 
+			return iterator(pgemv, iemv - diemv); 
 		}
 		inline iterator& operator+=(difference_type diemv) noexcept 
 		{ 
@@ -570,7 +570,7 @@ public:
 		}
 		friend inline iterator operator+(difference_type diemv, iterator const& it) 
 		{ 
-			return iterator(it.gemv, diemv + it.iemv); 
+			return iterator(it.pgemv, diemv + it.iemv); 
 		}
 		inline difference_type operator-(const iterator& it) const noexcept 
 		{ 
@@ -592,7 +592,7 @@ public:
 	};
 
 	class citerator {
-		const GEMV& gemv;
+		const GEMV* pgemv;
 		int iemv;
 	public:
 		using difference_type = int;
@@ -601,24 +601,24 @@ public:
 		using reference = const EMV&;
 		typedef random_access_iterator_tag iterator_category;
 
-		inline citerator(const GEMV& gemv, int iemv) noexcept : gemv(gemv), iemv(iemv) { }
-		inline citerator(const citerator& it) noexcept : gemv(it.gemv), iemv(it.iemv) { }
-//		inline citerator operator=(const citerator& cit) noexcept { gemv = cit.gemv; iemv = cit.iemv; return *this; }
+		inline citerator(const GEMV* pgemv, int iemv) noexcept : pgemv(pgemv), iemv(iemv) { }
+		inline citerator(const citerator& it) noexcept : pgemv(it.pgemv), iemv(it.iemv) { }
+//		inline citerator operator=(const citerator& cit) noexcept { pgemv = cit.pgemv; iemv = cit.iemv; return *this; }
 
-		inline reference operator[](difference_type diemv) const noexcept { return gemv[iemv + diemv]; }
-		inline reference operator*() const noexcept { return gemv[iemv]; }
-		inline pointer operator->() const noexcept { return &gemv[iemv]; }
+		inline reference operator[](difference_type diemv) const noexcept { return (*pgemv)[iemv + diemv]; }
+		inline reference operator*() const noexcept { return (*pgemv)[iemv]; }
+		inline pointer operator->() const noexcept { return &(*pgemv)[iemv]; }
 
 		inline citerator operator++() noexcept { iemv++; return *this; }
 		inline citerator operator++(int) noexcept { citerator cit = *this; iemv++; return cit; }
 		inline citerator operator--() noexcept { iemv--; return *this; }
 		inline citerator operator--(int) noexcept { citerator it = *this; iemv--; return it; }
 
-		inline citerator operator+(difference_type diemv) const noexcept { return citerator(gemv, iemv + diemv); }
-		inline citerator operator-(difference_type diemv) const noexcept { return citerator(gemv, iemv - diemv); }
+		inline citerator operator+(difference_type diemv) const noexcept { return citerator(pgemv, iemv + diemv); }
+		inline citerator operator-(difference_type diemv) const noexcept { return citerator(pgemv, iemv - diemv); }
 		inline citerator operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
 		inline citerator operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
-		friend inline citerator operator+(difference_type diemv, const citerator& cit) { return citerator(cit.gemv, diemv + cit.iemv); }
+		friend inline citerator operator+(difference_type diemv, const citerator& cit) { return citerator(cit.pgemv, diemv + cit.iemv); }
 		inline difference_type operator-(const citerator& cit) const noexcept { return iemv - cit.iemv; }
 
 		inline bool operator==(const citerator& cit) const noexcept { return iemv == cit.iemv; }
@@ -627,10 +627,10 @@ public:
 	};
 	
 	inline int size(void) const noexcept { return cemv(); }
-	inline iterator begin(void) noexcept { return iterator(*this, 0); }
-	inline iterator end(void) noexcept { return iterator(*this, size()); }
-	inline citerator begin(void) const noexcept { return citerator(*this, 0); }
-	inline citerator end(void) const noexcept { return citerator(*this, size()); }
+	inline iterator begin(void) noexcept { return iterator(this, 0); }
+	inline iterator end(void) noexcept { return iterator(this, size()); }
+	inline citerator begin(void) const noexcept { return citerator(this, 0); }
+	inline citerator end(void) const noexcept { return citerator(this, size()); }
 
 	void AppendMvOverflow(MV mv)
 	{

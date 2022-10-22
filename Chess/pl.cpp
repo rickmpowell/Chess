@@ -297,7 +297,7 @@ public:
 		if (FExpandLog(emv))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(/**/-emv.ev) + 
+				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(-emv.ev) + 
 					L" [" + SzFromEv(evAlpha) + L", " + SzFromEv(evBeta) + L"] ");
 	}
 
@@ -586,18 +586,14 @@ void PLAI::PreSortGemv(BDG& bdg, GEMV& gemv) noexcept
 {
 	gemv.Clear();
 	bdg.GenGemv(gemv, GG::Pseudo);
+	/* we negate the evaluation so we can use the default sort, which sorts in 
+	   increasing order, and alpha-beta wants descending; this is safe to do because
+	   the ev is not used for anything after the pre-sort */
 	for (EMV& emv : gemv) {
-		MAKEMV makemv(bdg, emv.mv);
-		emv.ev = /*-*/EvBdgStatic(bdg, emv.mv, false);
+		bdg.MakeMvSq(emv.mv);	// do move without keeping move history
+		emv.ev = EvBdgStatic(bdg, emv.mv, false);
+		bdg.UndoMvSq(emv.mv);
 	}
-#ifdef NO
-	sort(gemv.begin(), gemv.end(), 
-			 [](const EMV& emv1, const EMV& emv2) 
-			 {
-				 return emv1 > emv2; 
-			 }
-		);
-#endif
 	sort(gemv.begin(), gemv.end());
 }
 
