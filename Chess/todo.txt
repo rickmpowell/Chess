@@ -1,11 +1,8 @@
+  Exported PGN files don't always display result right in headers
   Display debug build somewhere on screen
-  Can we have a profiling mode that skips display and/or initializes different defaults?
   Pre-compiled headers?
   Make pawn promotions not-quiescent (noisy)
   Can we incrementally keep whether someone is in check in the BD and make them noisy moves?
-  XP: alloc/delete transposition table at beginning/end of each ai move
-  XP: use transposition table evals in pre-sort
-  XP: create transposition table on every full eval
   UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
   Test: option to stop or continue on errors 
   Test: Add option to draw or not draw moves during test run
@@ -94,6 +91,10 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* XP: alloc/delete transposition table at beginning/end of each ai move
+* XP: use transposition table evals in pre-sort
+* XP: create transposition table on every full eval
+* Can we have a profiling mode that skips display and/or initializes different defaults?
 * Eval: random eval should be some transform on the hash of the board to stabilize the randomness
 * Search: quiescent search doesn't detect draws. Can it?
 * Move: incrementally track game phase

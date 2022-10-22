@@ -19,6 +19,9 @@ const uint16_t dcYield = 1024;
 #endif
 
 
+XT xt;	/* transposition table is big, so we share it with all AIs */
+
+
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
 		mvNext(MV()), spmvNext(SPMV::Animate)
@@ -417,6 +420,8 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	cYield = 0;
 	fAbort = false;
 
+	xt.Init();
+
 	StartMoveLog();
 
 	InitWeightTables();
@@ -521,7 +526,14 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, EV evAlpha, EV ev
 	/* first off, get full, slow static eval and check current board already in a pruning 
 	   situations */
 
-	evBest = EvBdgStatic(bdg, emvPrev.mv, true);
+	XEV* pxev = xt.Find(bdg, 0);
+	if (pxev != nullptr && pxev->evt == static_cast<uint16_t>(EVT::Equal))
+		evBest = pxev->ev;
+	else {
+		evBest = EvBdgStatic(bdg, emvPrev.mv, true);
+		xt.Save(bdg, evBest, EVT::Equal, 0);
+	}
+
 	if (evBest >= evBeta)
 		return evBest;
 	if (evBest > evAlpha)
@@ -591,7 +603,11 @@ void PLAI::PreSortGemv(BDG& bdg, GEMV& gemv) noexcept
 	   the ev is not used for anything after the pre-sort */
 	for (EMV& emv : gemv) {
 		bdg.MakeMvSq(emv.mv);	// do move without keeping move history
-		emv.ev = EvBdgStatic(bdg, emv.mv, false);
+		XEV* pxev = xt.Find(bdg, 0);
+		if (pxev != nullptr && pxev->evt == static_cast<uint16_t>(EVT::Equal))
+			emv.ev = pxev->ev;
+		else
+			emv.ev = EvBdgStatic(bdg, emv.mv, false);
 		bdg.UndoMvSq(emv.mv);
 	}
 	sort(gemv.begin(), gemv.end());

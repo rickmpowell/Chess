@@ -121,6 +121,7 @@
     <ClInclude Include="ti.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="uibd.h" />
+    <ClInclude Include="xt.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.cpp" />
