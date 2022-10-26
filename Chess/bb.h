@@ -551,8 +551,8 @@ public:
 	inline BB BbSlideTo(SQ sq, DIR dir) noexcept
 	{
 		assert(sq < 64);
-		assert((int)dir < 8);
-		return mpsqdirbbSlide[sq][(unsigned)dir];
+		assert(static_cast<int>(dir) < 8);
+		return mpsqdirbbSlide[sq][static_cast<unsigned>(dir)];
 	}
 
 	inline BB BbKingTo(SQ sq) noexcept

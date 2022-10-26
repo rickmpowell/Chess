@@ -129,7 +129,10 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
         nullptr, nullptr, hinst, this);
     if (!hwnd)
         throw 1;    // BUG: cleanup haccel
+
     ::ShowWindow(hwnd, sw);
+
+    pga->uipvt.Show(false);
 }
 
 
@@ -881,7 +884,7 @@ public:
         for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
             PL* ppl = app.pga->PplFromCpc(cpc);
             if (ppl->FHasLevel())
-                ppl->SetLevel(8);
+                ppl->SetLevel(7);
             ppl->SetFecoRandom(0);
         }
         app.pga->NewGame(new RULE, SPMV::Hidden);
@@ -891,7 +894,7 @@ public:
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
 
         int depthSav = app.pga->DepthLog();
-        app.pga->SetDepthLog(0);
+        app.pga->SetDepthLog(2);
 
         for (int imv = 0; imv < 10; imv++) {
             SPMV spmv = SPMV::Hidden;
@@ -910,7 +913,6 @@ public:
     
         app.pga->XLogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         app.pga->XLogClose(L"AI Speed Test", L"", LGF::Normal);
-
     
         return 1;
     }

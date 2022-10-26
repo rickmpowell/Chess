@@ -1,3 +1,5 @@
+  Save real date in PGN files
+  Save real player names in PGN files
   How to deal with 3-repeat draws in transposition table?
   Hook up transposition table to the main eval function
   Display debug build somewhere on screen

@@ -561,12 +561,12 @@ typedef UINT_PTR TID;
 
 /*
  *
- *	Our random number generator. Generates 32-bit random numbers
+ *	Our random number generator. Generates 64-bit random numbers
  *	using a Mersenne twister.
  *
  */
 
-extern mt19937 rgen;
+extern mt19937_64 rgen;
 
 
 template<class T> inline bool in_range(const T& t, const T& tFirst, const T& tLast)

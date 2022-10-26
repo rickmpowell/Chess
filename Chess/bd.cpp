@@ -9,7 +9,7 @@
 #include "bd.h"
 
 
-mt19937 rgen(7724322UL);
+mt19937_64 rgen(7724322UL);
 
 /*
  *
@@ -22,26 +22,33 @@ mt19937 rgen(7724322UL);
 GENHABD genhabd;
 
 
+
 /*	GENHABD::GENHABD
  *
  *	Generates the random bit arrays used to compute the hash.
  */
 GENHABD::GENHABD(void)
 {
-	uniform_int_distribution<uint32_t> grfDist(0L, 0xffffffffUL);
 	rghabdPiece[0][0] = 0;	// shut up the compiler warning about uninitialized array
 	for (SQ sq = 0; sq < sqMax; sq++)
 		for (PC pc = 0; pc < pcMax; pc++)
-			rghabdPiece[sq][pc] = HabdFromDist(rgen, grfDist);;
+			rghabdPiece[sq][pc] = HabdRandom(rgen);
 
 	rghabdCastle[0] = 0;
 	for (int ics = 1; ics < CArray(rghabdCastle); ics++)
-		rghabdCastle[ics] = HabdFromDist(rgen, grfDist);
+		rghabdCastle[ics] = HabdRandom(rgen);
 
 	for (int iep = 0; iep < CArray(rghabdEnPassant); iep++)
-		rghabdEnPassant[iep] = HabdFromDist(rgen, grfDist); 
+		rghabdEnPassant[iep] = HabdRandom(rgen); 
 
-	habdMove = HabdFromDist(rgen, grfDist);
+	habdMove = HabdRandom(rgen);
+}
+
+
+HABD GENHABD::HabdRandom(mt19937_64& rgen)
+{
+	HABD habd = rgen();
+	return habd;
 }
 
 

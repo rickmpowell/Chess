@@ -34,39 +34,6 @@ PL::~PL(void)
 }
 
 
-/*
- *	Evaluation manipulators and constants
- */
-
-const int plyMax = 127;
-const EV evInf = 640*100;	/* largest possible evaluation, in centi-pawns */
-const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
-const EV evMateMin = evMate - plyMax;
-const EV evTempo = 33;	/* evaluation of a single move advantage */
-const EV evDraw = 0;	/* evaluation of a draw */
-const EV evAbort = evInf + 1;
-
-inline EV EvMate(int ply)
-{
-	return evMate - ply;
-}
-
-inline bool FEvIsMate(EV ev)
-{
-	return ev >= evMateMin;
-}
-
-inline bool FEvIsAbort(EV ev)
-{
-	return ev == evAbort;
-}
-
-inline int PlyFromEvMate(EV ev)
-{
-	return evMate - ev;
-}
-
-
 wstring SzFromEv(EV ev)
 {
 	wchar_t sz[20], * pch = sz;
@@ -95,6 +62,20 @@ wstring SzFromEv(EV ev)
 		*pch++ = L'0' + ev / 10;
 		*pch++ = L'0' + ev % 10;
 	}
+	*pch = 0;
+	return wstring(sz);
+}
+
+
+wstring SzPercent(uint64_t wNum, uint64_t wDen)
+{
+	wchar_t sz[20], *pch = sz;
+
+	int w1000 = (int)((1000 * wNum) / wDen);
+	pch = PchDecodeInt(w1000 / 10, pch);
+	*pch++ = L'.';
+	pch = PchDecodeInt(w1000 % 10, pch);
+	*pch++ = L'%';
 	*pch = 0;
 	return wstring(sz);
 }
@@ -256,9 +237,19 @@ void PLAI::StartMoveLog(void)
  */
 void PLAI::EndMoveLog(void)
 {
+	/* eval stats */
 	time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
 	LogData(L"Evaluated " + to_wstring(cemvEval) + L" boards");
 	LogData(L"Nodes: " + to_wstring(cemvNode));
+
+	/* cache stats */
+	LogData(L"Cache Fill: " + SzPercent(xt.cxevInUse, xt.cxevMax));
+	LogData(L"Cache Probe Hit: " + SzPercent(xt.cxevProbeHit, xt.cxevProbe));
+	LogData(L"Cache Probe Collision: " + SzPercent(xt.cxevProbeCollision, xt.cxevProbe));
+	LogData(L"Cache Save Collision: " + SzPercent(xt.cxevSaveCollision, xt.cxevSave));
+	LogData(L"Cache Save Replace: " + SzPercent(xt.cxevSaveReplace, xt.cxevSave));
+
+	/* time stats */
 	duration dtp = tpEnd - tpStart;
 	milliseconds ms = duration_cast<milliseconds>(dtp);
 	LogData(L"Time: " + to_wstring(ms.count()) + L"ms");
@@ -426,8 +417,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 	InitWeightTables();
 	/* generate a random board hash value used to add randomness to eval */ 
-	uniform_int_distribution<uint32_t> grfDist(0L, 0xffffffffUL);
-	habdRand = HabdFromDist(rgen, grfDist);
+	habdRand = genhabd.HabdRandom(rgen);
 
 	BDG bdg = ga.bdg;
 
@@ -527,8 +517,8 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, EV evAlpha, EV ev
 	   situations */
 
 	XEV* pxev = xt.Find(bdg, 0);
-	if (pxev != nullptr && pxev->evt == static_cast<uint16_t>(EVT::Equal))
-		evBest = pxev->ev;
+	if (pxev != nullptr && pxev->evt() == EVT::Equal)
+		evBest = pxev->ev();
 	else {
 		evBest = EvBdgStatic(bdg, emvPrev.mv, true);
 		xt.Save(bdg, evBest, EVT::Equal, 0);
@@ -600,12 +590,12 @@ void PLAI::PreSortGemv(BDG& bdg, GEMV& gemv) noexcept
 	bdg.GenGemv(gemv, GG::Pseudo);
 	/* we negate the evaluation so we can use the default sort, which sorts in 
 	   increasing order, and alpha-beta wants descending; this is safe to do because
-	   the ev is not used for anything after the pre-sort */
+	   the ev is not used for anything after the pre-sort. Just be careful! */
 	for (EMV& emv : gemv) {
 		bdg.MakeMvSq(emv.mv);	// do move without keeping move history
 		XEV* pxev = xt.Find(bdg, 0);
-		if (pxev != nullptr && pxev->evt == static_cast<uint16_t>(EVT::Equal))
-			emv.ev = pxev->ev;
+		if (pxev != nullptr && pxev->evt() == EVT::Equal)
+			emv.ev = pxev->ev();
 		else
 			emv.ev = EvBdgStatic(bdg, emv.mv, false);
 		bdg.UndoMvSq(emv.mv);

@@ -42,10 +42,34 @@ class XEV
 {
 public:
 	HABD habd;	/* board hash */
-	EV ev;		/* board evaluation */
-	uint16_t evt : 2,	/* evaluation type */
-		unused : 6,
-		ply : 8;	/* ply depth the eval occurred at */
+private:
+	uint32_t evGrf:16,
+		evtGrf : 2,
+		unused1b : 6,
+		plyGrf : 8;
+public:
+
+	inline EV ev(void) const {
+		return static_cast<EV>(evGrf);
+	}
+	inline void SetEv(EV ev) {
+		assert(ev != evInf && ev != -evInf);
+		evGrf = static_cast<uint16_t>(ev);
+	}
+	inline EVT evt(void) const {
+		return static_cast<EVT>(evtGrf);
+	}
+	inline void SetEvt(EVT evt)
+	{
+		evtGrf = static_cast<unsigned>(evt);
+	}
+	inline unsigned ply(void) const {
+		return static_cast<unsigned>(plyGrf);
+	}
+	inline void SetPly(unsigned ply)
+	{
+		plyGrf = ply;
+	}
 };
 
 
@@ -63,13 +87,18 @@ public:
 
 class XT
 {
-	const unsigned cxevMax = 1UL << 24;
 	XEV* rgxev;
+public:
+	//const uint32_t cxevMax = 1UL << 27;
+	const uint32_t cxevMax = 1UL << 24;
+	/* cache stats */
+	uint64_t cxevProbe, cxevProbeCollision, cxevProbeHit;
+	uint64_t cxevSave, cxevSaveCollision, cxevSaveReplace, cxevInUse;
 
 public:
-	XT(void)
+	XT(void) : rgxev(nullptr), cxevProbe(0), cxevProbeCollision(0), cxevProbeHit(0),  
+		cxevSave(0), cxevSaveCollision(0), cxevSaveReplace(0), cxevInUse(0)
 	{
-		rgxev = nullptr;
 	}
 
 	~XT(void)
@@ -87,8 +116,11 @@ public:
 	 */
 	void Init(void)
 	{
-		if (rgxev == nullptr)
+		if (rgxev == nullptr) {
 			rgxev = new XEV[cxevMax];
+			if (rgxev == nullptr)
+				throw 1;
+		}
 		Clear();
 	}
 
@@ -101,7 +133,10 @@ public:
 	void Clear(void)
 	{
 		for (unsigned ixev = 0; ixev < cxevMax; ixev++)
-			rgxev[ixev].evt = static_cast<uint16_t>(EVT::Nil);
+			rgxev[ixev].SetEvt(EVT::Nil);
+		cxevProbe = cxevProbeCollision = cxevProbeHit = 0;
+		cxevSave = cxevSaveCollision = cxevSaveReplace = 0;
+		cxevInUse = 0;
 	}
 
 
@@ -110,9 +145,9 @@ public:
 	 *	Returns a reference to the hash table entry that may or may not be used by the
 	 *	board. Caller is responsible for making sure the entry is valid.
 	 */
-	XEV& operator[](const BDG& bdg)
+	inline XEV& operator[](const BDG& bdg)
 	{
-		return rgxev[bdg.habd & (cxevMax-1)];
+		return rgxev[bdg.habd & (cxevMax - 1)];
 	}
 
 
@@ -121,16 +156,26 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	XEV* Save(const BDG& bdg, EV ev, EVT evt, unsigned ply)
+	inline XEV* Save(const BDG& bdg, EV ev, EVT evt, unsigned ply)
 	{
+		assert(ev != evInf && ev != -evInf);
+		cxevSave++;
 		XEV& xev = (*this)[bdg];
-		/* don't overwrite an entry that is deeper than the new entry */
-		if (xev.evt != static_cast<uint16_t>(EVT::Nil) && ply < xev.ply)
-			return nullptr;
+		if (xev.evt() == EVT::Nil)
+			cxevInUse++;
+		else {
+			/* we have a collision; don't replace deeper evaluated boards */
+			if (xev.habd != bdg.habd)
+				cxevSaveCollision++;
+			if (ply < xev.ply())
+				return nullptr;
+			cxevSaveReplace++;
+		}
+
 		xev.habd = bdg.habd;
-		xev.ev = ev;
-		xev.evt = static_cast<uint16_t>(evt);
-		xev.ply = ply;
+		xev.SetEv(ev);
+		xev.SetEvt(evt);
+		xev.SetPly(ply);
 		return &xev;
 	}
 
@@ -140,11 +185,17 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as ply. Returns nullptr if no such entry exists.
 	 */
-	XEV* Find(const BDG& bdg, unsigned ply)
+	inline XEV* Find(const BDG& bdg, unsigned ply)
 	{
+		cxevProbe++;
 		XEV& xev = (*this)[bdg];
-		if (xev.evt == static_cast<uint16_t>(EVT::Nil) || xev.habd != bdg.habd || ply > xev.ply)
+		if (xev.evt() == EVT::Nil)
 			return nullptr;
+		if (xev.habd != bdg.habd || ply > xev.ply()) {
+			cxevProbeCollision++;
+			return nullptr;
+		}
+		cxevProbeHit++;
 		return &xev;
 	}
  };

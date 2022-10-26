@@ -10,8 +10,6 @@
 #include "bb.h"
 
 
-typedef int32_t EV;
-
 
 /*
  *
@@ -328,11 +326,51 @@ public:
 
 /*
  *
+ *	EV type
+ * 
+ *	A board evaluation
+ * 
+ */
+
+
+typedef int16_t EV;
+
+const int plyMax = 127;
+const EV evInf = 320 * 100;	/* largest possible evaluation, in centi-pawns */
+const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
+const EV evMateMin = evMate - plyMax;
+const EV evTempo = 33;	/* evaluation of a single move advantage */
+const EV evDraw = 0;	/* evaluation of a draw */
+const EV evAbort = evInf + 1;
+
+inline EV EvMate(int ply)
+{
+	return evMate - ply;
+}
+
+inline bool FEvIsMate(EV ev)
+{
+	return ev >= evMateMin;
+}
+
+inline bool FEvIsAbort(EV ev)
+{
+	return ev == evAbort;
+}
+
+inline int PlyFromEvMate(EV ev)
+{
+	return evMate - ev;
+}
+
+
+/*
+ *
  *	EMV structure
  *
  *	Just a little holder of move evaluation information which is used for
  *	generating AI move lists and alpha-beta pruning. We generate moves into
- *	this sized element to speed up search.
+ *	this sized element (instead of just a simple move list) to speed up search.
  *
  */
 
@@ -842,11 +880,6 @@ inline int RankToEpFromCpc(CPC cpc)
 
 typedef uint64_t HABD;
 
-inline HABD HabdFromDist(mt19937& rgen, uniform_int_distribution<uint32_t>& grfDist)
-{
-	return ((uint64_t)grfDist(rgen) << 32) | (uint64_t)grfDist(rgen);
-}
-
 
 /*
  *
@@ -874,9 +907,10 @@ private:
 public:
 
 	GENHABD(void);
+	HABD HabdRandom(mt19937_64& rgen);
 	HABD HabdFromBd(const BD& bd) const;
 
-
+	
 	/*	HABD::TogglePiece
 	 *
 	 *	Toggles the square/ipc in the hash at the given square.
