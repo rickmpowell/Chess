@@ -884,7 +884,7 @@ public:
         for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
             PL* ppl = app.pga->PplFromCpc(cpc);
             if (ppl->FHasLevel())
-                ppl->SetLevel(7);
+                ppl->SetLevel(8);
             ppl->SetFecoRandom(0);
         }
         app.pga->NewGame(new RULE, SPMV::Hidden);

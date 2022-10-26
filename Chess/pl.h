@@ -80,6 +80,57 @@ public:
 	void SetDepthLog(int depthNew);
 };
 
+/*
+ *
+ *	GEMVS class
+ *
+ *	A move list class that has smart enumeration used in alpha-beta search.
+ *	Variants for the various types of enumerations we have to do, including
+ *	regular pre-sorted evals and unsorted quiescent enumerations.
+ *
+ */
+
+
+class GEMVS : public GEMV
+{
+public:
+	BDG& bdg;
+	int iemv;
+	int cmvLegal;
+
+public:
+	inline GEMVS(BDG& bdg) noexcept : GEMV(), bdg(bdg), iemv(0), cmvLegal(0)
+	{
+		bdg.GenGemv(*this, GG::Pseudo);
+	}
+
+
+	/*	GSEMV::FMakeMvNext
+	 *
+	 *	Finds the next move in the move list, returning false if there is no such
+	 *	move. The move is returned in pemv. The move is actually made on the board
+	 *	and illegal moves are checked for
+	 */
+	inline bool FMakeMvNext(EMV*& pemv) noexcept
+	{
+		while (iemv < cemv()) {
+			pemv = &(*this)[iemv++];
+			bdg.MakeMv(pemv->mv);
+			if (!bdg.FInCheck(~bdg.cpcToMove)) {
+				cmvLegal++;
+				return true;
+			}
+			bdg.UndoMv();
+		}
+		return false;
+	}
+
+	inline void UndoMv(void) noexcept
+	{
+		bdg.UndoMv();
+	}
+};
+
 
 /*
  *
@@ -93,6 +144,8 @@ public:
 
 class PLAI : public PL
 {
+	friend class GEMVSS;
+
 protected:
 	/* piece value tables */
 	EV mpapcsqevOpening[APC::ActMax][sqMax];
@@ -124,12 +177,10 @@ public:
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 
 protected:
-	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept;
-	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, EV evAlpha, EV evBeta) noexcept; 
-	void PreSortGemv(BDG& bdg, GEMV& gemv) noexcept;
-	void FillGemv(BDG& bdg, GEMV& gemv) noexcept;
-	inline bool FAlphaBetaPrune(EMV& emv, EV& evBest, EV& evAlpha, EV evBeta, const EMV*& pemvBest, int& plyLim) const noexcept;
-	inline void CheckForMates(BDG& bdg, EV& evBest, int cmvLegal, int ply) const noexcept;
+	EV EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV evBeta) noexcept; 
+	inline bool FAlphaBetaPrune(EMV* pemv, EV& evBest, EV& evAlpha, EV evBeta, const EMV*& pemvBest, int& plyLim) const noexcept;
+	inline void CheckForMates(BDG& bdg, GEMVS& gemvs, EV& evBest, int ply) const noexcept;
 
 	void PumpMsg(void) noexcept;
 
