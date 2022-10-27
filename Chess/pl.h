@@ -33,6 +33,7 @@ protected:
 
 	MV mvNext;
 	SPMV spmvNext;
+	bool fDisableMvLog;
 
 public:
 	PL(GA& ga, wstring szName);
@@ -78,6 +79,16 @@ public:
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
 	int DepthLog(void) const;
 	void SetDepthLog(int depthNew);
+	
+	void DisableMvLog(bool fDisableMvLogNew)
+	{
+		fDisableMvLog = fDisableMvLogNew;
+	}
+
+	inline bool FDisabledMvLog(void) const
+	{
+		return fDisableMvLog;
+	}
 };
 
 /*
@@ -95,11 +106,11 @@ class GEMVS : public GEMV
 {
 public:
 	BDG& bdg;
-	int iemv;
+	int iemvNext;
 	int cmvLegal;
 
 public:
-	inline GEMVS(BDG& bdg) noexcept : GEMV(), bdg(bdg), iemv(0), cmvLegal(0)
+	GEMVS(BDG& bdg) noexcept : GEMV(), bdg(bdg), iemvNext(0), cmvLegal(0)
 	{
 		bdg.GenGemv(*this, GG::Pseudo);
 	}
@@ -111,10 +122,10 @@ public:
 	 *	move. The move is returned in pemv. The move is actually made on the board
 	 *	and illegal moves are checked for
 	 */
-	inline bool FMakeMvNext(EMV*& pemv) noexcept
+	bool FMakeMvNext(EMV*& pemv) noexcept
 	{
-		while (iemv < cemv()) {
-			pemv = &(*this)[iemv++];
+		while (iemvNext < cemv()) {
+			pemv = &(*this)[iemvNext++];
 			bdg.MakeMv(pemv->mv);
 			if (!bdg.FInCheck(~bdg.cpcToMove)) {
 				cmvLegal++;
@@ -173,6 +184,7 @@ public:
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
 	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
+
 
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 

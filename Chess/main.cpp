@@ -881,39 +881,52 @@ public:
     virtual int Execute(void)
     {
         /* create standard players with depth and initialize the game */
+
         for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
             PL* ppl = app.pga->PplFromCpc(cpc);
             if (ppl->FHasLevel())
                 ppl->SetLevel(8);
             ppl->SetFecoRandom(0);
+            ppl->DisableMvLog(true);
         }
-        app.pga->NewGame(new RULE, SPMV::Hidden);
+
+        /* start a new untimed game */
+
+        app.pga->NewGame(new RULE, SPMV::Fast);
+        app.pga->prule->SetTmGame(0);
+        app.pga->uiml.ShowClocks(false);
+        app.pga->Layout();
 
         app.pga->ClearLog();
         app.pga->XLogOpen(L"AI Speed Test", L"");
-        time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
-
         int depthSav = app.pga->DepthLog();
         app.pga->SetDepthLog(2);
 
+        time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
+
         for (int imv = 0; imv < 10; imv++) {
-            SPMV spmv = SPMV::Hidden;
+            SPMV spmv = SPMV::Fast;
             MV mv = app.pga->PplToMove()->MvGetNext(spmv);
             if (mv.fIsNil())
                 break;
-            app.pga->MakeMv(mv, spmv);
+            app.pga->MakeMv(mv, SPMV::Fast);
         }
 
-        app.pga->SetDepthLog(depthSav);
-
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
+
         duration dtp = tpEnd - tpStart;
         microseconds us = duration_cast<microseconds>(dtp);
         float sp = (float)us.count() / 1000.0f;
-    
+
+        app.pga->SetDepthLog(depthSav);
         app.pga->XLogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         app.pga->XLogClose(L"AI Speed Test", L"", LGF::Normal);
-    
+
+        for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
+            PL* ppl = app.pga->PplFromCpc(cpc);
+           ppl->DisableMvLog(false);
+        }
+
         return 1;
     }
 };

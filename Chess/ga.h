@@ -113,6 +113,7 @@ public:
 	UI* puiFocus;	/* keyboard focus */
 	UI* puiHover;	/* current hover UI */
 	map<TID, UI*> mptidpui;	/* windows timer id to UI mapping */
+	SPMV spmvShow;	/* play speed */
 
 	bool fInPlay;
 

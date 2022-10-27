@@ -526,7 +526,7 @@ void BD::RemoveInCheckMoves(GEMV& gemv, CPC cpcMove)
  */
 bool BD::FMvIsQuiescent(MV mv) const noexcept
 {
-	return !mv.fIsCapture();
+	return !mv.fIsCapture() && mv.apcPromote() == APC::Null;
 }
 
 
@@ -539,12 +539,12 @@ bool BD::FInCheck(CPC cpc) const noexcept
 	BB bbKing = mppcbb[PC(cpc, APC::King)].sqLow();
 
 	CPC cpcBy = ~cpc;
-	if (BbKnightAttacked(mppcbb[PC(cpcBy, APC::Knight)], cpcBy) & bbKing)
-		return true;
 	BB bbQueen = mppcbb[PC(cpcBy, APC::Queen)];
 	if (FBbAttackedByBishop(mppcbb[PC(cpcBy, APC::Bishop)] | bbQueen, bbKing, cpcBy))
 		return true;
 	if (FBbAttackedByRook(mppcbb[PC(cpcBy, APC::Rook)] | bbQueen, bbKing, cpcBy))
+		return true;
+	if (BbKnightAttacked(mppcbb[PC(cpcBy, APC::Knight)], cpcBy) & bbKing)
 		return true;
 	if (BbPawnAttacked(mppcbb[PC(cpcBy, APC::Pawn)], cpcBy) & bbKing)
 		return true;

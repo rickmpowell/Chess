@@ -24,7 +24,7 @@ XT xt;	/* transposition table is big, so we share it with all AIs */
 
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
-		mvNext(MV()), spmvNext(SPMV::Animate)
+		mvNext(MV()), spmvNext(SPMV::Animate), fDisableMvLog(false)
 {
 }
 
@@ -261,7 +261,7 @@ void PLAI::EndMoveLog(void)
 
 /*
  *
- *	LOGOPENMVEV
+ *	LOGOPENEMV
  * 
  *	Little open/close log wrapper. Saves a bunch of state so we can automatically
  *	close the log using the destructor without explicitly calling it.
@@ -269,7 +269,7 @@ void PLAI::EndMoveLog(void)
  */
 
 
-class LOGOPENMVEV
+class LOGOPENEMV
 {
 	PL& pl;
 	const BDG& bdg;
@@ -284,16 +284,18 @@ class LOGOPENMVEV
 	static MV rgmv[8];
 
 public:
-	inline LOGOPENMVEV(PL& pl, const BDG& bdg, const EMV* pemv, 
+	inline LOGOPENEMV(PL& pl, const BDG& bdg, const EMV* pemv, 
 			const EV& evBest, EV evAlpha, EV evBeta, int ply, wchar_t chType=L' ') : 
 		pl(pl), bdg(bdg), pemv(pemv), evBest(evBest), szData(L""), lgf(LGF::Normal)
 	{
+		if (pl.FDisabledMvLog())
+			return;
 		depthLogSav = DepthLog();
 		imvExpandSav = imvExpand;
 		if (FExpandLog(pemv))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(pemv->mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(-pemv->ev) + 
+				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(pemv->ev) + 
 					L" [" + SzFromEv(evAlpha) + L", " + SzFromEv(evBeta) + L"] ");
 	}
 
@@ -303,12 +305,12 @@ public:
 		lgf = lgfNew;
 	}
 
-	inline ~LOGOPENMVEV()
+	inline ~LOGOPENEMV()
 	{
+		if (pl.FDisabledMvLog())
+			return;
 		LogClose(bdg.SzDecodeMvPost(pemv->mv), 
-				 szData.size() > 0 ? 
-					szData : 
-					SzFromEv(-evBest),	// negate this because the opening mvev.ev is relative to caller 
+				 szData.size() > 0 ? szData : SzFromEv(-evBest),	 
 				 lgf);
 		SetDepthLog(depthLogSav);
 		imvExpand = imvExpandSav;
@@ -347,8 +349,8 @@ public:
 
 /* a little debugging aid to trigger a change in log depth after a 
    specific sequence of moves */
-int LOGOPENMVEV::imvExpand = 0;
-MV LOGOPENMVEV::rgmv[] = { /*
+int LOGOPENEMV::imvExpand = 0;
+MV LOGOPENEMV::rgmv[] = { /*
 	   MV(sqD2, sqD4, pcWhitePawn),
 	   MV(sqD7, sqD6, pcBlackPawn),
 	   MV(sqC1, sqG5, pcWhiteBishop),
@@ -360,7 +362,9 @@ MV LOGOPENMVEV::rgmv[] = { /*
 
 /*
  *
- *	Move list enumerators for alpha-beta sorted moves and quiescent searches
+ *	GEMVSS class
+ *
+ *	Alpha-beta sorted movelist enumerator
  * 
  */
 
@@ -368,34 +372,58 @@ MV LOGOPENMVEV::rgmv[] = { /*
 class GEMVSS : public GEMVS
 {
 public:
-	inline GEMVSS(BDG& bdg, PLAI* pplai) noexcept : GEMVS(bdg)
+	GEMVSS(BDG& bdg, PLAI* pplai) noexcept : GEMVS(bdg)
 	{
-		PreSort(pplai);
-	}
-
-	void PreSort(PLAI* pplai) noexcept
-	{
-		/* we negate the evaluation so we can use the default sort, which sorts in
-		   increasing order, and alpha-beta wants descending; this is safe to do because
-		   the ev is not used for anything after the pre-sort. Just be careful! */
+		/* pre-evaluate all the moves */
 		for (EMV& emv : *this) {
-			bdg.MakeMvSq(emv.mv);	// do move without keeping move history
-			XEV* pxev = xt.Find(bdg, 0);
+			bdg.MakeMvSq(emv.mv);	
+			XEV* pxev = xt.Find(bdg, 0);	/* use transposition table if available */
 			if (pxev != nullptr && pxev->evt() == EVT::Equal)
-				emv.ev = pxev->ev();
+				emv.ev = -pxev->ev();
 			else
-				emv.ev = pplai->EvBdgStatic(bdg, emv.mv, false);
+				emv.ev = -pplai->EvBdgStatic(bdg, emv.mv, false);
 			bdg.UndoMvSq(emv.mv);
 		}
-		sort(begin(), end());
+	}
+
+	bool FMakeMvNext(EMV*& pemv) noexcept
+	{
+		while (iemvNext < cemv()) {
+			pemv = &(*this)[iemvNext++];
+
+			/* swap the best move into the next emv to return */
+			EMV* pemvBest = pemv;
+			for (int iemvBest = iemvNext; iemvBest < cemv(); iemvBest++)
+				if ((*this)[iemvBest].ev > pemvBest->ev)
+					pemvBest = &(*this)[iemvBest];
+			swap(*pemv, *pemvBest);
+
+			/* make sure move is legal */
+			bdg.MakeMv(pemv->mv);
+			if (!bdg.FInCheck(~bdg.cpcToMove)) {
+				cmvLegal++;
+				return true;
+			}
+			bdg.UndoMv();
+		}
+		return false;
 	}
 };
+
+
+/*
+ *
+ *	GEMVSQ
+ *
+ *	Quiescent move list enumerator
+ *
+ */
 
 
 class GEMVSQ : public GEMVS
 {
 public:
-	inline GEMVSQ(BDG& bdg) noexcept : GEMVS(bdg)
+	GEMVSQ(BDG& bdg) noexcept : GEMVS(bdg)
 	{
 	}
 
@@ -513,7 +541,7 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlp
 	EV evBest = -evInf;
 
 	cemvNode++;
-	LOGOPENMVEV logopenmvev(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L' ');
+	LOGOPENEMV logopenemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L' ');
 	PumpMsg();
 
 	GEMVSS gemvss(bdg, this);
@@ -541,7 +569,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV e
 	const EMV* pemvBest = nullptr;
 	EV evBest = -evInf;
 
-	LOGOPENMVEV logopenmvev(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L'Q');
+	LOGOPENEMV logopenemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L'Q');
 	PumpMsg();
 
 	int plyLim = plyMax;
@@ -685,20 +713,22 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 
 	if (fFull) {
 		cemvEval++;
-		LogData(bdg.cpcToMove == CPC::White ? L"White" : L"Black");
-		if (fecoMaterial)
-			LogData(L"Material " + SzFromEv(evMaterial));
-		if (fecoMobility)
-			LogData(L"Mobility " + to_wstring(gemvPrev.cemv()) + L" - " + to_wstring(gemvSelf.cemv()));
-		if (fecoKingSafety)
-			LogData(L"King Safety " + to_wstring(evKingToMove) + L" - " + to_wstring(evKingDef));
-		if (fecoPawnStructure)
-			LogData(L"Pawn Structure " + to_wstring(evPawnToMove) + L" - " + to_wstring(evPawnDef));
-		if (fecoTempo)
-			LogData(L"Tempo " + SzFromEv(evTempo));
-		if (fecoRandom)
-			LogData(L"Random " + SzFromEv(evRandom/100));
-		LogData(L"Total " + SzFromEv(ev));
+		if (!fDisableMvLog) {
+			LogData(bdg.cpcToMove == CPC::White ? L"White" : L"Black");
+			if (fecoMaterial)
+				LogData(L"Material " + SzFromEv(evMaterial));
+			if (fecoMobility)
+				LogData(L"Mobility " + to_wstring(gemvPrev.cemv()) + L" - " + to_wstring(gemvSelf.cemv()));
+			if (fecoKingSafety)
+				LogData(L"King Safety " + to_wstring(evKingToMove) + L" - " + to_wstring(evKingDef));
+			if (fecoPawnStructure)
+				LogData(L"Pawn Structure " + to_wstring(evPawnToMove) + L" - " + to_wstring(evPawnDef));
+			if (fecoTempo)
+				LogData(L"Tempo " + SzFromEv(evTempo));
+			if (fecoRandom)
+				LogData(L"Random " + SzFromEv(evRandom / 100));
+			LogData(L"Total " + SzFromEv(ev));
+		}
 	}
 
 	return ev;
