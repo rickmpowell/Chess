@@ -286,7 +286,8 @@ class LOGOPENEMV
 public:
 	inline LOGOPENEMV(PL& pl, const BDG& bdg, const EMV* pemv, 
 			const EV& evBest, EV evAlpha, EV evBeta, int ply, wchar_t chType=L' ') : 
-		pl(pl), bdg(bdg), pemv(pemv), evBest(evBest), szData(L""), lgf(LGF::Normal)
+		pl(pl), bdg(bdg), pemv(pemv), evBest(evBest), depthLogSav(0), imvExpandSav(0), 
+		szData(L""), lgf(LGF::Normal)
 	{
 		if (pl.FDisabledMvLog())
 			return;
@@ -362,53 +363,107 @@ MV LOGOPENEMV::rgmv[] = { /*
 
 /*
  *
- *	GEMVSS class
- *
- *	Alpha-beta sorted movelist enumerator
+ *	GEMVS class
+ * 
+ *	Move enumeration base class.
  * 
  */
 
 
-class GEMVSS : public GEMVS
+GEMVS::GEMVS(BDG& bdg) noexcept : GEMV(), iemvNext(0), cmvLegal(0)
 {
-public:
-	GEMVSS(BDG& bdg, PLAI* pplai) noexcept : GEMVS(bdg)
-	{
-		/* pre-evaluate all the moves */
-		for (EMV& emv : *this) {
-			bdg.MakeMvSq(emv.mv);	
-			XEV* pxev = xt.Find(bdg, 0);	/* use transposition table if available */
-			if (pxev != nullptr && pxev->evt() == EVT::Equal)
-				emv.ev = -pxev->ev();
-			else
-				emv.ev = -pplai->EvBdgStatic(bdg, emv.mv, false);
-			bdg.UndoMvSq(emv.mv);
+	bdg.GenGemv(*this, GG::Pseudo);
+}
+
+
+/*	GSEMV::FMakeMvNext
+ *
+ *	Finds the next move in the move list, returning false if there is no such
+ *	move. The move is returned in pemv. The move is actually made on the board
+ *	and illegal moves are checked for
+ */
+bool GEMVS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
+{
+	while (iemvNext < cemv()) {
+		pemv = &(*this)[iemvNext++];
+		bdg.MakeMv(pemv->mv);
+		if (!bdg.FInCheck(~bdg.cpcToMove)) {
+			cmvLegal++;
+			return true;
 		}
+		bdg.UndoMv();
 	}
+	return false;
+}
 
-	bool FMakeMvNext(EMV*& pemv) noexcept
-	{
-		while (iemvNext < cemv()) {
-			pemv = &(*this)[iemvNext++];
+void GEMVS::UndoMv(BDG& bdg) noexcept
+{
+	bdg.UndoMv();
+}
 
-			/* swap the best move into the next emv to return */
-			EMV* pemvBest = pemv;
-			for (int iemvBest = iemvNext; iemvBest < cemv(); iemvBest++)
-				if ((*this)[iemvBest].ev > pemvBest->ev)
-					pemvBest = &(*this)[iemvBest];
-			swap(*pemv, *pemvBest);
 
-			/* make sure move is legal */
-			bdg.MakeMv(pemv->mv);
-			if (!bdg.FInCheck(~bdg.cpcToMove)) {
-				cmvLegal++;
-				return true;
-			}
-			bdg.UndoMv();
+/*
+ *
+ *	GEMVSS class
+ *
+ *	Alpha-beta sorted movelist enumerator. These moves are pre-evaluated in order
+ *	to improve alpha-beta pruning behavior. This is our most used enumerator.
+ * 
+ */
+
+
+GEMVSS::GEMVSS(BDG& bdg, PLAI* pplai) noexcept : GEMVS(bdg)
+{
+	/* pre-evaluate all the moves */
+
+	for (EMV& emv : *this) {
+		bdg.MakeMvSq(emv.mv);	
+		XEV* pxev = xt.Find(bdg, 0);	/* use transposition table if available */
+		if (pxev != nullptr && pxev->evt() == EVT::Equal)
+			emv.ev = -pxev->ev();
+		else
+			emv.ev = -pplai->EvBdgStatic(bdg, emv.mv, false);
+		bdg.UndoMvSq(emv.mv);
+	}
+}
+
+
+/*	GEMVSS::FMakeMvNext
+ *
+ *	Gets the next legal move, sorted by evaluation. Return false if we're done. 
+ *	Keeps track of count of legal moves we've enumerated. The move will be made 
+ *	on the board when it is returned.
+ * 
+ *	We do not actually pre-sort the array, but do a quick scan to find the best
+ *	move and swap it into position as we go. This is a good optimization if
+ *	we get an early prune because we avoid a full O(n*log(n)) sort and only pay
+ *	for the O(n) scan. The worst case this degenerates into O(n^2), but n is 
+ *	relatively small, so maybe not a big deal.
+ */
+bool GEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
+{
+	while (iemvNext < cemv()) {
+		pemv = &(*this)[iemvNext++];
+
+		/* swap the best move into the next emv to return */
+
+		EMV* pemvBest = pemv;
+		for (int iemvBest = iemvNext; iemvBest < cemv(); iemvBest++)
+			if ((*this)[iemvBest].ev > pemvBest->ev)
+				pemvBest = &(*this)[iemvBest];
+		swap(*pemv, *pemvBest);
+
+		/* make sure move is legal */
+
+		bdg.MakeMv(pemv->mv);
+		if (!bdg.FInCheck(~bdg.cpcToMove)) {
+			cmvLegal++;
+			return true;
 		}
-		return false;
+		bdg.UndoMv();
 	}
-};
+	return false;
+}
 
 
 /*
@@ -420,23 +475,19 @@ public:
  */
 
 
-class GEMVSQ : public GEMVS
+GEMVSQ::GEMVSQ(BDG& bdg) noexcept : GEMVS(bdg)
 {
-public:
-	GEMVSQ(BDG& bdg) noexcept : GEMVS(bdg)
-	{
-	}
+}
 
-	bool FMakeMvNext(EMV*& pemv) noexcept
-	{
-		while (GEMVS::FMakeMvNext(pemv)) {
-			if (!bdg.FMvIsQuiescent(pemv->mv))
-				return true;
-			bdg.UndoMv();
-		}
-		return false;
+bool GEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
+{
+	while (GEMVS::FMakeMvNext(bdg, pemv)) {
+		if (!bdg.FMvIsQuiescent(pemv->mv))
+			return true;
+		bdg.UndoMv();
 	}
-};
+	return false;
+}
 
 
 /*	PLAI::FAlphaBetaPrune
@@ -485,8 +536,10 @@ void PLAI::CheckForMates(BDG& bdg, GEMVS& gemvs, EV& evBest, int ply) const noex
 
 /*	PLAI::MvGetNext
  *
- *	Returns the next move for the player. Returns information for how the board 
- *	should display the move in spmv. 
+ *	Returns the next move for the player. 
+ *
+ *	Returns information in spmv for how the board should be display the move,
+ *	but this isn't used in AI players. 
  */
 MV PLAI::MvGetNext(SPMV& spmv)
 {
@@ -509,9 +562,9 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	EV evBest = -evInf;
 	const EMV* pemvBest = nullptr;
 
-	for (EMV* pemv; gemvss.FMakeMvNext(pemv); ) {
+	for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgDepth(bdg, pemv, 1, plyLim, -evBeta, -evAlpha);
-		gemvss.UndoMv();
+		gemvss.UndoMv(bdg);
 		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim))
 			break;
 	}
@@ -524,13 +577,14 @@ MV PLAI::MvGetNext(SPMV& spmv)
 /*	PLAI::EvBdgDepth
  *
  *	Evaluates the board/move from the point of view of the person who has the move,
- *	Evaluates to the target depth depthMax; depth is current. Uses alpha-beta pruning.
+ *	Evaluates to the target depth plyMax; ply is current. Uses alpha-beta pruning.
  * 
- *	On entry emvPrev has the last move made. It will also contain pseudo-legal 
- *	moves for the next player to move (i.e., some moves may leave king in check).
+ *	The board will be modified, but it will be restored to its original state in 
+ *	all cases.
  * 
- *	Returns board evaluation in centi-pawns from the point of view of the side with
- *	the move.
+ *	On entry pemvPrev has the last move made.
+ * 
+ *	Returns board evaluation in centi-pawns.
  */
 EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept
 {
@@ -545,9 +599,9 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlp
 	PumpMsg();
 
 	GEMVSS gemvss(bdg, this);
-	for (EMV* pemv; gemvss.FMakeMvNext(pemv); ) {
+	for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgDepth(bdg, pemv, ply + 1, plyLim, -evBeta, -evAlpha);
-		gemvss.UndoMv();
+		gemvss.UndoMv(bdg);
 		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim))
 			return evBest;
 	}
@@ -559,8 +613,9 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlp
 
 /*	PLAI::EvBdgQuiescent
  *
- *	Returns the evaluation after the given board/last move from the point of view of the
- *	player next to move. Alpha-beta prunes. 
+ *	Returns the quiet evaluation after the given board/last move from the point of view 
+ *	of the player next to move, i.e., it only considers captures and other "noisy" moves.
+ *	Alpha-beta prunes. 
  */
 EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV evBeta) noexcept
 {
@@ -593,9 +648,9 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV e
 	/* recursively evaluate more moves */
 
 	GEMVSQ gemvsq(bdg);
-	for (EMV* pemv; gemvsq.FMakeMvNext(pemv); ) {
+	for (EMV* pemv; gemvsq.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgQuiescent(bdg, pemv, ply + 1, -evBeta, -evAlpha);
-		gemvsq.UndoMv();
+		gemvsq.UndoMv(bdg);
 		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim))
 			return evBest;
 	}
@@ -618,9 +673,13 @@ void PLAI::PumpMsg(void) noexcept
 }
 
 
-EV PLAI::EvTempo(const BDG& bdg, CPC cpc) const noexcept
+EV PLAI::EvTempo(const BDG& bdg) const noexcept
 {
-	return cpc == bdg.cpcToMove ? evTempo : -evTempo;
+	if (FInOpening(bdg.GphCur()))
+		return evTempo;
+	if (bdg.GphCur() < GPH::MidMid)
+		return evTempo/2;
+	return 0;
 }
 
 
@@ -699,7 +758,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 			evPawnStructure = evPawnToMove - evPawnDef;
 		}
 		if (fecoTempo)
-			evTempo = EvTempo(bdg, bdg.cpcToMove);
+			evTempo = EvTempo(bdg);
 	}
 	
 	cemvEval++;
@@ -739,18 +798,49 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
  *
  *	Interpolate the piece value evvaluation based on game phase
  */
-EV PLAI::EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept
+EV PLAI::EvInterpolate(GPH gph, EV ev1, GPH gphFirst, EV ev2, GPH gphLim) const noexcept
 {
-	/* careful - phases are a decreasing function */
-	assert(gph1 > gph2);
-	assert(gph >= gph2);
-	assert(gph <= gph1);
-	int dphase = static_cast<int>(gph1) - static_cast<int>(gph2);
-	return (ev1 * (static_cast<int>(gph) - static_cast<int>(gph2)) +
-			ev2 * (static_cast<int>(gph1) - static_cast<int>(gph)) +
-			dphase / 2) / dphase;
+	assert(gphFirst < gphLim);
+	assert(in_range(gph, gphFirst, gphLim));
+	return (ev1 * ((int)gphLim - (int)gph) + ev2 * ((int)gph - (int)gphFirst)) / 
+		((int)gphLim - (int)gphFirst);
 }
 
+
+/*	PLAI::ComputeMpcpev1
+ *
+ *	Scans the board looking for pieces, looks them up in the piece/square valuation table,
+ *	and keeps a running sum of the square/piece values for each side. Stores the result
+ *	in mpcpcev.
+ */
+void PLAI::ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[APC::ActMax][sqMax]) const noexcept
+{
+	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
+		for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow())
+			mpcpcev[CPC::White] += mpapcsqev[apc][bb.sqLow().sqFlip()];
+		for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow())
+			mpcpcev[CPC::Black] += mpapcsqev[apc][bb.sqLow()];
+	}
+}
+
+
+void PLAI::ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[], 
+						const EV mpapcsqev1[APC::ActMax][sqMax], 
+						const EV mpapcsqev2[APC::ActMax][sqMax]) const noexcept
+{
+	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
+		for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow()) {
+			SQ sq = bb.sqLow().sqFlip();
+			mpcpcev1[CPC::White] += mpapcsqev1[apc][sq];
+			mpcpcev2[CPC::White] += mpapcsqev2[apc][sq];
+		}
+		for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow()) {
+			SQ sq = bb.sqLow();
+			mpcpcev1[CPC::Black] += mpapcsqev1[apc][sq];
+			mpcpcev2[CPC::Black] += mpapcsqev2[apc][sq];
+		}
+	}
+}
 
 
 /*	PLAI:EvFromPst
@@ -762,87 +852,32 @@ EV PLAI::EvFromPst(const BDG& bdg) const noexcept
 {
 	EV mpcpcev1[2] = { 0, 0 };
 	EV mpcpcev2[2] = { 0, 0 };
-	GPH gph = min(bdg.GphCur(), GPH::Max);
+	GPH gph = min(bdg.GphCur(), GPH::Max);	// can exceed Max with promotions
 
 	/* opening */
 
-	if (gph > GPH::Opening) {
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-			for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow()) {
-				SQ sq = bb.sqLow().sqFlip();
-				mpcpcev1[CPC::White] += mpapcsqevOpening[apc][sq];
-			}
-		}
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-			for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow()) {
-				SQ sq = bb.sqLow();
-				mpcpcev1[CPC::Black] += mpapcsqevOpening[apc][sq];
-			}
-		}
+	if (FInOpening(gph)) {
+		ComputeMpcpcev1(bdg, mpcpcev1, mpapcsqevOpening);
 		return mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove];
 	}
 
-	/* opening to mid-game */
-
-	if (gph > GPH::MidGame) {
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-			for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow()) {
-				SQ sq = bb.sqLow().sqFlip();
-				mpcpcev1[CPC::White] += mpapcsqevOpening[apc][sq];
-				mpcpcev2[CPC::White] += mpapcsqevMiddleGame[apc][sq];
-			}
-		}
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-			for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow()) {
-				SQ sq = bb.sqLow();
-				mpcpcev1[CPC::Black] += mpapcsqevOpening[apc][sq];
-				mpcpcev2[CPC::Black] += mpapcsqevMiddleGame[apc][sq];
-			}
-		}
-		return EvInterpolate(gph,
-							 mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], GPH::Opening,
-							 mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], GPH::MidGame);
+	if (FInEndGame(gph)) {
+		ComputeMpcpcev1(bdg, mpcpcev1, mpapcsqevEndGame);
+		return mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove];
 	}
 
-	/* mid-to-end game */
-
-	if (gph > GPH::EndGame) {
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-			for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow()) {
-				SQ sq = bb.sqLow().sqFlip();
-				mpcpcev1[CPC::White] += mpapcsqevMiddleGame[apc][sq];
-				mpcpcev2[CPC::White] += mpapcsqevEndGame[apc][sq];
-			}
-		}
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-			for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow()) {
-				SQ sq = bb.sqLow();
-				mpcpcev1[CPC::Black] += mpapcsqevMiddleGame[apc][sq];
-				mpcpcev2[CPC::Black] += mpapcsqevEndGame[apc][sq];
-			}
-		}
-		return EvInterpolate(gph,
-							 mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], GPH::MidGame,
-							 mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], GPH::EndGame);
+	if (gph <= GPH::MidMid) {
+		ComputeMpcpcev2(bdg, mpcpcev1, mpcpcev2, mpapcsqevOpening, mpapcsqevMiddleGame);
+		return EvInterpolate(gph, mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], GPH::MidMin,
+							 mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], GPH::MidMid);
+	}
+	else {
+		ComputeMpcpcev2(bdg, mpcpcev1, mpcpcev2, mpapcsqevMiddleGame, mpapcsqevEndGame);
+		return EvInterpolate(gph, mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], GPH::MidMid,
+								mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], GPH::MidMax);
 	}
 
-	/* end game */
-
-	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow()) {
-			SQ sq = bb.sqLow().sqFlip();
-			mpcpcev1[CPC::White] += mpapcsqevEndGame[apc][sq];
-		}
-	}
-	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow()) {
-			SQ sq = bb.sqLow();
-			mpcpcev1[CPC::Black] += mpapcsqevEndGame[apc][sq];
-		}
-	}
-	return mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove];
 }
-
 
 
 /*	PLAI::EvFromGphApcSq
@@ -853,12 +888,11 @@ EV PLAI::EvFromPst(const BDG& bdg) const noexcept
  */
 EV PLAI::EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept
 {
-	if (gph <= GPH::EndGame)
+	if (FInEndGame(gph))
 		return mpapcsqevEndGame[apc][sq];
-	else if (gph <= GPH::MidGame)
-		return mpapcsqevMiddleGame[apc][sq];
-	else
+	if (FInOpening(gph))
 		return mpapcsqevOpening[apc][sq];
+	return mpapcsqevMiddleGame[apc][sq];
 }
 
 

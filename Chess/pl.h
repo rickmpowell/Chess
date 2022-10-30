@@ -38,39 +38,16 @@ protected:
 public:
 	PL(GA& ga, wstring szName);
 	virtual ~PL(void);
-
-	wstring& SzName(void) 
-	{
-		return szName;
-	}
-
-	void SetName(const wstring& szNew) 
-	{
-		szName = szNew;
-	}
+	wstring& SzName(void) { return szName; }
+	void SetName(const wstring& szNew) { szName = szNew; }
 
 	virtual MV MvGetNext(SPMV& spmv) = 0;
-	
-	virtual bool FHasLevel(void) const noexcept
-	{
-		return false;
-	}
-
-	virtual int Level(void) const noexcept
-	{
-		return level;
-	}
-
-	virtual void SetLevel(int level) noexcept
-	{
-		this->level = level;
-	}
-
-	virtual void SetFecoRandom(uint16_t) noexcept
-	{
-	}
-
 	void ReceiveMv(MV mv, SPMV spmv);
+
+	virtual bool FHasLevel(void) const noexcept { return false; }
+	virtual int Level(void) const noexcept { return level; }
+	virtual void SetLevel(int level) noexcept { this->level = level; }
+	virtual void SetFecoRandom(uint16_t) noexcept { }
 
 	virtual EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	virtual EV EvBaseApc(APC apc) const noexcept;
@@ -79,17 +56,10 @@ public:
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
 	int DepthLog(void) const;
 	void SetDepthLog(int depthNew);
-	
-	void DisableMvLog(bool fDisableMvLogNew)
-	{
-		fDisableMvLog = fDisableMvLogNew;
-	}
-
-	inline bool FDisabledMvLog(void) const
-	{
-		return fDisableMvLog;
-	}
+	void DisableMvLog(bool fDisableMvLogNew) { fDisableMvLog = fDisableMvLogNew; }
+	inline bool FDisabledMvLog(void) const { return fDisableMvLog; }
 };
+
 
 /*
  *
@@ -99,47 +69,57 @@ public:
  *	Variants for the various types of enumerations we have to do, including
  *	regular pre-sorted evals and unsorted quiescent enumerations.
  *
+ *	Note that we do not use polymorphism in these classes. We only use them
+ *	in a known context.
+ *
  */
 
 
 class GEMVS : public GEMV
 {
 public:
-	BDG& bdg;
 	int iemvNext;
 	int cmvLegal;
 
 public:
-	GEMVS(BDG& bdg) noexcept : GEMV(), bdg(bdg), iemvNext(0), cmvLegal(0)
-	{
-		bdg.GenGemv(*this, GG::Pseudo);
-	}
+	inline GEMVS(BDG& bdg) noexcept;
+	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
+	inline void UndoMv(BDG& bdg) noexcept;
+};
 
 
-	/*	GSEMV::FMakeMvNext
-	 *
-	 *	Finds the next move in the move list, returning false if there is no such
-	 *	move. The move is returned in pemv. The move is actually made on the board
-	 *	and illegal moves are checked for
-	 */
-	bool FMakeMvNext(EMV*& pemv) noexcept
-	{
-		while (iemvNext < cemv()) {
-			pemv = &(*this)[iemvNext++];
-			bdg.MakeMv(pemv->mv);
-			if (!bdg.FInCheck(~bdg.cpcToMove)) {
-				cmvLegal++;
-				return true;
-			}
-			bdg.UndoMv();
-		}
-		return false;
-	}
+/*
+ *
+ *	GEMVSS
+ *
+ *	Sorted move enumerator, used for optimizing alpha-beta search orer.
+ *
+ */
 
-	inline void UndoMv(void) noexcept
-	{
-		bdg.UndoMv();
-	}
+
+class PLAI;
+class GEMVSS : public GEMVS
+{
+public:
+	GEMVSS(BDG& bdg, PLAI* pplai) noexcept;
+	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
+};
+
+
+/*
+ *
+ *	GEMVSQ enumeration
+ *
+ *	Enumerates noisy moves
+ *
+ */
+
+
+class GEMVSQ : public GEMVS
+{
+public:
+	GEMVSQ(BDG& bdg) noexcept;
+	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 };
 
 
@@ -185,7 +165,6 @@ public:
 	virtual void SetLevel(int level) noexcept;
 	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
 
-
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 
 protected:
@@ -208,14 +187,26 @@ protected:
 	virtual void InitWeightTables(void);
 	void InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][64], EV mpapcsqev[APC::ActMax][64]);
 	EV EvFromPst(const BDG& bdg) const noexcept;
+	inline void ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[APC::ActMax][sqMax]) const noexcept;
+	inline void ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[],
+					  const EV mpapcsqev1[APC::ActMax][sqMax], const EV mpapcsqev2[APC::ActMax][sqMax]) const noexcept;
 	inline EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
 	EV EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
-	EV EvTempo(const BDG& bdg, CPC cpc) const noexcept;
+	EV EvTempo(const BDG& bdg) const noexcept;
 
 	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;
-
 };
+
+
+/*
+ *
+ *	PLAI2
+ * 
+ *	A second AI, a little dumber than PLAI but a good opponent. Does full alpha-beta
+ *	pruning but uses a less sophisticated board evaluation function.
+ * 
+ */
 
 
 class PLAI2 : public PLAI
