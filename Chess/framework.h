@@ -92,6 +92,7 @@ inline void SafeRelease(Interface** ppi)
 
 string SzFlattenWsz(const wstring& wsz);
 wstring WszWidenSz(const string& sz);
+wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch);
 
 
 /*
@@ -770,3 +771,4 @@ const wchar_t chBlackRook = L'\x265c';
 const wchar_t chBlackBishop = L'\x265d'; 
 const wchar_t chBlackKnight = L'\x265e'; 
 const wchar_t chBlackPawn = L'\x265f';
+

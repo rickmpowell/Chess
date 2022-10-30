@@ -328,7 +328,11 @@ public:
  *
  *	EV type
  * 
- *	A board evaluation
+ *	A board evaluation. This is a signed integer, in centi-pawns, or 1/100 of a 
+ *	pawn. We support "infinite" evaluations, mate-in-X moves evaluations, various 
+ *	special evaluations representing things like aborted searches, etc.
+ * 
+ *	For you bit-packers out there, this'll fit in 15-bits.
  * 
  */
 
@@ -336,32 +340,18 @@ public:
 typedef int16_t EV;
 
 const int plyMax = 127;
-const EV evInf = 320 * 100;	/* largest possible evaluation, in centi-pawns */
+const EV evInf = 160 * 100;	/* largest possible evaluation, in centi-pawns */
 const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
 const EV evMateMin = evMate - plyMax;
 const EV evTempo = 33;	/* evaluation of a single move advantage */
 const EV evDraw = 0;	/* evaluation of a draw */
 const EV evAbort = evInf + 1;
 
-inline EV EvMate(int ply)
-{
-	return evMate - ply;
-}
-
-inline bool FEvIsMate(EV ev)
-{
-	return ev >= evMateMin;
-}
-
-inline bool FEvIsAbort(EV ev)
-{
-	return ev == evAbort;
-}
-
-inline int PlyFromEvMate(EV ev)
-{
-	return evMate - ev;
-}
+inline EV EvMate(int ply) { return evMate - ply; }
+inline bool FEvIsMate(EV ev) { return ev >= evMateMin; }
+inline bool FEvIsAbort(EV ev) { return ev == evAbort; }
+inline int PlyFromEvMate(EV ev) { return evMate - ev; }
+wstring SzFromEv(EV ev);
 
 
 /*

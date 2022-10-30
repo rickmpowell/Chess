@@ -16,9 +16,6 @@
 class GA;
 
 
-wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch);
-
-
 /*
  *	Move speeds
  */

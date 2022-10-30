@@ -1376,3 +1376,45 @@ void BDG::SetGs(GS gs)
 	this->gs = gs;
 }
 
+
+/*	SzFromEv
+ *
+ *	Creates a string from an evaluation. Evaluations are in centi-pawns, so
+ *	this basically returns a string representing a number with 2-decimal places.
+ * 
+ *	Handles special evaluation values, like infinities, aborts, mates, etc.,
+ *	so be aware that this doesn't always return just a simple numeric string.
+ */
+wstring SzFromEv(EV ev)
+{
+	wchar_t sz[20], * pch = sz;
+	if (ev >= 0)
+		*pch++ = L'+';
+	else {
+		*pch++ = L'-';
+		ev = -ev;
+	}
+	if (ev == evInf)
+		*pch++ = L'\x221e';
+	else if (FEvIsAbort(abs(ev))) {
+		lstrcpy(pch, L"(interrupted)");
+		pch += lstrlen(pch);
+	}
+	else if (FEvIsMate(ev)) {
+		*pch++ = L'#';
+		pch = PchDecodeInt((PlyFromEvMate(ev) + 1) / 2, pch);
+	}
+	else if (ev > evInf)
+		*pch++ = L'*';
+	else {
+		pch = PchDecodeInt(ev / 100, pch);
+		ev %= 100;
+		*pch++ = L'.';
+		*pch++ = L'0' + ev / 10;
+		*pch++ = L'0' + ev % 10;
+	}
+	*pch = 0;
+	return wstring(sz);
+}
+
+

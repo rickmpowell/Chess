@@ -2,7 +2,8 @@
  *
  *	pl.cpp
  * 
- *	Code for the player class
+ *	Code for the player class. This includes the base class for all players,
+ *	a player/UI class, and the AI player classes. 
  * 
  */
 
@@ -22,6 +23,14 @@ const uint16_t dcYield = 1024;
 XT xt;	/* transposition table is big, so we share it with all AIs */
 
 
+/*
+ *
+ *	PL base class
+ * 
+ *	The base class for all chess game players. 
+ * 
+ */
+
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
 		mvNext(MV()), spmvNext(SPMV::Animate), fDisableMvLog(false)
@@ -31,39 +40,6 @@ PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
 
 PL::~PL(void)
 {
-}
-
-
-wstring SzFromEv(EV ev)
-{
-	wchar_t sz[20], * pch = sz;
-	if (ev >= 0)
-		*pch++ = L'+';
-	else {
-		*pch++ = L'-';
-		ev = -ev;
-	}
-	if (ev == evInf)
-		*pch++ = L'\x221e';
-	else if (FEvIsAbort(abs(ev))) {
-		lstrcpy(pch, L"(interrupted)");
-		pch += lstrlen(pch);
-	}
-	else if (FEvIsMate(ev)) {
-		*pch++ = L'#';
-		pch = PchDecodeInt((PlyFromEvMate(ev) + 1) / 2, pch);
-	}
-	else if (ev > evInf)
-		*pch++ = L'*';
-	else {
-		pch = PchDecodeInt(ev / 100, pch);
-		ev %= 100;
-		*pch++ = L'.';
-		*pch++ = L'0' + ev / 10;
-		*pch++ = L'0' + ev % 10;
-	}
-	*pch = 0;
-	return wstring(sz);
 }
 
 
@@ -148,13 +124,13 @@ void PL::SetDepthLog(int depthNew)
 PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
 		cYield(0), cemvEval(0), cemvNode(0)
 {
-	fecoMaterial = 1*100;
-	fecoMobility = 3*100;	/* this is small because Material already includes
+	fecoMaterial = 1*fecoScale;
+	fecoMobility = 3*fecoScale;	/* this is small because Material already includes
 							   some mobility in the piece value tables */
-	fecoKingSafety = 10*100;
-	fecoPawnStructure = 10*100;
-	fecoTempo = 1*100;
-	fecoRandom = 0*100;
+	fecoKingSafety = 10*fecoScale;
+	fecoPawnStructure = 10*fecoScale;
+	fecoTempo = 1*fecoScale;
+	fecoRandom = 0*fecoScale;
 	InitWeightTables();
 }
 
@@ -261,7 +237,7 @@ void PLAI::EndMoveLog(void)
 
 /*
  *
- *	LOGOPENEMV
+ *	LOGEMV
  * 
  *	Little open/close log wrapper. Saves a bunch of state so we can automatically
  *	close the log using the destructor without explicitly calling it.
@@ -269,7 +245,7 @@ void PLAI::EndMoveLog(void)
  */
 
 
-class LOGOPENEMV
+class LOGEMV
 {
 	PL& pl;
 	const BDG& bdg;
@@ -284,7 +260,7 @@ class LOGOPENEMV
 	static MV rgmv[8];
 
 public:
-	inline LOGOPENEMV(PL& pl, const BDG& bdg, const EMV* pemv, 
+	inline LOGEMV(PL& pl, const BDG& bdg, const EMV* pemv, 
 			const EV& evBest, EV evAlpha, EV evBeta, int ply, wchar_t chType=L' ') : 
 		pl(pl), bdg(bdg), pemv(pemv), evBest(evBest), depthLogSav(0), imvExpandSav(0), 
 		szData(L""), lgf(LGF::Normal)
@@ -306,7 +282,7 @@ public:
 		lgf = lgfNew;
 	}
 
-	inline ~LOGOPENEMV()
+	inline ~LOGEMV()
 	{
 		if (pl.FDisabledMvLog())
 			return;
@@ -327,31 +303,17 @@ public:
 		return true;
 	}
 
-	inline void SetDepthLog(int depth)
-	{
-		pl.SetDepthLog(depth);
-	}
-
-	inline int DepthLog(void) const
-	{
-		return pl.DepthLog();
-	}
-
-	inline bool FDepthLog(LGT lgt, int& depth)
-	{
-		return pl.FDepthLog(lgt, depth);
-	}
-
+	inline void SetDepthLog(int depth) { pl.SetDepthLog(depth); }
+	inline int DepthLog(void) const { return pl.DepthLog(); }
+	inline bool FDepthLog(LGT lgt, int& depth) { return pl.FDepthLog(lgt, depth); }
 	inline void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
-	{
-		pl.AddLog(lgt, lgf, depth, tag, szData);
-	}
+		{ pl.AddLog(lgt, lgf, depth, tag, szData); }
 };
 
 /* a little debugging aid to trigger a change in log depth after a 
    specific sequence of moves */
-int LOGOPENEMV::imvExpand = 0;
-MV LOGOPENEMV::rgmv[] = { /*
+int LOGEMV::imvExpand = 0;
+MV LOGEMV::rgmv[] = { /*
 	   MV(sqD2, sqD4, pcWhitePawn),
 	   MV(sqD7, sqD6, pcBlackPawn),
 	   MV(sqC1, sqG5, pcWhiteBishop),
@@ -479,6 +441,7 @@ GEMVSQ::GEMVSQ(BDG& bdg) noexcept : GEMVS(bdg)
 {
 }
 
+
 bool GEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 {
 	while (GEMVS::FMakeMvNext(bdg, pemv)) {
@@ -595,7 +558,7 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlp
 	EV evBest = -evInf;
 
 	cemvNode++;
-	LOGOPENEMV logopenemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L' ');
+	LOGEMV logemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L' ');
 	PumpMsg();
 
 	GEMVSS gemvss(bdg, this);
@@ -624,7 +587,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV e
 	const EMV* pemvBest = nullptr;
 	EV evBest = -evInf;
 
-	LOGOPENEMV logopenemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L'Q');
+	LOGEMV logemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L'Q');
 	PumpMsg();
 
 	int plyLim = plyMax;
@@ -768,7 +731,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 			fecoPawnStructure * evPawnStructure +
 			fecoTempo * evTempo +
 			evRandom +
-		50) / 100;
+		fecoScale/2) / fecoScale;
 
 	if (fFull) {
 		cemvEval++;
@@ -785,7 +748,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 			if (fecoTempo)
 				LogData(L"Tempo " + SzFromEv(evTempo));
 			if (fecoRandom)
-				LogData(L"Random " + SzFromEv(evRandom / 100));
+				LogData(L"Random " + SzFromEv(evRandom / 10));
 			LogData(L"Total " + SzFromEv(ev));
 		}
 	}
@@ -996,12 +959,12 @@ EV PLAI::EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
 
 PLAI2::PLAI2(GA& ga) : PLAI(ga)
 {
-	fecoMaterial = 100;	
-	fecoMobility = 0;	
-	fecoKingSafety = 0;	
-	fecoPawnStructure = 0;	
-	fecoTempo = 100;
-	fecoRandom = 10*100;	/* +/-10 centipawns */
+	fecoMaterial = 1 * fecoScale;	
+	fecoMobility = 0 * fecoScale;	
+	fecoKingSafety = 0 * fecoScale;	
+	fecoPawnStructure = 0 * fecoScale;	
+	fecoTempo = 1 * fecoScale;
+	fecoRandom = 10 * fecoScale;	
 	SetName(L"SQ Mathilda");
 	InitWeightTables();
 }

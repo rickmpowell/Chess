@@ -147,6 +147,7 @@ protected:
 
 	/* coefficients this divided by 100 */
 	uint16_t fecoMaterial, fecoMobility, fecoKingSafety, fecoPawnStructure, fecoTempo, fecoRandom;
+	const uint16_t fecoScale = 10;
 	mt19937_64 rgen;	/* random number generator */
 	uint64_t habdRand;	/* random number generated at the start of every search used to add randomness
 						   to board eval - which is generated from the Zobrist hash */
