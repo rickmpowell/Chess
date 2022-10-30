@@ -973,17 +973,42 @@ enum class GG {	// GenGmv Option to optionally remove checks
 	Pseudo
 };
 
+
+/*
+ *
+ *	Game phase is a rudimentary approximation of how far along we are in the
+ *	game progression. It's basically a measure of the non-pawn pieces on the
+ *	board. When most pieces are still on the board, we're in the opening, while
+ *	if we're down to a few minor pieces, we're in the end game.
+ * 
+ */
+
+
 enum class GPH {	// game phase
-	Max = 24,
-	Opening = 22,
-	MidGame = 20,
-	EndGame = 6,
 	Queen = 4,
 	Rook = 2,
 	Minor = 1,
 	None = 0,
+
+	Max = 24,		// when all pieces are on the board
+	MidMin = 2,		// opening is over when two minor pieces are gone
+	MidMid = 4,	// a mid-point of the middle game for when strategies should start transitioning
+	MidMax = 18,		// end game is when we're down to rook/minor piece vs. rook/minor piece
+
 	Nil = -1
 };
+
+static_assert((int)GPH::Max == 2 * (int)GPH::Queen + 4 * (int)GPH::Rook + 8 * (int)GPH::Minor);
+
+inline bool FInOpening(GPH gph)
+{
+	return gph <= GPH::MidMin;
+}
+
+inline bool FInEndGame(GPH gph)
+{
+	return gph >= GPH::MidMax;
+}
 
 
 class BD

@@ -169,7 +169,7 @@ void BD::SetEmpty(void) noexcept
 	sqEnPassant = SQ();
 	
 	habd = 0L;
-	gph = GPH::None;
+	gph = GPH::Max;
 }
 
 
@@ -901,29 +901,33 @@ EV BD::EvTotalFromCpc(CPC cpc) const noexcept
 
 GPH BD::GphCompute(void) const noexcept
 {
-	GPH gph = GPH::None;
+	GPH gph = GPH::Max;
 	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		gph = static_cast<GPH>(static_cast<int>(gph) +
-							   mppcbb[PC(CPC::White, apc)].csq() * static_cast<int>(mpapcgph[apc]) +
+		gph = static_cast<GPH>(static_cast<int>(gph) -
+							   mppcbb[PC(CPC::White, apc)].csq() * static_cast<int>(mpapcgph[apc]) -
 							   mppcbb[PC(CPC::Black, apc)].csq() * static_cast<int>(mpapcgph[apc]));
 	}
 	return gph;
 }
+
 
 void BD::RecomputeGph(void) noexcept
 {
 	gph = GphCompute();
 }
 
+
 void BD::AddApcToGph(APC apc) noexcept
+{
+	gph = static_cast<GPH>(static_cast<int>(gph) - static_cast<int>(mpapcgph[apc]));
+}
+
+
+void BD::RemoveApcFromGph(APC apc) noexcept
 {
 	gph = static_cast<GPH>(static_cast<int>(gph) + static_cast<int>(mpapcgph[apc]));
 }
 
-void BD::RemoveApcFromGph(APC apc) noexcept
-{
-	gph = static_cast<GPH>(static_cast<int>(gph) - static_cast<int>(mpapcgph[apc]));
-}
 
 /*	BD::Validate
  *

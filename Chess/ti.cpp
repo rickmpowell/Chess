@@ -257,7 +257,7 @@ void UIPVTPL::SetGph(GPH gph)
 
 
 UIPVT::UIPVT(GA* pga) : UIP(pga), 
-	uipvtplOpening(this, GPH::Opening), uipvtplMidGame(this, GPH::MidGame), uipvtplEndGame(this, GPH::EndGame)
+	uipvtplOpening(this, GPH::MidMin), uipvtplMidGame(this, GPH::MidMid), uipvtplEndGame(this, GPH::MidMax)
 {
 }
 
