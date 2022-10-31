@@ -136,6 +136,7 @@ public:
 class PLAI : public PL
 {
 	friend class GEMVSS;
+	friend class LOGEMV;
 
 protected:
 	/* piece value tables */

@@ -260,11 +260,14 @@ class LOGEMV
 	static MV rgmv[8];
 
 public:
-	inline LOGEMV(PL& pl, const BDG& bdg, const EMV* pemv, 
+	inline LOGEMV(PLAI& pl, const BDG& bdg, const EMV* pemv, 
 			const EV& evBest, EV evAlpha, EV evBeta, int ply, wchar_t chType=L' ') : 
 		pl(pl), bdg(bdg), pemv(pemv), evBest(evBest), depthLogSav(0), imvExpandSav(0), 
 		szData(L""), lgf(LGF::Normal)
 	{
+		pl.cemvNode++;
+		pl.PumpMsg();
+
 		if (pl.FDisabledMvLog())
 			return;
 		depthLogSav = DepthLog();
@@ -466,7 +469,7 @@ bool PLAI::FAlphaBetaPrune(EMV* pemv, EV& evBest, EV& evAlpha, EV evBeta, const 
 		evBest = pemv->ev;
 		pemvBest = pemv;
 	}
-	if (pemv->ev >= evBeta) 
+	if (pemv->ev >= evBeta)	
 		return true;
 	if (pemv->ev > evAlpha) {
 		evAlpha = pemv->ev;
@@ -528,8 +531,10 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgDepth(bdg, pemv, 1, plyLim, -evBeta, -evAlpha);
 		gemvss.UndoMv(bdg);
-		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim))
+		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim)) {
+			xt.Save(bdg, evBest, EVT::Higher, plyLim);
 			break;
+		}
 	}
 	
 	EndMoveLog();
@@ -551,25 +556,32 @@ MV PLAI::MvGetNext(SPMV& spmv)
  */
 EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept
 {
+	/* when we're at goal depth, finish with a quiescent eval */
 	if (ply >= plyLim)
 		return EvBdgQuiescent(bdg, pemvPrev, ply, evAlpha, evBeta);
 
 	const EMV* pemvBest = nullptr;
 	EV evBest = -evInf;
 
-	cemvNode++;
 	LOGEMV logemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L' ');
-	PumpMsg();
+
+	/* check transposition table */
+	XEV* pxev = xt.Find(bdg, plyLim - ply);
+	if (pxev && (pxev->evt() == EVT::Equal || (pxev->evt() == EVT::Higher && pxev->ev() >= evBeta)))
+		return evBest = pxev->ev();
 
 	GEMVSS gemvss(bdg, this);
 	for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgDepth(bdg, pemv, ply + 1, plyLim, -evBeta, -evAlpha);
 		gemvss.UndoMv(bdg);
-		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim))
+		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim)) {
+			xt.Save(bdg, evBest, EVT::Higher, plyLim - ply);
 			return evBest;
+		}
 	}
 
 	CheckForMates(bdg, gemvss, evBest, ply);
+	xt.Save(bdg, evBest, EVT::Equal, plyLim - ply);
 	return evBest;
 }
 
@@ -582,15 +594,11 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlp
  */
 EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV evBeta) noexcept
 {
-	cemvNode++;
-
 	const EMV* pemvBest = nullptr;
 	EV evBest = -evInf;
+	int plyLim = plyMax;
 
 	LOGEMV logemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L'Q');
-	PumpMsg();
-
-	int plyLim = plyMax;
 
 	/* first off, get full, slow static eval and check current board already in a pruning 
 	   situations; use transposition table eval if it's available */
