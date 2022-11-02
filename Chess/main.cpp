@@ -1512,3 +1512,34 @@ wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch)
 }
 
 
+wstring SzCommaFromLong(int long long w)
+{
+    if (w == 0)
+        return L"0";
+
+    wstring sz = L"";
+    if (w < 0) {
+        sz = L"-";
+        w = -w;
+    }
+
+    /* break the number into groups of 3 */
+
+    int rgw[20];
+    int iw;
+    for (iw = 0; w; w /= 1000)
+        rgw[iw++] = w % 1000;
+
+    /* and print out each group */
+
+    sz += to_wstring(rgw[--iw]);
+    while (iw > 0) {
+        sz += L",";
+        int wT = rgw[--iw];
+        if (wT < 100)
+            sz += wT < 10 ? L"00" : L"0";
+        sz += to_wstring(wT);
+    }
+
+    return sz;
+}
