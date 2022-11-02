@@ -173,7 +173,8 @@ protected:
 	EV EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept;
 	EV EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV evBeta) noexcept; 
 	inline bool FAlphaBetaPrune(EMV* pemv, EV& evBest, EV& evAlpha, EV evBeta, const EMV*& pemvBest, int& plyLim) const noexcept;
-	inline void CheckForMates(BDG& bdg, GEMVS& gemvs, EV& evBest, int ply) const noexcept;
+	inline void TestForMates(BDG& bdg, GEMVS& gemvs, EV& evBest, int ply) const noexcept;
+	inline bool FLookupXt(BDG& bdg, int ply, EV& evBest, EV& evAlpha, EV& evBeta) const noexcept;
 
 	void PumpMsg(void) noexcept;
 

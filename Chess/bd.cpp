@@ -1062,7 +1062,6 @@ void BDG::InitGame(const wchar_t* szFEN)
 }
 
 
-
 void BDG::InitFENHalfmoveClock(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);

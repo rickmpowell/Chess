@@ -90,7 +90,7 @@ class XT
 	XEV* rgxev;
 public:
 	//const uint32_t cxevMax = 1UL << 27;
-	const uint32_t cxevMax = 1UL << 24;
+	const uint32_t cxevMax = 1UL << 25;
 	/* cache stats */
 	uint64_t cxevProbe, cxevProbeCollision, cxevProbeHit;
 	uint64_t cxevSave, cxevSaveCollision, cxevSaveReplace, cxevInUse;
@@ -164,10 +164,13 @@ public:
 		if (xev.evt() == EVT::Nil)
 			cxevInUse++;
 		else {
-			/* we have a collision; don't replace deeper evaluated boards */
+			/* we have a collision; don't replace deeper evaluated boards, and don't overwrite
+			   a principle variation unless we're saving another PV */
 			if (xev.habd != bdg.habd)
 				cxevSaveCollision++;
 			if (ply < xev.ply())
+				return nullptr;
+			if (evt != EVT::Equal && xev.evt() == EVT::Equal)
 				return nullptr;
 			cxevSaveReplace++;
 		}
