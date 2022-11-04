@@ -13,6 +13,7 @@
 #include "ml.h"
 #include "pl.h"
 #include "debug.h"
+#include "uci.h"
 
 
 /*
@@ -102,6 +103,7 @@ public:
 	static void DiscardRsrcClass(void);
 
 	APP& app;
+	UCI* puci;
 	UITI uiti;
 	UIBD uibd;
 	UIML uiml;

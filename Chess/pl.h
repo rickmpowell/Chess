@@ -83,6 +83,7 @@ public:
 
 public:
 	inline GEMVS(BDG& bdg) noexcept;
+	inline void Reset(BDG& bdg) noexcept;
 	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
 };
@@ -103,6 +104,7 @@ class GEMVSS : public GEMVS
 public:
 	GEMVSS(BDG& bdg, PLAI* pplai) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
+	void Reset(BDG& bdg, PLAI* pplai) noexcept;
 };
 
 
@@ -122,6 +124,77 @@ public:
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 };
 
+
+/*
+ *
+ *	AB class
+ * 
+ *	Alpha-beta window used
+ * 
+ */
+class AB
+{
+public:
+	EV evAlpha;
+	EV evBeta;
+
+	inline AB(EV evAlpha, EV evBeta) : evAlpha(evAlpha), evBeta(evBeta) {
+	}
+
+	inline AB operator-(void) const {
+		return AB(-evBeta, -evAlpha);
+	}
+
+	inline bool operator>(EV ev) const {
+		return ev <= evAlpha;
+	}
+	inline bool operator<(EV ev) const {
+		return ev >= evBeta;
+	}
+
+	inline AB operator>>(EV ev) const {
+		return AB(max(evAlpha, ev), evBeta);
+	}
+
+	inline AB operator<<(EV ev) const {
+		return AB(evAlpha, min(evBeta, ev));
+	}
+
+	inline AB& operator>>=(EV ev) {
+		evAlpha = max(evAlpha, ev);
+		return *this;
+	}
+
+	inline AB& operator<<=(EV ev) {
+		evBeta = min(evBeta, ev);
+		return *this;
+	}
+
+	inline bool operator&(EV ev) const {
+		return ev > evAlpha && ev < evBeta;
+	}
+
+	/* define inequality operators of an eval vs. an interval to be less
+	   than if it's below the bottom value, and greater than if it's above
+	   the top value */
+
+	friend inline bool operator<=(EV ev, const AB& ab) {
+		return ev <= ab.evAlpha;
+	}
+
+	friend inline bool operator<(EV ev, const AB& ab) {
+		return ev < ab.evAlpha;
+	}
+
+	friend inline bool operator>=(EV ev, const AB& ab) {
+		return ev >= ab.evBeta;
+	}
+
+	friend inline bool operator>(EV ev, const AB& ab) {
+		return ev > ab.evBeta;
+	}
+
+};
 
 /*
  *
@@ -170,11 +243,11 @@ public:
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 
 protected:
-	EV EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept;
-	EV EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV evBeta) noexcept; 
-	inline bool FAlphaBetaPrune(EMV* pemv, EV& evBest, EV& evAlpha, EV evBeta, const EMV*& pemvBest, int& plyLim) const noexcept;
-	inline void TestForMates(BDG& bdg, GEMVS& gemvs, EV& evBest, int ply) const noexcept;
-	inline bool FLookupXt(BDG& bdg, int ply, EV& evBest, EV& evAlpha, EV& evBeta) const noexcept;
+	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB ab) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB ab) noexcept; 
+	inline bool FAlphaBetaPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
+	inline void TestForMates(BDG& bdg, GEMVS& gemvs, EMV& emvBest, int ply) const noexcept;
+	inline bool FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB& ab) const noexcept;
 
 	void PumpMsg(void) noexcept;
 
@@ -199,6 +272,7 @@ protected:
 
 	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;
+	int CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept;
 };
 
 

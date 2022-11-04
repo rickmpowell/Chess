@@ -21,8 +21,8 @@
  */
 
 enum class EVT {
-	Lower,
 	Equal,
+	Lower,
 	Higher,
 	Nil
 };
@@ -37,40 +37,38 @@ enum class EVT {
  * 
  */
 
+/* cache entries don't save the entire HABD, because the lower bits of the HABD are 
+ * used to index into the cache, so we know they already match */ 
+#define bitsHabdUpper 64
+#define bitsHabdLower 25
+static_assert(bitsHabdUpper + bitsHabdLower >= 64);
 
 class XEV
 {
-public:
-	HABD habd;	/* board hash */
 private:
-	uint32_t evGrf:16,
+	uint64_t habdUpperGrf : bitsHabdUpper;
+	uint64_t evGrf : 16,
+		mvGrf : 32,
 		evtGrf : 2,
-		unused1b : 6,
-		plyGrf : 8;
+		plyGrf : 8,
+		unused:6;
 public:
 
-	inline EV ev(void) const {
-		return static_cast<EV>(evGrf);
-	}
-	inline void SetEv(EV ev) {
-		assert(ev != evInf && ev != -evInf);
-		evGrf = static_cast<uint16_t>(ev);
-	}
-	inline EVT evt(void) const {
-		return static_cast<EVT>(evtGrf);
-	}
-	inline void SetEvt(EVT evt)
-	{
-		evtGrf = static_cast<unsigned>(evt);
-	}
-	inline unsigned ply(void) const {
-		return static_cast<unsigned>(plyGrf);
-	}
-	inline void SetPly(unsigned ply)
-	{
-		plyGrf = ply;
-	}
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	inline XEV(void) { }
+	inline EV ev(void) const noexcept { return static_cast<EV>(evGrf); }
+	inline void SetEv(EV ev) noexcept { assert(ev != evInf && ev != -evInf);  evGrf = static_cast<uint16_t>(ev); }
+	inline EVT evt(void) const noexcept { return static_cast<EVT>(evtGrf); }
+	inline void SetEvt(EVT evt) noexcept { evtGrf = static_cast<unsigned>(evt); }
+	inline unsigned ply(void) const noexcept { return static_cast<unsigned>(plyGrf); }
+	inline void SetPly(unsigned ply) noexcept { plyGrf = ply; }
+	inline bool FMatchHabd(HABD habd) const noexcept { return habdUpperGrf == (habd >> (64 - bitsHabdUpper)); }
+	inline void SetHabd(HABD habd) noexcept { habdUpperGrf = habd >> (64 - bitsHabdUpper); }
+	inline void SetMv(MV mv) noexcept { this->mvGrf = mv; }
+	inline MV mv(void) const noexcept { return mvGrf; }
 };
+
+static_assert(sizeof(XEV) == 16);
 
 
 /*
@@ -89,8 +87,7 @@ class XT
 {
 	XEV* rgxev;
 public:
-	//const uint32_t cxevMax = 1UL << 27;
-	const uint32_t cxevMax = 1UL << 25;
+	const uint32_t cxevMax = 1UL << bitsHabdLower;
 	/* cache stats */
 	uint64_t cxevProbe, cxevProbeCollision, cxevProbeHit;
 	uint64_t cxevSave, cxevSaveCollision, cxevSaveReplace, cxevInUse;
@@ -130,7 +127,7 @@ public:
 	 *	Clears out the hash table. Current implementation requires we do this before
 	 *	starting any move search.
 	 */
-	void Clear(void)
+	void Clear(void) noexcept
 	{
 		for (unsigned ixev = 0; ixev < cxevMax; ixev++)
 			rgxev[ixev].SetEvt(EVT::Nil);
@@ -145,7 +142,7 @@ public:
 	 *	Returns a reference to the hash table entry that may or may not be used by the
 	 *	board. Caller is responsible for making sure the entry is valid.
 	 */
-	inline XEV& operator[](const BDG& bdg)
+	inline XEV& operator[](const BDG& bdg) noexcept
 	{
 		return rgxev[bdg.habd & (cxevMax - 1)];
 	}
@@ -156,29 +153,34 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	inline XEV* Save(const BDG& bdg, EV ev, EVT evt, unsigned ply)
+	inline XEV* Save(const BDG& bdg, const EMV& emv, EVT evt, unsigned ply) noexcept
 	{
-		assert(ev != evInf && ev != -evInf);
+		assert(emv.ev != evInf && emv.ev != -evInf);
 		cxevSave++;
 		XEV& xev = (*this)[bdg];
 		if (xev.evt() == EVT::Nil)
 			cxevInUse++;
 		else {
-			/* we have a collision; don't replace deeper evaluated boards, and don't overwrite
-			   a principle variation unless we're saving another PV */
-			if (xev.habd != bdg.habd)
+			/* we have a collision; don't replace deeper evaluated boards, and don't 
+			   overwrite a principle variation unless we're saving another PV */
+			if (!xev.FMatchHabd(bdg.habd))
 				cxevSaveCollision++;
-			if (ply < xev.ply())
-				return nullptr;
-			if (evt != EVT::Equal && xev.evt() == EVT::Equal)
-				return nullptr;
+			if (evt == EVT::Equal) {
+				if (xev.evt() == EVT::Equal && ply < xev.ply())
+					return nullptr;
+			}
+			else {
+				if (xev.evt() == EVT::Equal || ply < xev.ply())
+					return nullptr;
+			}
 			cxevSaveReplace++;
 		}
 
-		xev.habd = bdg.habd;
-		xev.SetEv(ev);
+		xev.SetHabd(bdg.habd);
+		xev.SetEv(emv.ev);
 		xev.SetEvt(evt);
 		xev.SetPly(ply);
+		xev.SetMv(emv.mv);
 		return &xev;
 	}
 
@@ -188,13 +190,13 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as ply. Returns nullptr if no such entry exists.
 	 */
-	inline XEV* Find(const BDG& bdg, unsigned ply)
+	inline XEV* Find(const BDG& bdg, unsigned ply) noexcept 
 	{
 		cxevProbe++;
 		XEV& xev = (*this)[bdg];
 		if (xev.evt() == EVT::Nil)
 			return nullptr;
-		if (xev.habd != bdg.habd || ply > xev.ply()) {
+		if (!xev.FMatchHabd(bdg.habd) || ply > xev.ply()) {
 			cxevProbeCollision++;
 			return nullptr;
 		}

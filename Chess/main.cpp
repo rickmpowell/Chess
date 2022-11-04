@@ -115,7 +115,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
 
     pga = new GA(*this);
     pga->SetPl(CPC::Black, rginfopl.PplFactory(*pga, 0));
-    pga->SetPl(CPC::White, rginfopl.PplFactory(*pga, 1));
+    pga->SetPl(CPC::White, rginfopl.PplFactory(*pga, 2));
     pga->NewGame(new RULE, SPMV::Animate);
 
     /* create the main window */

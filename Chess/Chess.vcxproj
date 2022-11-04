@@ -119,6 +119,7 @@
     <ClInclude Include="pl.h" />
     <ClInclude Include="Resources\Resource.h" />
     <ClInclude Include="ti.h" />
+    <ClInclude Include="uci.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="uibd.h" />
     <ClInclude Include="xt.h" />
@@ -136,6 +137,7 @@
     <ClCompile Include="save.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="ti.cpp" />
+    <ClCompile Include="uci.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="uibd.cpp" />
   </ItemGroup>

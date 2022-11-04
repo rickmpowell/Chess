@@ -51,7 +51,7 @@ void GA::DiscardRsrcClass(void)
 }
 
 
-GA::GA(APP& app) : UI(nullptr), app(app),
+GA::GA(APP& app) : UI(nullptr), app(app), puci(nullptr),
 	uiti(this), uibd(this), uiml(this), uipvt(this), uidb(this), uitip(this),
 	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
 	fInPlay(false), prule(nullptr), pprocpgn(nullptr), tidClock(0), spmvShow(SPMV::Animate)
@@ -59,6 +59,7 @@ GA::GA(APP& app) : UI(nullptr), app(app),
 	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = nullptr;
 	tmLast = 0L;
 	mpcpctmClock[CPC::White] = mpcpctmClock[CPC::Black] = 0;
+	puci = new UCI(this);
 }
 
 
@@ -71,6 +72,8 @@ GA::~GA(void)
 		delete prule;
 	if (pprocpgn)
 		delete pprocpgn;
+	if (puci)
+		delete puci;
 }
 
 

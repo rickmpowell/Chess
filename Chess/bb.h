@@ -551,7 +551,7 @@ public:
 	inline BB BbSlideTo(SQ sq, DIR dir) noexcept
 	{
 		assert(sq < 64);
-		assert(static_cast<int>(dir) < 8);
+		assert(static_cast<unsigned>(dir) < 8);
 		return mpsqdirbbSlide[sq][static_cast<unsigned>(dir)];
 	}
 
@@ -565,3 +565,7 @@ public:
 		return mpsqbbKnight[sq];
 	}
 };
+
+/* we compute a global of these for movegen and eval to use */
+
+extern MPBB mpbb;

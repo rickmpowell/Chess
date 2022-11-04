@@ -1,10 +1,8 @@
   Save real date in PGN files
   Save real player names in PGN files
   How to deal with 3-repeat draws in transposition table?
-  Hook up transposition table to the main eval function
   Display debug build somewhere on screen
   Pre-compiled headers?
-  Make pawn promotions not-quiescent (noisy)
   Can we incrementally keep whether someone is in check in the BD and make them noisy moves?
   UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
   Test: option to stop or continue on errors 
@@ -19,7 +17,6 @@
   Test: Is there a C++ way to enumerate files in a directory for Test? (std::filesystem::directory_iterator ?)
   Test: PGN games should feed moves through a PL
   AI: Add more complex pawn structure eval
-  AI: Implement incremental depth search
   AI: Implement king safety evaluator
   AI: Communicate best continuation back (principle variation)
   AI: spin off AI into its own thread
@@ -27,10 +24,10 @@
   AI: interruptible
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
-  AI: Consider a different board evaluation for pre-sorting alpha-beta pruning
+  AI: time management strategy
+  AI: Enumerate xt moves first in alpha-beta move enum
   AI: Do a multithreaded lookup
   AI: Play through until no checks (quiescence) before evaluation
-  AI: use custom allocators for lookahead allocations
   Eval: Add square control factor to evaluation function
   Choosing the player picker while the AI is running crashes
   When AIs are playing each other, making human moves should be allowed until we start the game
@@ -94,6 +91,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* AI: Implement incremental depth search
+* Make pawn promotions not-quiescent (noisy)
+* Hook up transposition table to the main eval function
 * Exported PGN files don't always display result right in headers
 * XP: alloc/delete transposition table at beginning/end of each ai move
 * XP: use transposition table evals in pre-sort

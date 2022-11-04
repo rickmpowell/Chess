@@ -2,9 +2,11 @@
  *
  *	bd.h
  *
- *	Board definitions
+ *	Board definitions. This includes types for pieces, moves, game rules, and
+ *	move generation. 
  *
  */
+
 #pragma once
 #include "framework.h"
 #include "bb.h"
@@ -121,41 +123,13 @@ class PC
 {
 	uint8_t grf;
 public:
-	
-	PC(uint8_t grf) noexcept : grf(grf)
-	{
-	}
-
-	PC(CPC cpc, APC apc) noexcept : grf((cpc << 3) | apc)
-	{
-	}
-
-	APC apc(void) const noexcept
-	{
-		return (APC)(grf & 7);
-	}
-
-	CPC cpc(void) const noexcept
-	{
-		return (CPC)((grf >> 3) & 1);
-	}
-
-	inline operator uint8_t() const noexcept
-	{
-		return grf;
-	}
-
-	inline PC& operator++()
-	{
-		grf++;
-		return *this;
-	}
-
-	inline PC operator++(int)
-	{
-		uint8_t grfT = grf++;
-		return PC(grfT);
-	}
+	PC(uint8_t grf) noexcept : grf(grf) { }
+	PC(CPC cpc, APC apc) noexcept : grf((cpc << 3) | apc) { }
+	APC apc(void) const noexcept { return (APC)(grf & 7); }
+	CPC cpc(void) const noexcept { return (CPC)((grf >> 3) & 1); }
+	inline operator uint8_t() const noexcept { return grf; }
+	inline PC& operator++() { grf++; return *this; }
+	inline PC operator++(int) { uint8_t grfT = grf++; return PC(grfT); }
 };
 
 const uint8_t pcMax = 2*8;
@@ -175,7 +149,7 @@ const PC pcBlackKing(CPC::Black, APC::King);
 
 /*	
  * 
- *	MV type
+ *	MV and MVM type
  *
  *	A move is a from and to square, with a little extra info for
  *	weird moves, along with enough information to undo the move.
@@ -190,34 +164,66 @@ const PC pcBlackKing(CPC::Black, APC::King);
  * 
  *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
  *  +--+--------+--------+--------+--------+--------+
- *  |    pc move|       to        |      from       |
+ *  |XX|apc prom|       to        |      from       |  <<= minimum amount needed to recreate the move
  *  +--+--------+--------+--------+--------+--------+
- *  +-----+--------+--------+--+--------+-----------+
- *  | XXX |apc prom|ep file |ep|apc capt| cs state  |
- *  +-----+--------+--------+--+--------+-----------+
+ *  +--+-----+-----+--------+--+--------+--+--------+
+ *  |XX| cs state  |ep file |ep|apc capt|  pc move  |  <<= mostly undo information
+ *  +--+-----+-----+--------+--+--------+--+--------+
  *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
+ *
+ *	The first word of the move is the mini-move (MVM), which is the 
+ *	minimal amount of information needed, along with the board state, 
+ *	to specify a move. The redundant information could be filled in 
+ *	from the BD before the move is made.
  */
+
+class MVM {
+private:
+	uint16_t sqFromGrf : 6,
+		sqToGrf : 6,
+		apcPromoteGrf : 3,
+		unused1 : 1;
+public:
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	inline MVM(void) noexcept { *(uint16_t*)this = 0; }
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	inline MVM(uint16_t u) noexcept { *(uint16_t*)this = u; }
+	inline MVM(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	sqFromGrf = sqFrom; sqToGrf = sqTo; }
+	inline operator uint16_t() const noexcept { return *(uint16_t*)this; }
+
+	inline APC apcPromote(void) const noexcept { return (APC)apcPromoteGrf; }
+	inline MVM& SetApcPromote(APC apc) noexcept { apcPromoteGrf = apc; return *this; }
+	inline bool fIsNil(void) const noexcept { return sqFromGrf == 0 && sqToGrf == 0; }
+};
+
+static_assert(sizeof(MVM) == sizeof(uint16_t));
+
 
 class MV {
 private:
-	uint32_t sqFromGrf : 6,
-		sqToGrf : 6,	
+	uint16_t 
+		sqFromGrf : 6,
+		sqToGrf : 6,
+		apcPromoteGrf : 3,
+		unused1 : 1;
+	uint16_t		
 		pcMoveGrf : 4,	// the piece that is moving
-		csGrf : 4,		// saved castle state
 		apcCaptGrf : 3,	// for captures, the piece we take
 		fEnPassantGrf : 1,	// en passant state
 		fileEnPassantGrf : 3,	
-		apcPromoteGrf : 3,	// for promotion, the piece we promote to
-		padding : 2;
+		csGrf : 4,		// saved castle state
+		unused2 : 1;
 
 public:
 
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(void) noexcept
-	{
-		assert(sizeof(MV) == sizeof(uint32_t));
-		*(uint32_t*)this = 0;
-	}
+	inline MV(void) noexcept { *(uint32_t*)this = 0; }
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	inline MV(uint32_t u) noexcept { *(uint32_t*)this = u; }
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	inline MV(MVM mvm) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mvm; }
+	inline operator uint32_t() const noexcept { return *(uint32_t*)this; }
+	inline operator MVM() const noexcept { return *(MVM*)this; }
 
 	inline MV(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
@@ -228,57 +234,18 @@ public:
 		pcMoveGrf = pcMove;
 	}
 
-	inline operator uint32_t() const noexcept
-	{
-		return *(uint32_t*)this;
-	}
+	inline SQ sqFrom(void) const noexcept { return sqFromGrf; }
+	inline SQ sqTo(void) const noexcept { return sqToGrf; }
+	inline APC apcPromote(void) const noexcept { return (APC)apcPromoteGrf; }
+	inline MV& SetApcPromote(APC apc) noexcept { apcPromoteGrf = apc; return *this; }
+	inline bool fIsNil(void) const noexcept { return sqFromGrf == 0 && sqToGrf == 0; }
 
-	inline SQ sqFrom(void) const noexcept
-	{
-		return sqFromGrf;
-	}
-
-	inline SQ sqTo(void) const noexcept
-	{
-		return sqToGrf;
-	}
+	inline MV& SetPcMove(PC pcMove) { pcMoveGrf = pcMove; return *this; }
+	inline APC apcMove(void) const noexcept { return PC(pcMoveGrf).apc(); }
+	inline CPC cpcMove(void) const noexcept { return PC(pcMoveGrf).cpc(); }
+	inline PC pcMove(void) const noexcept { return PC(pcMoveGrf); }
+	inline void SetCapture(APC apc) noexcept { apcCaptGrf = apc; }
 	
-	inline APC apcMove(void) const noexcept
-	{
-		return PC(pcMoveGrf).apc();
-	}
-
-	inline CPC cpcMove(void) const noexcept
-	{
-		return PC(pcMoveGrf).cpc();
-	}
-
-	inline PC pcMove(void) const noexcept
-	{
-		return PC(pcMoveGrf);
-	}
-
-	inline APC apcPromote(void) const noexcept
-	{
-		return (APC)apcPromoteGrf;
-	}
-
-	inline bool fIsNil(void) const noexcept
-	{
-		return sqFromGrf == 0 && sqToGrf == 0;
-	}
-
-	inline MV& SetApcPromote(APC apc) noexcept
-	{
-		apcPromoteGrf = apc;
-		return *this;
-	}
-
-	inline void SetCapture(APC apc) noexcept
-	{
-		apcCaptGrf = apc;
-	}
-
 	inline void SetCsEp(int cs, SQ sqEnPassant) noexcept
 	{
 		csGrf = cs;
@@ -287,41 +254,16 @@ public:
 			fileEnPassantGrf = sqEnPassant.file();
 	}
 
-	inline int csPrev(void) const noexcept
-	{
-		return csGrf;
-	}
-
-	inline int fileEpPrev(void) const noexcept
-	{
-		return fileEnPassantGrf;
-	}
-
-	inline bool fEpPrev(void) const noexcept
-	{
-		return fEnPassantGrf;
-	}
-
-	inline APC apcCapture(void) const noexcept
-	{
-		return (APC)apcCaptGrf;
-	}
-
-	inline bool fIsCapture(void) const noexcept
-	{
-		return apcCapture() != APC::Null; 
-	}
-
-	inline bool operator==(const MV& mv) const noexcept
-	{
-		return *(uint32_t*)this == (uint32_t)mv;
-	}
-
-	inline bool operator!=(const MV& mv) const noexcept
-	{
-		return *(uint32_t*)this != (uint32_t)mv;
-	}
+	inline int csPrev(void) const noexcept { return csGrf; }
+	inline int fileEpPrev(void) const noexcept { return fileEnPassantGrf; }
+	inline bool fEpPrev(void) const noexcept { return fEnPassantGrf; }
+	inline APC apcCapture(void) const noexcept { return (APC)apcCaptGrf; }
+	inline bool fIsCapture(void) const noexcept { return apcCapture() != APC::Null; }
+	inline bool operator==(const MV& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
+	inline bool operator!=(const MV& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
 };
+
+static_assert(sizeof(MV) == sizeof(uint32_t));
 
 
 /*
@@ -353,6 +295,13 @@ inline bool FEvIsAbort(EV ev) { return ev == evAbort; }
 inline int PlyFromEvMate(EV ev) { return evMate - ev; }
 wstring SzFromEv(EV ev);
 
+/* score types, used during move enumeration in the ai search */
+enum class SCT {
+	Eval = 0,
+	XTable = 1,
+	PrincipalVar = 2
+};
+
 
 /*
  *
@@ -370,27 +319,17 @@ class EMV
 public:
 	MV mv;
 	EV ev;
+	uint16_t sct;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
-	EMV(MV mv = MV()) noexcept : mv(mv), ev(0) { }
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	EMV(MV mv = MV()) noexcept : mv(mv), ev(0), sct(0) { }
+	EMV(MV mv, EV ev) noexcept : mv(mv), ev(ev), sct(0) { }
+#pragma warning(suppress:26495)	 
 	EMV(uint64_t emv) noexcept { *(uint64_t*)this = emv; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
-	inline bool operator>(const EMV& emv) const noexcept 
-	{
-		return ev > emv.ev; 
-	}
-	inline bool operator>=(const EMV& emv) const noexcept 
-	{ 
-		return ev >= emv.ev; 
-	}
-	inline bool operator<(const EMV& emv) const noexcept 
-	{ 
-		return ev < emv.ev; 
-	}
-	inline bool operator<=(const EMV& emv) const noexcept 
-	{ 
-		return ev <= emv.ev; 
-	}
+	inline bool operator>(const EMV& emv) const noexcept { return sct > emv.sct || (sct == emv.sct && ev > emv.ev); }
+	inline bool operator<(const EMV& emv) const noexcept { return sct < emv.sct || (sct == emv.sct && ev < emv.ev); }
+	inline bool operator>=(const EMV& emv) const noexcept {  return !(*this < emv); }
+	inline bool operator<=(const EMV& emv) const noexcept { return !(*this > emv); }
 };
 
 static_assert(sizeof(EMV) == sizeof(uint64_t));

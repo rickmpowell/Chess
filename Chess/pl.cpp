@@ -247,38 +247,16 @@ void PLAI::EndMoveLog(void)
  */
 
 
-class LOGEMV
+class LOGSEARCH
 {
-	PL& pl;
+protected:
+	PLAI& pl;
 	const BDG& bdg;
-	const EMV* pemv;
 	wstring szData;
 	LGF lgf;
-	int depthLogSav;
-	int imvExpandSav;
-	const EV& evBest;
-
-	static int imvExpand;
-	static MV rgmv[8];
-
 public:
-	inline LOGEMV(PLAI& pl, const BDG& bdg, const EMV* pemv, 
-			const EV& evBest, EV evAlpha, EV evBeta, int ply, wchar_t chType=L' ') : 
-		pl(pl), bdg(bdg), pemv(pemv), evBest(evBest), depthLogSav(0), imvExpandSav(0), 
-		szData(L""), lgf(LGF::Normal)
+	LOGSEARCH(PLAI& pl, const BDG& bdg) : pl(pl), bdg(bdg), szData(L""), lgf(LGF::Normal)
 	{
-		pl.cemvNode++;
-		pl.PumpMsg();
-
-		if (pl.FDisabledMvLog())
-			return;
-		depthLogSav = DepthLog();
-		imvExpandSav = imvExpand;
-		if (FExpandLog(pemv))
-			SetDepthLog(depthLogSav + 1);
-		LogOpen(TAG(bdg.SzDecodeMvPost(pemv->mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(pemv->ev) + 
-					L" [" + SzFromEv(evAlpha) + L", " + SzFromEv(evBeta) + L"] ");
 	}
 
 	inline void SetData(const wstring& szNew, LGF lgfNew)
@@ -287,32 +265,67 @@ public:
 		lgf = lgfNew;
 	}
 
+	inline void SetDepthLog(int depth) { pl.SetDepthLog(depth); }
+	inline int DepthLog(void) const { return pl.DepthLog(); }
+	inline bool FDepthLog(LGT lgt, int& depth) { return pl.FDepthLog(lgt, depth); }
+	inline void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+	{
+		pl.AddLog(lgt, lgf, depth, tag, szData);
+	}
+
+};
+
+class LOGEMV : public LOGSEARCH
+{
+	const EMV& emvPrev;
+	int depthLogSav;
+	int imvExpandSav;
+	const EMV& emvBest;
+
+	static int imvExpand;
+	static MV rgmv[8];
+
+public:
+	inline LOGEMV(PLAI& pl, const BDG& bdg, 
+			const EMV& emvPrev, const EMV& emvBest, AB ab, int ply, wchar_t chType=L' ') : 
+		LOGSEARCH(pl, bdg),
+		emvPrev(emvPrev), emvBest(emvBest), depthLogSav(0), imvExpandSav(0)
+	{
+		pl.cemvNode++;
+		pl.PumpMsg();
+
+		if (pl.FDisabledMvLog())
+			return;
+		depthLogSav = DepthLog();
+		imvExpandSav = imvExpand;
+		if (FExpandLog(emvPrev))
+			SetDepthLog(depthLogSav + 1);
+		LogOpen(TAG(bdg.SzDecodeMvPost(emvPrev.mv), ATTR(L"FEN", bdg)),
+				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(emvPrev.ev) + 
+					L" [" + SzFromEv(ab.evAlpha) + L", " + SzFromEv(ab.evBeta) + L"] ");
+	}
+
 	inline ~LOGEMV()
 	{
 		if (pl.FDisabledMvLog())
 			return;
-		LogClose(bdg.SzDecodeMvPost(pemv->mv), 
-				 szData.size() > 0 ? szData : SzFromEv(-evBest),	 
+		LogClose(bdg.SzDecodeMvPost(emvPrev.mv), 
+				 szData.size() > 0 ? szData : SzFromEv(-emvBest.ev),	 
 				 lgf);
 		SetDepthLog(depthLogSav);
 		imvExpand = imvExpandSav;
 	}
 
-	inline bool FExpandLog(const EMV* pemv) const
+	inline bool FExpandLog(const EMV& emv) const
 	{
-		if (pemv->mv.sqFrom() != rgmv[imvExpand].sqFrom() ||	
-				pemv->mv.sqTo() != rgmv[imvExpand].sqTo() ||
-				pemv->mv.apcPromote() != rgmv[imvExpand].apcPromote())
+		if (emv.mv.sqFrom() != rgmv[imvExpand].sqFrom() ||	
+				emv.mv.sqTo() != rgmv[imvExpand].sqTo() ||
+				emv.mv.apcPromote() != rgmv[imvExpand].apcPromote())
 			return false;
 		imvExpand++;
 		return true;
 	}
 
-	inline void SetDepthLog(int depth) { pl.SetDepthLog(depth); }
-	inline int DepthLog(void) const { return pl.DepthLog(); }
-	inline bool FDepthLog(LGT lgt, int& depth) { return pl.FDepthLog(lgt, depth); }
-	inline void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
-		{ pl.AddLog(lgt, lgf, depth, tag, szData); }
 };
 
 /* a little debugging aid to trigger a change in log depth after a 
@@ -328,6 +341,25 @@ MV LOGEMV::rgmv[] = { /*
 };
 
 
+class LOGITD : public LOGSEARCH
+{
+	const EMV& emvBest;
+public:
+	LOGITD(PLAI& pl, const BDG& bdg, int ply, const EMV& emvBest) : LOGSEARCH(pl, bdg), emvBest(emvBest)
+	{
+		LogOpen(L"Depth ", to_wstring(ply));
+	}
+
+	~LOGITD()
+	{
+		LogClose(L"Depth ",
+				 emvBest.mv.fIsNil() ? L"(none)" :
+				 bdg.SzDecodeMvPost(emvBest.mv) + L" " + SzFromEv(emvBest.ev),
+				 LGF::Normal);
+	}
+};
+
+
 /*
  *
  *	GEMVS class
@@ -340,6 +372,13 @@ MV LOGEMV::rgmv[] = { /*
 GEMVS::GEMVS(BDG& bdg) noexcept : GEMV(), iemvNext(0), cmvLegal(0)
 {
 	bdg.GenGemv(*this, GG::Pseudo);
+}
+
+
+void GEMVS::Reset(BDG& bdg) noexcept
+{
+	iemvNext = 0;
+	cmvLegal = 0;
 }
 
 
@@ -381,15 +420,29 @@ void GEMVS::UndoMv(BDG& bdg) noexcept
 
 GEMVSS::GEMVSS(BDG& bdg, PLAI* pplai) noexcept : GEMVS(bdg)
 {
+	Reset(bdg, pplai);
+}
+
+
+void GEMVSS::Reset(BDG& bdg, PLAI* pplai) noexcept
+{
+	GEMVS::Reset(bdg);
+
 	/* pre-evaluate all the moves */
 
 	for (EMV& emv : *this) {
-		bdg.MakeMvSq(emv.mv);	
-		XEV* pxev = xt.Find(bdg, 0);	/* use transposition table if available */
-		if (pxev != nullptr && pxev->evt() == EVT::Equal)
+		bdg.MakeMvSq(emv.mv);
+		/* use transposition table if available - but don't use pruned branches,
+		 * becuase they aren't exact */
+		XEV* pxev = xt.Find(bdg, 0);
+		if (pxev != nullptr && pxev->evt() != EVT::Higher) {
+			emv.sct = static_cast<uint16_t>(SCT::XTable);
 			emv.ev = -pxev->ev();
-		else
+		}
+		else {
+			emv.sct = static_cast<uint16_t>(SCT::Eval);
 			emv.ev = -pplai->EvBdgStatic(bdg, emv.mv, false);
+		}
 		bdg.UndoMvSq(emv.mv);
 	}
 }
@@ -416,7 +469,7 @@ bool GEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 
 		EMV* pemvBest = pemv;
 		for (int iemvBest = iemvNext; iemvBest < cemv(); iemvBest++)
-			if ((*this)[iemvBest].ev > pemvBest->ev)
+			if ((*this)[iemvBest] > *pemvBest)
 				pemvBest = &(*this)[iemvBest];
 		swap(*pemv, *pemvBest);
 
@@ -465,22 +518,20 @@ bool GEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
  *	pemvBest), and adjusts search depth when mates are found. mvev has the move and
  *	evaluation in it on entry. Returns true if we should prune.
  */
-bool PLAI::FAlphaBetaPrune(EMV* pemv, EV& evBest, EV& evAlpha, EV evBeta, const EMV*& pemvBest, int& plyLim) const noexcept
+bool PLAI::FAlphaBetaPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept
 {
-	if (pemv->ev > evBest) {
-		evBest = pemv->ev;
-		pemvBest = pemv;
-	}
-	if (pemv->ev >= evBeta)	
+	if (pemv->ev > emvBest.ev)
+		emvBest = *pemv;
+	if (pemv->ev >= ab)	
 		return true;
-	if (pemv->ev > evAlpha) {
-		evAlpha = pemv->ev;
+	if (!(pemv->ev <= ab)) {
+		ab >>= pemv->ev;
 		if (FEvIsMate(pemv->ev))
 			plyLim = PlyFromEvMate(pemv->ev);
 	}
 	if (fAbort) {
-		pemv->ev = evBest = evAbort;
-		pemvBest = nullptr;
+		pemv->ev = emvBest.ev = evAbort;
+		emvBest.mv = MV();
 		return true;
 	}
 	return false;
@@ -493,12 +544,16 @@ bool PLAI::FAlphaBetaPrune(EMV* pemv, EV& evBest, EV& evAlpha, EV evBeta, const 
  *	evBest to be the checkmate/stalemate if we're in that state. cmvLegal is the 
  *	count of legal moves in vmvev, and vmvev is the full pseudo-legal move list.
  */
-void PLAI::TestForMates(BDG& bdg, GEMVS& gemvs, EV& evBest, int ply) const noexcept
+void PLAI::TestForMates(BDG& bdg, GEMVS& gemvs, EMV& emvBest, int ply) const noexcept
 {
-	if (gemvs.cmvLegal == 0)
-		evBest = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
-	else if (bdg.GsTestGameOver(gemvs.cmvLegal, *ga.prule) != GS::Playing)
-		evBest = evDraw;
+	if (gemvs.cmvLegal == 0) {
+		emvBest.ev = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
+		emvBest.mv = MV();
+	}
+	else if (bdg.GsTestGameOver(gemvs.cmvLegal, *ga.prule) != GS::Playing) {
+		emvBest.ev = evDraw;
+		emvBest.mv = MV();
+	}
 }
 
 
@@ -522,34 +577,35 @@ MV PLAI::MvGetNext(SPMV& spmv)
 
 	GEMVSS gemvss(bdg, this);
 	int plyDepthLast = clamp(PlyLim(bdg, gemvss), 2, 20);
-	const EMV* pemvBest = nullptr;
-
+	EMV emvBest;
 	StartMoveLog();
 
 	/* iterative deepening */
 
 	for (int plyDepth = 2; plyDepth <= plyDepthLast; plyDepth++) {
-		LogOpen(L"Depth ", to_wstring(plyDepth));
-		EV evAlpha = -evInf, evBeta = evInf;
-		EV evBest = -evInf;
-		pemvBest = nullptr;
+		
+		LOGITD logitd(*this, bdg, plyDepth, emvBest);
 		int plyLim = plyDepth;
+		AB ab(-evInf, evInf);
+		emvBest = EMV(MV(), -evInf);
 
-		GEMVSS gemvss(bdg, this);
+		/* do the alpha-beta search */
+
+		gemvss.Reset(bdg, this);
 		for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
-			pemv->ev = -EvBdgDepth(bdg, pemv, 1, plyLim, -evBeta, -evAlpha);
+			pemv->ev = -EvBdgDepth(bdg, *pemv, 1, plyLim, -ab);
 			gemvss.UndoMv(bdg);
-			if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim))
+			if (FAlphaBetaPrune(pemv, emvBest, ab, plyLim))	/* should only prune on aborts */
 				break;
 		}
-		LogClose(L"Depth ", 
-				 pemvBest == nullptr ? L"(none)" : 
-					bdg.SzDecodeMvPost(pemvBest->mv) + L" " + SzFromEv(evBest), 
-				 LGF::Normal);
+
+		xt.Save(bdg, emvBest, EVT::Equal, plyDepth);
+		if (FEvIsMate(emvBest.ev))
+			break;
 	}
 
 	EndMoveLog();
-	return pemvBest == nullptr ? MV() : pemvBest->mv;
+	return emvBest.mv;
 }
 
 
@@ -560,25 +616,28 @@ MV PLAI::MvGetNext(SPMV& spmv)
  *	this point, either because we found an exact match of the board/ply, or the inexact
  *	match is outside the alpha/beta interval.
  * 
- *	evBest will contain the evaluation we should use if we stop the search.
+ *	emvBest will contain the evaluation we should use if we stop the search.
  */
-bool PLAI::FLookupXt(BDG& bdg, int ply, EV& evBest, EV& evAlpha, EV& evBeta) const noexcept
+bool PLAI::FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB& ab) const noexcept
 {
 	XEV* pxev = xt.Find(bdg, ply);
 	if (pxev == nullptr)
 		return false;
-	evBest = pxev->ev();
-	if (pxev->evt() == EVT::Equal)
+	if (pxev->evt() == EVT::Equal) {
+Found:
+		emvBest.ev = pxev->ev();
+		emvBest.mv = pxev->mv();
 		return true;
+	}
 	else if (pxev->evt() == EVT::Higher) {
-		if (pxev->ev() >= evBeta)
-			return true;;
-		evAlpha = max(evAlpha, pxev->ev());
+		if (pxev->ev() >= ab)
+			goto Found;
+		ab >>= pxev->ev();
 	}
 	else { // EVT::Lower 
-		if (pxev->ev() <= evAlpha)
-			return true;
-		evBeta = min(evBeta, pxev->ev());
+		if (pxev->ev() <= ab)
+			goto Found;
+		ab <<= pxev->ev();
 	}
 	return false;
 }
@@ -592,39 +651,36 @@ bool PLAI::FLookupXt(BDG& bdg, int ply, EV& evBest, EV& evAlpha, EV& evBeta) con
  *	The board will be modified, but it will be restored to its original state in 
  *	all cases.
  * 
- *	On entry pemvPrev has the last move made.
+ *	On entry emvPrev has the last move made.
  * 
  *	Returns board evaluation in centi-pawns.
  */
-EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlpha, EV evBeta) noexcept
+EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB ab) noexcept
 {
 	/* when we're at goal depth, finish with a quiescent eval */
 	if (ply >= plyLim)
-		return EvBdgQuiescent(bdg, pemvPrev, ply, evAlpha, evBeta);
+		return EvBdgQuiescent(bdg, emvPrev, ply, ab);
 
 	/* check transposition table entry for this board and depth */
-	EV evBest;
-	if (FLookupXt(bdg, plyLim - ply, evBest, evAlpha, evBeta))
-		return evBest;
+	EMV emvBest(MV(), -evInf);
+	if (FLookupXt(bdg, plyLim - ply, emvBest, ab))
+		return emvBest.ev;
 
-	const EMV* pemvBest = nullptr;
-	evBest = -evInf;
-
-	LOGEMV logemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L' ');
+	LOGEMV logemv(*this, bdg, emvPrev, emvBest, ab, ply, L' ');
 
 	GEMVSS gemvss(bdg, this);
 	for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
-		pemv->ev = -EvBdgDepth(bdg, pemv, ply + 1, plyLim, -evBeta, -evAlpha);
+		pemv->ev = -EvBdgDepth(bdg, *pemv, ply + 1, plyLim, -ab);
 		gemvss.UndoMv(bdg);
-		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim)) {
-			xt.Save(bdg, evBest, EVT::Higher, plyLim - ply);
-			return evBest;
+		if (FAlphaBetaPrune(pemv, emvBest, ab, plyLim)) {
+			xt.Save(bdg, *pemv, EVT::Higher, plyLim - ply);
+			return pemv->ev;
 		}
 	}
 
-	TestForMates(bdg, gemvss, evBest, ply);
-	xt.Save(bdg, evBest, evBest <= evAlpha ? EVT::Lower : EVT::Equal, plyLim - ply);
-	return evBest;
+	TestForMates(bdg, gemvss, emvBest, ply);
+	xt.Save(bdg, emvBest, emvBest.ev < ab ? EVT::Lower : EVT::Equal, plyLim - ply);
+	return emvBest.ev;
 }
 
 
@@ -634,43 +690,53 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV* pemvPrev, int ply, int plyLim, EV evAlp
  *	of the player next to move, i.e., it only considers captures and other "noisy" moves.
  *	Alpha-beta prunes. 
  */
-EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV* pemvPrev, int ply, EV evAlpha, EV evBeta) noexcept
+EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB ab) noexcept
 {
-	const EMV* pemvBest = nullptr;
-	EV evBest;
+	EMV emvBest;
 	int plyLim = plyMax;
 
-	if (FLookupXt(bdg, 0, evBest, evAlpha, evBeta))
-		return evBest;
+	if (FLookupXt(bdg, 0, emvBest, ab))
+		return emvBest.ev;
 	
-	LOGEMV logemv(*this, bdg, pemvPrev, evBest, evAlpha, evBeta, ply, L'Q');
+	LOGEMV logemv(*this, bdg, emvPrev, emvBest, ab, ply, L'Q');
 
 	/* first off, get full, slow static eval and check current board already in a pruning 
-	   situations; */
+	   situations. Adjust a-b window if we're not pruning. */
 
-	evBest = EvBdgStatic(bdg, pemvPrev->mv, true);
-	if (evBest >= evBeta)
-		return evBest;
-	evAlpha = max(evAlpha, evBest);
+	emvBest.mv = MV();
+	emvBest.ev = EvBdgStatic(bdg, emvPrev.mv, true);
+	if (emvBest.ev >= ab)
+		return emvBest.ev;
+	ab >>= emvBest.ev;
 
 	/* recursively evaluate more moves */
 
 	GEMVSQ gemvsq(bdg);
 	for (EMV* pemv; gemvsq.FMakeMvNext(bdg, pemv); ) {
-		pemv->ev = -EvBdgQuiescent(bdg, pemv, ply + 1, -evBeta, -evAlpha);
+		pemv->ev = -EvBdgQuiescent(bdg, *pemv, ply + 1, -ab);
 		gemvsq.UndoMv(bdg);
-		if (FAlphaBetaPrune(pemv, evBest, evAlpha, evBeta, pemvBest, plyLim)) {
-			xt.Save(bdg, evBest, EVT::Higher, 0);
-			return evBest;
+		if (FAlphaBetaPrune(pemv, emvBest, ab, plyLim)) {
+			xt.Save(bdg, *pemv, EVT::Higher, 0);
+			return pemv->ev;
 		}
 	}
 
-	TestForMates(bdg, gemvsq, evBest, ply);
-	xt.Save(bdg, evBest, evBest <= evAlpha ? EVT::Lower : EVT::Equal, 0);
-	return evBest;
+	TestForMates(bdg, gemvsq, emvBest, ply);
+	xt.Save(bdg, emvBest, emvBest.ev < ab ? EVT::Lower : EVT::Equal, 0);
+	return emvBest.ev;
 }
 
 
+/*	PLAI::PumpMsg
+ *
+ *	Temporary message pump to keep the UI working while the AI is thinking.
+ *	Eventually we'll modify the search to run in a dedicated thread and we won't
+ *	need this any more.
+ * 
+ *	If the user aborts the thinking, it sets a flag in the player to abort the
+ *	AI. The flag is checked in the pruning code, which causes a cascade of 
+ *	pruning and we then abort at the top level of the search.
+ */
 void PLAI::PumpMsg(void) noexcept
 {
 	if (++cYield % dcYield == 0) {
@@ -978,6 +1044,32 @@ int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 }
 
 
+int PLAI::CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept
+{
+	int cfile = 0;
+	DIR dir = cpc == CPC::White ? DIR::North : DIR::South;
+	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
+	BB bbPawnOpp = bdg.mppcbb[PC(~cpc, APC::Pawn)];
+	for (BB bb = bbPawn; bb; bb.ClearLow()) {
+		/* path in front of the pawn to the promotion rank */
+		SQ sqPawn = bb.sqLow();
+		BB bbPath = mpbb.BbSlideTo(sqPawn, dir);	
+		/* don't count doubled pawns */
+		if (bbPath & bbPawn)
+			continue;
+		/* see if an opponent pawn is in our path or in the file to the left 
+		   or right */
+		if (sqPawn.file() != fileA)
+			bbPath |= bbPath >> 1;
+		if (sqPawn.file() != fileH)
+			bbPath |= bbPath << 1;
+		if (!(bbPath & bbPawnOpp))			
+			cfile++;
+	}
+	return cfile;
+}
+
+
 /*	PLAI::EvBdgPawnStructure
  *
  *	Returns the pawn structure evaluation of the board position from the
@@ -989,14 +1081,15 @@ EV PLAI::EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
 
 	ev -= CfileDoubledPawns(bdg, cpc);
 	ev -= CfileIsoPawns(bdg, cpc);
+	ev += 5 * CfilePassedPawns(bdg, cpc);
 
 	/* overextended pawns */
 
 	/* backwards pawns */
-	/* passed pawns */
+
 	/* connected pawns */
 	
-	/* open and half-open files */
+	/* open files */
 
 	return ev;
 }
