@@ -126,14 +126,14 @@ public:
 	virtual float DyLine(void) const;
 	size_t IlgentryFromY(int y) const;
 
-	virtual bool FDepthLog(LGT lgt, int& depth); 
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);	
-	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const;
-	void InitLog(int depth);
-	void ClearLog(void);
-	void SetDepthLog(int depth);
-	void SetDepthLogDefault(int depth);
-	int DepthLog(void) const;
+	virtual bool FDepthLog(LGT lgt, int& depth) noexcept; 
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
+	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const noexcept;
+	void InitLog(int depth) noexcept;
+	void ClearLog(void) noexcept;
+	void SetDepthLog(int depth) noexcept;
+	void SetDepthLogDefault(int depth) noexcept;
+	int DepthLog(void) const noexcept;
 	void EnableLogFile(bool fSave);
-	bool FLogFileEnabled(void) const;
+	bool FLogFileEnabled(void) const noexcept;
 };

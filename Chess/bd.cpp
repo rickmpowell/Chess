@@ -128,6 +128,15 @@ MPBB::MPBB(void)
 
 			bb1 = BbEastOne(bb) | BbWestOne(bb);
 			mpsqbbKing[sq] = bb1 | BbNorthOne(bb1 | bb) | BbSouthOne(bb1 | bb);
+
+			/* passed pawn alleys */
+
+			if (in_range(rank, 1, rankMax - 2)) {
+				BB bbNorth = mpsqdirbbSlide[sq][static_cast<int>(DIR::North)];
+				BB bbSouth = mpsqdirbbSlide[sq][static_cast<int>(DIR::South)];
+				mpsqbbPassedPawnAlley[sq - 8][CPC::White] = bbNorth | BbEastOne(bbNorth) | BbWestOne(bbNorth);
+				mpsqbbPassedPawnAlley[sq - 8][CPC::Black] = bbSouth | BbEastOne(bbSouth) | BbWestOne(bbSouth);
+			}
 		}
 }
 
@@ -480,43 +489,43 @@ void BD::UndoMvSq(MV mv)
 }
 
 
-/*	BDG::GenGemv
+/*	BDG::GenVemv
  *
  *	Generates the legal moves for the current player who has the move.
  *	Optionally doesn't bother to remove moves that would leave the
  *	king in check.
  */
-void BD::GenGemv(GEMV& gemv, GG gg)
+void BD::GenVemv(VEMV& vemv, GG gg)
 {
-	GenGemv(gemv, cpcToMove, gg);
+	GenVemv(vemv, cpcToMove, gg);
 }
 
 
-/*	BD::GenGemv
+/*	BD::GenVemv
  *
  *	Generates verified moves for the given board position,
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenGemv(GEMV& gemv, CPC cpcMove, GG gg)
+void BD::GenVemv(VEMV& vemv, CPC cpcMove, GG gg)
 {
 	Validate();
-	GenGemvColor(gemv, cpcMove);
+	GenVemvColor(vemv, cpcMove);
 	if (gg == GG::Legal)
-		RemoveInCheckMoves(gemv, cpcMove);
+		RemoveInCheckMoves(vemv, cpcMove);
 }
 
 
-void BD::RemoveInCheckMoves(GEMV& gemv, CPC cpcMove)
+void BD::RemoveInCheckMoves(VEMV& vemv, CPC cpcMove)
 {
  	unsigned imvDest = 0;
-	for (EMV emv : gemv) {
+	for (EMV emv : vemv) {
 		MakeMvSq(emv.mv);
 		if (!FInCheck(cpcMove))
-			gemv[imvDest++] = emv.mv;
+			vemv[imvDest++] = emv.mv;
 		UndoMvSq(emv.mv);
 	}
-	gemv.Resize(imvDest);
+	vemv.Resize(imvDest);
 }
 
 
@@ -699,23 +708,23 @@ APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 }
 
 
-/*	BD::GenGemvColor
+/*	BD::GenVemvColor
  *
  *	Generates moves for the given color pieces. Does not check if the king is left in
  *	check, so caller must weed those moves out.
  */
-void BD::GenGemvColor(GEMV& gemv, CPC cpcMove) const
+void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
 {
-	gemv.Clear();
+	vemv.Clear();
 
-	GenGemvPawnMvs(gemv, mppcbb[PC(cpcMove, APC::Pawn)], cpcMove);
+	GenVemvPawnMvs(vemv, mppcbb[PC(cpcMove, APC::Pawn)], cpcMove);
 
 	/* generate knight moves */
 
 	for (BB bb = mppcbb[PC(cpcMove, APC::Knight)]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
 		BB bbTo = mpbb.BbKnightTo(sqFrom);
-		GenGemvBbMvs(gemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Knight));
+		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Knight));
 	}
 
 	/* generate bishop moves */
@@ -726,7 +735,7 @@ void BD::GenGemvColor(GEMV& gemv, CPC cpcMove) const
 				BbRevSlideAttacks(DIR::SouthEast, sqFrom) |
 				BbRevSlideAttacks(DIR::SouthWest, sqFrom) |
 				BbFwdSlideAttacks(DIR::NorthWest, sqFrom);
-		GenGemvBbMvs(gemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Bishop));
+		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Bishop));
 	}
 
 	/* generate rook moves */
@@ -737,7 +746,7 @@ void BD::GenGemvColor(GEMV& gemv, CPC cpcMove) const
 				BbFwdSlideAttacks(DIR::East, sqFrom) |
 				BbRevSlideAttacks(DIR::South, sqFrom) |
 				BbRevSlideAttacks(DIR::West, sqFrom);
-		GenGemvBbMvs(gemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Rook));
+		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Rook));
 	}
 
 	/* generate queen moves */
@@ -752,7 +761,7 @@ void BD::GenGemvColor(GEMV& gemv, CPC cpcMove) const
 				BbRevSlideAttacks(DIR::SouthWest, sqFrom) |
 				BbRevSlideAttacks(DIR::West, sqFrom) |
 				BbFwdSlideAttacks(DIR::NorthWest, sqFrom);
-		GenGemvBbMvs(gemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Queen));
+		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::Queen));
 	}
 
 	/* generate king moves */
@@ -761,71 +770,71 @@ void BD::GenGemvColor(GEMV& gemv, CPC cpcMove) const
 	assert(bbKing.csq() == 1);
 	SQ sqFrom = bbKing.sqLow();
 	BB bbTo = mpbb.BbKingTo(sqFrom);
-	GenGemvBbMvs(gemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::King));
-	GenGemvCastle(gemv, sqFrom, cpcMove);
+	GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, APC::King));
+	GenVemvCastle(vemv, sqFrom, cpcMove);
 }
 
 
-/*	BD::GenGemvBbMvs
+/*	BD::GenVemvBbMvs
  *
  *	Generates all moves with destination squares in bbTo and square offset to
  *	the soruce square dsq 
  */
-void BD::GenGemvBbMvs(GEMV& gemv, BB bbTo, int dsq, PC pcMove) const
+void BD::GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const
 {
 	for (; bbTo; bbTo.ClearLow()) {
 		SQ sqTo = bbTo.sqLow();
-		gemv.AppendMv(sqTo + dsq, sqTo, pcMove);
+		vemv.AppendMv(sqTo + dsq, sqTo, pcMove);
 	}
 }
 
 
-/*	BD::GenGmvBbMvs
+/*	BD::GenVemvBbMvs
  *
  *	Generates all moves with the source square sqFrom and the destination squares
  *	in bbTo.
  */
-void BD::GenGemvBbMvs(GEMV& gemv, SQ sqFrom, BB bbTo, PC pcMove) const
+void BD::GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const
 {
 	for (; bbTo; bbTo.ClearLow())
-		gemv.AppendMv(sqFrom, bbTo.sqLow(), pcMove);
+		vemv.AppendMv(sqFrom, bbTo.sqLow(), pcMove);
 }
 
 
-void BD::GenGemvBbPawnMvs(GEMV& gemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const
+void BD::GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const
 {
 	if (bbTo & bbRankPromotion) {
 		for (BB bbT = bbTo & bbRankPromotion; bbT; bbT.ClearLow()) {
 			SQ sqTo = bbT.sqLow();
-			AddGemvMvPromotions(gemv, MV(sqTo + dsq, sqTo, PC(cpcMove, APC::Pawn)));
+			AddVemvMvPromotions(vemv, MV(sqTo + dsq, sqTo, PC(cpcMove, APC::Pawn)));
 		}
 		bbTo -= bbRankPromotion;
 	}
-	GenGemvBbMvs(gemv, bbTo, dsq, PC(cpcMove, APC::Pawn));
+	GenVemvBbMvs(vemv, bbTo, dsq, PC(cpcMove, APC::Pawn));
 }
 
 
-void BD::GenGemvPawnMvs(GEMV& gemv, BB bbPawns, CPC cpcMove) const
+void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const
 {
 	if (cpcMove == CPC::White) {
 		BB bbTo = (bbPawns << 8) & bbUnoccupied;
-		GenGemvBbPawnMvs(gemv, bbTo, bbRank8, -8, cpcMove);
+		GenVemvBbPawnMvs(vemv, bbTo, bbRank8, -8, cpcMove);
 		bbTo = ((bbTo & bbRank3) << 8) & bbUnoccupied;
-		GenGemvBbMvs(gemv, bbTo, -16, PC(cpcMove, APC::Pawn));
+		GenVemvBbMvs(vemv, bbTo, -16, PC(cpcMove, APC::Pawn));
 		bbTo = ((bbPawns - bbFileA) << 7) & mpcpcbb[CPC::Black];
-		GenGemvBbPawnMvs(gemv, bbTo, bbRank8, -7, cpcMove);
+		GenVemvBbPawnMvs(vemv, bbTo, bbRank8, -7, cpcMove);
 		bbTo = ((bbPawns - bbFileH) << 9) & mpcpcbb[CPC::Black];
-		GenGemvBbPawnMvs(gemv, bbTo, bbRank8, -9, cpcMove);
+		GenVemvBbPawnMvs(vemv, bbTo, bbRank8, -9, cpcMove);
 	}
 	else {
 		BB bbTo = (bbPawns >> 8) & bbUnoccupied;
-		GenGemvBbPawnMvs(gemv, bbTo, bbRank1, 8, cpcMove);
+		GenVemvBbPawnMvs(vemv, bbTo, bbRank1, 8, cpcMove);
 		bbTo = ((bbTo & bbRank6) >> 8) & bbUnoccupied;
-		GenGemvBbMvs(gemv, bbTo, 16, PC(cpcMove, APC::Pawn));
+		GenVemvBbMvs(vemv, bbTo, 16, PC(cpcMove, APC::Pawn));
 		bbTo = ((bbPawns - bbFileA) >> 9) & mpcpcbb[CPC::White];
-		GenGemvBbPawnMvs(gemv, bbTo, bbRank1, 9, cpcMove);
+		GenVemvBbPawnMvs(vemv, bbTo, bbRank1, 9, cpcMove);
 		bbTo = ((bbPawns - bbFileH) >> 7) & mpcpcbb[CPC::White];
-		GenGemvBbPawnMvs(gemv, bbTo, bbRank1, 7, cpcMove);
+		GenVemvBbPawnMvs(vemv, bbTo, bbRank1, 7, cpcMove);
 	}
 	
 	if (!sqEnPassant.fIsNil()) {
@@ -836,43 +845,43 @@ void BD::GenGemvPawnMvs(GEMV& gemv, BB bbPawns, CPC cpcMove) const
 			bbFrom = ((bbEnPassant - bbFileA) << 7) | ((bbEnPassant - bbFileH) << 9);
 		for (bbFrom &= bbPawns; bbFrom; bbFrom.ClearLow()) {
 			SQ sqFrom = bbFrom.sqLow();
-			gemv.AppendMv(sqFrom, sqEnPassant, PC(cpcMove, APC::Pawn));
+			vemv.AppendMv(sqFrom, sqEnPassant, PC(cpcMove, APC::Pawn));
 		}
 	}
 }
 
 
-/*	BD::AddGemvMvPromotions
+/*	BD::AddVemvMvPromotions
  *
  *	When a pawn is pushed to the last rank, adds all the promotion possibilities
  *	to the move list, which includes promotions to queen, rook, knight, and
  *	bishop.
  */
-void BD::AddGemvMvPromotions(GEMV& gemv, MV mv) const
+void BD::AddVemvMvPromotions(VEMV& vemv, MV mv) const
 {
-	gemv.AppendMv(mv.SetApcPromote(APC::Queen));
-	gemv.AppendMv(mv.SetApcPromote(APC::Rook));
-	gemv.AppendMv(mv.SetApcPromote(APC::Bishop));
-	gemv.AppendMv(mv.SetApcPromote(APC::Knight));
+	vemv.AppendMv(mv.SetApcPromote(APC::Queen));
+	vemv.AppendMv(mv.SetApcPromote(APC::Rook));
+	vemv.AppendMv(mv.SetApcPromote(APC::Bishop));
+	vemv.AppendMv(mv.SetApcPromote(APC::Knight));
 }
 
 
-/*	BD::GenGemvCastle
+/*	BD::GenVemvCastle
  *
  *	Generates the legal castle moves for the king at sq. Checks that the king is in
  *	check and intermediate squares are not under attack, checks for intermediate 
  *	squares are empty, but does not check the final king destination for in check.
  */
-void BD::GenGemvCastle(GEMV& gemv, SQ sqKing, CPC cpcMove) const
+void BD::GenVemvCastle(VEMV& vemv, SQ sqKing, CPC cpcMove) const
 {
 	BB bbKing = BB(sqKing);
 	if (FCanCastle(cpcMove, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
 		if (ApcBbAttacked(bbKing | (bbKing << 1), ~cpcMove) == APC::Null)
-			gemv.AppendMv(sqKing, sqKing + 2, PC(cpcMove, APC::King));
+			vemv.AppendMv(sqKing, sqKing + 2, PC(cpcMove, APC::King));
 	}
 	if (FCanCastle(cpcMove, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
 		if (ApcBbAttacked(bbKing | (bbKing >> 1), ~cpcMove) == APC::Null) 
-			gemv.AppendMv(sqKing, sqKing - 2, PC(cpcMove, APC::King));
+			vemv.AppendMv(sqKing, sqKing - 2, PC(cpcMove, APC::King));
 	}
 }
 
@@ -1271,9 +1280,9 @@ GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const
 }
 
 
-void BDG::SetGameOver(const GEMV& gemv, const RULE& rule)
+void BDG::SetGameOver(const VEMV& vemv, const RULE& rule)
 {
-	SetGs(GsTestGameOver(gemv.cemv(), rule));
+	SetGs(GsTestGameOver(vemv.cemv(), rule));
 }
 
 
@@ -1417,3 +1426,47 @@ wstring SzFromEv(EV ev)
 }
 
 
+wstring SzFromSct(SCT sct)
+{
+	switch (sct) {
+	case SCT::Eval:
+		return L"EV";
+	case SCT::XTable:
+		return L"XT";
+	case SCT::PrincipalVar:
+		return L"PV";
+	default:
+		return L"";
+	}
+}
+
+
+wstring SzFromMvm(MVM mvm)
+{
+	wchar_t sz[16], *pch = sz;
+
+	*pch++ = L'a' + mvm.sqFrom().file();
+	*pch++ = L'1' + mvm.sqFrom().rank();
+	*pch++ = L'a' + mvm.sqTo().file();
+	*pch++ = L'1' + mvm.sqTo().rank();
+	APC apc;
+	if ((apc = mvm.apcPromote()) != APC::Null) {
+		*pch++ = L'=';
+		switch (apc) {
+		case APC::Knight:
+			*pch++ = L'N';
+			break;
+		case APC::Bishop:
+			*pch++ = L'B';
+			break;
+		case APC::Rook:
+			*pch++ = L'R';
+			break;
+		case APC::Queen:
+			*pch++ = L'Q';
+			break;
+		}
+	}
+	*pch = 0;
+	return wstring(sz);
+}

@@ -217,10 +217,10 @@ public:
 	virtual void Draw(const RC& rcDraw);
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
 
-	virtual bool FDepthLog(LGT lgt, int& depth);
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+	virtual bool FDepthLog(LGT lgt, int& depth) noexcept;
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 
-	inline void XLogOpen(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal)
+	inline void XLogOpen(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal) noexcept
 	{
 		int depthLog;
 		if (FDepthLog(LGT::Open, depthLog))
@@ -232,7 +232,7 @@ public:
 		if (FDepthLog(LGT::Open, depthLog)) \
 			AddLog(LGT::Open, LGF::Normal, depthLog, tag, szData); }
 
-	inline void XLogClose(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal)
+	inline void XLogClose(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal) noexcept
 	{
 		int depthLog;
 		if (FDepthLog(LGT::Close, depthLog))
@@ -244,7 +244,7 @@ public:
 		if (FDepthLog(LGT::Close, depthLog)) \
 			AddLog(LGT::Close, lgf, depthLog, szTag, szData); }
 
-	inline void XLogData(const wstring& szData)
+	inline void XLogData(const wstring& szData) noexcept
 	{
 		int depthLog;
 		if (FDepthLog(LGT::Data, depthLog))
@@ -256,7 +256,7 @@ public:
 		if (FDepthLog(LGT::Data, depthLog)) \
 			AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData); }
 
-	inline void LogTemp(const wstring& szData)
+	inline void LogTemp(const wstring& szData) noexcept
 	{
 		int depthLog;
 		if (FDepthLog(LGT::Temp, depthLog))

@@ -49,34 +49,6 @@ public:
 
 /*
  *
- *	CPC enumeration
- * 
- *	Color of a piece. White or black, generally
- * 
- */
-
-
-enum CPC {
-	NoColor = -1,
-	White = 0,
-	Black = 1,
-	ColorMax = 2
-};
-
-inline CPC operator~(CPC cpc)
-{
-	return static_cast<CPC>(static_cast<int>(cpc) ^ 1);
-}
-
-inline CPC operator++(CPC& cpc)
-{
-	cpc = static_cast<CPC>(static_cast<int>(cpc) + 1);
-	return cpc;
-}
-
-
-/*
- *
  *	APC enumeration
  *
  *	Actual piece types
@@ -191,6 +163,8 @@ public:
 	inline MVM(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	sqFromGrf = sqFrom; sqToGrf = sqTo; }
 	inline operator uint16_t() const noexcept { return *(uint16_t*)this; }
 
+	inline SQ sqFrom(void) const noexcept { return sqFromGrf; }
+	inline SQ sqTo(void) const noexcept { return sqToGrf; }
 	inline APC apcPromote(void) const noexcept { return (APC)apcPromoteGrf; }
 	inline MVM& SetApcPromote(APC apc) noexcept { apcPromoteGrf = apc; return *this; }
 	inline bool fIsNil(void) const noexcept { return sqFromGrf == 0 && sqToGrf == 0; }
@@ -261,10 +235,17 @@ public:
 	inline bool fIsCapture(void) const noexcept { return apcCapture() != APC::Null; }
 	inline bool operator==(const MV& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
 	inline bool operator!=(const MV& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
+	inline bool operator==(const MVM& mvm) const noexcept { return *(uint16_t*)this == (uint16_t)mvm; }
+	inline bool operator!=(const MVM& mvm) const noexcept { return *(uint16_t*)this != (uint16_t)mvm; }
 };
 
 static_assert(sizeof(MV) == sizeof(uint32_t));
 
+const MV mvNil = MV();
+const MVM mvmNil = MVM();
+const MV mvAll = MV(sqH8, sqH8, PC(CPC::White, APC::Error));
+const MVM mvmAll = MVM(sqH8, sqH8);
+wstring SzFromMvm(MVM mvm);
 
 /*
  *
@@ -294,6 +275,8 @@ inline bool FEvIsMate(EV ev) { return ev >= evMateMin; }
 inline bool FEvIsAbort(EV ev) { return ev == evAbort; }
 inline int PlyFromEvMate(EV ev) { return evMate - ev; }
 wstring SzFromEv(EV ev);
+inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
+
 
 /* score types, used during move enumeration in the ai search */
 enum class SCT {
@@ -301,6 +284,8 @@ enum class SCT {
 	XTable = 1,
 	PrincipalVar = 2
 };
+
+wstring SzFromSct(SCT sct);
 
 
 /*
@@ -337,7 +322,7 @@ static_assert(sizeof(EMV) == sizeof(uint64_t));
 
 /*
  *
- *	GEMV class
+ *	VEMV class
  * 
  *	Generated move list. Has simple array semantics. Actually stores an EMV, which
  *	is just handy extra room for an evaluation during search.
@@ -347,7 +332,7 @@ static_assert(sizeof(EMV) == sizeof(uint64_t));
 
 const size_t cemvPreMax = 60;
 
-class GEMV
+class VEMV
 {
 private:
 	uint64_t aemv[cemvPreMax];
@@ -355,51 +340,51 @@ private:
 	vector<uint64_t>* pvemvOverflow;
 
 public:
-	GEMV() : cemvCur(0), pvemvOverflow(nullptr)
+	VEMV() : cemvCur(0), pvemvOverflow(nullptr)
 	{
 		aemv[0] = 0;
 	}
 
-	~GEMV()
+	~VEMV()
 	{
 		if (pvemvOverflow)
 			delete pvemvOverflow;
 	}
 
-	/*	GEMV copy constructor
+	/*	VEMV copy constructor
 	 */
-	GEMV(const GEMV& gemv) : cemvCur(gemv.cemvCur), pvemvOverflow(nullptr)
+	VEMV(const VEMV& vemv) : cemvCur(vemv.cemvCur), pvemvOverflow(nullptr)
 	{
-		assert(gemv.FValid());
-		memcpy(aemv, gemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (gemv.pvemvOverflow)
-			pvemvOverflow = new vector<uint64_t>(*gemv.pvemvOverflow);
+		assert(vemv.FValid());
+		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
+		if (vemv.pvemvOverflow)
+			pvemvOverflow = new vector<uint64_t>(*vemv.pvemvOverflow);
 	}
 
 
-	/*	GEMV move constructor
+	/*	VEMV move constructor
 	 *
 	 *	Moves data from one GMV to another. Note that the source GMV is trashed.
 	 */
-	GEMV(GEMV&& gemv) noexcept : cemvCur(gemv.cemvCur), pvemvOverflow(gemv.pvemvOverflow)
+	VEMV(VEMV&& vemv) noexcept : cemvCur(vemv.cemvCur), pvemvOverflow(vemv.pvemvOverflow)
 	{
-		assert(gemv.FValid());
-		memcpy(aemv, gemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		gemv.cemvCur = 0;
-		gemv.pvemvOverflow = nullptr;
+		assert(vemv.FValid());
+		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
+		vemv.cemvCur = 0;
+		vemv.pvemvOverflow = nullptr;
 	}
 
 
-	GEMV& operator=(const GEMV& gemv)
+	VEMV& operator=(const VEMV& vemv)
 	{
-		assert(gemv.FValid());
-		cemvCur = gemv.cemvCur;
-		memcpy(aemv, gemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (gemv.pvemvOverflow) {
+		assert(vemv.FValid());
+		cemvCur = vemv.cemvCur;
+		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
+		if (vemv.pvemvOverflow) {
 			if (pvemvOverflow)
-				*pvemvOverflow = *gemv.pvemvOverflow;
+				*pvemvOverflow = *vemv.pvemvOverflow;
 			else
-				pvemvOverflow = new vector<uint64_t>(*gemv.pvemvOverflow);
+				pvemvOverflow = new vector<uint64_t>(*vemv.pvemvOverflow);
 		}
 		else {
 			if (pvemvOverflow) {
@@ -411,18 +396,18 @@ public:
 		return *this;
 	}
 
-	GEMV& operator=(GEMV&& gemv) noexcept
+	VEMV& operator=(VEMV&& vemv) noexcept
 	{
-		if (this == &gemv)
+		if (this == &vemv)
 			return *this;
-		cemvCur = gemv.cemvCur;
-		memcpy(aemv, gemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
+		cemvCur = vemv.cemvCur;
+		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
 		if (pvemvOverflow != nullptr) {
 			delete pvemvOverflow;
 			pvemvOverflow = nullptr;
 		}
-		pvemvOverflow = gemv.pvemvOverflow;
-		gemv.pvemvOverflow = nullptr;
+		pvemvOverflow = vemv.pvemvOverflow;
+		vemv.pvemvOverflow = nullptr;
 		return *this;
 	}
 
@@ -469,7 +454,7 @@ public:
 	/* iterator and const iterator for the arrays */
 
 	class iterator {
-		GEMV* pgemv;
+		VEMV* pvemv;
 		int iemv;
 	public:
 		using difference_type = int;
@@ -478,88 +463,29 @@ public:
 		using reference = EMV&;
 		using iterator_category = random_access_iterator_tag;
 
-		inline iterator(GEMV* pgemv, difference_type iemv) noexcept : pgemv(pgemv), iemv(iemv)
-		{
-		}
-		inline iterator(const iterator& it) noexcept : pgemv(it.pgemv), iemv(it.iemv) 
-		{
-		}
-		inline iterator& operator=(const iterator& it) noexcept 
-		{ 
-			pgemv = it.pgemv; iemv = it.iemv; return *this;
-		}
-
-		inline reference operator[](difference_type diemv) const noexcept 
-		{ 
-			return (*pgemv)[iemv + diemv]; 
-		}
-		inline reference operator*() const noexcept 
-		{ 
-			return (*pgemv)[iemv]; 
-		}
-		inline pointer operator->() const noexcept 
-		{
-			return &(*pgemv)[iemv]; 
-		}
-
-		inline iterator& operator++() noexcept 
-		{
-			iemv++; return *this;
-		}
-		inline iterator operator++(int) noexcept 
-		{
-			int iemvT = iemv; iemv++; return iterator(pgemv, iemvT);
-		}
-		inline iterator& operator--() noexcept 
-		{
-			iemv--; return *this;
-		}
-		inline iterator operator--(int) noexcept 
-		{ 
-			int iemvT = iemv; iemv--; return iterator(pgemv, iemvT);
-		}
-
-		inline iterator operator+(difference_type diemv) const noexcept 
-		{
-			return iterator(pgemv, iemv + diemv); 
-		}
-		inline iterator operator-(difference_type diemv) const noexcept 
-		{ 
-			return iterator(pgemv, iemv - diemv); 
-		}
-		inline iterator& operator+=(difference_type diemv) noexcept 
-		{ 
-			iemv += diemv; return *this; 
-		}
-		inline iterator& operator-=(difference_type diemv) noexcept 
-		{ 
-			iemv -= diemv; return *this; 
-		}
-		friend inline iterator operator+(difference_type diemv, iterator const& it) 
-		{ 
-			return iterator(it.pgemv, diemv + it.iemv); 
-		}
-		inline difference_type operator-(const iterator& it) const noexcept 
-		{ 
-			return iemv - it.iemv; 
-		}
-
-		inline bool operator==(const iterator& it) const noexcept 
-		{
-			return iemv == it.iemv; 
-		}
-		inline bool operator!=(const iterator& it) const noexcept 
-		{ 
-			return iemv != it.iemv; 
-		}
-		inline bool operator<(const iterator& it) const noexcept 
-		{ 
-			return iemv < it.iemv; 
-		}
+		inline iterator(VEMV* pvemv, difference_type iemv) noexcept : pvemv(pvemv), iemv(iemv) { }
+		inline iterator(const iterator& it) noexcept : pvemv(it.pvemv), iemv(it.iemv) { }
+		inline iterator& operator=(const iterator& it) noexcept { pvemv = it.pvemv; iemv = it.iemv; return *this; }
+		inline reference operator[](difference_type diemv) const noexcept { return (*pvemv)[iemv + diemv]; }
+		inline reference operator*() const noexcept { return (*pvemv)[iemv]; }
+		inline pointer operator->() const noexcept { return &(*pvemv)[iemv]; }
+		inline iterator& operator++() noexcept { iemv++; return *this; }
+		inline iterator operator++(int) noexcept { int iemvT = iemv; iemv++; return iterator(pvemv, iemvT); }
+		inline iterator& operator--() noexcept { iemv--; return *this; }
+		inline iterator operator--(int) noexcept { int iemvT = iemv; iemv--; return iterator(pvemv, iemvT); }
+		inline iterator operator+(difference_type diemv) const noexcept { return iterator(pvemv, iemv + diemv); }
+		inline iterator operator-(difference_type diemv) const noexcept { return iterator(pvemv, iemv - diemv); }
+		inline iterator& operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
+		inline iterator& operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
+		friend inline iterator operator+(difference_type diemv, iterator const& it) { return iterator(it.pvemv, diemv + it.iemv); }
+		inline difference_type operator-(const iterator& it) const noexcept { return iemv - it.iemv; }
+		inline bool operator==(const iterator& it) const noexcept { return iemv == it.iemv; }
+		inline bool operator!=(const iterator& it) const noexcept { return iemv != it.iemv; }
+		inline bool operator<(const iterator& it) const noexcept { return iemv < it.iemv; }
 	};
 
 	class citerator {
-		const GEMV* pgemv;
+		const VEMV* pvemv;
 		int iemv;
 	public:
 		using difference_type = int;
@@ -568,24 +494,24 @@ public:
 		using reference = const EMV&;
 		typedef random_access_iterator_tag iterator_category;
 
-		inline citerator(const GEMV* pgemv, int iemv) noexcept : pgemv(pgemv), iemv(iemv) { }
-		inline citerator(const citerator& it) noexcept : pgemv(it.pgemv), iemv(it.iemv) { }
-//		inline citerator operator=(const citerator& cit) noexcept { pgemv = cit.pgemv; iemv = cit.iemv; return *this; }
+		inline citerator(const VEMV* pvemv, int iemv) noexcept : pvemv(pvemv), iemv(iemv) { }
+		inline citerator(const citerator& it) noexcept : pvemv(it.pvemv), iemv(it.iemv) { }
+//		inline citerator operator=(const citerator& cit) noexcept { pvemv = cit.pvemv; iemv = cit.iemv; return *this; }
 
-		inline reference operator[](difference_type diemv) const noexcept { return (*pgemv)[iemv + diemv]; }
-		inline reference operator*() const noexcept { return (*pgemv)[iemv]; }
-		inline pointer operator->() const noexcept { return &(*pgemv)[iemv]; }
+		inline reference operator[](difference_type diemv) const noexcept { return (*pvemv)[iemv + diemv]; }
+		inline reference operator*() const noexcept { return (*pvemv)[iemv]; }
+		inline pointer operator->() const noexcept { return &(*pvemv)[iemv]; }
 
 		inline citerator operator++() noexcept { iemv++; return *this; }
 		inline citerator operator++(int) noexcept { citerator cit = *this; iemv++; return cit; }
 		inline citerator operator--() noexcept { iemv--; return *this; }
 		inline citerator operator--(int) noexcept { citerator it = *this; iemv--; return it; }
 
-		inline citerator operator+(difference_type diemv) const noexcept { return citerator(pgemv, iemv + diemv); }
-		inline citerator operator-(difference_type diemv) const noexcept { return citerator(pgemv, iemv - diemv); }
+		inline citerator operator+(difference_type diemv) const noexcept { return citerator(pvemv, iemv + diemv); }
+		inline citerator operator-(difference_type diemv) const noexcept { return citerator(pvemv, iemv - diemv); }
 		inline citerator operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
 		inline citerator operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
-		friend inline citerator operator+(difference_type diemv, const citerator& cit) { return citerator(cit.pgemv, diemv + cit.iemv); }
+		friend inline citerator operator+(difference_type diemv, const citerator& cit) { return citerator(cit.pvemv, diemv + cit.iemv); }
 		inline difference_type operator-(const citerator& cit) const noexcept { return iemv - cit.iemv; }
 
 		inline bool operator==(const citerator& cit) const noexcept { return iemv == cit.iemv; }
@@ -980,22 +906,22 @@ public:
 
 	/* move generation */
 	
-	void GenGemv(GEMV& gemv, GG gg);
-	void GenGemv(GEMV& gemv, CPC cpcMove, GG gg);
-	void GenGemvColor(GEMV& gemv, CPC cpcMove) const;
-	void GenGemvPawnMvs(GEMV& gemv, BB bbPawns, CPC cpcMove) const;
-	void GenGemvCastle(GEMV& gemv, SQ sqFrom, CPC cpcMove) const;
-	void AddGemvMvPromotions(GEMV& gemv, MV mv) const;
-	void GenGemvBbPawnMvs(GEMV& gemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const;
-	void GenGemvBbMvs(GEMV& gemv, BB bbTo, int dsq, PC pcMove) const;
-	void GenGemvBbMvs(GEMV& gemv, SQ sqFrom, BB bbTo, PC pcMove) const;
-	void GenGemvBbPromotionMvs(GEMV& gemv, BB bbTo, int dsq) const;
+	void GenVemv(VEMV& vemv, GG gg);
+	void GenVemv(VEMV& vemv, CPC cpcMove, GG gg);
+	void GenVemvColor(VEMV& vemv, CPC cpcMove) const;
+	void GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const;
+	void GenVemvCastle(VEMV& vemv, SQ sqFrom, CPC cpcMove) const;
+	void AddVemvMvPromotions(VEMV& vemv, MV mv) const;
+	void GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const;
+	void GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const;
+	void GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const;
+	void GenVemvBbPromotionMvs(VEMV& vemv, BB bbTo, int dsq) const;
 	
 	/*
 	 *	checking squares for attack 
 	 */
 
-	void RemoveInCheckMoves(GEMV& gemv, CPC cpc);
+	void RemoveInCheckMoves(VEMV& vemv, CPC cpc);
 	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
@@ -1282,7 +1208,7 @@ public:
 	 */
 
 	GS GsTestGameOver(int cmvToMove, const RULE& rule) const;
-	void SetGameOver(const GEMV& gemv, const RULE& rule);
+	void SetGameOver(const VEMV& vemv, const RULE& rule);
 	bool FDrawDead(void) const;
 	bool FDraw3Repeat(int cbdDraw) const;
 	bool FDraw50Move(int64_t cmvDraw) const;
@@ -1294,9 +1220,9 @@ public:
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv, bool fPretty);
-	bool FMvApcAmbiguous(const GEMV& gemv, MV mv) const;
-	bool FMvApcRankAmbiguous(const GEMV& gemv, MV mv) const;
-	bool FMvApcFileAmbiguous(const GEMV& gemv, MV mv) const;
+	bool FMvApcAmbiguous(const VEMV& vemv, MV mv) const;
+	bool FMvApcRankAmbiguous(const VEMV& vemv, MV mv) const;
+	bool FMvApcFileAmbiguous(const VEMV& vemv, MV mv) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
 	wstring SzDecodeMvPost(MV mv) const;
 
@@ -1305,13 +1231,13 @@ public:
 	 */
 
 	ERR ParseMv(const char*& pch, MV& mv);
-	ERR ParsePieceMv(const GEMV& gemv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseSquareMv(const GEMV& gemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseSquareMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
-	ERR ParseFileMv(const GEMV& gemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseRankMv(const GEMV& gemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	MV MvMatchPieceTo(const GEMV& gemv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
-	MV MvMatchFromTo(const GEMV& gemv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	ERR ParseFileMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	MV MvMatchPieceTo(const VEMV& vemv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	MV MvMatchFromTo(const VEMV& vemv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 
 	/*

@@ -63,7 +63,7 @@ public:
 	PT ptDragCur;
 	SQ sqHover;
 	RC rcDragPc;	// rectangle the dragged piece was last drawn in
-	GEMV gemvDrag;	// legal moves in the UI
+	VEMV vemvDrag;	// legal moves in the UI
 
 	vector<ANO> vano;	// annotations
 

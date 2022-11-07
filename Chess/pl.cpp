@@ -33,7 +33,8 @@ XT xt;	/* transposition table is big, so we share it with all AIs */
 
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
-		mvNext(MV()), spmvNext(SPMV::Animate), fDisableMvLog(false)
+		mvNext(MV()), spmvNext(SPMV::Animate), fDisableMvLog(false), 
+		pvmvmBreak(nullptr), imvmBreakLast(-1), cBreakRepeat(0)
 {
 }
 
@@ -47,6 +48,8 @@ wstring SzPercent(uint64_t wNum, uint64_t wDen)
 {
 	wchar_t sz[20], *pch = sz;
 
+	if (wDen == 0)
+		return wstring(L"[0/0]");
 	int w1000 = (int)((1000 * wNum) / wDen);
 	pch = PchDecodeInt(w1000 / 10, pch);
 	*pch++ = L'.';
@@ -88,28 +91,74 @@ EV PL::EvBaseApc(APC apc) const noexcept
 }
 
 
-bool PL::FDepthLog(LGT lgt, int& depth)
+bool PL::FDepthLog(LGT lgt, int& depth) noexcept
 {
 	return ga.FDepthLog(lgt, depth);
 }
 
 
-void PL::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+void PL::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
 	ga.AddLog(lgt, lgf, depth, tag, szData);
 }
 
 
-int PL::DepthLog(void) const
+int PL::DepthLog(void) const noexcept
 {
 	return ga.DepthLog();
 }
 
 
-void PL::SetDepthLog(int depthNew)
+void PL::SetDepthLog(int depthNew) noexcept
 {
 	ga.SetDepthLog(depthNew);
 }
+
+
+void PL::SetAIBreak(const vector<MVM>& vmvm)
+{
+	if (pvmvmBreak == nullptr) {
+		delete pvmvmBreak;
+		pvmvmBreak = nullptr;
+	}
+	pvmvmBreak = new vector<MVM>;
+	*pvmvmBreak = vmvm;
+}
+
+
+void PL::InitBreak(void)
+{
+	cBreakRepeat = 0;
+	imvmBreakLast = -1;
+}
+
+
+class AIBREAK
+{
+public:
+	PL& pl;
+	int ply;
+
+	inline AIBREAK(PL& pl, const EMV& emv, int ply) : pl(pl), ply(ply)
+	{
+		if (pl.pvmvmBreak == nullptr || pl.imvmBreakLast < ply - 2)
+			return;
+
+		if (emv.mv != (*pl.pvmvmBreak)[ply - 1])
+			return;
+
+		pl.imvmBreakLast++;
+		if (pl.imvmBreakLast == pl.pvmvmBreak->size()-1)
+			DebugBreak();
+	}
+
+	inline ~AIBREAK(void)
+	{
+		if (pl.pvmvmBreak == nullptr || pl.imvmBreakLast < ply - 1)
+			return;
+		pl.imvmBreakLast--;
+	}
+};
 
 
 /*
@@ -132,6 +181,13 @@ PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0),
 	fecoTempo = 1*fecoScale;
 	fecoRandom = 0*fecoScale;
 	InitWeightTables();
+}
+ 
+
+void PLAI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
+{
+	ga.AddLog(lgt, lgf, depth, tag, szData);
+	PumpMsg(true);
 }
 
 
@@ -177,18 +233,6 @@ float PLAI::CmvFromLevel(int level) const noexcept
 	default:
 		return CmvFromLevel(5);
 	}
-}
-
-
-int PLAI::PlyLim(const BDG& bdg, const GEMV& gemv) const
-{
-	static GEMV gemvOpp;
-	bdg.GenGemvColor(gemvOpp, ~bdg.cpcToMove);
-	const float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
-	const float fracAlphaBeta = 0.25f; // alpha-beta pruning cuts moves we analyze by this factor.
-	float size2 = (float)(gemv.cemv() * gemvOpp.cemv());
-	int plyLim = (int)round(2.0f * log(cmvSearch) / log(size2 * fracAlphaBeta * fracAlphaBeta));
-	return plyLim;
 }
 
 
@@ -250,12 +294,12 @@ void PLAI::EndMoveLog(void)
 class LOGSEARCH
 {
 protected:
-	PLAI& pl;
+	PL& pl;
 	const BDG& bdg;
 	wstring szData;
 	LGF lgf;
 public:
-	LOGSEARCH(PLAI& pl, const BDG& bdg) : pl(pl), bdg(bdg), szData(L""), lgf(LGF::Normal)
+	LOGSEARCH(PL& pl, const BDG& bdg) : pl(pl), bdg(bdg), szData(L""), lgf(LGF::Normal)
 	{
 	}
 
@@ -275,120 +319,125 @@ public:
 
 };
 
-class LOGEMV : public LOGSEARCH
+class LOGEMV : public LOGSEARCH, public AIBREAK
 {
 	const EMV& emvPrev;
 	int depthLogSav;
-	int imvExpandSav;
+	int imvmExpandSav;
 	const EMV& emvBest;
 
-	static int imvExpand;
-	static MV rgmv[8];
+	static int imvmExpand;
+	static MVM rgmvm[20];
 
 public:
 	inline LOGEMV(PLAI& pl, const BDG& bdg, 
 			const EMV& emvPrev, const EMV& emvBest, AB ab, int ply, wchar_t chType=L' ') : 
-		LOGSEARCH(pl, bdg),
-		emvPrev(emvPrev), emvBest(emvBest), depthLogSav(0), imvExpandSav(0)
+		LOGSEARCH(pl, bdg), AIBREAK(pl, emvPrev, ply),
+		emvPrev(emvPrev), emvBest(emvBest), depthLogSav(0), imvmExpandSav(0)
 	{
 		pl.cemvNode++;
-		pl.PumpMsg();
+		pl.PumpMsg(false);
 
-		if (pl.FDisabledMvLog())
-			return;
 		depthLogSav = DepthLog();
-		imvExpandSav = imvExpand;
+		imvmExpandSav = imvmExpand;
 		if (FExpandLog(emvPrev))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(emvPrev.mv), ATTR(L"FEN", bdg)),
-				wstring(1, chType) + to_wstring(ply) + L" " + SzFromEv(emvPrev.ev) + 
-					L" [" + SzFromEv(ab.evAlpha) + L", " + SzFromEv(ab.evBeta) + L"] ");
+				wjoin(wstring(1, chType) + to_wstring(ply), SzFromSct((SCT)emvPrev.sct), SzFromEv(emvPrev.ev), ab));
 	}
 
 	inline ~LOGEMV()
 	{
-		if (pl.FDisabledMvLog())
-			return;
 		LogClose(bdg.SzDecodeMvPost(emvPrev.mv), 
 				 szData.size() > 0 ? szData : SzFromEv(-emvBest.ev),	 
 				 lgf);
 		SetDepthLog(depthLogSav);
-		imvExpand = imvExpandSav;
+		imvmExpand = imvmExpandSav;
 	}
 
 	inline bool FExpandLog(const EMV& emv) const
 	{
-		if (emv.mv.sqFrom() != rgmv[imvExpand].sqFrom() ||	
-				emv.mv.sqTo() != rgmv[imvExpand].sqTo() ||
-				emv.mv.apcPromote() != rgmv[imvExpand].apcPromote())
-			return false;
-		imvExpand++;
+		if (rgmvm[imvmExpand] != mvmAll) {
+			if (emv.mv.sqFrom() != rgmvm[imvmExpand].sqFrom() ||
+					emv.mv.sqTo() != rgmvm[imvmExpand].sqTo() ||
+					emv.mv.apcPromote() != rgmvm[imvmExpand].apcPromote())
+				return false;
+		}
+		imvmExpand++;
 		return true;
 	}
-
 };
 
 /* a little debugging aid to trigger a change in log depth after a 
    specific sequence of moves */
-int LOGEMV::imvExpand = 0;
-MV LOGEMV::rgmv[] = { /*
-	   MV(sqD2, sqD4, pcWhitePawn),
-	   MV(sqD7, sqD6, pcBlackPawn),
-	   MV(sqC1, sqG5, pcWhiteBishop),
-	   MV(sqE7, sqE5, pcBlackPawn),
-	   MV(sqG5, sqD8, pcWhiteBishop), */
-	   MV()
+int LOGEMV::imvmExpand = 0;
+MVM LOGEMV::rgmvm[] = { /*
+	   MVM(sqC2, sqC3),
+	   MVM(sqB8, sqC6),
+	   MVM(sqD1, sqB3),
+	   MVM(sqG8, sqF6),
+	   MVM(sqB3, sqB7),
+	   mvmAll,	*/
+	   mvmNil
 };
+
+
+/*
+ *
+ *	LOGITD
+ * 
+ *	Iterative deepening loop logging. Displays search depth and a-b window,
+ *	along with the result of the cycle.
+ * 
+ */
 
 
 class LOGITD : public LOGSEARCH
 {
 	const EMV& emvBest;
 public:
-	LOGITD(PLAI& pl, const BDG& bdg, int ply, const EMV& emvBest) : LOGSEARCH(pl, bdg), emvBest(emvBest)
+	LOGITD(PLAI& pl, const BDG& bdg, int ply, AB ab, const EMV& emvBest) : 
+			LOGSEARCH(pl, bdg), emvBest(emvBest)
 	{
-		LogOpen(L"Depth ", to_wstring(ply));
+		LogOpen(L"Depth", wjoin(ply, ab));
 	}
 
 	~LOGITD()
 	{
-		LogClose(L"Depth ",
-				 emvBest.mv.fIsNil() ? L"(none)" :
-				 bdg.SzDecodeMvPost(emvBest.mv) + L" " + SzFromEv(emvBest.ev),
-				 LGF::Normal);
+		LogClose(L"Depth", wjoin(bdg.SzDecodeMvPost(emvBest.mv), SzFromEv(emvBest.ev)), LGF::Normal);
 	}
 };
 
 
 /*
  *
- *	GEMVS class
+ *	VEMVS class
  * 
  *	Move enumeration base class.
  * 
  */
 
 
-GEMVS::GEMVS(BDG& bdg) noexcept : GEMV(), iemvNext(0), cmvLegal(0)
+VEMVS::VEMVS(BDG& bdg) noexcept : VEMV(), iemvNext(0), cmvLegal(0)
 {
-	bdg.GenGemv(*this, GG::Pseudo);
+	bdg.GenVemv(*this, GG::Pseudo);
 }
 
 
-void GEMVS::Reset(BDG& bdg) noexcept
+void VEMVS::Reset(BDG& bdg) noexcept
 {
 	iemvNext = 0;
 	cmvLegal = 0;
 }
 
 
-/*	GSEMV::FMakeMvNext
+/*	VSEMV::FMakeMvNext
  *
  *	Finds the next move in the move list, returning false if there is no such
  *	move. The move is returned in pemv. The move is actually made on the board
  *	and illegal moves are checked for
  */
-bool GEMVS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
+bool VEMVS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 {
 	while (iemvNext < cemv()) {
 		pemv = &(*this)[iemvNext++];
@@ -402,7 +451,12 @@ bool GEMVS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 	return false;
 }
 
-void GEMVS::UndoMv(BDG& bdg) noexcept
+
+/*	VEMVS::UndoMv
+ *
+ *	Undoes the move made by FMakeMvNext
+ */
+void VEMVS::UndoMv(BDG& bdg) noexcept
 {
 	bdg.UndoMv();
 }
@@ -410,7 +464,7 @@ void GEMVS::UndoMv(BDG& bdg) noexcept
 
 /*
  *
- *	GEMVSS class
+ *	VEMVSS class
  *
  *	Alpha-beta sorted movelist enumerator. These moves are pre-evaluated in order
  *	to improve alpha-beta pruning behavior. This is our most used enumerator.
@@ -418,15 +472,20 @@ void GEMVS::UndoMv(BDG& bdg) noexcept
  */
 
 
-GEMVSS::GEMVSS(BDG& bdg, PLAI* pplai) noexcept : GEMVS(bdg)
+VEMVSS::VEMVSS(BDG& bdg, PLAI* pplai) noexcept : VEMVS(bdg)
 {
 	Reset(bdg, pplai);
 }
 
 
-void GEMVSS::Reset(BDG& bdg, PLAI* pplai) noexcept
+/*	VEMVSS::Reset
+ *
+ *	Resets the iteration of the sorted move list, preparing us for a full 
+ *	enumeration of the list.
+ */
+void VEMVSS::Reset(BDG& bdg, PLAI* pplai) noexcept
 {
-	GEMVS::Reset(bdg);
+	VEMVS::Reset(bdg);
 
 	/* pre-evaluate all the moves */
 
@@ -448,7 +507,7 @@ void GEMVSS::Reset(BDG& bdg, PLAI* pplai) noexcept
 }
 
 
-/*	GEMVSS::FMakeMvNext
+/*	VEMVSS::FMakeMvNext
  *
  *	Gets the next legal move, sorted by evaluation. Return false if we're done. 
  *	Keeps track of count of legal moves we've enumerated. The move will be made 
@@ -460,7 +519,7 @@ void GEMVSS::Reset(BDG& bdg, PLAI* pplai) noexcept
  *	for the O(n) scan. The worst case this degenerates into O(n^2), but n is 
  *	relatively small, so maybe not a big deal.
  */
-bool GEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
+bool VEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 {
 	while (iemvNext < cemv()) {
 		pemv = &(*this)[iemvNext++];
@@ -488,72 +547,31 @@ bool GEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 
 /*
  *
- *	GEMVSQ
+ *	VEMVSQ
  *
  *	Quiescent move list enumerator
  *
  */
 
 
-GEMVSQ::GEMVSQ(BDG& bdg) noexcept : GEMVS(bdg)
+VEMVSQ::VEMVSQ(BDG& bdg) noexcept : VEMVS(bdg)
 {
 }
 
 
-bool GEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
+/*	VEMVSQ::FMakeMvNext
+ *
+ *	Finds the next noisy move in the quiescent move list and makes it on the
+ *	board.
+ */
+bool VEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
 {
-	while (GEMVS::FMakeMvNext(bdg, pemv)) {
+	while (VEMVS::FMakeMvNext(bdg, pemv)) {
 		if (!bdg.FMvIsQuiescent(pemv->mv))
 			return true;
 		bdg.UndoMv();
 	}
 	return false;
-}
-
-
-/*	PLAI::FAlphaBetaPrune
- *
- *	Helper function to perform standard alpha-beta pruning operations after evaluating a
- *	board position. Keeps track of alpha and beta cut offs, the best move (in evBest and 
- *	pemvBest), and adjusts search depth when mates are found. mvev has the move and
- *	evaluation in it on entry. Returns true if we should prune.
- */
-bool PLAI::FAlphaBetaPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept
-{
-	if (pemv->ev > emvBest.ev)
-		emvBest = *pemv;
-	if (pemv->ev >= ab)	
-		return true;
-	if (!(pemv->ev <= ab)) {
-		ab >>= pemv->ev;
-		if (FEvIsMate(pemv->ev))
-			plyLim = PlyFromEvMate(pemv->ev);
-	}
-	if (fAbort) {
-		pemv->ev = emvBest.ev = evAbort;
-		emvBest.mv = MV();
-		return true;
-	}
-	return false;
-}
-
-
-/*	PLAI::TestForMates
- *
- *	Helper function that adjusts evaluations in checkmates and stalemates. Modifies
- *	evBest to be the checkmate/stalemate if we're in that state. cmvLegal is the 
- *	count of legal moves in vmvev, and vmvev is the full pseudo-legal move list.
- */
-void PLAI::TestForMates(BDG& bdg, GEMVS& gemvs, EMV& emvBest, int ply) const noexcept
-{
-	if (gemvs.cmvLegal == 0) {
-		emvBest.ev = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
-		emvBest.mv = MV();
-	}
-	else if (bdg.GsTestGameOver(gemvs.cmvLegal, *ga.prule) != GS::Playing) {
-		emvBest.ev = evDraw;
-		emvBest.mv = MV();
-	}
 }
 
 
@@ -567,79 +585,49 @@ void PLAI::TestForMates(BDG& bdg, GEMVS& gemvs, EMV& emvBest, int ply) const noe
 MV PLAI::MvGetNext(SPMV& spmv)
 {
 	spmv = SPMV::Animate;
-	BDG bdg = ga.bdg;
+	cYield = 0; fAbort = false;
+	InitBreak();
 
-	cYield = 0;
-	fAbort = false;
+	BDG bdg = ga.bdg;
 	xt.Init();
 	InitWeightTables();
 	habdRand = genhabd.HabdRandom(rgen);
 
-	GEMVSS gemvss(bdg, this);
-	int plyDepthLast = clamp(PlyLim(bdg, gemvss), 2, 20);
-	EMV emvBest;
 	StartMoveLog();
+	
+	EMV emvBest;	/* final emvBest will be our movev */
+	InitSearch(bdg);	/* set up time management */
+	VEMVSS vemvss(bdg, this);
 
-	/* iterative deepening */
+	/* main loop, which does iterative deepening and aspiration window optmizations */
 
-	for (int plyDepth = 2; plyDepth <= plyDepthLast; plyDepth++) {
-		
-		LOGITD logitd(*this, bdg, plyDepth, emvBest);
-		int plyLim = plyDepth;
-		AB ab(-evInf, evInf);
+	AB abInit(-evInf, evInf);	/* the a-b window */
+	for (int plySearchLim = 2; !FStopSearch(plySearchLim); ) {
+		LOGITD logitd(*this, bdg, plySearchLim, abInit, emvBest);
+
+		/* do the recursive alpha-beta search */
+
 		emvBest = EMV(MV(), -evInf);
-
-		/* do the alpha-beta search */
-
-		gemvss.Reset(bdg, this);
-		for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
-			pemv->ev = -EvBdgDepth(bdg, *pemv, 1, plyLim, -ab);
-			gemvss.UndoMv(bdg);
-			if (FAlphaBetaPrune(pemv, emvBest, ab, plyLim))	/* should only prune on aborts */
+		vemvss.Reset(bdg, this);
+		AB ab = abInit;
+		for (EMV* pemv; vemvss.FMakeMvNext(bdg, pemv); ) {
+			pemv->ev = -EvBdgDepth(bdg, *pemv, 1, plySearchLim, -ab);
+			vemvss.UndoMv(bdg);
+			if (FAlphaBetaPrune(pemv, emvBest, ab, plySearchLim)) {
+				xt.Save(bdg, emvBest, EVT::Higher, plySearchLim);
 				break;
+			}
 		}
+		xt.Save(bdg, emvBest, emvBest.ev < abInit ? EVT::Lower : EVT::Equal, plySearchLim);
 
-		xt.Save(bdg, emvBest, EVT::Equal, plyDepth);
-		if (FEvIsMate(emvBest.ev))
+		/* adjust a-b window and/or search depth for the next round through the loop */
+
+		if (FDeepenIt(emvBest, abInit, plySearchLim))
 			break;
 	}
 
 	EndMoveLog();
 	return emvBest.mv;
-}
-
-
-/*	PLAI::FLookupXt
- *
- *	Checks the transposition table for a board entry at the given search depth. Adjusts 
- *	alpha/beta range based on the xt entry. Returns true if we should stop the search at 
- *	this point, either because we found an exact match of the board/ply, or the inexact
- *	match is outside the alpha/beta interval.
- * 
- *	emvBest will contain the evaluation we should use if we stop the search.
- */
-bool PLAI::FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB& ab) const noexcept
-{
-	XEV* pxev = xt.Find(bdg, ply);
-	if (pxev == nullptr)
-		return false;
-	if (pxev->evt() == EVT::Equal) {
-Found:
-		emvBest.ev = pxev->ev();
-		emvBest.mv = pxev->mv();
-		return true;
-	}
-	else if (pxev->evt() == EVT::Higher) {
-		if (pxev->ev() >= ab)
-			goto Found;
-		ab >>= pxev->ev();
-	}
-	else { // EVT::Lower 
-		if (pxev->ev() <= ab)
-			goto Found;
-		ab <<= pxev->ev();
-	}
-	return false;
 }
 
 
@@ -655,31 +643,32 @@ Found:
  * 
  *	Returns board evaluation in centi-pawns.
  */
-EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB ab) noexcept
+EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB abInit) noexcept
 {
 	/* when we're at goal depth, finish with a quiescent eval */
 	if (ply >= plyLim)
-		return EvBdgQuiescent(bdg, emvPrev, ply, ab);
+		return EvBdgQuiescent(bdg, emvPrev, ply, abInit);
+
+	EMV emvBest(MV(), -evInf);
+	LOGEMV logemv(*this, bdg, emvPrev, emvBest, abInit, ply, L' ');
 
 	/* check transposition table entry for this board and depth */
-	EMV emvBest(MV(), -evInf);
+	AB ab = abInit;
 	if (FLookupXt(bdg, plyLim - ply, emvBest, ab))
 		return emvBest.ev;
 
-	LOGEMV logemv(*this, bdg, emvPrev, emvBest, ab, ply, L' ');
-
-	GEMVSS gemvss(bdg, this);
-	for (EMV* pemv; gemvss.FMakeMvNext(bdg, pemv); ) {
+	VEMVSS vemvss(bdg, this);
+	for (EMV* pemv; vemvss.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgDepth(bdg, *pemv, ply + 1, plyLim, -ab);
-		gemvss.UndoMv(bdg);
+		vemvss.UndoMv(bdg);
 		if (FAlphaBetaPrune(pemv, emvBest, ab, plyLim)) {
 			xt.Save(bdg, *pemv, EVT::Higher, plyLim - ply);
 			return pemv->ev;
 		}
 	}
 
-	TestForMates(bdg, gemvss, emvBest, ply);
-	xt.Save(bdg, emvBest, emvBest.ev < ab ? EVT::Lower : EVT::Equal, plyLim - ply);
+	TestForMates(bdg, vemvss, emvBest, ply);
+	xt.Save(bdg, emvBest, emvBest.ev < abInit ? EVT::Lower : EVT::Equal, plyLim - ply);
 	return emvBest.ev;
 }
 
@@ -690,40 +679,196 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB ab) no
  *	of the player next to move, i.e., it only considers captures and other "noisy" moves.
  *	Alpha-beta prunes. 
  */
-EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB ab) noexcept
+EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB abInit) noexcept
 {
 	EMV emvBest;
-	int plyLim = plyMax;
+	LOGEMV logemv(*this, bdg, emvPrev, emvBest, abInit, ply, L'Q');
 
-	if (FLookupXt(bdg, 0, emvBest, ab))
+	if (FLookupXt(bdg, 0, emvBest, abInit))
 		return emvBest.ev;
-	
-	LOGEMV logemv(*this, bdg, emvPrev, emvBest, ab, ply, L'Q');
 
 	/* first off, get full, slow static eval and check current board already in a pruning 
 	   situations. Adjust a-b window if we're not pruning. */
 
+	AB ab = abInit;
 	emvBest.mv = MV();
 	emvBest.ev = EvBdgStatic(bdg, emvPrev.mv, true);
-	if (emvBest.ev >= ab)
+	if (emvBest.ev > ab)
 		return emvBest.ev;
-	ab >>= emvBest.ev;
+	ab.NarrowLower(emvBest.ev);
 
-	/* recursively evaluate more moves */
-
-	GEMVSQ gemvsq(bdg);
-	for (EMV* pemv; gemvsq.FMakeMvNext(bdg, pemv); ) {
+	/* recursively evaluate more moves, but only noisy moves */
+	
+	int plyLim = plyMax;
+	VEMVSQ vemvsq(bdg);
+	for (EMV* pemv; vemvsq.FMakeMvNext(bdg, pemv); ) {
 		pemv->ev = -EvBdgQuiescent(bdg, *pemv, ply + 1, -ab);
-		gemvsq.UndoMv(bdg);
+		vemvsq.UndoMv(bdg);
 		if (FAlphaBetaPrune(pemv, emvBest, ab, plyLim)) {
 			xt.Save(bdg, *pemv, EVT::Higher, 0);
 			return pemv->ev;
 		}
 	}
 
-	TestForMates(bdg, gemvsq, emvBest, ply);
-	xt.Save(bdg, emvBest, emvBest.ev < ab ? EVT::Lower : EVT::Equal, 0);
+	TestForMates(bdg, vemvsq, emvBest, ply);
+	xt.Save(bdg, emvBest, emvBest.ev < abInit ? EVT::Lower : EVT::Equal, 0);
 	return emvBest.ev;
+}
+
+
+/*	PLAI::FLookupXt
+ *
+ *	Checks the transposition table for a board entry at the given search depth. Adjusts
+ *	alpha/beta range based on the xt entry. Returns true if we should stop the search at
+ *	this point, either because we found an exact match of the board/ply, or the inexact
+ *	match is outside the alpha/beta interval.
+ *
+ *	emvBest will contain the evaluation we should use if we stop the search.
+ */
+bool PLAI::FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB& ab) const noexcept
+{
+	/* look for the entry in the transposition table */
+
+	XEV* pxev = xt.Find(bdg, ply);
+	if (pxev == nullptr)
+		return false;
+	
+	/* adjust the alpha-beta interval based on the entry */
+
+	switch (pxev->evt()) {
+	case EVT::Equal:
+		emvBest.ev = pxev->ev();
+		break;
+	case EVT::Higher:
+		if (pxev->ev() > ab) {
+			emvBest.ev = ab.evBeta;
+			break;
+		}
+		return false;
+	case EVT::Lower:
+		if (pxev->ev() < ab) {
+			emvBest.ev = ab.evAlpha;
+			break;
+		}
+		return false;
+	}
+	
+	emvBest.mv = pxev->mv();
+	return true;
+}
+
+
+/*	PLAI::FAlphaBetaPrune
+ *
+ *	Helper function to perform standard alpha-beta pruning operations after evaluating a
+ *	board position. Keeps track of alpha and beta cut offs, the best move (in evBest and
+ *	pemvBest), and adjusts search depth when mates are found. mvev has the move and
+ *	evaluation in it on entry. Returns true if we should prune.
+ */
+bool PLAI::FAlphaBetaPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept
+{
+	if (pemv->ev > emvBest.ev) // keep track of best move so far
+		emvBest = *pemv;
+	if (pemv->ev > ab) {	// above the beta cut-off, we prune
+		emvBest = *pemv;
+		return true;
+	}
+	if (!(pemv->ev < ab)) {	// we're inside the a-b window
+		ab.NarrowLower(pemv->ev);	// this is our new alpha
+		if (FEvIsMate(pemv->ev))	// optimization to limit search on forced mates
+			plyLim = PlyFromEvMate(pemv->ev);
+	}
+
+	/* If Esc is hit (set by message pump), force the search to prune all the way back to
+	 * root, where we'll abort the search */
+
+	if (fAbort) {
+		pemv->ev = emvBest.ev = evAbort;
+		emvBest.mv = MV();
+		return true;
+	}
+	return false;
+}
+
+
+/*	PLAI::TestForMates
+ *
+ *	Helper function that adjusts evaluations in checkmates and stalemates. Modifies
+ *	evBest to be the checkmate/stalemate if we're in that state. cmvLegal is the
+ *	count of legal moves in vmvev, and vmvev is the full pseudo-legal move list.
+ */
+void PLAI::TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept
+{
+	if (vemvs.cmvLegal == 0) {
+		emvBest.ev = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
+		emvBest.mv = MV();
+	}
+	else if (bdg.GsTestGameOver(vemvs.cmvLegal, *ga.prule) != GS::Playing) {
+		emvBest.ev = evDraw;
+		emvBest.mv = MV();
+	}
+}
+
+
+/*	PLAI::FDeepenIt
+ *
+ *	Just a little helper to set us up for the next round of the iterative deepening
+ *	loop. Our loop is set up to handle both deepening and aspiration windows, so
+ *	sometimes we increase the depth, other times we widen the aspiration window.
+ *
+ *	Returns true if we should abort the search, which happens if we find a forced
+ *	mate.
+ */
+bool PLAI::FDeepenIt(const EMV& emvBest, AB& ab, int& ply) const noexcept
+{
+	if (emvBest.ev == evAbort)
+		return true;
+
+	/* If the search failed with a narrow a-b window, widen the window up some and
+	   try again */
+	if (emvBest.ev < ab)
+		ab.WidenLower();
+	else if (emvBest.ev > ab)
+		ab.WidenUpper();
+	else {
+		/* yay, we found a move - go deeper in the next pass, but use a tight
+		   a-b window at first in hopes we'll get lots of pruning which will help
+		   search very quickly */
+		if (FEvIsMate(emvBest.ev))
+			return true;
+		ab = AB(max(-evInf, emvBest.ev - 25), min(evInf, emvBest.ev + 25));
+		ply++;
+	}
+	return false;
+}
+
+
+/*	PLAI::InitSearch
+ *
+ *	Gets us ready for the intelligence that will determine how long we spend analyzing the
+ *	move.
+ */
+void PLAI::InitSearch(BDG& bdg) noexcept
+{
+	VEMV vemv, vemvOpp;
+	bdg.GenVemvColor(vemv, bdg.cpcToMove);
+	bdg.GenVemvColor(vemvOpp, ~bdg.cpcToMove);
+	float cmvSearch = CmvFromLevel(level);	// approximate number of moves to analyze
+	float fracAlphaBeta = 0.25f; // alpha-beta pruning cuts moves we analyze by this factor.
+	int size2 = vemv.cemv() * vemvOpp.cemv();
+	plySearchMax = (int)round(2.0f * log(cmvSearch) / log((float)size2 * fracAlphaBeta * fracAlphaBeta));
+	plySearchMax = clamp(plySearchMax, 2, 20);
+}
+
+
+/*	PLAI::FStopSearch
+ *
+ *	Lets us know when we should stop searching for moves. This is where our time management
+ *	happens. Returns true if we should stop searching.
+ */
+bool PLAI::FStopSearch(int& plyLim) noexcept
+{
+	return plyLim >= plySearchMax;
 }
 
 
@@ -737,8 +882,10 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB ab) noexcept
  *	AI. The flag is checked in the pruning code, which causes a cascade of 
  *	pruning and we then abort at the top level of the search.
  */
-void PLAI::PumpMsg(void) noexcept
+void PLAI::PumpMsg(bool fForce) noexcept
 {
+	if (fForce)
+		cYield = -1;
 	if (++cYield % dcYield == 0) {
 		try {
 			ga.PumpMsg();
@@ -823,12 +970,12 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 
 	EV evPawnToMove, evPawnDef;
 	EV evKingToMove, evKingDef;
-	static GEMV gemvSelf, gemvPrev;
+	static VEMV vemvSelf, vemvPrev;
 	if (fFull) {
 		if (fecoMobility) {
-			bdg.GenGemvColor(gemvPrev, bdg.cpcToMove);
-			bdg.GenGemvColor(gemvSelf, ~bdg.cpcToMove);
-			evMobility = gemvPrev.cemv() - gemvSelf.cemv();
+			bdg.GenVemvColor(vemvPrev, bdg.cpcToMove);
+			bdg.GenVemvColor(vemvSelf, ~bdg.cpcToMove);
+			evMobility = vemvPrev.cemv() - vemvSelf.cemv();
 		}
 		if (fecoKingSafety) {
 			evKingToMove = EvBdgKingSafety(bdg, bdg.cpcToMove);
@@ -856,18 +1003,18 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 		if (!fDisableMvLog) {
 			LogData(bdg.cpcToMove == CPC::White ? L"White" : L"Black");
 			if (fecoMaterial)
-				LogData(L"Material " + SzFromEv(evMaterial));
+				LogData(wjoin(L"Material", SzFromEv(evMaterial)));
 			if (fecoMobility)
-				LogData(L"Mobility " + to_wstring(gemvPrev.cemv()) + L" - " + to_wstring(gemvSelf.cemv()));
+				LogData(wjoin(L"Mobility", vemvPrev.cemv(), L"-", vemvSelf.cemv()));
 			if (fecoKingSafety)
-				LogData(L"King Safety " + to_wstring(evKingToMove) + L" - " + to_wstring(evKingDef));
+				LogData(wjoin(L"King Safety", evKingToMove, L"-", evKingDef));
 			if (fecoPawnStructure)
-				LogData(L"Pawn Structure " + to_wstring(evPawnToMove) + L" - " + to_wstring(evPawnDef));
+				LogData(wjoin(L"Pawn Structure", evPawnToMove, L"-", evPawnDef));
 			if (fecoTempo)
-				LogData(L"Tempo " + SzFromEv(evTempo));
+				LogData(wjoin(L"Tempo", SzFromEv(evTempo)));
 			if (fecoRandom)
-				LogData(L"Random " + SzFromEv(evRandom / 10));
-			LogData(L"Total " + SzFromEv(ev));
+				LogData(wjoin(L"Random", SzFromEv(evRandom / fecoScale)));
+			LogData(wjoin(L"Total", SzFromEv(ev)));
 		}
 	}
 
@@ -1014,7 +1161,7 @@ int PLAI::CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept
 	int cfile = 0;
 	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
 	BB bbFile = bbFileA;
-	for (int file = 0; file < fileMax; file++, bbFile <<= 1) {
+	for (int file = 0; file < fileMax; file++, bbFile = BbEastOne(bbFile)) {
 		int csq = (bbPawn & bbFile).csq();
 		if (csq)
 			cfile += csq - 1;
@@ -1033,17 +1180,17 @@ int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 {
 	int cfile = 0;
 	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
-
-	cfile += (bbPawn & bbFileA) && !(bbPawn & bbFileB);
-	cfile += (bbPawn & bbFileH) && !(bbPawn & bbFileG);
-	BB bbFile = bbFileB;
-	BB bbAdj = bbFileA | bbFileC;
-	for (int file = fileA+1; file < fileMax-1; file++, bbFile <<= 1, bbAdj <<= 1)
-		cfile += (bbPawn & bbFile) && !(bbPawn & bbAdj);
+	BB bbFile = bbFileA;
+	for (int file = 0; file < fileMax; file++, bbFile = BbEastOne(bbFile))
+		cfile += (bbPawn & bbFile) && !(bbPawn & (BbEastOne(bbFile) | BbWestOne(bbFile)));
 	return cfile;
 }
 
 
+/*	PLAI::CfilePassedPawns
+ *
+ *	Counts the number of files that have passed pawns on them.
+ */
 int PLAI::CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept
 {
 	int cfile = 0;
@@ -1051,19 +1198,9 @@ int PLAI::CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept
 	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
 	BB bbPawnOpp = bdg.mppcbb[PC(~cpc, APC::Pawn)];
 	for (BB bb = bbPawn; bb; bb.ClearLow()) {
-		/* path in front of the pawn to the promotion rank */
 		SQ sqPawn = bb.sqLow();
-		BB bbPath = mpbb.BbSlideTo(sqPawn, dir);	
-		/* don't count doubled pawns */
-		if (bbPath & bbPawn)
-			continue;
-		/* see if an opponent pawn is in our path or in the file to the left 
-		   or right */
-		if (sqPawn.file() != fileA)
-			bbPath |= bbPath >> 1;
-		if (sqPawn.file() != fileH)
-			bbPath |= bbPath << 1;
-		if (!(bbPath & bbPawnOpp))			
+		/* not blocked by our own pawn, and no opponent pawns in the alley */
+		if (!(mpbb.BbSlideTo(sqPawn, dir) & bbPawn) && !(mpbb.BbPassedPawnAlley(sqPawn, cpc) & bbPawnOpp))
 			cfile++;
 	}
 	return cfile;
@@ -1115,12 +1252,6 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	fecoRandom = 10 * fecoScale;	
 	SetName(L"SQ Mathilda");
 	InitWeightTables();
-}
-
-
-int PLAI2::PlyLim(const BDG& bdg, const GEMV& gemv) const
-{
-	return PLAI::PlyLim(bdg, gemv);
 }
 
 

@@ -16,6 +16,7 @@
  *	this code is inline and there are some aggressive optimizations.
  * 
  */
+
 #pragma once
 #include "framework.h"
 
@@ -150,11 +151,25 @@ public:
 
 const uint8_t sqMax = 64;
 
+const SQ sqA1(rank1, fileA);
+
 const SQ sqB1(rank1, fileB);
+const SQ sqB2(rank2, fileB);
+const SQ sqB3(rank3, fileB);
+const SQ sqB4(rank4, fileB);
+const SQ sqB5(rank5, fileB);
+const SQ sqB6(rank6, fileB);
+const SQ sqB7(rank7, fileB);
+const SQ sqB8(rank8, fileB);
 
 const SQ sqC1(rank1, fileC);
 const SQ sqC2(rank2, fileC);
 const SQ sqC3(rank3, fileC);
+const SQ sqC4(rank4, fileC);
+const SQ sqC5(rank5, fileC);
+const SQ sqC6(rank6, fileC);
+const SQ sqC7(rank7, fileC);
+const SQ sqC8(rank8, fileC);
 
 const SQ sqD1(rank1, fileD);
 const SQ sqD2(rank2, fileD);
@@ -173,55 +188,56 @@ const SQ sqE8(rank8, fileE);
 const SQ sqF1(rank1, fileF);
 const SQ sqF2(rank2, fileF);
 const SQ sqF3(rank3, fileF);
+const SQ sqF4(rank4, fileF);
+const SQ sqF5(rank5, fileF);
+const SQ sqF6(rank6, fileF);
+const SQ sqF7(rank7, fileF);
+const SQ sqF8(rank8, fileF);
 
 const SQ sqG1(rank1, fileG);
 const SQ sqG2(rank2, fileG);
 const SQ sqG3(rank3, fileG);
 const SQ sqG4(rank4, fileG);
 const SQ sqG5(rank5, fileG);
+const SQ sqG6(rank6, fileG);
+const SQ sqG7(rank7, fileG);
+const SQ sqG8(rank8, fileG);
+
+const SQ sqH1(rank1, fileH);
+const SQ sqH2(rank2, fileH);
+const SQ sqH3(rank3, fileH);
+const SQ sqH4(rank4, fileH);
+const SQ sqH5(rank5, fileH);
+const SQ sqH6(rank6, fileH);
+const SQ sqH7(rank7, fileH);
+const SQ sqH8(rank8, fileH);
 
 
 /*
  *
- *	Some magic functions for manipulatng 64-bit numbers. On some architectures, there are
- *	intrinsic functions that might implement these very efficiently.
- * 
- */
-
-
-/*	popcount
+ *	CPC enumeration
  *
- *	Returns the "population count" of the 64-bit number. Population count is the number
- *	of 1 bits in the 64-bit word.
+ *	Color of a piece. White or black, generally
+ *
  */
-inline int popcount(uint64_t grf) noexcept
+
+
+enum CPC {
+	NoColor = -1,
+	White = 0,
+	Black = 1,
+	ColorMax = 2
+};
+
+inline CPC operator~(CPC cpc)
 {
-	return (int)__popcnt64(grf);
+	return static_cast<CPC>(static_cast<int>(cpc) ^ 1);
 }
 
-
-/*	bitscan
- *
- *	Returns the position of the lowest set bit in the 64-bit word, where 0 is the
- *	least significant bit and 63 is the most.
- * 
- *	Does not work on 0.
- */
-
-inline int bitscan(uint64_t grf) noexcept
+inline CPC operator++(CPC& cpc)
 {
-	assert(grf);
-	unsigned long shf;
-	_BitScanForward64(&shf, grf);
-	return shf;
-}
-
-inline int bitscanRev(uint64_t grf) noexcept
-{
-	assert(grf);
-	unsigned long shf;
-	_BitScanReverse64(&shf, grf);
-	return shf;
+	cpc = static_cast<CPC>(static_cast<int>(cpc) + 1);
+	return cpc;
 }
 
 
@@ -545,6 +561,7 @@ class MPBB
 	BB mpsqdirbbSlide[64][8];
 	BB mpsqbbKing[64];
 	BB mpsqbbKnight[64];
+	BB mpsqbbPassedPawnAlley[48][2];
 public:
 	MPBB(void);
 	
@@ -552,18 +569,12 @@ public:
 	{
 		assert(sq < 64);
 		assert(static_cast<unsigned>(dir) < 8);
-		return mpsqdirbbSlide[sq][static_cast<unsigned>(dir)];
+		return mpsqdirbbSlide[sq][static_cast<int>(dir)];
 	}
 
-	inline BB BbKingTo(SQ sq) noexcept
-	{
-		return mpsqbbKing[sq];
-	}
-
-	inline BB BbKnightTo(uint8_t sq) noexcept
-	{
-		return mpsqbbKnight[sq];
-	}
+	inline BB BbKingTo(SQ sq) noexcept { return mpsqbbKing[sq]; }
+	inline BB BbKnightTo(uint8_t sq) noexcept { return mpsqbbKnight[sq]; }
+	inline BB BbPassedPawnAlley(uint8_t sq, CPC cpc) noexcept { return mpsqbbPassedPawnAlley[sq-8][static_cast<int>(cpc)]; }
 };
 
 /* we compute a global of these for movegen and eval to use */

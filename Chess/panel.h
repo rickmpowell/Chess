@@ -40,8 +40,8 @@ public:
 	void SetShadow(void);
 	void AdjustUIRcBounds(UI* pui, RC& rc, bool fTop);
 
-	virtual bool FDepthLog(LGT lgt, int& depth);
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
+	virtual bool FDepthLog(LGT lgt, int& depth) noexcept;
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 };
 
 

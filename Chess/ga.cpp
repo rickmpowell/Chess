@@ -444,9 +444,9 @@ void GA::MoveToImv(int64_t imv, SPMV spmv)
 }
 
 
-void GA::GenGemv(GEMV& gemv)
+void GA::GenVemv(VEMV& vemv)
 {
-	bdg.GenGemv(gemv, GG::Legal);
+	bdg.GenVemv(vemv, GG::Legal);
 }
 
 
@@ -515,37 +515,37 @@ void GA::PumpMsg(void)
 }
 
 
-bool GA::FDepthLog(LGT lgt, int& depth)
+bool GA::FDepthLog(LGT lgt, int& depth) noexcept
 {
 	return uidb.FDepthLog(lgt, depth);
 }
 
 
-void GA::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+void GA::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
 	uidb.AddLog(lgt, lgf, depth, tag, szData);
 }
 
 
-void GA::ClearLog(void)
+void GA::ClearLog(void) noexcept
 {
 	uidb.ClearLog();
 }
 
 
-void GA::SetDepthLog(int depth)
+void GA::SetDepthLog(int depth) noexcept
 {
 	uidb.SetDepthLog(depth);
 }
 
 
-void GA::InitLog(int depth)
+void GA::InitLog(int depth) noexcept
 {
 	uidb.InitLog(depth);
 }
 
 
-int GA::DepthLog(void) const
+int GA::DepthLog(void) const noexcept
 {
 	return uidb.DepthLog();
 }

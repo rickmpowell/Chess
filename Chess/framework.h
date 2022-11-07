@@ -741,6 +741,25 @@ struct TRANSDC
 };
 
 
+/*	wjoin
+ * 
+ *	Concatenates array of values into to_string'ed string of space separated words.
+ */
+
+inline wstring const& to_wstring(wstring const& s) { return s; }
+
+template<typename... Args>
+inline wstring wjoin(Args const&... args)
+{
+	wstring sz;
+	using ::to_wstring;
+	using std::to_wstring;
+	int unpack[]{ 0, (sz += to_wstring(args) + L" ", 0)... };
+	static_cast<void>(unpack);
+	return sz;
+}
+
+
 /*
  *
  *	Some handy-dandy unicode characters
@@ -773,4 +792,42 @@ const wchar_t chBlackRook = L'\x265c';
 const wchar_t chBlackBishop = L'\x265d'; 
 const wchar_t chBlackKnight = L'\x265e'; 
 const wchar_t chBlackPawn = L'\x265f';
+
+
+/*	popcount
+ *
+ *	Returns the "population count" of the 64-bit number. Population count is the number
+ *	of 1 bits in the 64-bit word.
+ */
+inline int popcount(uint64_t grf) noexcept
+{
+	return (int)__popcnt64(grf);
+}
+
+
+/*	bitscan
+ *
+ *	Returns the position of the lowest set bit in the 64-bit word, where 0 is the
+ *	least significant bit and 63 is the most.
+ *
+ *	Does not work on 0.
+ */
+
+inline int bitscan(uint64_t grf) noexcept
+{
+	assert(grf);
+	unsigned long shf;
+	_BitScanForward64(&shf, grf);
+	return shf;
+}
+
+inline int bitscanRev(uint64_t grf) noexcept
+{
+	assert(grf);
+	unsigned long shf;
+	_BitScanReverse64(&shf, grf);
+	return shf;
+}
+
+
 

@@ -26,6 +26,8 @@ class GA;
 
 class PL
 {
+	friend class AIBREAK;
+
 protected:
 	GA& ga;
 	wstring szName;
@@ -34,6 +36,9 @@ protected:
 	MV mvNext;
 	SPMV spmvNext;
 	bool fDisableMvLog;
+	int imvmBreakLast;
+	vector<MVM>* pvmvmBreak;
+	int cBreakRepeat;
 
 public:
 	PL(GA& ga, wstring szName);
@@ -52,18 +57,20 @@ public:
 	virtual EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	virtual EV EvBaseApc(APC apc) const noexcept;
 
-	bool FDepthLog(LGT lgt, int& depth);
-	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
-	int DepthLog(void) const;
-	void SetDepthLog(int depthNew);
-	void DisableMvLog(bool fDisableMvLogNew) { fDisableMvLog = fDisableMvLogNew; }
-	inline bool FDisabledMvLog(void) const { return fDisableMvLog; }
+	bool FDepthLog(LGT lgt, int& depth) noexcept;
+	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
+	int DepthLog(void) const noexcept;
+	void SetDepthLog(int depthNew) noexcept;
+	void DisableMvLog(bool fDisableMvLogNew) noexcept { fDisableMvLog = fDisableMvLogNew; }
+	inline bool FDisabledMvLog(void) const noexcept { return fDisableMvLog; }
+	void SetAIBreak(const vector<MVM>& vmvm);
+	void InitBreak(void);
 };
 
 
 /*
  *
- *	GEMVS class
+ *	VEMVS class
  *
  *	A move list class that has smart enumeration used in alpha-beta search.
  *	Variants for the various types of enumerations we have to do, including
@@ -75,14 +82,14 @@ public:
  */
 
 
-class GEMVS : public GEMV
+class VEMVS : public VEMV
 {
 public:
 	int iemvNext;
 	int cmvLegal;
 
 public:
-	inline GEMVS(BDG& bdg) noexcept;
+	inline VEMVS(BDG& bdg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
@@ -91,7 +98,7 @@ public:
 
 /*
  *
- *	GEMVSS
+ *	VEMVSS
  *
  *	Sorted move enumerator, used for optimizing alpha-beta search orer.
  *
@@ -99,10 +106,10 @@ public:
 
 
 class PLAI;
-class GEMVSS : public GEMVS
+class VEMVSS : public VEMVS
 {
 public:
-	GEMVSS(BDG& bdg, PLAI* pplai) noexcept;
+	VEMVSS(BDG& bdg, PLAI* pplai) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	void Reset(BDG& bdg, PLAI* pplai) noexcept;
 };
@@ -110,17 +117,17 @@ public:
 
 /*
  *
- *	GEMVSQ enumeration
+ *	VEMVSQ enumeration
  *
  *	Enumerates noisy moves
  *
  */
 
 
-class GEMVSQ : public GEMVS
+class VEMVSQ : public VEMVS
 {
 public:
-	GEMVSQ(BDG& bdg) noexcept;
+	VEMVSQ(BDG& bdg) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 };
 
@@ -141,60 +148,76 @@ public:
 	inline AB(EV evAlpha, EV evBeta) : evAlpha(evAlpha), evBeta(evBeta) {
 	}
 
+	bool FValid(void) const {
+		return evAlpha <= evBeta;
+	}
+
 	inline AB operator-(void) const {
+		assert(FValid());
 		return AB(-evBeta, -evAlpha);
 	}
 
-	inline bool operator>(EV ev) const {
-		return ev <= evAlpha;
-	}
-	inline bool operator<(EV ev) const {
-		return ev >= evBeta;
-	}
-
-	inline AB operator>>(EV ev) const {
-		return AB(max(evAlpha, ev), evBeta);
+	inline AB& WidenLower(void) {
+		evAlpha = max(evAlpha - (evBeta - evAlpha), -evInf);
+		assert(FValid());
+		return *this;
 	}
 
-	inline AB operator<<(EV ev) const {
-		return AB(evAlpha, min(evBeta, ev));
+	inline AB& WidenUpper(void) {
+		evBeta = min(evBeta + (evBeta - evAlpha), evInf);
+		assert(FValid());
+		return *this;
 	}
 
-	inline AB& operator>>=(EV ev) {
+	inline AB& NarrowLower(EV ev) {
+		assert(ev <= evBeta);
 		evAlpha = max(evAlpha, ev);
 		return *this;
 	}
 
-	inline AB& operator<<=(EV ev) {
+	inline AB& NarrowUpper(EV ev) {
+		assert(ev >= evAlpha);
 		evBeta = min(evBeta, ev);
 		return *this;
-	}
-
-	inline bool operator&(EV ev) const {
-		return ev > evAlpha && ev < evBeta;
 	}
 
 	/* define inequality operators of an eval vs. an interval to be less
 	   than if it's below the bottom value, and greater than if it's above
 	   the top value */
 
-	friend inline bool operator<=(EV ev, const AB& ab) {
-		return ev <= ab.evAlpha;
+	inline bool operator>(EV ev) const {
+		assert(FValid());
+		return ev <= evAlpha;
+	}
+	inline bool operator<(EV ev) const {
+		assert(FValid());
+		return ev >= evBeta;
+	}
+
+	inline bool FIncludes(EV ev) const {
+		assert(FValid());
+		return ev > evAlpha && ev < evBeta;
 	}
 
 	friend inline bool operator<(EV ev, const AB& ab) {
-		return ev < ab.evAlpha;
-	}
-
-	friend inline bool operator>=(EV ev, const AB& ab) {
-		return ev >= ab.evBeta;
+		assert(ab.FValid());
+		return ev <= ab.evAlpha;
 	}
 
 	friend inline bool operator>(EV ev, const AB& ab) {
-		return ev > ab.evBeta;
+		assert(ab.FValid());
+		return ev >= ab.evBeta;
 	}
 
+	operator wstring() const { 
+		assert(FValid());
+		return wstring(L"[") + SzFromEv(evAlpha) + L" " + SzFromEv(evBeta) + L"]";
+	}
 };
+
+inline wstring to_wstring(AB ab) { return (wstring)ab; }
+
+
 
 /*
  *
@@ -208,7 +231,7 @@ public:
 
 class PLAI : public PL
 {
-	friend class GEMVSS;
+	friend class VEMVSS;
 	friend class LOGEMV;
 
 protected:
@@ -233,6 +256,8 @@ protected:
 	size_t cemvEval;
 	size_t cemvNode;
 
+	int plySearchMax;
+
 public:
 	PLAI(GA& ga);
 	virtual MV MvGetNext(SPMV& spmv);
@@ -240,18 +265,20 @@ public:
 	virtual void SetLevel(int level) noexcept;
 	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
 
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
+	void PumpMsg(bool fForce) noexcept;
 
 protected:
 	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB ab) noexcept;
 	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB ab) noexcept; 
 	inline bool FAlphaBetaPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
-	inline void TestForMates(BDG& bdg, GEMVS& gemvs, EMV& emvBest, int ply) const noexcept;
+	inline bool FDeepenIt(const EMV& emvBest, AB& ab, int& ply) const noexcept;
+	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept;
 	inline bool FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB& ab) const noexcept;
 
-	void PumpMsg(void) noexcept;
-
-	virtual int PlyLim(const BDG& bdg, const GEMV& gemv) const;
+	virtual void InitSearch(BDG& bdg) noexcept;
+	virtual bool FStopSearch(int& plyLim) noexcept;
 	virtual EV EvBdgStatic(BDG& bdg, MV mv, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
@@ -293,7 +320,6 @@ protected:
 
 public:
 	PLAI2(GA& ga);
-	virtual int PlyLim(const BDG& bdg, const GEMV& gemv) const;
 protected:
 	virtual void InitWeightTables(void);
 };

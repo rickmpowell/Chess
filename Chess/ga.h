@@ -152,6 +152,13 @@ public:
 		return PplFromCpc(bdg.cpcToMove);
 	}
 
+	inline CPC CpcFromPpl(PL* ppl) const
+	{
+		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+			if (mpcpcppl[cpc] == ppl)
+				return cpc;
+		return CPC::NoColor;
+	}
 
 	void SetPl(CPC cpc, PL* ppl);
 
@@ -218,18 +225,18 @@ public:
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);
 	void MoveToImv(int64_t imv, SPMV spmv);
-	void GenGemv(GEMV& gemv);
+	void GenVemv(VEMV& vemv);
 
 	/*	
 	 *	Logging
 	 */
 
-	virtual bool FDepthLog(LGT lgt, int& depth);
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
-	virtual void ClearLog(void);
-	virtual void SetDepthLog(int depth);
-	virtual void InitLog(int depth);
-	virtual int DepthLog(void) const;
+	virtual bool FDepthLog(LGT lgt, int& depth) noexcept;
+	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
+	virtual void ClearLog(void) noexcept;
+	virtual void SetDepthLog(int depth) noexcept;
+	virtual void InitLog(int depth) noexcept;
+	virtual int DepthLog(void) const noexcept;
 
 	/*
 	 *	Deserializing 

@@ -157,12 +157,13 @@ public:
 	{
 		assert(emv.ev != evInf && emv.ev != -evInf);
 		cxevSave++;
+
 		XEV& xev = (*this)[bdg];
 		if (xev.evt() == EVT::Nil)
 			cxevInUse++;
 		else {
 			/* we have a collision; don't replace deeper evaluated boards, and don't 
-			   overwrite a principle variation unless we're saving another PV */
+			   overwrite a un-pruned valuation unless we're saving another */
 			if (!xev.FMatchHabd(bdg.habd))
 				cxevSaveCollision++;
 			if (evt == EVT::Equal) {

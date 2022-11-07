@@ -934,6 +934,177 @@ public:
 
 /*
  *
+ *  CMDAIBREAK
+ * 
+ *  Debugging aid for tracking down bugs that only happen after a sequence
+ *  of moves during AI move search.
+ * 
+ */
+
+
+class DDAIBREAK
+{
+public:
+    GA* pga;
+    CPC cpc;
+    vector<MVM> vmvm;
+    int cRepeat;
+
+    DDAIBREAK() : pga(nullptr), cpc(CPC::White), cRepeat(1) {
+    }
+
+    wstring SzDecodeMoveList(void) {
+        wstring sz;
+        for (MVM mvm : vmvm)
+            sz += SzFromMvm(mvm) + L" ";
+        return sz;
+    }
+
+    void ParseSq(wstring sz, int& ich, SQ& sq)
+    {
+        wchar_t ch;
+        if (!in_range(ch = tolower(sz[ich++]), L'a', L'h'))
+            throw 1;
+        int file = ch - L'a';
+        if (!in_range(ch = sz[ich++], L'1', L'8'))
+            throw 1;
+        int rank = ch - '1';
+        sq = SQ(rank, file);
+    }
+
+    void ParseMvm(wstring sz, int& ich, MVM& mvm)
+    {
+        mvm = mvmNil;
+        /* skip whitespace */
+        while (ich < sz.size() && isspace(sz[ich]))
+            ich++;
+        if (sz[ich] == L'\0')
+            return;
+        SQ sqFrom, sqTo;
+        ParseSq(sz, ich, sqFrom);
+        ParseSq(sz, ich, sqTo);
+        mvm = MVM(sqFrom, sqTo);
+        if (sz[ich] == L'=') {
+            switch (tolower(sz[++ich])) {
+            case 'q': mvm.SetApcPromote(APC::Queen); break;
+            case 'r': mvm.SetApcPromote(APC::Rook); break;
+            case 'b': mvm.SetApcPromote(APC::Bishop); break;
+            case 'n': mvm.SetApcPromote(APC::Knight); break;
+            default:
+                throw 1;
+            }
+            ich++;
+        }
+    }
+
+    vector<MVM> ParseMoveList(wstring sz) 
+    {
+        vector<MVM> vmvm;
+        for (int ich = 0;;) {
+            MVM mvm;
+            ParseMvm(sz, ich, mvm);
+            if (mvm.fIsNil())
+                break;
+            vmvm.push_back(mvm);
+        }    
+        return vmvm;
+    }
+};
+
+INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam)
+{
+    DDAIBREAK* pddaibreak;
+
+    switch (wm) {
+    case WM_INITDIALOG:
+    {
+        pddaibreak = (DDAIBREAK*)lparam;
+        ::SetWindowLongPtr(hdlg, DWLP_USER, lparam);
+        ::SendDlgItemMessageW(hdlg, idtAIBreakInst, WM_SETFONT,
+                              (WPARAM)::CreateFontW(-12, 0, 0, 0, FW_NORMAL, false, false, false,
+                                            ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, L"Arial"), 1);
+        ::SetDlgItemTextW(hdlg, ideAIBreakMoveSequence, pddaibreak->SzDecodeMoveList().c_str());
+        ::SetDlgItemTextW(hdlg, ideAIBreakRepeatCount, to_wstring(pddaibreak->cRepeat).c_str());
+        HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
+        for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
+            PL* ppl = pddaibreak->pga->PplFromCpc(cpc);
+            ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)ppl->SzName().c_str());
+        }
+        ::SendMessageW(hwndCombo, CB_SETCURSEL, (WPARAM)pddaibreak->cpc, 0);
+        return (INT_PTR)true;
+    }
+    case WM_COMMAND:
+        switch (LOWORD(wparam)) {
+        case IDOK:
+        {
+            pddaibreak = (DDAIBREAK*)::GetWindowLongPtr(hdlg, DWLP_USER);
+            
+            HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
+            CPC cpc = (CPC)::SendMessage(hwndCombo, CB_GETCURSEL, 0, 0);
+            int cRepeat;
+            vector<MVM> vmvm;
+
+            wchar_t sz[256];
+            ::GetDlgItemTextW(hdlg, ideAIBreakRepeatCount, sz, CArray(sz));
+            try {
+                cRepeat = stoi(sz);
+                if (cRepeat < 1 || cRepeat > 20)
+                    throw 0;
+            }
+            catch (...) {
+                ::MessageBoxW(hdlg, L"Repeat count musts be between 1 and 20", L"Error", MB_OK);
+                break;
+            }
+
+            ::GetDlgItemTextW(hdlg, ideAIBreakMoveSequence, sz, CArray(sz));
+
+            try {
+                vmvm = pddaibreak->ParseMoveList(sz);
+            }
+            catch (...) {
+                ::MessageBoxW(hdlg, L"Invalid move list.", L"Error", MB_OK);
+                break;
+            }
+
+            pddaibreak->cpc = cpc;
+            pddaibreak->cRepeat = cRepeat;
+            pddaibreak->vmvm = vmvm;
+        }
+            [[fallthrough]];
+        case IDCANCEL:
+            ::EndDialog(hdlg, LOWORD(wparam));
+            return (INT_PTR)true;
+        default:
+            break;
+        }
+        break;
+    }
+    return (INT_PTR)false;
+}
+
+
+class CMDAIBREAK : public CMD
+{
+    static DDAIBREAK ddaibreak;
+
+public:
+    CMDAIBREAK(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        ddaibreak.pga = app.pga;
+        if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddAIBreak), app.hwnd, AIBreakDlgProc, (LPARAM)&ddaibreak) != IDOK)
+            return 1;
+        app.pga->PplFromCpc(ddaibreak.cpc)->SetAIBreak(ddaibreak.vmvm);
+        return 1;
+    }
+};
+
+DDAIBREAK CMDAIBREAK::ddaibreak;
+
+
+/*
+ *
  *  CMDSHOWPIECEVALUES
  * 
  *  Commannd to show a visual respresentation of the piece value tables
@@ -1378,6 +1549,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivideGo, false));
     cmdlist.Add(new CMDSHOWPIECEVALUES(*this, cmdShowPieceValues));
     cmdlist.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
+    cmdlist.Add(new CMDAIBREAK(*this, cmdAIBreak));
 }
 
 
@@ -1487,10 +1659,8 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
 string SzFlattenWsz(const wstring& wsz)
 {
     char sz[1024];
-    size_t cch = wsz.length();
-    if (cch >= sizeof(sz) - 1)
-        cch = sizeof(sz) - 1;
-    sz[::WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), (int)cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
+    int cch = min((int)wsz.length(), sizeof(sz) - 1);
+    sz[::WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
     return sz;
 }
 
@@ -1532,6 +1702,7 @@ wstring SzCommaFromLong(int long long w)
 
     /* and print out each group */
 
+    assert(iw > 0);
     sz += to_wstring(rgw[--iw]);
     while (iw > 0) {
         sz += L",";

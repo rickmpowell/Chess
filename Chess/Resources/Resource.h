@@ -33,7 +33,13 @@
 #define iddTestPerft	2
 #define idcPerftType	256
 #define idePerftDepth	257
- 
+
+#define iddAIBreak			3
+#define idcAIBreakPlayer	256
+#define ideAIBreakMoveSequence	257
+#define ideAIBreakRepeatCount	258
+#define idtAIBreakInst		259
+
 /*
  *	menus, accelerators, and commands
  */
@@ -70,7 +76,8 @@
 #define cmdPerftDivideGo	26
 #define cmdShowPieceValues  27
 #define cmdAISpeedTest		28
-#define cmdMax				29
+#define cmdAIBreak			29
+#define cmdMax				30
 
 /*
  *	icons

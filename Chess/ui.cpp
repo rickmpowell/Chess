@@ -725,14 +725,14 @@ void UI::EndDraw(void)
 }
 
 
-bool UI::FDepthLog(LGT lgt, int& depth)
+bool UI::FDepthLog(LGT lgt, int& depth) noexcept
 {
 	assert(puiParent);
 	return puiParent->FDepthLog(lgt, depth);
 }
 
 
-void UI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+void UI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
 	assert(puiParent);
 	puiParent->AddLog(lgt, lgf, depth, tag, szData);

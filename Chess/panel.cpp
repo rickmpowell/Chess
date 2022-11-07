@@ -144,7 +144,7 @@ void UIP::AdjustUIRcBounds(UI* pui, RC& rc, bool fTop)
  *	so that we don't bother to actually construct the logging data if we're not going
  *	to actually save the data in the log (the user has control over logging depth).
  */
-bool UIP::FDepthLog(LGT lgt, int& depth)
+bool UIP::FDepthLog(LGT lgt, int& depth) noexcept
 {
 	return ga.uidb.FDepthLog(lgt, depth);
 }
@@ -156,7 +156,7 @@ bool UIP::FDepthLog(LGT lgt, int& depth)
  *	with open/close tags for creating depth. Our structure is equivalent to XML, with
  *	attributes on the open tag. 
  */
-void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
 	ga.uidb.AddLog(lgt, lgf, depth, tag, szData);
 }

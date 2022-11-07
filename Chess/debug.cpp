@@ -266,7 +266,7 @@ size_t UIDB::IlgentryFromY(int y) const
  *	Returns true if the two log entries should be combined into a single line. Basically, if they
  *	are the corresponding open/close of the same tag.
  */
-bool UIDB::FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const
+bool UIDB::FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const noexcept
 {
 	if (lgentry2.lgt == LGT::Temp)
 		return true;
@@ -289,7 +289,7 @@ float UIDB::DyLine(void) const
  *	structured log in the Open/Close. This function is used as an optimization
  *	so we don't construct logging data if the data isn't going to be logged.
  */
-bool UIDB::FDepthLog(LGT lgt, int& depth)
+bool UIDB::FDepthLog(LGT lgt, int& depth) noexcept
 {
 	if (lgt == LGT::Close)
 		depthCur--;
@@ -310,7 +310,7 @@ bool UIDB::FDepthLog(LGT lgt, int& depth)
  *	Log entries correspond to the features of an XML document, and logs should easily be
  *	transformed into XML.
  */
-void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
 	LGENTRY lgentry(lgt, lgf, depth, tag, szData);
 
@@ -350,7 +350,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
  *
  *	Clears the current log
  */
-void UIDB::ClearLog(void)
+void UIDB::ClearLog(void) noexcept
 {
 	vlgentry.clear();
 	UpdateContSize(SIZ(0, 0));
@@ -363,7 +363,7 @@ void UIDB::ClearLog(void)
  *	User-set depth of the log that we show/save. If this value is not set, then
  *	the default log depth is used.
  */
-void UIDB::SetDepthLog(int depth)
+void UIDB::SetDepthLog(int depth) noexcept
 {
 	depthShowSet = depth;
 }
@@ -374,13 +374,13 @@ void UIDB::SetDepthLog(int depth)
  *	Sets the default log depth, which is the log depth we use if no depth is set
  *	by SetDepthLog.
  */
-void UIDB::SetDepthLogDefault(int depth)
+void UIDB::SetDepthLogDefault(int depth) noexcept
 {
 	depthShowDefault = depth;
 }
 
 
-void UIDB::InitLog(int depth)
+void UIDB::InitLog(int depth) noexcept
 {
 	ClearLog();
 	if (depth < 0)
@@ -396,7 +396,7 @@ void UIDB::InitLog(int depth)
  *	set by SetDepthLog, or, if SetDepthLog has never been called, the default log
  *	depth.
  */
-int UIDB::DepthLog(void) const
+int UIDB::DepthLog(void) const noexcept
 {
 	if (depthShowSet == -1)
 		return depthShowDefault;
@@ -425,7 +425,7 @@ void UIDB::EnableLogFile(bool fEnable)
  *
  *	Returns true if we're logging stuff to a file.
  */
-bool UIDB::FLogFileEnabled(void) const
+bool UIDB::FLogFileEnabled(void) const noexcept
 {
 	return posLog != nullptr;
 }

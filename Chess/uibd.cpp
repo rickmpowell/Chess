@@ -186,7 +186,7 @@ void UIBD::Layout(void)
  */
 void UIBD::InitGame(void)
 {
-	ga.bdg.GenGemv(gemvDrag, GG::Legal);
+	ga.bdg.GenVemv(vemvDrag, GG::Legal);
 }
 
 
@@ -198,7 +198,7 @@ void UIBD::InitGame(void)
  */
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
-	for (EMV emvDrag : gemvDrag) {
+	for (EMV emvDrag : vemvDrag) {
 		if (emvDrag.mv.sqFrom() == mv.sqFrom() && emvDrag.mv.sqTo() == mv.sqTo())
 			goto FoundMove;
 	}
@@ -208,8 +208,8 @@ FoundMove:
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	ga.bdg.MakeMv(mv);
-	ga.bdg.GenGemv(gemvDrag, GG::Legal);
-	ga.bdg.SetGameOver(gemvDrag, *ga.prule);
+	ga.bdg.GenVemv(vemvDrag, GG::Legal);
+	ga.bdg.SetGameOver(vemvDrag, *ga.prule);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -222,7 +222,7 @@ void UIBD::UndoMv(SPMV spmv)
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	ga.bdg.UndoMv();
-	ga.bdg.GenGemv(gemvDrag, GG::Legal);
+	ga.bdg.GenVemv(vemvDrag, GG::Legal);
 	ga.bdg.SetGs(GS::Playing);
 	if (spmv != SPMV::Hidden)
 		Redraw();
@@ -236,8 +236,8 @@ void UIBD::RedoMv(SPMV spmv)
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	ga.bdg.RedoMv();
-	ga.bdg.GenGemv(gemvDrag, GG::Legal);
-	ga.bdg.SetGameOver(gemvDrag, *ga.prule);
+	ga.bdg.GenVemv(vemvDrag, GG::Legal);
+	ga.bdg.SetGameOver(vemvDrag, *ga.prule);
 	if (spmv != SPMV::Hidden)
 		Redraw();
 }
@@ -423,7 +423,7 @@ bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
 	if (sqHover.fIsNil() || ga.bdg.gs != GS::Playing)
 		return false;
-	for (EMV emvDrag : gemvDrag) {
+	for (EMV emvDrag : vemvDrag) {
 		if (emvDrag.mv.sqFrom() == sqHover && emvDrag.mv.sqTo() == sq) {
 			mv = emvDrag.mv;
 			return true;
@@ -648,7 +648,7 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(ga.bdg.CpcFromSq(sq) == ga.bdg.cpcToMove);
-	for (EMV emvDrag : gemvDrag)
+	for (EMV emvDrag : vemvDrag)
 		if (emvDrag.mv.sqFrom() == sq)
 			return true;
 	return false;
@@ -689,7 +689,7 @@ void UIBD::EndLeftDrag(const PT& pt)
 	SQ sqTo;
 	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
-		for (EMV emv : gemvDrag) {
+		for (EMV emv : vemvDrag) {
 			if (emv.mv.sqFrom() == sqFrom && emv.mv.sqTo() == sqTo) {
 				ga.PplFromCpc(ga.bdg.cpcToMove)->ReceiveMv(emv.mv, SPMV::Fast);
 				goto Done;
