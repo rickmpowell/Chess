@@ -32,6 +32,7 @@ class GA;
 class UCI
 {
 	GA* pga;
+	bool fInherited;
 	HANDLE hfileStdin, hfileStdout;
 public:
 	UCI(GA* pga);

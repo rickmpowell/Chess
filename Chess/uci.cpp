@@ -23,16 +23,16 @@
 
 UCI::UCI(GA* pga) : pga(pga), hfileStdin(NULL), hfileStdout(NULL)
 {
-	if (!AllocConsole())
-		throw 0;
-	hfileStdin = GetStdHandle(STD_INPUT_HANDLE);
-	hfileStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	fInherited = !::AllocConsole();
+	hfileStdin = ::GetStdHandle(STD_INPUT_HANDLE);
+	hfileStdout = ::GetStdHandle(STD_OUTPUT_HANDLE);
 }
 
 
 UCI::~UCI(void)
 {
-	FreeConsole();
+	if (!fInherited)
+		::FreeConsole();
 }
 
 
@@ -40,5 +40,5 @@ void UCI::WriteSz(const wstring& wsz)
 {
 	DWORD cb;
 	string sz = SzFlattenWsz(wsz) + "\n";
-	WriteFile(hfileStdout, sz.c_str(), (DWORD)sz.length(), &cb, NULL);
+	::WriteFile(hfileStdout, sz.c_str(), (DWORD)sz.length(), &cb, NULL);
 }
