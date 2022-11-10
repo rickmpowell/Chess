@@ -1402,8 +1402,10 @@ wstring SzFromEv(EV ev)
 		*pch++ = L'-';
 		ev = -ev;
 	}
-	if (ev == evInf)
-		*pch++ = L'\x221e';
+	if (ev == evInf) {
+		lstrcpy(pch, L"Inf");
+		pch += lstrlen(pch);
+	}
 	else if (FEvIsAbort(abs(ev))) {
 		lstrcpy(pch, L"(interrupted)");
 		pch += lstrlen(pch);
