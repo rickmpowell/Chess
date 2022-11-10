@@ -2,7 +2,7 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 	
 	<Type Name="MV">
-		<DisplayString>{(unsigned short)(((sqFromGrf%8)+10)%16*4096+(sqFromGrf/8+1)*256+(sqToGrf%8+10)%16*16+(sqToGrf/8+1)),xb}</DisplayString>
+		<DisplayString>{(unsigned short)(((usqFrom%8)+10)%16*4096+(usqFrom/8+1)*256+(usqTo%8+10)%16*16+(usqTo/8+1)),xb}</DisplayString>
 	</Type>
 
 	<Type Name="BB">
