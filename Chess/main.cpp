@@ -887,7 +887,6 @@ public:
             if (ppl->FHasLevel())
                 ppl->SetLevel(8);
             ppl->SetFecoRandom(0);
-            ppl->DisableMvLog(true);
         }
 
         /* start a new untimed game */
@@ -921,11 +920,6 @@ public:
         app.pga->SetDepthLog(depthSav);
         app.pga->XLogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         app.pga->XLogClose(L"AI Speed Test", L"", LGF::Normal);
-
-        for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
-            PL* ppl = app.pga->PplFromCpc(cpc);
-           ppl->DisableMvLog(false);
-        }
 
         return 1;
     }
