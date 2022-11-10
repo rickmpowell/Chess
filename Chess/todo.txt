@@ -1,3 +1,7 @@
+  AI: refutation tables
+  Game over panel sometimes doesn't get reset on new game
+  Clocks don't get reset right on new game
+  Clocks should run as soon as game loop starts
   Save real date in PGN files
   Save real player names in PGN files
   How to deal with 3-repeat draws in transposition table?
@@ -24,8 +28,6 @@
   AI: interruptible
   AI: look deeper on a few of the "best" moves
   AI: take clock time into account
-  AI: time management strategy
-  AI: Enumerate xt moves first in alpha-beta move enum
   AI: Do a multithreaded lookup
   AI: Play through until no checks (quiescence) before evaluation
   Eval: Add square control factor to evaluation function
@@ -78,9 +80,9 @@
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
   Keyboard entry of moves
-  Bug: During Computer-Computer play, the clock on Move 1 goes to black's time
   Add canceled game-over state
   GA: Break the UI out of the GA
+  RULE: game time options
   RULE: Official game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Hilite last made move on board
@@ -91,6 +93,10 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* AI: PV search optimization
+* AI: aspiration window optimization
+* AI: time management strategy
+* AI: Enumerate xt moves first in alpha-beta move enum
 * AI: Implement incremental depth search
 * Make pawn promotions not-quiescent (noisy)
 * Hook up transposition table to the main eval function

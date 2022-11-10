@@ -77,7 +77,8 @@
 #define cmdShowPieceValues  27
 #define cmdAISpeedTest		28
 #define cmdAIBreak			29
-#define cmdMax				30
+#define cmdLinkUCI			30
+#define cmdMax				31
 
 /*
  *	icons

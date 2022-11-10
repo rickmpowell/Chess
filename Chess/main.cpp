@@ -1483,6 +1483,28 @@ public:
 
 /*
  *
+ *  CMDLINKUCI command
+ *
+ *  Attach as an engine to a UCI GUI. THis is probably a temporary command.
+ *
+ */
+
+
+class CMDLINKUCI : public CMD
+{
+public:
+    CMDLINKUCI(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        ::MessageBeep(0);
+        return 1;
+    }
+};
+
+
+/*
+ *
  *  CMDEXIT command
  * 
  *  Exits the app.
@@ -1544,6 +1566,7 @@ void APP::InitCmdList(void)
     cmdlist.Add(new CMDSHOWPIECEVALUES(*this, cmdShowPieceValues));
     cmdlist.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
     cmdlist.Add(new CMDAIBREAK(*this, cmdAIBreak));
+    cmdlist.Add(new CMDLINKUCI(*this, cmdLinkUCI));
 }
 
 
