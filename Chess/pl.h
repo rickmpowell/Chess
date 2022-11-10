@@ -61,8 +61,6 @@ public:
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 	int DepthLog(void) const noexcept;
 	void SetDepthLog(int depthNew) noexcept;
-	void DisableMvLog(bool fDisableMvLogNew) noexcept { fDisableMvLog = fDisableMvLogNew; }
-	inline bool FDisabledMvLog(void) const noexcept { return fDisableMvLog; }
 	void SetAIBreak(const vector<MVM>& vmvm);
 	void InitBreak(void);
 };
@@ -145,56 +143,106 @@ public:
 	EV evAlpha;
 	EV evBeta;
 
-	inline AB(EV evAlpha, EV evBeta) : evAlpha(evAlpha), evBeta(evBeta) {
+	inline AB(EV evAlpha, EV evBeta) noexcept : evAlpha(evAlpha), evBeta(evBeta) {
+		assert(FValid());
 	}
 
-	bool FValid(void) const {
-		return evAlpha <= evBeta;
+	bool FValid(void) const noexcept {
+		return evAlpha < evBeta;
 	}
 
-	inline AB operator-(void) const {
+	
+	/*	AB unary - operator
+	 *
+	 *	Inverts the alpha-beta window, negating both sides and flipping. This is what
+	 *	you want to do for negamax searching
+	 */
+	inline AB operator-(void) const noexcept {
 		assert(FValid());
 		return AB(-evBeta, -evAlpha);
 	}
 
-	inline AB& WidenLower(void) {
-		evAlpha = max(evAlpha - (evBeta - evAlpha), -evInf);
+
+	/*	AB::WidenAlpha
+	 *
+	 *	Increases the size of the alpha-beta window by widening the alpha (low)
+	 *	side. Works by doubling the size, until it gets pretty big, then we just
+	 *	give up and go to infinity.
+	 */
+	inline void WidenAlpha(void) noexcept {
+		int dev = evBeta - evAlpha;
+		evAlpha = dev > 200 ? -evInf : max(evAlpha - dev, -evInf);
 		assert(FValid());
-		return *this;
 	}
 
-	inline AB& WidenUpper(void) {
-		evBeta = min(evBeta + (evBeta - evAlpha), evInf);
+
+	/*	AB::WidenBeta
+	 *
+	 *	Increases the size of the a-b window by widening the beta (high) side.
+	 *	Doubles the size, until it gets pretty big, when it just gives up and
+	 *	grows it to infinity.
+	 */
+	inline void WidenBeta(void) noexcept {
+		int dev = evBeta - evAlpha;
+		evBeta = dev > 200 ? evInf : min(evBeta + dev, evInf);
 		assert(FValid());
-		return *this;
 	}
 
-	inline AB& NarrowLower(EV ev) {
-		assert(ev <= evBeta);
+
+	/*	AB::NarrowAlpha
+	 *
+	 *	Sets the new bottom range of the alpha-beta window, but only shrinks if the
+	 *	new alpha is actually bigger than old alpha.
+	 */
+	inline void NarrowAlpha(EV ev) noexcept {
+		assert(ev < evBeta);
 		evAlpha = max(evAlpha, ev);
-		return *this;
 	}
 
-	inline AB& NarrowUpper(EV ev) {
-		assert(ev >= evAlpha);
+
+	/*	AB::NarrowBeta
+	 *
+	 *	Sets the top range of the alpha-beta window, but only shrinks if the new 
+	 *	beta is actually below the old beta
+	 */
+	inline void NarrowBeta(EV ev) noexcept {
+		assert(ev > evAlpha);
 		evBeta = min(evBeta, ev);
-		return *this;
+	}
+
+
+	/*	AB::AbAspiration
+	 *
+	 *	Returns a narrow alpha-beta window centered on the given evaluation. This
+	 *	is the beginning window for the aspiration window optimization.
+	 */
+	inline AB AbAspiration(EV ev, EV dev) const noexcept {
+		return AB(max(ev - dev, -evInf), min(ev + dev, evInf));
+	}
+
+
+	/*	AB::AbNull
+	 *
+	 *	Returns a minimal-sized window at alpha. Used for PV search optimization.
+	 */
+	inline AB AbNull(void) const noexcept {
+		return AB(evAlpha, evAlpha + 1);
 	}
 
 	/* define inequality operators of an eval vs. an interval to be less
 	   than if it's below the bottom value, and greater than if it's above
 	   the top value */
 
-	inline bool operator>(EV ev) const {
+	inline bool operator>(EV ev) const noexcept {
 		assert(FValid());
 		return ev <= evAlpha;
 	}
-	inline bool operator<(EV ev) const {
+	inline bool operator<(EV ev) const noexcept {
 		assert(FValid());
 		return ev >= evBeta;
 	}
 
-	inline bool FIncludes(EV ev) const {
+	inline bool FIncludes(EV ev) const noexcept {
 		assert(FValid());
 		return ev > evAlpha && ev < evBeta;
 	}
@@ -209,13 +257,13 @@ public:
 		return ev >= ab.evBeta;
 	}
 
-	operator wstring() const { 
+	operator wstring() const noexcept { 
 		assert(FValid());
-		return wstring(L"[") + SzFromEv(evAlpha) + L" " + SzFromEv(evBeta) + L"]";
+		return wstring(L"(") + SzFromEv(evAlpha) + L" " + SzFromEv(evBeta) + L")";
 	}
 };
 
-inline wstring to_wstring(AB ab) { return (wstring)ab; }
+inline wstring to_wstring(AB ab) noexcept { return (wstring)ab; }
 
 
 
@@ -256,7 +304,7 @@ protected:
 	size_t cemvEval;
 	size_t cemvNode;
 
-	int plySearchMax;
+	int plySearchLast;
 
 public:
 	PLAI(GA& ga);
@@ -270,19 +318,21 @@ public:
 	void PumpMsg(bool fForce) noexcept;
 
 protected:
-	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, int ply, int plyLim, AB ab) noexcept;
-	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, int ply, AB ab) noexcept; 
-	inline bool FAlphaBetaPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
-	inline bool FDeepenIt(const EMV& emvBest, AB& ab, int& ply) const noexcept;
+	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, AB ab, int ply, int plyLim) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, AB ab, int ply) noexcept; 
+	inline bool FSearchEmvBest(BDG& bdg, VEMVSS& vemvss, EMV& emvBest, AB ab, int ply, int& plyLim) noexcept;
+	inline bool FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
+	inline bool FDeepen(EMV& emvBestOverall, EMV emvBest, AB& ab, int& ply) const noexcept;
 	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept;
-	inline bool FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB& ab) const noexcept;
+	inline bool FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB ab) const noexcept;
 
-	virtual void InitSearch(BDG& bdg) noexcept;
-	virtual bool FStopSearch(int& plyLim) noexcept;
+	time_point<high_resolution_clock> tpMoveFirst;
+	virtual void InitTimeMan(BDG& bdg) noexcept;
+	virtual bool FStopSearch(EMV emvBest, int plyLim) noexcept;
+	
 	virtual EV EvBdgStatic(BDG& bdg, MV mv, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
-	float CmvFromLevel(int level) const noexcept;
 
 	void StartMoveLog(void);
 	void EndMoveLog(void);
