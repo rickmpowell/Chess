@@ -416,7 +416,7 @@ void UIDB::EnableLogFile(bool fEnable)
 	}
 	else {
 		wstring szAppData = ga.app.SzAppDataPath();
-		posLog = new ofstream(szAppData + L"\\chess.log");
+		posLog = new ofstream(szAppData + L"\\sqchess.log");
 	}
 }
 
