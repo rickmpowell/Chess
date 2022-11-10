@@ -151,23 +151,23 @@ const PC pcBlackKing(CPC::Black, APC::King);
 
 class MVM {
 private:
-	uint16_t sqFromGrf : 6,
-		sqToGrf : 6,
-		apcPromoteGrf : 3,
+	uint16_t usqFrom : 6,
+		usqTo : 6,
+		uapcPromote : 3,
 		unused1 : 1;
 public:
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	inline MVM(void) noexcept { *(uint16_t*)this = 0; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	inline MVM(uint16_t u) noexcept { *(uint16_t*)this = u; }
-	inline MVM(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	sqFromGrf = sqFrom; sqToGrf = sqTo; }
+	inline MVM(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
 	inline operator uint16_t() const noexcept { return *(uint16_t*)this; }
 
-	inline SQ sqFrom(void) const noexcept { return sqFromGrf; }
-	inline SQ sqTo(void) const noexcept { return sqToGrf; }
-	inline APC apcPromote(void) const noexcept { return (APC)apcPromoteGrf; }
-	inline MVM& SetApcPromote(APC apc) noexcept { apcPromoteGrf = apc; return *this; }
-	inline bool fIsNil(void) const noexcept { return sqFromGrf == 0 && sqToGrf == 0; }
+	inline SQ sqFrom(void) const noexcept { return usqFrom; }
+	inline SQ sqTo(void) const noexcept { return usqTo; }
+	inline APC apcPromote(void) const noexcept { return (APC)uapcPromote; }
+	inline MVM& SetApcPromote(APC apc) noexcept { uapcPromote = apc; return *this; }
+	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
 };
 
 static_assert(sizeof(MVM) == sizeof(uint16_t));
@@ -176,16 +176,16 @@ static_assert(sizeof(MVM) == sizeof(uint16_t));
 class MV {
 private:
 	uint16_t 
-		sqFromGrf : 6,
-		sqToGrf : 6,
-		apcPromoteGrf : 3,
+		usqFrom : 6,
+		usqTo : 6,
+		uapcPromote : 3,
 		unused1 : 1;
 	uint16_t		
-		pcMoveGrf : 4,	// the piece that is moving
-		apcCaptGrf : 3,	// for captures, the piece we take
-		fEnPassantGrf : 1,	// en passant state
-		fileEnPassantGrf : 3,	
-		csGrf : 4,		// saved castle state
+		upcMove : 4,	// the piece that is moving
+		uapcCapt : 3,	// for captures, the piece we take
+		ufEnPassant : 1,	// en passant state
+		ufileEnPassant : 3,	
+		ucs : 4,		// saved castle state
 		unused2 : 1;
 
 public:
@@ -203,35 +203,35 @@ public:
 	{
 		assert(pcMove.apc() != APC::Null);
 		*(uint32_t*)this = 0;	// initialize everything else to 0
-		sqFromGrf = sqFrom;
-		sqToGrf = sqTo;
-		pcMoveGrf = pcMove;
+		usqFrom = sqFrom;
+		usqTo = sqTo;
+		upcMove = pcMove;
 	}
 
-	inline SQ sqFrom(void) const noexcept { return sqFromGrf; }
-	inline SQ sqTo(void) const noexcept { return sqToGrf; }
-	inline APC apcPromote(void) const noexcept { return (APC)apcPromoteGrf; }
-	inline MV& SetApcPromote(APC apc) noexcept { apcPromoteGrf = apc; return *this; }
-	inline bool fIsNil(void) const noexcept { return sqFromGrf == 0 && sqToGrf == 0; }
+	inline SQ sqFrom(void) const noexcept { return usqFrom; }
+	inline SQ sqTo(void) const noexcept { return usqTo; }
+	inline APC apcPromote(void) const noexcept { return (APC)uapcPromote; }
+	inline MV& SetApcPromote(APC apc) noexcept { uapcPromote = apc; return *this; }
+	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
 
-	inline MV& SetPcMove(PC pcMove) { pcMoveGrf = pcMove; return *this; }
-	inline APC apcMove(void) const noexcept { return PC(pcMoveGrf).apc(); }
-	inline CPC cpcMove(void) const noexcept { return PC(pcMoveGrf).cpc(); }
-	inline PC pcMove(void) const noexcept { return PC(pcMoveGrf); }
-	inline void SetCapture(APC apc) noexcept { apcCaptGrf = apc; }
+	inline MV& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
+	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
+	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
+	inline PC pcMove(void) const noexcept { return PC(upcMove); }
+	inline void SetCapture(APC apc) noexcept { uapcCapt = apc; }
 	
 	inline void SetCsEp(int cs, SQ sqEnPassant) noexcept
 	{
-		csGrf = cs;
-		fEnPassantGrf = !sqEnPassant.fIsNil();
-		if (fEnPassantGrf)
-			fileEnPassantGrf = sqEnPassant.file();
+		ucs = cs;
+		ufEnPassant = !sqEnPassant.fIsNil();
+		if (ufEnPassant)
+			ufileEnPassant = sqEnPassant.file();
 	}
 
-	inline int csPrev(void) const noexcept { return csGrf; }
-	inline int fileEpPrev(void) const noexcept { return fileEnPassantGrf; }
-	inline bool fEpPrev(void) const noexcept { return fEnPassantGrf; }
-	inline APC apcCapture(void) const noexcept { return (APC)apcCaptGrf; }
+	inline int csPrev(void) const noexcept { return ucs; }
+	inline int fileEpPrev(void) const noexcept { return ufileEnPassant; }
+	inline bool fEpPrev(void) const noexcept { return ufEnPassant; }
+	inline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
 	inline bool fIsCapture(void) const noexcept { return apcCapture() != APC::Null; }
 	inline bool operator==(const MV& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
 	inline bool operator!=(const MV& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
@@ -246,6 +246,7 @@ const MVM mvmNil = MVM();
 const MV mvAll = MV(sqH8, sqH8, PC(CPC::White, APC::Error));
 const MVM mvmAll = MVM(sqH8, sqH8);
 wstring SzFromMvm(MVM mvm);
+
 
 /*
  *
@@ -304,17 +305,19 @@ class EMV
 public:
 	MV mv;
 	EV ev;
-	uint16_t sct;	// score type, used by ai search to enumerate good moves first for alpha-beta
+	uint16_t usct;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
-	EMV(MV mv = MV()) noexcept : mv(mv), ev(0), sct(0) { }
-	EMV(MV mv, EV ev) noexcept : mv(mv), ev(ev), sct(0) { }
+	EMV(MV mv = MV()) noexcept : mv(mv), ev(0), usct(0) { }
+	EMV(MV mv, EV ev) noexcept : mv(mv), ev(ev), usct(0) { }
 #pragma warning(suppress:26495)	 
 	EMV(uint64_t emv) noexcept { *(uint64_t*)this = emv; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
-	inline bool operator>(const EMV& emv) const noexcept { return sct > emv.sct || (sct == emv.sct && ev > emv.ev); }
-	inline bool operator<(const EMV& emv) const noexcept { return sct < emv.sct || (sct == emv.sct && ev < emv.ev); }
+	inline bool operator>(const EMV& emv) const noexcept { return usct > emv.usct || (usct == emv.usct && ev > emv.ev); }
+	inline bool operator<(const EMV& emv) const noexcept { return usct < emv.usct || (usct == emv.usct && ev < emv.ev); }
 	inline bool operator>=(const EMV& emv) const noexcept {  return !(*this < emv); }
 	inline bool operator<=(const EMV& emv) const noexcept { return !(*this > emv); }
+	inline void SetSct(SCT sct) noexcept { usct = static_cast<uint16_t>(sct); }
+	inline SCT sct() const noexcept { return static_cast<SCT>(usct); }
 };
 
 static_assert(sizeof(EMV) == sizeof(uint64_t));
