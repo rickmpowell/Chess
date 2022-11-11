@@ -222,22 +222,29 @@ const SQ sqH8(rank8, fileH);
  */
 
 
-enum CPC {
-	NoColor = -1,
-	White = 0,
-	Black = 1,
-	ColorMax = 2
+enum CPC : int {
+	cpcNil = -1,
+	cpcWhite = 0,
+	cpcBlack = 1,
+	cpcMax = 2
 };
 
 inline CPC operator~(CPC cpc)
 {
-	return static_cast<CPC>(static_cast<int>(cpc) ^ 1);
+	return static_cast<CPC>(cpc ^ 1);
 }
 
-inline CPC operator++(CPC& cpc)
+inline CPC& operator++(CPC& cpc)
 {
-	cpc = static_cast<CPC>(static_cast<int>(cpc) + 1);
+	cpc = static_cast<CPC>(cpc + 1);
 	return cpc;
+}
+
+inline CPC operator++(CPC& cpc, int)
+{
+	CPC cpcT = cpc;
+	cpc = static_cast<CPC>(cpc + 1);
+	return cpcT;
 }
 
 
@@ -508,30 +515,30 @@ inline BB BbSouthTwo(const BB& bb) noexcept
  * 
  */
 
-enum class DIR {
-	SouthWest = 0,	/* reverse directions */
-	South = 1,
-	SouthEast = 2,
-	West = 3,
-	East = 4,	/* forward directions */
-	NorthWest = 5,
-	North = 6,
-	NorthEast = 7,
-	Max = 8
+enum DIR {
+	dirSouthWest = 0,	/* reverse directions */
+	dirSouth = 1,
+	dirSouthEast = 2,
+	dirWest = 3,
+	dirEast = 4,	/* forward directions */
+	dirNorthWest = 5,
+	dirNorth = 6,
+	dirNorthEast = 7,
+	dirMax = 8
 };
 
 
 inline DIR DirFromDrankDfile(int drank, int dfile) noexcept
 {
 	int dir = ((drank + 1) * 3 + dfile + 1);
-	if (dir >= (int)DIR::East + 1)
+	if (dir >= dirEast + 1)
 		dir--;
 	return (DIR)dir;
 }
 
 inline int DrankFromDir(DIR dir) noexcept
 {
-	if (dir >= DIR::East)
+	if (dir >= dirEast)
 		return ((int)dir + 1) / 3 - 1;
 	else
 		return (int)dir / 3 - 1;
@@ -539,7 +546,7 @@ inline int DrankFromDir(DIR dir) noexcept
 
 inline int DfileFromDir(DIR dir) noexcept
 {
-	if (dir >= DIR::East)
+	if (dir >= dirEast)
 		return ((int)dir + 1) % 3 - 1;
 	else
 		return (int)dir % 3 - 1;
@@ -568,8 +575,7 @@ public:
 	inline BB BbSlideTo(SQ sq, DIR dir) noexcept
 	{
 		assert(sq < 64);
-		assert(static_cast<unsigned>(dir) < 8);
-		return mpsqdirbbSlide[sq][static_cast<int>(dir)];
+		return mpsqdirbbSlide[sq][dir];
 	}
 
 	inline BB BbKingTo(SQ sq) noexcept { return mpsqbbKing[sq]; }

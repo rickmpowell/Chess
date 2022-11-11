@@ -284,9 +284,9 @@ class PLAI : public PL
 
 protected:
 	/* piece value tables */
-	EV mpapcsqevOpening[APC::ActMax][sqMax];
-	EV mpapcsqevMiddleGame[APC::ActMax][sqMax];
-	EV mpapcsqevEndGame[APC::ActMax][sqMax];
+	EV mpapcsqevOpening[apcMax][sqMax];
+	EV mpapcsqevMiddleGame[apcMax][sqMax];
+	EV mpapcsqevEndGame[apcMax][sqMax];
 	/* piece weight tables used to initialize piece tables above */
 #include "eval_plai.h"
 
@@ -338,11 +338,11 @@ protected:
 	void EndMoveLog(void);
 
 	virtual void InitWeightTables(void);
-	void InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][64], EV mpapcsqev[APC::ActMax][64]);
+	void InitWeightTable(const EV mpapcev[apcMax], const EV mpapcsqdev[apcMax][64], EV mpapcsqev[apcMax][64]);
 	EV EvFromPst(const BDG& bdg) const noexcept;
-	inline void ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[APC::ActMax][sqMax]) const noexcept;
+	inline void ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[apcMax][sqMax]) const noexcept;
 	inline void ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[],
-					  const EV mpapcsqev1[APC::ActMax][sqMax], const EV mpapcsqev2[APC::ActMax][sqMax]) const noexcept;
+					  const EV mpapcsqev1[apcMax][sqMax], const EV mpapcsqev2[apcMax][sqMax]) const noexcept;
 	inline EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
 	EV EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
 	EV EvTempo(const BDG& bdg) const noexcept;

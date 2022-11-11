@@ -1,3 +1,7 @@
+  Implement copy FEN command
+  Lock out most UI when AI is thinking
+  AI: research "soft fail" search
+  AI: Null move optimization
   AI: refutation tables
   Game over panel sometimes doesn't get reset on new game
   Clocks don't get reset right on new game

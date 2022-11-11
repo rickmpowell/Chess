@@ -54,18 +54,18 @@ void GA::DiscardRsrcClass(void)
 GA::GA(APP& app) : UI(nullptr), app(app), puci(nullptr),
 	uiti(this), uibd(this), uiml(this), uipvt(this), uidb(this), uitip(this),
 	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
-	fInPlay(false), prule(nullptr), pprocpgn(nullptr), tidClock(0), spmvShow(SPMV::Animate)
+	fInPlay(false), prule(nullptr), pprocpgn(nullptr), tidClock(0), spmvShow(spmvAnimate)
 {
-	mpcpcppl[CPC::White] = mpcpcppl[CPC::Black] = nullptr;
+	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = nullptr;
 	tmLast = 0L;
-	mpcpctmClock[CPC::White] = mpcpctmClock[CPC::Black] = 0;
+	mpcpctmClock[cpcWhite] = mpcpctmClock[cpcBlack] = 0;
 	puci = new UCI(this);
 }
 
 
 GA::~GA(void)
 {
-	for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+	for (CPC cpc = cpcWhite; cpc <= cpcBlack; ++cpc)
 		if (mpcpcppl[cpc])
 			delete mpcpcppl[cpc];
 	if (prule)
@@ -220,17 +220,27 @@ void GA::InitGame(const wchar_t* szFEN, SPMV spmv)
 void GA::InitClocks(void)
 {
 	tmLast = 0;
-	mpcpctmClock[CPC::White] = prule->TmGame();
-	mpcpctmClock[CPC::Black] = prule->TmGame();
+	mpcpctmClock[cpcWhite] = prule->TmGame(cpcWhite);
+	mpcpctmClock[cpcBlack] = prule->TmGame(cpcBlack);
+}
+
+
+void GA::StartClocks(void)
+{
+	if (prule->TmGame(cpcWhite)) {
+		tmLast = app.TmMessage();
+		tidClock = UI::StartTimer(10);
+		StartClock(bdg.cpcToMove, tmLast);
+	}
 }
 
 
 void GA::EndGame(SPMV spmv)
 {
-	if (prule->TmGame())
+	if (prule->TmGame(cpcWhite))
 		app.StopTimer(tidClock);
 
-	if (spmv != SPMV::Hidden) {
+	if (spmv != spmvHidden) {
 		uiml.EndGame();
 	}
 }
@@ -337,13 +347,13 @@ void GA::DispatchTimer(TID tid, UINT tmCur)
 
 void GA::TickTimer(TID tid, UINT tmCur)
 {
-	if (prule->TmGame() == 0)
+	if (prule->TmGame(cpcWhite) == 0)
 		return;
 	DWORD dtm = tmCur - tmLast;
 	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
 		dtm = mpcpctmClock[bdg.cpcToMove];
-		bdg.SetGs(bdg.cpcToMove == CPC::White ? GS::WhiteTimedOut : GS::BlackTimedOut);
-		EndGame(SPMV::Animate);
+		bdg.SetGs(bdg.cpcToMove == cpcWhite ? gsWhiteTimedOut : gsBlackTimedOut);
+		EndGame(spmvAnimate);
 	}
 	mpcpctmClock[bdg.cpcToMove] -= dtm;
 	tmLast = tmCur;
@@ -353,14 +363,14 @@ void GA::TickTimer(TID tid, UINT tmCur)
 
 void GA::StartClock(CPC cpc, DWORD tmCur)
 {
-	if (prule->TmGame() == 0)
+	if (prule->TmGame(cpc) == 0)
 		return;
 }
 
 
 void GA::PauseClock(CPC cpc, DWORD tmCur)
 {
-	if (prule->TmGame() == 0)
+	if (prule->TmGame(cpc) == 0)
 		return;
 	mpcpctmClock[cpc] -= tmCur - tmLast;
 	uiml.mpcpcpuiclock[cpc]->Redraw();
@@ -369,12 +379,12 @@ void GA::PauseClock(CPC cpc, DWORD tmCur)
 
 void GA::SwitchClock(DWORD tmCur)
 {
-	if (prule->TmGame() == 0)
+	if (prule->TmGame(cpcWhite) == 0)
 		return;
 
 	if (tmLast) {
 		PauseClock(bdg.cpcToMove, tmCur);
-		mpcpctmClock[bdg.cpcToMove] += prule->DtmMove();
+		mpcpctmClock[bdg.cpcToMove] += prule->DtmMove(cpcWhite);
 	}
 	else {
 		tidClock = UI::StartTimer(10);
@@ -389,9 +399,9 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
 	DWORD tm = app.TmMessage();
 	SwitchClock(tm == 0 ? 1 : tm);
 	uibd.MakeMv(mv, spmvMove);
-	if (bdg.gs != GS::Playing)
+	if (bdg.gs != gsPlaying)
 		EndGame(spmvMove);
-	if (spmvMove != SPMV::Hidden) {
+	if (spmvMove != spmvHidden) {
 		uiml.UpdateContSize();
 		uiml.SetSel(bdg.imvCur, spmvMove);
 	}
@@ -430,15 +440,15 @@ void GA::MoveToImv(int64_t imv, SPMV spmv)
 {
 	imv = clamp(imv, (int64_t)-1, (int64_t)bdg.vmvGame.size() - 1);
 	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
-		spmv = SPMV::AnimateFast;
+		spmv = spmvAnimateFast;
 		if (abs(bdg.imvCur - imv) > 5)
-			spmv = SPMV::AnimateVeryFast;
+			spmv = spmvAnimateVeryFast;
 	}
 	while (bdg.imvCur > imv)
 		uibd.UndoMv(spmv);
 	while (bdg.imvCur < imv)
 		uibd.RedoMv(spmv);
-	if (spmv != SPMV::Hidden)
+	if (spmv != spmvHidden)
 		uiml.Layout();	// in case game over state changed
 	uiml.SetSel(bdg.imvCur, spmv);
 }
@@ -446,7 +456,7 @@ void GA::MoveToImv(int64_t imv, SPMV spmv)
 
 void GA::GenVemv(VEMV& vemv)
 {
-	bdg.GenVemv(vemv, GG::Legal);
+	bdg.GenVemv(vemv, ggLegal);
 }
 
 
@@ -465,15 +475,18 @@ int GA::Play(void)
 
 	InitLog(2);
 	LogOpen(L"Game", L"");
+	bdg.SetGs(gsPlaying);
+	StartClocks();
+
 	try {
 		do {
-			SPMV spmv = SPMV::Animate;
+			SPMV spmv = spmvAnimate;
 			MV mv = PplToMove()->MvGetNext(spmv);
 			if (mv.fIsNil())
-				throw EXINT();;
+				throw EXINT();
 			MakeMv(mv, spmv);
 			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
-		} while (bdg.gs == GS::Playing);
+		} while (bdg.gs == gsPlaying);
 	}
 	catch (...) {
 		LogClose(L"Game", L"Game aborted", LGF::Bold);
@@ -513,6 +526,12 @@ void GA::PumpMsg(void)
 	::DispatchMessageW(&msg);
 	}
 }
+
+
+/*
+ *	Logging stub overloads that simply forward to the uidb window, which is where the
+ *	real logging happens.
+ */
 
 
 bool GA::FDepthLog(LGT lgt, int& depth) noexcept

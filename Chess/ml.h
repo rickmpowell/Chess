@@ -173,8 +173,8 @@ class UIML : public UIPS
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int64_t imvSel;
-	UIPL* mpcpcpuipl[CPC::ColorMax];
-	UICLOCK* mpcpcpuiclock[CPC::ColorMax];
+	UIPL* mpcpcpuipl[cpcMax];
+	UICLOCK* mpcpcpuiclock[cpcMax];
 	UIGC uigc;
 
 public:

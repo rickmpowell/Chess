@@ -106,7 +106,7 @@ void UIPL::Draw(const RC& rcUpdate)
 
 		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 		DrawEll(ell, pbrText);
-		if (cpc == CPC::Black)
+		if (cpc == cpcBlack)
 			FillEll(ell, pbrText);
 
 		/* and the player name */
@@ -216,7 +216,6 @@ UIGC::UIGC(UIML* puiml) : UI(puiml), ga(puiml->ga),
 }
 
 
-
 void UIGC::CreateRsrc(void)
 {
 	UI::CreateRsrc();
@@ -236,7 +235,7 @@ void UIGC::DiscardRsrc(void)
 
 void UIGC::Layout(void)
 {
-	if (ga.bdg.gs == GS::Playing) {
+	if (ga.bdg.gs == gsPlaying) {
 		RC rc = RcInterior().Inflate(PT(0, -1.0f));
 		rc.left += 48.0f;
 		SIZ siz = btnResign.SizImg();
@@ -249,8 +248,8 @@ void UIGC::Layout(void)
 		rc.left = rc.right - (rc.DyHeight() * siz.width / siz.height);
 		btnOfferDraw.SetBounds(rc);
 	}
-	btnResign.Show(ga.bdg.gs == GS::Playing);
-	btnOfferDraw.Show(ga.bdg.gs == GS::Playing);
+	btnResign.Show(ga.bdg.gs == gsPlaying);
+	btnOfferDraw.Show(ga.bdg.gs == gsPlaying);
 }
 
 
@@ -258,14 +257,22 @@ SIZ UIGC::SizLayoutPreferred(void)
 {
 	SIZ siz = SizSz(L"0", ptxText);
 	siz.width = -1.0f;
-	siz.height *= (ga.bdg.gs == GS::Playing) ? 1.5f : 5.0f;
+	if (ga.bdg.gs == gsPlaying)
+		siz.height *= 1.5;
+	else if (ga.bdg.gs == gsNotStarted)
+		siz.height *= 1.5;
+	else
+		siz.height *= 5.0f;
 	return siz;
 }
 
 void UIGC::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
-	if (ga.bdg.gs == GS::Playing)
+	
+	if (ga.bdg.gs == gsPlaying)
+		return;
+	if (ga.bdg.gs == gsNotStarted)
 		return;
 
 	float dyLine = SizSz(L"A", ptxText).height + 3.0f;
@@ -280,46 +287,46 @@ void UIGC::Draw(const RC& rcUpdate)
 	RC rcScore = rcResult;
 	rcScore.Offset(0, dyLine);
 
-	CPC cpcWin = CPC::NoColor;
+	CPC cpcWin = cpcNil;
 
 	switch (ga.bdg.gs) {
-	case GS::WhiteCheckMated:
+	case gsWhiteCheckMated:
 		DrawSzCenter(L"Checkmate", ptxText, rcEndType);
-		cpcWin = CPC::Black;
+		cpcWin = cpcBlack;
 		break;
-	case GS::BlackCheckMated:
+	case gsBlackCheckMated:
 		DrawSzCenter(L"Checkmate", ptxText, rcEndType);
-		cpcWin = CPC::White;
+		cpcWin = cpcWhite;
 		break;
-	case GS::WhiteResigned:
+	case gsWhiteResigned:
 		DrawSzCenter(L"White Resigned", ptxText, rcEndType);
-		cpcWin = CPC::Black;
+		cpcWin = cpcBlack;
 		break;
-	case GS::BlackResigned:
+	case gsBlackResigned:
 		DrawSzCenter(L"Black Resigned", ptxText, rcEndType);
-		cpcWin = CPC::White;
+		cpcWin = cpcWhite;
 		break;
-	case GS::WhiteTimedOut:
+	case gsWhiteTimedOut:
 		DrawSzCenter(L"Time Expired", ptxText, rcEndType);
-		cpcWin = CPC::Black;
+		cpcWin = cpcBlack;
 		break;
-	case GS::BlackTimedOut:
+	case gsBlackTimedOut:
 		DrawSzCenter(L"Time Expired", ptxText, rcEndType);
-		cpcWin = CPC::White;
+		cpcWin = cpcWhite;
 		break;
-	case GS::StaleMate:
+	case gsStaleMate:
 		DrawSzCenter(L"Stalemate", ptxText, rcEndType);
 		break;
-	case GS::Draw3Repeat:
+	case gsDraw3Repeat:
 		DrawSzCenter(L"3-Fold Repitition", ptxText, rcEndType);
 		break;
-	case GS::Draw50Move:
+	case gsDraw50Move:
 		DrawSzCenter(L"50-Move", ptxText, rcEndType);
 		break;
-	case GS::DrawAgree:
+	case gsDrawAgree:
 		DrawSzCenter(L"Draw Agreed", ptxText, rcEndType);
 		break;
-	case GS::DrawDead:
+	case gsDrawDead:
 		DrawSzCenter(L"Insufficient Material", ptxText, rcEndType);
 		break;
 	default:
@@ -329,11 +336,11 @@ void UIGC::Draw(const RC& rcUpdate)
 
 	const wchar_t* szResult = L"Draw";
 	const wchar_t* szScore = L"\x00bd-\x00bd";	/* 1/2-1/2 */
-	if (cpcWin == CPC::White) {
+	if (cpcWin == cpcWhite) {
 		szResult = L"White Wins";
 		szScore = L"1-0";
 	}
-	else if (cpcWin == CPC::Black) {
+	else if (cpcWin == cpcBlack) {
 		szResult = L"Black Wins";
 		szScore = L"0-1";
 	}
@@ -495,10 +502,10 @@ UIML::UIML(GA* pga) : UIPS(pga),
 {
 	for (int col = 0; col < CArray(mpcoldx); col++)
 		mpcoldx[col] = 0.0f;
-	mpcpcpuiclock[CPC::White] = new UICLOCK(this, CPC::White);
-	mpcpcpuiclock[CPC::Black] = new UICLOCK(this, CPC::Black);
-	mpcpcpuipl[CPC::White] = new UIPL(this, CPC::White);
-	mpcpcpuipl[CPC::Black] = new UIPL(this, CPC::Black);
+	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
+	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
+	mpcpcpuipl[cpcWhite] = new UIPL(this, cpcWhite);
+	mpcpcpuipl[cpcBlack] = new UIPL(this, cpcBlack);
 }
 
 
@@ -693,7 +700,7 @@ void UIML::DrawContent(const RC& rcCont)
 void UIML::SetSel(int64_t imv, SPMV spmv)
 {
 	imvSel = imv;
-	if (spmv != SPMV::Hidden)
+	if (spmv != spmvHidden)
 		if (!FMakeVis(imvSel))
 			Redraw();
 }
@@ -749,7 +756,7 @@ void UIML::DrawMoveNumber(const RC& rc, int imv)
 
 void UIML::InitGame(void)
 {
-	ShowClocks(ga.prule->TmGame() != 0);
+	ShowClocks(ga.prule->TmGame(cpcWhite) != 0);
 	bdgInit = ga.bdg;
 	UpdateContSize();
 }
@@ -757,8 +764,8 @@ void UIML::InitGame(void)
 
 void UIML::ShowClocks(bool fTimed)
 {
-	mpcpcpuiclock[CPC::White]->Show(fTimed);
-	mpcpcpuiclock[CPC::Black]->Show(fTimed);
+	mpcpcpuiclock[cpcWhite]->Show(fTimed);
+	mpcpcpuiclock[cpcBlack]->Show(fTimed);
 }
 
 
@@ -824,8 +831,8 @@ void UIML::StartLeftDrag(const PT& pt)
 	HTML html = HtmlHitTest(pt, &imv);
 	if (html != HTML::List)
 		return;
-	SetSel(imv, SPMV::Fast);
-	ga.MoveToImv(imv, SPMV::Animate);
+	SetSel(imv, spmvFast);
+	ga.MoveToImv(imv, spmvAnimate);
 }
 
 void UIML::EndLeftDrag(const PT& pt)
@@ -842,23 +849,23 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		ga.MoveToImv(ga.bdg.imvCur - 1, SPMV::Animate);
+		ga.MoveToImv(ga.bdg.imvCur - 1, spmvAnimate);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		ga.MoveToImv(ga.bdg.imvCur + 1, SPMV::Animate);
+		ga.MoveToImv(ga.bdg.imvCur + 1, spmvAnimate);
 		break;
 	case VK_HOME:
-		ga.MoveToImv(0, SPMV::Animate);
+		ga.MoveToImv(0, spmvAnimate);
 		break;
 	case VK_END:
-		ga.MoveToImv((int)ga.bdg.vmvGame.size() - 1, SPMV::Animate);
+		ga.MoveToImv((int)ga.bdg.vmvGame.size() - 1, spmvAnimate);
 		break;
 	case VK_PRIOR:
-		ga.MoveToImv(ga.bdg.imvCur - 5*2, SPMV::Animate);
+		ga.MoveToImv(ga.bdg.imvCur - 5*2, spmvAnimate);
 		break;
 	case VK_NEXT:
-		ga.MoveToImv(ga.bdg.imvCur + 5*2, SPMV::Animate);
+		ga.MoveToImv(ga.bdg.imvCur + 5*2, spmvAnimate);
 		break;
 	default:
 		break;

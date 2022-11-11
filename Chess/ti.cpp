@@ -115,7 +115,7 @@ void UIGTM::Draw(const RC& rcUpdate)
 
 
 UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbSqChessLogo), uilocale(this), uigt(this), uigtm(this),
-		uiplWhite(this, CPC::White), uiplBlack(this, CPC::Black)
+		uiplWhite(this, cpcWhite), uiplBlack(this, cpcBlack)
 {
 }
 
@@ -159,7 +159,7 @@ void UITI::Draw(const RC& rcUpdate)
 
 void UITI::SetPl(CPC cpc, PL* ppl)
 {
-	if (cpc == CPC::White)
+	if (cpc == cpcWhite)
 		uiplWhite.SetPl(ppl);
 	else
 		uiplBlack.SetPl(ppl);
@@ -219,7 +219,7 @@ void UIPVTPL::Draw(const RC& rcUpdate)
 	App().pdc->CreateSolidColorBrush(ColorF(ColorF::Blue), &pbrVal);
 
 	float dxySq = rc.DxWidth() / 8;
-	for (APC apc = APC::Pawn; apc <= APC::King; ++apc) {
+	for (APC apc = apcPawn; apc <= apcKing; ++apc) {
 		RC rcSq(rc.left, rc.top, rc.left + dxySq, rc.top + dxySq);
 		for (int rank = rankMax-1; rank >= 0; rank--) {
 			for (int file = 0; file < fileMax; file++) {
@@ -257,7 +257,7 @@ void UIPVTPL::SetGph(GPH gph)
 
 
 UIPVT::UIPVT(GA* pga) : UIP(pga), 
-	uipvtplOpening(this, GPH::MidMin), uipvtplMidGame(this, GPH::MidMid), uipvtplEndGame(this, GPH::MidMax)
+	uipvtplOpening(this, gphMidMin), uipvtplMidGame(this, gphMidMid), uipvtplEndGame(this, gphMidMax)
 {
 }
 
@@ -283,7 +283,7 @@ void UIPVT::Draw(const RC& rcUpdate)
 
 void UIPVT::SetPl(CPC cpc, PL* ppl)
 {
-	if (cpc == CPC::White) {
+	if (cpc == cpcWhite) {
 		uipvtplOpening.SetPl(ppl);
 		uipvtplMidGame.SetPl(ppl);
 		uipvtplEndGame.SetPl(ppl);

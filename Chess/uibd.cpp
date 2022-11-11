@@ -125,7 +125,7 @@ void UIBD::DiscardRsrc(void)
 UIBD::UIBD(GA* pga) : UIP(pga), 
 		pbmpPieces(nullptr), pgeomCross(nullptr), pgeomArrowHead(nullptr), ptxLabel(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
-		cpcPointOfView(CPC::White), 
+		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
 		sqDragInit(SQ()), sqHover(SQ())
 {
@@ -186,7 +186,7 @@ void UIBD::Layout(void)
  */
 void UIBD::InitGame(void)
 {
-	ga.bdg.GenVemv(vemvDrag, GG::Legal);
+	ga.bdg.GenVemv(vemvDrag, ggLegal);
 }
 
 
@@ -208,9 +208,9 @@ FoundMove:
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	ga.bdg.MakeMv(mv);
-	ga.bdg.GenVemv(vemvDrag, GG::Legal);
+	ga.bdg.GenVemv(vemvDrag, ggLegal);
 	ga.bdg.SetGameOver(vemvDrag, *ga.prule);
-	if (spmv != SPMV::Hidden)
+	if (spmv != spmvHidden)
 		Redraw();
 }
 
@@ -222,9 +222,9 @@ void UIBD::UndoMv(SPMV spmv)
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	ga.bdg.UndoMv();
-	ga.bdg.GenVemv(vemvDrag, GG::Legal);
-	ga.bdg.SetGs(GS::Playing);
-	if (spmv != SPMV::Hidden)
+	ga.bdg.GenVemv(vemvDrag, ggLegal);
+	ga.bdg.SetGs(gsPlaying);
+	if (spmv != spmvHidden)
 		Redraw();
 }
 
@@ -236,9 +236,9 @@ void UIBD::RedoMv(SPMV spmv)
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	ga.bdg.RedoMv();
-	ga.bdg.GenVemv(vemvDrag, GG::Legal);
+	ga.bdg.GenVemv(vemvDrag, ggLegal);
 	ga.bdg.SetGameOver(vemvDrag, *ga.prule);
-	if (spmv != SPMV::Hidden)
+	if (spmv != spmvHidden)
 		Redraw();
 }
 
@@ -267,7 +267,7 @@ void UIBD::Draw(const RC& rcDraw)
 	rankLast = clamp(rankLast, 0, rankMax - 1);
 	fileFirst = clamp(fileFirst, 0, fileMax - 1);
 	fileLast = clamp(fileLast, 0, fileMax - 1);
-	if (cpcPointOfView == CPC::White) {
+	if (cpcPointOfView == cpcWhite) {
 		rankFirst = rankMax - rankFirst - 1;
 		rankLast = rankMax - rankLast - 1;
 		swap(rankFirst, rankLast);
@@ -384,15 +384,15 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
  */
 void UIBD::DrawGameState(void)
 {
-	if (ga.bdg.gs == GS::Playing)
+	if (ga.bdg.gs == gsPlaying)
 		return;
 	switch (ga.bdg.gs) {
 		/* TODO: show checkmate */
-	case GS::WhiteCheckMated: break;
-	case GS::BlackCheckMated: break;
-	case GS::WhiteTimedOut: break;
-	case GS::BlackTimedOut: break;
-	case GS::StaleMate: break;
+	case gsWhiteCheckMated: break;
+	case gsBlackCheckMated: break;
+	case gsWhiteTimedOut: break;
+	case gsBlackTimedOut: break;
+	case gsStaleMate: break;
 	default: break;
 	}
 }
@@ -405,7 +405,7 @@ void UIBD::DrawGameState(void)
 RC UIBD::RcFromSq(SQ sq) const
 {
 	int rank = sq.rank(), file = sq.file();
-	if (cpcPointOfView == CPC::White)
+	if (cpcPointOfView == cpcWhite)
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
@@ -421,7 +421,7 @@ RC UIBD::RcFromSq(SQ sq) const
  */
 bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
-	if (sqHover.fIsNil() || ga.bdg.gs != GS::Playing)
+	if (sqHover.fIsNil() || ga.bdg.gs != gsPlaying)
 		return false;
 	for (EMV emvDrag : vemvDrag) {
 		if (emvDrag.mv.sqFrom() == sqHover && emvDrag.mv.sqTo() == sq) {
@@ -517,7 +517,7 @@ RC UIBD::RcGetDrag(void)
  */
 void UIBD::DrawPc(const RC& rcPc, float opacity, CPC cpc, APC apc)
 {
-	if (apc == APC::Null)
+	if (apc == apcNull)
 		return;
 
 	/* the piece png has the 12 different chess pieces oriented like:
@@ -623,7 +623,7 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 		return HTBD::Static;
 	int rank = (int)((pt.y - rcSquares.top) / dxySquare);
 	int file = (int)((pt.x - rcSquares.left) / dxySquare);
-	if (cpcPointOfView == CPC::White)
+	if (cpcPointOfView == cpcWhite)
 		rank = rankMax - 1 - rank;
 	else
 		file = fileMax - 1 - file;
@@ -691,7 +691,7 @@ void UIBD::EndLeftDrag(const PT& pt)
 	if (!sqTo.fIsNil()) {
 		for (EMV emv : vemvDrag) {
 			if (emv.mv.sqFrom() == sqFrom && emv.mv.sqTo() == sqTo) {
-				ga.PplFromCpc(ga.bdg.cpcToMove)->ReceiveMv(emv.mv, SPMV::Fast);
+				ga.PplFromCpc(ga.bdg.cpcToMove)->ReceiveMv(emv.mv, spmvFast);
 				goto Done;
 			}
 		}

@@ -19,28 +19,28 @@ class GA;
 /*
  *	Move speeds
  */
-enum class SPMV
+enum SPMV
 {
-	Hidden,
-	Fast,
-	AnimateVeryFast,
-	AnimateFast,
-	Animate
+	spmvHidden,
+	spmvFast,
+	spmvAnimateVeryFast,
+	spmvAnimateFast,
+	spmvAnimate
 };
 
 inline bool FSpmvAnimate(SPMV spmv)
 {
-	return spmv == SPMV::Animate || spmv == SPMV::AnimateFast || spmv == SPMV::AnimateVeryFast;
+	return spmv == spmvAnimate || spmv == spmvAnimateFast || spmv == spmvAnimateVeryFast;
 }
 
 inline unsigned DframeFromSpmv(SPMV spmv)
 {
 	switch (spmv) {
-	case SPMV::AnimateVeryFast:
+	case spmvAnimateVeryFast:
 		return 5;
-	case SPMV::AnimateFast:
+	case spmvAnimateFast:
 		return 10;
-	case SPMV::Animate:
+	case spmvAnimate:
 		return 30;
 	default:
 		break;

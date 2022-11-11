@@ -114,9 +114,9 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     InitCmdList();
 
     pga = new GA(*this);
-    pga->SetPl(CPC::Black, rginfopl.PplFactory(*pga, 0));
-    pga->SetPl(CPC::White, rginfopl.PplFactory(*pga, 2));
-    pga->NewGame(new RULE, SPMV::Animate);
+    pga->SetPl(cpcBlack, rginfopl.PplFactory(*pga, 0));
+    pga->SetPl(cpcWhite, rginfopl.PplFactory(*pga, 2));
+    pga->NewGame(new RULE, spmvAnimate);
 
     /* create the main window */
 
@@ -149,6 +149,9 @@ APP::~APP(void)
  */
 int APP::MessagePump(void)
 {
+ //   if (pga->puci)
+ //       pga->puci->ConsolePump();
+
     MSG msg;
     while (::GetMessage(&msg, nullptr, 0, 0)) {
         if (msg.message == WM_TIMER) {
@@ -536,7 +539,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->NewGame(new RULE, SPMV::Animate);
+        app.pga->NewGame(new RULE, spmvAnimate);
         app.pga->Redraw();
         return 1;
     }
@@ -581,7 +584,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv(SPMV::Animate);
+        app.pga->UndoMv(spmvAnimate);
         return 1;
     }
 
@@ -608,7 +611,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv(SPMV::Animate);
+        app.pga->RedoMv(spmvAnimate);
         return 1;
     }
 
@@ -882,7 +885,7 @@ public:
     {
         /* create standard players with depth and initialize the game */
 
-        for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
+        for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
             PL* ppl = app.pga->PplFromCpc(cpc);
             if (ppl->FHasLevel())
                 ppl->SetLevel(8);
@@ -891,8 +894,9 @@ public:
 
         /* start a new untimed game */
 
-        app.pga->NewGame(new RULE, SPMV::Fast);
-        app.pga->prule->SetTmGame(0);
+        app.pga->NewGame(new RULE, spmvFast);
+        app.pga->prule->SetTmGame(cpcWhite, 0);
+        app.pga->prule->SetTmGame(cpcBlack, 0);
         app.pga->uiml.ShowClocks(false);
         app.pga->Layout();
 
@@ -904,11 +908,11 @@ public:
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
 
         for (int imv = 0; imv < 10; imv++) {
-            SPMV spmv = SPMV::Fast;
+            SPMV spmv = spmvFast;
             MV mv = app.pga->PplToMove()->MvGetNext(spmv);
             if (mv.fIsNil())
                 break;
-            app.pga->MakeMv(mv, SPMV::Fast);
+            app.pga->MakeMv(mv, spmvFast);
         }
 
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
@@ -944,7 +948,7 @@ public:
     vector<MVM> vmvm;
     int cRepeat;
 
-    DDAIBREAK() : pga(nullptr), cpc(CPC::White), cRepeat(1) {
+    DDAIBREAK() : pga(nullptr), cpc(cpcWhite), cRepeat(1) {
     }
 
     wstring SzDecodeMoveList(void) {
@@ -980,10 +984,10 @@ public:
         mvm = MVM(sqFrom, sqTo);
         if (sz[ich] == L'=') {
             switch (tolower(sz[++ich])) {
-            case 'q': mvm.SetApcPromote(APC::Queen); break;
-            case 'r': mvm.SetApcPromote(APC::Rook); break;
-            case 'b': mvm.SetApcPromote(APC::Bishop); break;
-            case 'n': mvm.SetApcPromote(APC::Knight); break;
+            case 'q': mvm.SetApcPromote(apcQueen); break;
+            case 'r': mvm.SetApcPromote(apcRook); break;
+            case 'b': mvm.SetApcPromote(apcBishop); break;
+            case 'n': mvm.SetApcPromote(apcKnight); break;
             default:
                 throw 1;
             }
@@ -1020,7 +1024,7 @@ INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam
         ::SetDlgItemTextW(hdlg, ideAIBreakMoveSequence, pddaibreak->SzDecodeMoveList().c_str());
         ::SetDlgItemTextW(hdlg, ideAIBreakRepeatCount, to_wstring(pddaibreak->cRepeat).c_str());
         HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
-        for (CPC cpc = CPC::White; cpc < CPC::ColorMax; ++cpc) {
+        for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
             PL* ppl = pddaibreak->pga->PplFromCpc(cpc);
             ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)ppl->SzName().c_str());
         }
@@ -1268,7 +1272,7 @@ public:
             }
         }
         else {
-            app.pga->InitGame(WszWidenSz(pch).c_str(), SPMV::Animate);
+            app.pga->InitGame(WszWidenSz(pch).c_str(), spmvAnimate);
             app.pga->Redraw();
         }
         return 1;
@@ -1306,8 +1310,8 @@ public:
 
     virtual int Execute(void)
     {
-        DWORD tmOld = app.pga->prule->TmGame();
-        app.pga->prule->SetTmGame(tmOld ? 0 : 60 * 60 * 1000);
+        DWORD tmOld = app.pga->prule->TmGame(cpcWhite);
+        app.pga->prule->SetTmGame(cpcWhite, tmOld ? 0 : 60 * 60 * 1000);
         app.pga->uiml.ShowClocks(tmOld == 0);
         app.pga->Layout();
         app.pga->Redraw();
@@ -1321,7 +1325,7 @@ public:
 
     virtual int IdsMenu(void) const
     {
-        return app.pga->prule->TmGame() ? idsClocksOff : idsClocksOn;
+        return app.pga->prule->TmGame(cpcWhite) ? idsClocksOff : idsClocksOn;
     }
 };
 
@@ -1497,7 +1501,8 @@ public:
 
     virtual int Execute(void)
     {
-        ::MessageBeep(0);
+        if (app.pga->puci)
+            app.pga->puci->ConsolePump();
         return 1;
     }
 };

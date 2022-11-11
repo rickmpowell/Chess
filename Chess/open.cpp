@@ -36,7 +36,7 @@ void GA::OpenPGNFile(const wchar_t szFile[])
 	PROCPGNGA procpgngaSav(*this, new PROCPGNOPEN(*this));
 	Deserialize(istkpgn);
 	uiml.UpdateContSize();
-	uiml.SetSel((int)bdg.vmvGame.size() - 1, SPMV::Hidden);
+	uiml.SetSel((int)bdg.vmvGame.size() - 1, spmvHidden);
 	uiml.FMakeVis(bdg.imvCur);
 	Redraw();
 }
@@ -62,7 +62,7 @@ bool GA::FIsPgnData(const char* pch) const
  */
 ERR GA::Deserialize(ISTKPGN& istkpgn)
 {
-	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+	NewGame(new RULE(0, 0, 0), spmvHidden);
 	try {
 		ERR err = DeserializeHeaders(istkpgn);
 		if (err != ERR::None)
@@ -70,7 +70,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
 		DeserializeMoveList(istkpgn);
 	}
 	catch (...) {
-		NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+		NewGame(new RULE(0, 0, 0), spmvHidden);
 		throw;
 	}
 	return ERR::None;
@@ -87,7 +87,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
  */
 ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 {
-	NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+	NewGame(new RULE(0, 0, 0), spmvHidden);
 	istkpgn.SetImvCur(0);
 	ERR err;
 	try {
@@ -344,7 +344,7 @@ PROCPGN::PROCPGN(GA& ga) : ga(ga)
 
 ERR PROCPGNOPEN::ProcessMv(MV mv)
 {
-	ga.MakeMv(mv, SPMV::Hidden);
+	ga.MakeMv(mv, spmvHidden);
 	return ERR::None;
 }
 
@@ -356,7 +356,7 @@ ERR PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
 	case tkpgnBlack:
 	{
 		wstring wszVal(szValue.begin(), szValue.end());
-		ga.mpcpcppl[tkpgn == tkpgnBlack ? CPC::Black : CPC::White]->SetName(wszVal);
+		ga.mpcpcppl[tkpgn == tkpgnBlack ? cpcBlack : cpcWhite]->SetName(wszVal);
 		break;
 	}
 	case tkpgnEvent:
@@ -429,7 +429,7 @@ string to_string(TKMV tkmv)
 ERR BDG::ParseMv(const char*& pch, MV& mv)
 {
 	VEMV vemv;
-	GenVemv(vemv, GG::Legal);
+	GenVemv(vemv, ggLegal);
 
 	const char* pchInit = pch;
 	int rank, file;
@@ -457,7 +457,7 @@ ERR BDG::ParseMv(const char*& pch, MV& mv)
 		file = fileQueenBishop;
 BuildCastle:
 		rank = RankBackFromCpc(cpcToMove);
-		mv = MV(SQ(rank, fileKing), SQ(rank, file), PC(cpcToMove, APC::King));
+		mv = MV(SQ(rank, fileKing), SQ(rank, file), PC(cpcToMove, apcKing));
 		return ERR::None;
 	case TKMV::WhiteWins:
 	case TKMV::BlackWins:
@@ -476,17 +476,17 @@ BuildCastle:
 APC ApcFromTkmv(TKMV tkmv)
 {
 	switch (tkmv) {
-	case TKMV::Pawn: return APC::Pawn;
-	case TKMV::Knight: return APC::Knight;
-	case TKMV::Bishop: return APC::Bishop;
-	case TKMV::Rook: return APC::Rook;
-	case TKMV::Queen: return APC::Queen;
-	case TKMV::King: return APC::King;
+	case TKMV::Pawn: return apcPawn;
+	case TKMV::Knight: return apcKnight;
+	case TKMV::Bishop: return apcBishop;
+	case TKMV::Rook: return apcRook;
+	case TKMV::Queen: return apcQueen;
+	case TKMV::King: return apcKing;
 	default:
 		break;
 	}
 	assert(false);
-	return APC::Error;
+	return apcError;
 }
 
 
@@ -579,7 +579,7 @@ ERR BDG::ParseSquareMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*
 		mv = MvMatchFromTo(vemv, sq, sqTo, pchInit, pch);
 	}
 	else { /* e4: plain square is a pawn move */
-		mv = MvMatchPieceTo(vemv, APC::Pawn, -1, -1, sq, pchInit, pch);
+		mv = MvMatchPieceTo(vemv, apcPawn, -1, -1, sq, pchInit, pch);
 	}
 	return ParseMvSuffixes(mv, pch);
 }
@@ -601,7 +601,7 @@ ERR BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 			pch = pchNext;
 			TKMV tkmv = TkmvScan(pchNext, sqT);
 			APC apc = ApcFromTkmv(tkmv);
-			if (apc == APC::Null || apc == APC::Pawn || apc == APC::King)
+			if (apc == apcNull || apc == apcPawn || apc == apcKing)
 				throw EXPARSE("Not a valid promotion");
 			pch = pchNext;
 			mv.SetApcPromote(apc);
@@ -636,7 +636,7 @@ ERR BDG::ParseFileMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 	if (tkmv != TKMV::Square)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
-	mv = MvMatchPieceTo(vemv, APC::Pawn, -1, sq.file(), sqTo, pchInit, pch);
+	mv = MvMatchPieceTo(vemv, apcPawn, -1, sq.file(), sqTo, pchInit, pch);
 	return ParseMvSuffixes(mv, pch);
 }
 
@@ -654,7 +654,7 @@ ERR BDG::ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 	if (tkmv != TKMV::Square)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
-	mv = MvMatchPieceTo(vemv, APC::Pawn, sq.rank(), -1, sqTo, pchInit, pch);
+	mv = MvMatchPieceTo(vemv, apcPawn, sq.rank(), -1, sqTo, pchInit, pch);
 	return ParseMvSuffixes(mv, pch);
 }
 

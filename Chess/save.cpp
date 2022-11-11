@@ -53,17 +53,17 @@ void GA::SerializeHeaders(ostream& os)
 	SerializeHeader(os, "Black", "Black");
 
 	switch (bdg.gs) {
-	case GS::BlackCheckMated:
-	case GS::BlackResigned:
-	case GS::BlackTimedOut:
+	case gsBlackCheckMated:
+	case gsBlackResigned:
+	case gsBlackTimedOut:
 		SerializeHeader(os, "Result", "1-0");
 		break;
-	case GS::WhiteCheckMated:
-	case GS::WhiteResigned:
-	case GS::WhiteTimedOut:
+	case gsWhiteCheckMated:
+	case gsWhiteResigned:
+	case gsWhiteTimedOut:
 		SerializeHeader(os, "Result", "0-1");
 		break;
-	case GS::Playing:
+	case gsPlaying:
 		break;
 	default:
 		SerializeHeader(os, "Result", "1/2-1/2");
@@ -98,17 +98,17 @@ void GA::SerializeMoveList(ostream& os)
 	/* when we're done, write result */
 
 	switch (bdgSav.gs) {
-	case GS::BlackCheckMated:
-	case GS::BlackResigned:
-	case GS::BlackTimedOut:
+	case gsBlackCheckMated:
+	case gsBlackResigned:
+	case gsBlackTimedOut:
 		WriteSzLine80(os, szLine, "0-1");
 		break;
-	case GS::WhiteCheckMated:
-	case GS::WhiteResigned:
-	case GS::WhiteTimedOut:
+	case gsWhiteCheckMated:
+	case gsWhiteResigned:
+	case gsWhiteTimedOut:
 		WriteSzLine80(os, szLine, "1-0");
 		break;
-	case GS::Playing:
+	case gsPlaying:
 		break;
 	default:
 		WriteSzLine80(os, szLine, "1/2-1/2");
@@ -152,7 +152,7 @@ void GA::WriteSzLine80(ostream& os, string& szLine, const string& szAdd)
  */
 
 const wchar_t mpapcch[] = { chSpace, L'P', L'N', L'B', L'R', L'Q', L'K', L'X' };
-const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
+const wchar_t mpapcchFig[cpcMax][apcMax] =
 {
 	{ chSpace, chWhitePawn, chWhiteKnight, chWhiteBishop, chWhiteRook, chWhiteQueen, chWhiteKing },
 	{ chSpace, chBlackPawn, chBlackKnight, chBlackBishop, chBlackRook, chBlackQueen, chBlackKing }
@@ -161,7 +161,7 @@ const wchar_t mpapcchFig[CPC::ColorMax][APC::ActMax] =
 wstring BDG::SzDecodeMv(MV mv, bool fPretty)
 {
 	VEMV vemv;
-	GenVemv(vemv, GG::Pseudo);
+	GenVemv(vemv, ggPseudo);
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mv.sqFrom();
@@ -173,12 +173,12 @@ wstring BDG::SzDecodeMv(MV mv, bool fPretty)
 	wchar_t* pch = sz;
 
 	switch (apc) {
-	case APC::Pawn:
+	case apcPawn:
 		if (sqTo == sqEnPassant)
 			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
 		break;
 
-	case APC::King:
+	case apcKing:
 		if (sqFrom.file() == fileKing) {
 			if (sqTo.file() == fileKingKnight)
 				goto FinishCastle;
@@ -193,17 +193,17 @@ FinishCastle:
 			}
 		}
 		break;
-	case APC::Knight:
-	case APC::Bishop:
-	case APC::Rook:
-	case APC::Queen:
+	case apcKnight:
+	case apcBishop:
+	case apcRook:
+	case apcQueen:
 		break;
 	default:
 		assert(false);
 		break;
 	}
 
-	if (apc != APC::Pawn) {
+	if (apc != apcPawn) {
 		if (!fPretty)
 			*pch++ = mpapcch[apc];
 		else
@@ -222,7 +222,7 @@ FinishCastle:
 			*pch++ = L'1' + sqFrom.rank();
 		}
 	}
-	else if (apc == APC::Pawn && !FIsEmpty(sqCapture))
+	else if (apc == apcPawn && !FIsEmpty(sqCapture))
 		*pch++ = L'a' + sqFrom.file();
 
 	/* if we fall out, there is no ambiguity with the apc moving to the
@@ -232,7 +232,7 @@ FinishCastle:
 	*pch++ = L'a' + sqTo.file();
 	*pch++ = L'1' + sqTo.rank();
 
-	if (apc == APC::Pawn && sqTo == sqEnPassant) {
+	if (apc == apcPawn && sqTo == sqEnPassant) {
 		if (fPretty)
 			*pch++ = chNonBreakingSpace;	
 		*pch++ = L'e';
@@ -243,7 +243,7 @@ FinishCastle:
 
 	{
 	APC apcPromote = mv.apcPromote();
-	if (apcPromote != APC::Null) {
+	if (apcPromote != apcNull) {
 		*pch++ = chEqual;
 		*pch++ = mpapcch[apcPromote];
 	}
@@ -337,7 +337,7 @@ wstring BDG::SzDecodeMvPost(MV mv) const
 		sz += L'x';
 	sz += L'a' + sqTo.file();
 	sz += to_wstring(sqTo.rank() + 1);
-	if (mv.apcPromote() != APC::Null) {
+	if (mv.apcPromote() != apcNull) {
 		sz += chEqual;
 		sz += mpapcch[mv.apcPromote()];
 	}

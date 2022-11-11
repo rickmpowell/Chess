@@ -5,11 +5,11 @@
  *	are included inside the PLAI class declaration.
  */
 
-const EV mpapcevOpening[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
+const EV mpapcevOpening[apcMax] = { 0, 100, 320, 330, 500, 900, 200 };
 
 /* these values are taken from "simplified evaluation function */
-const EV mpapcsqdevOpening[APC::ActMax][sqMax] = {
-	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
+const EV mpapcsqdevOpening[apcMax][sqMax] = {
+	{0, 0, 0, 0, 0, 0, 0, 0,	// apcNull
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -69,8 +69,8 @@ const EV mpapcsqdevOpening[APC::ActMax][sqMax] = {
 
 
 /* these constants are taken from pesto evaluator */
-const EV mpapcevMiddleGame[APC::ActMax] = { 0, 82, 337, 365, 477, 1025, 200 };
-const EV mpapcsqdevMiddleGame[APC::ActMax][sqMax] = {
+const EV mpapcevMiddleGame[apcMax] = { 0, 82, 337, 365, 477, 1025, 200 };
+const EV mpapcsqdevMiddleGame[apcMax][sqMax] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -130,8 +130,8 @@ const EV mpapcsqdevMiddleGame[APC::ActMax][sqMax] = {
 };
 
 /* these constants are taken from pesto evaluator */
-const EV mpapcevEndGame[APC::ActMax] = { 0, 94, 281, 297, 512, 936, 200 };
-const EV mpapcsqdevEndGame[APC::ActMax][sqMax] = {
+const EV mpapcevEndGame[apcMax] = { 0, 94, 281, 297, 512, 936, 200 };
+const EV mpapcsqdevEndGame[apcMax][sqMax] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,

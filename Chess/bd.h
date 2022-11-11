@@ -12,7 +12,6 @@
 #include "bb.h"
 
 
-
 /*
  *
  *	RULE
@@ -28,20 +27,41 @@ class RULE
 	DWORD dtmMove;
 	unsigned cmvRepeatDraw; // if zero, no automatic draw detection
 public:
-	RULE(void) : tmGame(60 * 60 * 1000), dtmMove(0 * 1000), cmvRepeatDraw(3) { }
+	RULE(void) : tmGame(5 * 60 * 1000), dtmMove(0 * 1000), cmvRepeatDraw(3) { }
 	RULE(DWORD tmGame, DWORD dtmMove, unsigned cmvRepeatDraw) : tmGame(tmGame), dtmMove(dtmMove),
 		cmvRepeatDraw(cmvRepeatDraw) {
 	}
-	DWORD TmGame(void) const {
+
+	/*	RULE::TmGame
+	 *
+	 *	Returns the amount of time a player gets on his clock at the start of
+	 *	the game.
+	 */
+	DWORD TmGame(CPC cpc) const
+	{
 		return tmGame;
 	}
-	DWORD DtmMove(void) const {
+
+	/*	RULE::DtmMove
+	 *
+	 *	Clock move interval a player gets added to his clock after each move.
+	 */
+	DWORD DtmMove(CPC cpc) const
+	{
 		return dtmMove;
 	}
-	int CmvRepeatDraw(void) const {
+
+	/*	RULE::CmvRepeatDraw
+	 *
+	 *	Number of repeated positions used for detecting draws. Typically 3.
+	 */
+	int CmvRepeatDraw(void) const
+	{
 		return cmvRepeatDraw;
 	}
-	void SetTmGame(DWORD tm) {
+
+	void SetTmGame(CPC cpc, int tm)
+	{
 		tmGame = tm;
 	}
 };
@@ -56,24 +76,30 @@ public:
  */
 
 
-enum APC {
-	Error = -1,
-	Null = 0,
-	Pawn = 1,
-	Knight = 2,
-	Bishop = 3,
-	Rook = 4,
-	Queen = 5,
-	King = 6,
-	ActMax = 7,
-	Bishop2 = 7,	// only used for draw detection computation to keep track of bishop square color
-	ActMax2 = 8
+enum APC : int {
+	apcError = -1,
+	apcNull = 0,
+	apcPawn = 1,
+	apcKnight = 2,
+	apcBishop = 3,
+	apcRook = 4,
+	apcQueen = 5,
+	apcKing = 6,
+	apcMax = 7,
+	Bishop2 = 7	// only used for draw detection computation to keep track of bishop square color
 };
 
 inline APC& operator++(APC& apc)
 {
-	apc = static_cast<APC>(static_cast<int>(apc) + 1);
+	apc = static_cast<APC>(apc + 1);
 	return apc;
+}
+
+inline APC operator++(APC& apc, int)
+{
+	APC apcT = apc;
+	apc = static_cast<APC>(apc + 1);
+	return apcT;
 }
 
 inline APC& operator+=(APC& apc, int dapc)
@@ -93,30 +119,30 @@ inline APC& operator+=(APC& apc, int dapc)
 
 class PC
 {
-	uint8_t grf;
+	uint8_t upc;
 public:
-	PC(uint8_t grf) noexcept : grf(grf) { }
-	PC(CPC cpc, APC apc) noexcept : grf((cpc << 3) | apc) { }
-	APC apc(void) const noexcept { return (APC)(grf & 7); }
-	CPC cpc(void) const noexcept { return (CPC)((grf >> 3) & 1); }
-	inline operator uint8_t() const noexcept { return grf; }
-	inline PC& operator++() { grf++; return *this; }
-	inline PC operator++(int) { uint8_t grfT = grf++; return PC(grfT); }
+	PC(uint8_t upc) noexcept : upc(upc) { }
+	PC(CPC cpc, APC apc) noexcept : upc((static_cast<uint8_t>(cpc) << 3) | static_cast<uint8_t>(apc)) { }
+	APC apc(void) const noexcept { return static_cast<APC>(upc & 7); }
+	CPC cpc(void) const noexcept { return static_cast<CPC>((upc >> 3) & 1); }
+	inline operator uint8_t() const noexcept { return upc; }
+	inline PC& operator++() { upc++; return *this; }
+	inline PC operator++(int) { uint8_t upcT = upc++; return PC(upcT); }
 };
 
 const uint8_t pcMax = 2*8;
-const PC pcWhitePawn(CPC::White, APC::Pawn);
-const PC pcBlackPawn(CPC::Black, APC::Pawn);
-const PC pcWhiteKnight(CPC::White, APC::Knight);
-const PC pcBlackKnight(CPC::Black, APC::Knight);
-const PC pcWhiteBishop(CPC::White, APC::Bishop);
-const PC pcBlackBishop(CPC::Black, APC::Bishop);
-const PC pcWhiteRook(CPC::White, APC::Rook);
-const PC pcBlackRook(CPC::Black, APC::Rook);
-const PC pcWhiteQueen(CPC::White, APC::Queen);
-const PC pcBlackQueen(CPC::Black, APC::Queen);
-const PC pcWhiteKing(CPC::White, APC::King);
-const PC pcBlackKing(CPC::Black, APC::King);
+const PC pcWhitePawn(cpcWhite, apcPawn);
+const PC pcBlackPawn(cpcBlack, apcPawn);
+const PC pcWhiteKnight(cpcWhite, apcKnight);
+const PC pcBlackKnight(cpcBlack, apcKnight);
+const PC pcWhiteBishop(cpcWhite, apcBishop);
+const PC pcBlackBishop(cpcBlack, apcBishop);
+const PC pcWhiteRook(cpcWhite, apcRook);
+const PC pcBlackRook(cpcBlack, apcRook);
+const PC pcWhiteQueen(cpcWhite, apcQueen);
+const PC pcBlackQueen(cpcBlack, apcQueen);
+const PC pcWhiteKing(cpcWhite, apcKing);
+const PC pcBlackKing(cpcBlack, apcKing);
 
 
 /*	
@@ -165,8 +191,8 @@ public:
 
 	inline SQ sqFrom(void) const noexcept { return usqFrom; }
 	inline SQ sqTo(void) const noexcept { return usqTo; }
-	inline APC apcPromote(void) const noexcept { return (APC)uapcPromote; }
-	inline MVM& SetApcPromote(APC apc) noexcept { uapcPromote = apc; return *this; }
+	inline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
+	inline MVM& SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); return *this; }
 	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
 };
 
@@ -201,7 +227,7 @@ public:
 
 	inline MV(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
-		assert(pcMove.apc() != APC::Null);
+		assert(pcMove.apc() != apcNull);
 		*(uint32_t*)this = 0;	// initialize everything else to 0
 		usqFrom = sqFrom;
 		usqTo = sqTo;
@@ -210,15 +236,15 @@ public:
 
 	inline SQ sqFrom(void) const noexcept { return usqFrom; }
 	inline SQ sqTo(void) const noexcept { return usqTo; }
-	inline APC apcPromote(void) const noexcept { return (APC)uapcPromote; }
-	inline MV& SetApcPromote(APC apc) noexcept { uapcPromote = apc; return *this; }
+	inline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
+	inline MV& SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); return *this; }
 	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
 
 	inline MV& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
 	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
 	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
 	inline PC pcMove(void) const noexcept { return PC(upcMove); }
-	inline void SetCapture(APC apc) noexcept { uapcCapt = apc; }
+	inline void SetCapture(APC apc) noexcept { uapcCapt = static_cast<uint16_t>(apc); }
 	
 	inline void SetCsEp(int cs, SQ sqEnPassant) noexcept
 	{
@@ -232,7 +258,7 @@ public:
 	inline int fileEpPrev(void) const noexcept { return ufileEnPassant; }
 	inline bool fEpPrev(void) const noexcept { return ufEnPassant; }
 	inline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
-	inline bool fIsCapture(void) const noexcept { return apcCapture() != APC::Null; }
+	inline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
 	inline bool operator==(const MV& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
 	inline bool operator!=(const MV& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
 	inline bool operator==(const MVM& mvm) const noexcept { return *(uint16_t*)this == (uint16_t)mvm; }
@@ -243,7 +269,7 @@ static_assert(sizeof(MV) == sizeof(uint32_t));
 
 const MV mvNil = MV();
 const MVM mvmNil = MVM();
-const MV mvAll = MV(sqH8, sqH8, PC(CPC::White, APC::Error));
+const MV mvAll = MV(sqH8, sqH8, PC(cpcWhite, apcError));
 const MVM mvmAll = MVM(sqH8, sqH8);
 wstring SzFromMvm(MVM mvm);
 
@@ -636,20 +662,26 @@ public:
  */
 
 
-enum class GS {
-	Playing = 0,
-	WhiteCheckMated,
-	BlackCheckMated,
-	WhiteTimedOut,
-	BlackTimedOut,
-	WhiteResigned,
-	BlackResigned,
-	StaleMate,
-	DrawDead,
-	DrawAgree,
-	Draw3Repeat,
-	Draw50Move,
-	Canceled
+enum GS {
+	
+	gsPlaying = 0,
+	
+	gsWhiteCheckMated,
+	gsBlackCheckMated,
+	gsWhiteTimedOut,
+	gsBlackTimedOut,
+	gsWhiteResigned,
+	gsBlackResigned,
+	
+	gsStaleMate,
+	gsDrawDead,
+	gsDrawAgree,
+	gsDraw3Repeat,
+	gsDraw50Move,
+	
+	gsCanceled,
+	gsNotStarted,
+	gsPaused
 };
 
 
@@ -826,9 +858,9 @@ extern GENHABD genhabd;
  */
 
 
-enum class GG {	// GenGmv Option to optionally remove checks
-	Legal,
-	Pseudo
+enum GG : int {	// GenGmv Option to optionally remove checks
+	ggLegal,
+	ggPseudo
 };
 
 
@@ -842,30 +874,30 @@ enum class GG {	// GenGmv Option to optionally remove checks
  */
 
 
-enum class GPH {	// game phase
-	Queen = 4,
-	Rook = 2,
-	Minor = 1,
-	None = 0,
+enum GPH : int {	// game phase
+	gphQueen = 4,
+	gphRook = 2,
+	gphMinor = 1,
+	gphNone = 0,
 
-	Max = 24,		// when all pieces are on the board
-	MidMin = 2,		// opening is over when two minor pieces are gone
-	MidMid = 4,	// a mid-point of the middle game for when strategies should start transitioning
-	MidMax = 18,		// end game is when we're down to rook/minor piece vs. rook/minor piece
+	gphMax = 24,		// when all pieces are on the board
+	gphMidMin = 2,		// opening is over when two minor pieces are gone
+	gphMidMid = 4,	// a mid-point of the middle game for when strategies should start transitioning
+	gphMidMax = 18,		// end game is when we're down to rook/minor piece vs. rook/minor piece
 
-	Nil = -1
+	gphNil = -1
 };
 
-static_assert((int)GPH::Max == 2 * (int)GPH::Queen + 4 * (int)GPH::Rook + 8 * (int)GPH::Minor);
+static_assert(gphMax == 2 * gphQueen + 4*gphRook + 8*gphMinor);
 
 inline bool FInOpening(GPH gph)
 {
-	return gph <= GPH::MidMin;
+	return gph <= gphMidMin;
 }
 
 inline bool FInEndGame(GPH gph)
 {
-	return gph >= GPH::MidMax;
+	return gph >= gphMidMax;
 }
 
 
@@ -882,7 +914,7 @@ public:
 
 	/* everything below is derived from previous state */
 
-	BB mpcpcbb[CPC::ColorMax]; // squares occupied by pieces of the color 
+	BB mpcpcbb[cpcMax]; // squares occupied by pieces of the color 
 	BB bbUnoccupied;	// empty squares
 	HABD habd;	/* board hash */
 	GPH gph;	/* game phase */
@@ -942,7 +974,7 @@ public:
 	 *
 	 *	Returns the lowest piece type of the pieces attacking sqAttacked. The piece
 	 *	on sqAttacked is not considered to be attacking sqAttacked. Returns
-	 *	APC::Null if no pieces are attacking the square.
+	 *	apcNull if no pieces are attacking the square.
 	 */
 	inline APC ApcSqAttacked(SQ sqAttacked, CPC cpcBy) const noexcept
 	{
@@ -956,7 +988,7 @@ public:
 	
 	inline bool FMvEnPassant(MV mv) const noexcept
 	{
-		return mv.sqTo() == sqEnPassant && mv.apcMove() == APC::Pawn;
+		return mv.sqTo() == sqEnPassant && mv.apcMove() == apcPawn;
 	}
 
 	inline bool FMvIsCapture(MV mv) const noexcept
@@ -975,16 +1007,16 @@ public:
 	
 	inline CPC CpcFromSq(SQ sq) const noexcept
 	{ 
-		return mpcpcbb[CPC::White].fSet(sq) ? CPC::White : CPC::Black;
+		return mpcpcbb[cpcWhite].fSet(sq) ? cpcWhite : cpcBlack;
 	}
 
 	inline PC PcFromSq(SQ sq) const noexcept
 	{
 		CPC cpc = CpcFromSq(sq);
-		for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
+		for (APC apc = apcPawn; apc < apcMax; ++apc)
 			if (mppcbb[PC(cpc, apc)].fSet(sq))
 				return PC(cpc, apc);
-		return PC(cpc, APC::Null);
+		return PC(cpc, apcNull);
 	}
 
 
@@ -1045,7 +1077,7 @@ public:
 	{
 		BB bb(sq);
 		mppcbb[pc] += bb;
-		mpcpcbb[pc.cpc()] += bb;
+		mpcpcbb[(int)pc.cpc()] += bb;
 		bbUnoccupied -= bb;
 		genhabd.TogglePiece(habd, sq, pc);
 	}
@@ -1064,8 +1096,8 @@ public:
 	{
 		BB bb(sq);
 		mppcbb[pc] -= bb;
-		mpcpcbb[pc.cpc()] -= bb;
-		assert(!mpcpcbb[~pc.cpc()].fSet(sq));
+		mpcpcbb[(int)pc.cpc()] -= bb;
+		assert(!mpcpcbb[(int)~pc.cpc()].fSet(sq));
 		bbUnoccupied += bb;
 		genhabd.TogglePiece(habd, sq, pc);
 	}

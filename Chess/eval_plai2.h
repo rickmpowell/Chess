@@ -6,12 +6,12 @@
  * 
  */
 
-const EV mpapcevOpening2[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
-const EV mpapcevMiddleGame2[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
-const EV mpapcevEndGame2[APC::ActMax] = { 0, 100, 320, 330, 500, 900, 200 };
+const EV mpapcevOpening2[apcMax] = { 0, 100, 320, 330, 500, 900, 200 };
+const EV mpapcevMiddleGame2[apcMax] = { 0, 100, 320, 330, 500, 900, 200 };
+const EV mpapcevEndGame2[apcMax] = { 0, 100, 320, 330, 500, 900, 200 };
 
-const EV mpapcsqdevOpening2[APC::ActMax][sqMax] = {
-	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
+const EV mpapcsqdevOpening2[apcMax][sqMax] = {
+	{0, 0, 0, 0, 0, 0, 0, 0,	// apcNull
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -70,8 +70,8 @@ const EV mpapcsqdevOpening2[APC::ActMax][sqMax] = {
 };
 
 
-const EV mpapcsqdevMiddleGame2[APC::ActMax][sqMax] = {
-	{0, 0, 0, 0, 0, 0, 0, 0,	// APC::Null
+const EV mpapcsqdevMiddleGame2[apcMax][sqMax] = {
+	{0, 0, 0, 0, 0, 0, 0, 0,	// apcNull
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,
@@ -130,7 +130,7 @@ const EV mpapcsqdevMiddleGame2[APC::ActMax][sqMax] = {
 };
 
 
-const EV mpapcsqdevEndGame2[APC::ActMax][sqMax] = {
+const EV mpapcsqdevEndGame2[apcMax][sqMax] = {
 	{0, 0, 0, 0, 0, 0, 0, 0,	// Null
 	 0, 0, 0, 0, 0, 0, 0, 0,
 	 0, 0, 0, 0, 0, 0, 0, 0,

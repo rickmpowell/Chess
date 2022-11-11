@@ -122,11 +122,11 @@ public:
 public:
 	BDG bdg;	// board
 	BDG bdgInit;	// initial board used to start the game (used on FEN load)
-	PL* mpcpcppl[CPC::ColorMax];	// players
+	PL* mpcpcppl[cpcMax];	// players
 	RULE* prule;
 	PROCPGN* pprocpgn;	/* process pgn file handler */
 	TID tidClock;
-	DWORD mpcpctmClock[CPC::ColorMax];	// player clocks
+	DWORD mpcpctmClock[cpcMax];	// player clocks
 	DWORD tmLast;	// time of last move
 
 public:
@@ -154,10 +154,10 @@ public:
 
 	inline CPC CpcFromPpl(PL* ppl) const
 	{
-		for (CPC cpc = CPC::White; cpc <= CPC::Black; ++cpc)
+		for (CPC cpc = cpcWhite; cpc <= cpcBlack; ++cpc)
 			if (mpcpcppl[cpc] == ppl)
 				return cpc;
-		return CPC::NoColor;
+		return cpcNil;
 	}
 
 	void SetPl(CPC cpc, PL* ppl);
@@ -213,15 +213,19 @@ public:
 	 */
 
 	static const wchar_t szInitFEN[];
-	int Play(void);
+
 	void NewGame(RULE* prule, SPMV spmv);
 	void InitGame(const wchar_t* szFEN, SPMV spmv);
-	void InitClocks(void);
+	int Play(void);
 	void EndGame(SPMV spmv);
-	void MakeMv(MV mv, SPMV spmv);
+
+	void InitClocks(void);
+	void StartClocks(void);
 	void SwitchClock(DWORD tmCur);
 	void StartClock(CPC cpc, DWORD tmCur);
 	void PauseClock(CPC cpc, DWORD tmCur);
+
+	void MakeMv(MV mv, SPMV spmv);
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);
 	void MoveToImv(int64_t imv, SPMV spmv);

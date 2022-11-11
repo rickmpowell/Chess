@@ -33,7 +33,7 @@ XT xt;	/* transposition table is big, so we share it with all AIs */
 
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
-		mvNext(MV()), spmvNext(SPMV::Animate), fDisableMvLog(false), 
+		mvNext(MV()), spmvNext(spmvAnimate), fDisableMvLog(false), 
 		pvmvmBreak(nullptr), imvmBreakLast(-1), cBreakRepeat(0)
 {
 }
@@ -86,7 +86,7 @@ EV PL::EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept
 
 EV PL::EvBaseApc(APC apc) const noexcept
 {
-	EV mpapcev[APC::ActMax] = { 0, 100, 275, 300, 500, 900, 200 };
+	EV mpapcev[apcMax] = { 0, 100, 275, 300, 500, 900, 200 };
 	return mpapcev[apc];
 }
 
@@ -222,7 +222,7 @@ void PLAI::StartMoveLog(void)
 	cemvEval = 0L;
 	cemvNode = 0L;
 	LogOpen(TAG(to_wstring(ga.bdg.vmvGame.size()/2+1) + L". " + 
-					(ga.bdg.cpcToMove == CPC::White ? L"White" : L"Black"), 
+					(ga.bdg.cpcToMove == cpcWhite ? L"White" : L"Black"), 
 				ATTR(L"FEN", ga.bdg)),
 			L"(" + szName + L")");
 }
@@ -395,7 +395,7 @@ public:
 
 VEMVS::VEMVS(BDG& bdg) noexcept : VEMV(), iemvNext(0), cmvLegal(0)
 {
-	bdg.GenVemv(*this, GG::Pseudo);
+	bdg.GenVemv(*this, ggPseudo);
 }
 
 
@@ -559,7 +559,7 @@ bool VEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
  */
 MV PLAI::MvGetNext(SPMV& spmv)
 {
-	spmv = SPMV::Animate;
+	spmv = spmvAnimate;
 	cYield = 0; fAbort = false;
 	StartMoveLog();
 
@@ -790,7 +790,7 @@ void PLAI::TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noe
 		emvBest.ev = bdg.FInCheck(bdg.cpcToMove) ? -EvMate(ply) : evDraw;
 		emvBest.mv = MV();
 	}
-	else if (bdg.GsTestGameOver(vemvs.cmvLegal, *ga.prule) != GS::Playing) {
+	else if (bdg.GsTestGameOver(vemvs.cmvLegal, *ga.prule) != gsPlaying) {
 		emvBest.ev = evDraw;
 		emvBest.mv = MV();
 	}
@@ -911,7 +911,7 @@ EV PLAI::EvTempo(const BDG& bdg) const noexcept
 {
 	if (FInOpening(bdg.GphCur()))
 		return evTempo;
-	if (bdg.GphCur() < GPH::MidMid)
+	if (bdg.GphCur() < gphMidMid)
 		return evTempo/2;
 	return 0;
 }
@@ -932,11 +932,11 @@ EV PLAI::EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept
 {
 	APC apcMove = bdg.ApcFromSq(mvPrev.sqTo());
 	APC apcAttacker = bdg.ApcSqAttacked(mvPrev.sqTo(), bdg.cpcToMove);
-	if (apcAttacker != APC::Null) {
+	if (apcAttacker != apcNull) {
 		if (apcAttacker < apcMove)
 			return EvBaseApc(apcMove);
 		APC apcDefended = bdg.ApcSqAttacked(mvPrev.sqTo(), ~bdg.cpcToMove);
-		if (apcDefended == APC::Null)
+		if (apcDefended == apcNull)
 			return EvBaseApc(apcMove);
 	}
 	return 0;
@@ -1007,7 +1007,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MV mvPrev, bool fFull) noexcept
 	if (fFull) {
 		cemvEval++;
 		if (!fDisableMvLog) {
-			LogData(bdg.cpcToMove == CPC::White ? L"White" : L"Black");
+			LogData(bdg.cpcToMove == cpcWhite ? L"White" : L"Black");
 			if (fecoMaterial)
 				LogData(wjoin(L"Material", SzFromEv(evMaterial)));
 			if (fecoMobility)
@@ -1047,31 +1047,31 @@ EV PLAI::EvInterpolate(GPH gph, EV ev1, GPH gphFirst, EV ev2, GPH gphLim) const 
  *	and keeps a running sum of the square/piece values for each side. Stores the result
  *	in mpcpcev.
  */
-void PLAI::ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[APC::ActMax][sqMax]) const noexcept
+void PLAI::ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[apcMax][sqMax]) const noexcept
 {
-	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow())
-			mpcpcev[CPC::White] += mpapcsqev[apc][bb.sqLow().sqFlip()];
-		for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow())
-			mpcpcev[CPC::Black] += mpapcsqev[apc][bb.sqLow()];
+	for (APC apc = apcPawn; apc < apcMax; ++apc) {
+		for (BB bb = bdg.mppcbb[PC(cpcWhite, apc)]; bb; bb.ClearLow())
+			mpcpcev[cpcWhite] += mpapcsqev[apc][bb.sqLow().sqFlip()];
+		for (BB bb = bdg.mppcbb[PC(cpcBlack, apc)]; bb; bb.ClearLow())
+			mpcpcev[cpcBlack] += mpapcsqev[apc][bb.sqLow()];
 	}
 }
 
 
 void PLAI::ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[], 
-						const EV mpapcsqev1[APC::ActMax][sqMax], 
-						const EV mpapcsqev2[APC::ActMax][sqMax]) const noexcept
+						const EV mpapcsqev1[apcMax][sqMax], 
+						const EV mpapcsqev2[apcMax][sqMax]) const noexcept
 {
-	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc) {
-		for (BB bb = bdg.mppcbb[PC(CPC::White, apc)]; bb; bb.ClearLow()) {
+	for (APC apc = apcPawn; apc < apcMax; ++apc) {
+		for (BB bb = bdg.mppcbb[PC(cpcWhite, apc)]; bb; bb.ClearLow()) {
 			SQ sq = bb.sqLow().sqFlip();
-			mpcpcev1[CPC::White] += mpapcsqev1[apc][sq];
-			mpcpcev2[CPC::White] += mpapcsqev2[apc][sq];
+			mpcpcev1[cpcWhite] += mpapcsqev1[apc][sq];
+			mpcpcev2[cpcWhite] += mpapcsqev2[apc][sq];
 		}
-		for (BB bb = bdg.mppcbb[PC(CPC::Black, apc)]; bb; bb.ClearLow()) {
+		for (BB bb = bdg.mppcbb[PC(cpcBlack, apc)]; bb; bb.ClearLow()) {
 			SQ sq = bb.sqLow();
-			mpcpcev1[CPC::Black] += mpapcsqev1[apc][sq];
-			mpcpcev2[CPC::Black] += mpapcsqev2[apc][sq];
+			mpcpcev1[cpcBlack] += mpapcsqev1[apc][sq];
+			mpcpcev2[cpcBlack] += mpapcsqev2[apc][sq];
 		}
 	}
 }
@@ -1086,7 +1086,7 @@ EV PLAI::EvFromPst(const BDG& bdg) const noexcept
 {
 	EV mpcpcev1[2] = { 0, 0 };
 	EV mpcpcev2[2] = { 0, 0 };
-	GPH gph = min(bdg.GphCur(), GPH::Max);	// can exceed Max with promotions
+	GPH gph = min(bdg.GphCur(), gphMax);	// can exceed Max with promotions
 
 	/* opening */
 
@@ -1100,17 +1100,16 @@ EV PLAI::EvFromPst(const BDG& bdg) const noexcept
 		return mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove];
 	}
 
-	if (gph <= GPH::MidMid) {
+	if (gph <= gphMidMid) {
 		ComputeMpcpcev2(bdg, mpcpcev1, mpcpcev2, mpapcsqevOpening, mpapcsqevMiddleGame);
-		return EvInterpolate(gph, mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], GPH::MidMin,
-							 mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], GPH::MidMid);
+		return EvInterpolate(gph, mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], gphMidMin,
+							 mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], gphMidMid);
 	}
 	else {
 		ComputeMpcpcev2(bdg, mpcpcev1, mpcpcev2, mpapcsqevMiddleGame, mpapcsqevEndGame);
-		return EvInterpolate(gph, mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], GPH::MidMid,
-								mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], GPH::MidMax);
+		return EvInterpolate(gph, mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove], gphMidMid,
+								mpcpcev2[bdg.cpcToMove] - mpcpcev2[~bdg.cpcToMove], gphMidMax);
 	}
-
 }
 
 
@@ -1142,10 +1141,10 @@ void PLAI::InitWeightTables(void)
 }
 
 
-void PLAI::InitWeightTable(const EV mpapcev[APC::ActMax], const EV mpapcsqdev[APC::ActMax][sqMax], EV mpapcsqev[APC::ActMax][sqMax])
+void PLAI::InitWeightTable(const EV mpapcev[apcMax], const EV mpapcsqdev[apcMax][sqMax], EV mpapcsqev[apcMax][sqMax])
 {
-	memset(&mpapcsqev[APC::Null], 0, sqMax * sizeof(EV));
-	for (APC apc = APC::Pawn; apc < APC::ActMax; ++apc)
+	memset(&mpapcsqev[apcNull], 0, sqMax * sizeof(EV));
+	for (APC apc = apcPawn; apc < apcMax; ++apc)
 		for (uint64_t sq = 0; sq < sqMax; sq++)
 			mpapcsqev[apc][sq] = mpapcev[apc] + mpapcsqdev[apc][sq];
 }
@@ -1165,7 +1164,7 @@ EV PLAI::EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept
 int PLAI::CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept
 {
 	int cfile = 0;
-	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
+	BB bbPawn = bdg.mppcbb[PC(cpc, apcPawn)];
 	BB bbFile = bbFileA;
 	for (int file = 0; file < fileMax; file++, bbFile = BbEastOne(bbFile)) {
 		int csq = (bbPawn & bbFile).csq();
@@ -1185,7 +1184,7 @@ int PLAI::CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept
 int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 {
 	int cfile = 0;
-	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
+	BB bbPawn = bdg.mppcbb[PC(cpc, apcPawn)];
 	BB bbFile = bbFileA;
 	for (int file = 0; file < fileMax; file++, bbFile = BbEastOne(bbFile))
 		cfile += (bbPawn & bbFile) && !(bbPawn & (BbEastOne(bbFile) | BbWestOne(bbFile)));
@@ -1200,9 +1199,9 @@ int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 int PLAI::CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept
 {
 	int cfile = 0;
-	DIR dir = cpc == CPC::White ? DIR::North : DIR::South;
-	BB bbPawn = bdg.mppcbb[PC(cpc, APC::Pawn)];
-	BB bbPawnOpp = bdg.mppcbb[PC(~cpc, APC::Pawn)];
+	DIR dir = cpc == cpcWhite ? dirNorth : dirSouth;
+	BB bbPawn = bdg.mppcbb[PC(cpc, apcPawn)];
+	BB bbPawnOpp = bdg.mppcbb[PC(~cpc, apcPawn)];
 	for (BB bb = bbPawn; bb; bb.ClearLow()) {
 		SQ sqPawn = bb.sqLow();
 		/* not blocked by our own pawn, and no opponent pawns in the alley */

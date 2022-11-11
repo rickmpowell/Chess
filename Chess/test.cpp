@@ -194,8 +194,8 @@ void TEST::ValidatePieces(const char*& sz) const
 	SkipWhiteSpace(sz);
 	int rank = 7;
 	SQ sq = SQ(rank, 0);
-	APC apc = APC::Null;
-	CPC cpc = CPC::NoColor;
+	APC apc = apcNull;
+	CPC cpc = cpcNil;
 	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
 		case '/':  
@@ -204,20 +204,20 @@ void TEST::ValidatePieces(const char*& sz) const
 			sq = SQ(rank, 0); 
 			break;
 		case 'r': 
-		case 'R': apc = APC::Rook; goto CheckPiece; 
+		case 'R': apc = apcRook; goto CheckPiece; 
 		case 'n': 
-		case 'N': apc = APC::Knight; goto CheckPiece;
+		case 'N': apc = apcKnight; goto CheckPiece;
 		case 'b': 
-		case 'B': apc = APC::Bishop; goto CheckPiece;
+		case 'B': apc = apcBishop; goto CheckPiece;
 		case 'q': 
-		case 'Q': apc = APC::Queen; goto CheckPiece;
+		case 'Q': apc = apcQueen; goto CheckPiece;
 		case 'k': 
-		case 'K': apc = APC::King; goto CheckPiece;
+		case 'K': apc = apcKing; goto CheckPiece;
 		case 'p': 
 		case 'P':
-			apc = APC::Pawn;
+			apc = apcPawn;
 CheckPiece:
-			cpc = islower(*sz) ? CPC::Black : CPC::White;
+			cpc = islower(*sz) ? cpcBlack : cpcWhite;
 			if (ga.bdg.ApcFromSq(sq) != apc || ga.bdg.CpcFromSq(sq) != cpc)
 				throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
 			sq++; 
@@ -247,15 +247,15 @@ CheckPiece:
 void TEST::ValidateMoveColor(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
-	CPC cpc = CPC::NoColor;
+	CPC cpc = cpcNil;
 	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
 		case 'b': 
-			cpc = CPC::Black;
+			cpc = cpcBlack;
 			break;
 		case 'w':
 		case '-': 
-			cpc = CPC::White;
+			cpc = cpcWhite;
 			break;
 		default: 
 			throw EXPARSE("invalid move color");
@@ -274,16 +274,16 @@ void TEST::ValidateCastle(const char*& sz) const
 	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
 		case 'k': 
-			cs |= csKing << CPC::White; 
+			cs |= csKing << cpcWhite; 
 			break;
 		case 'q': 
-			cs |= csQueen << CPC::White; 
+			cs |= csQueen << cpcWhite; 
 			break;
 		case 'K': 
-			cs |= csKing << CPC::Black; 
+			cs |= csKing << cpcBlack; 
 			break;
 		case 'Q': 
-			cs |= csQueen << CPC::Black;
+			cs |= csQueen << cpcBlack;
 			break;
 		case '-': 
 			break;
@@ -351,7 +351,7 @@ public:
 
 	virtual void Run(void)
 	{
-		ga.NewGame(new RULE(0, 0, 0), SPMV::Hidden);
+		ga.NewGame(new RULE(0, 0, 0), spmvHidden);
 		ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 };
@@ -438,12 +438,12 @@ public:
 	{
 		while (ga.bdg.imvCur >= 0) {
 			BDG bdgInit = ga.bdg;
-			ga.UndoMv(SPMV::Hidden);
-			ga.RedoMv(SPMV::Hidden);
+			ga.UndoMv(spmvHidden);
+			ga.RedoMv(spmvHidden);
 			assert(ga.bdg == bdgInit);
 			if (ga.bdg != bdgInit)
 				throw EXFAILTEST();
-			ga.UndoMv(SPMV::Hidden);
+			ga.UndoMv(spmvHidden);
 		}
 	}
 };
@@ -458,12 +458,12 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
 {
 	BDG bdgInit = ga.bdg;
-	ga.MakeMv(mv, SPMV::Hidden);
+	ga.MakeMv(mv, spmvHidden);
 	BDG bdgNew = ga.bdg;
-	ga.UndoMv(SPMV::Hidden);
+	ga.UndoMv(spmvHidden);
 	if (bdgInit != ga.bdg)
 		throw EXFAILTEST();
-	ga.RedoMv(SPMV::Hidden);
+	ga.RedoMv(spmvHidden);
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
 	return ERR::None;
@@ -573,7 +573,7 @@ uint64_t GA::CmvPerft(int depth)
 	if (depth == 0)
 		return 1;
 	VEMV vemv;
-	bdg.GenVemv(vemv, GG::Legal);
+	bdg.GenVemv(vemv, ggLegal);
 	uint64_t cmv = 0;
 	for (EMV emv : vemv) {
 		bdg.MakeMv(emv.mv);
@@ -586,7 +586,7 @@ uint64_t GA::CmvPerft(int depth)
 uint64_t GA::CmvPerftBulk(int depth)
 {
 	VEMV vemv;
-	bdg.GenVemv(vemv, GG::Legal);
+	bdg.GenVemv(vemv, ggLegal);
 	if (depth <= 1)
 		return vemv.cemv();
 	uint64_t cmv = 0;
@@ -604,7 +604,7 @@ uint64_t GA::CmvPerftDivide(int depthPerft)
 		return 1;
 	assert(depthPerft >= 1);
 	VEMV vemv;
-	bdg.GenVemv(vemv, GG::Legal);
+	bdg.GenVemv(vemv, ggLegal);
 	if (depthPerft == 1)
 		return vemv.cemv();
 	uint64_t cmv = 0;
@@ -837,7 +837,7 @@ void GA::PerftTest(void)
 void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
 	LogOpen(tag, L"");
-	InitGame(szFEN, SPMV::Hidden);
+	InitGame(szFEN, spmvHidden);
 	uibd.Redraw();
 
 	bool fPassed = false;

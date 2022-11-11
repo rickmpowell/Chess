@@ -17,6 +17,7 @@
 
 
 class GA;
+class CMDU;
 
 
 /*
@@ -24,18 +25,36 @@ class GA;
  *	The UCI class. 
  *
  *	Opens the console and creates the stdin/stdout file handles and dispatches
- *	UCI commands to the appropriate place.
+ *	UCI commands to the appropriate place. If stdin/out is already provided by
+ *	the parent process, it will use that console for in/out.
  * 
  */
 
 
 class UCI
 {
+public:
 	GA* pga;
 	bool fInherited;
 	HANDLE hfileStdin, hfileStdout;
+	map<string, CMDU*> mpszpcmdu;
 public:
 	UCI(GA* pga);
 	~UCI(void);
-	void WriteSz(const wstring& sz);
+
+	void ConsolePump(void);
+	bool FParseAndDispatch(string sz);
+	void WriteSz(const string& sz);
+	string SzReadLine(void);
 };
+
+
+class CMDU
+{
+protected:
+	UCI& uci;
+public:
+	CMDU(UCI& uci) : uci(uci) { }
+	virtual int Execute(string szArg) { return 1; }
+};
+
