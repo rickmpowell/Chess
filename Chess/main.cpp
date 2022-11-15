@@ -7,29 +7,12 @@
  */
 
 #include "app.h"
+#include "uiga.h"
 #include "ga.h"
 #include "Resources/Resource.h"
 
 
-
-/*  AboutDlgProc
- *
- *  Message handler for about box.
- */
-INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
-{
-    switch (wm) {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) != IDOK && LOWORD(wParam) != IDCANCEL)
-            break;
-        ::EndDialog(hdlg, LOWORD(wParam));
-        return (INT_PTR)TRUE;
-    }
-    return (INT_PTR)FALSE;
-}
+APP* papp;
 
 
 /*  wWinMain
@@ -39,8 +22,8 @@ INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
 int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ LPWSTR szCmdLine, _In_ int sw)
 {
     try {
-        APP app(hinst, sw);
-        return app.MessagePump();
+        papp = new APP(hinst, sw);
+        return papp->MessagePump();
     }
     catch (int err) {
         ::MessageBoxW(nullptr,
@@ -113,11 +96,11 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
 
     InitCmdList();
 
-    pga = new GA(*this);
+    pga = new GA();
     pga->SetPl(cpcBlack, rginfopl.PplFactory(*pga, 0));
     pga->SetPl(cpcWhite, rginfopl.PplFactory(*pga, 2));
-    pga->NewGame(new RULE, spmvAnimate);
-
+    pga->NewGame(new RULE);
+    
     /* create the main window */
 
     sw = SW_MAXIMIZE;
@@ -132,7 +115,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
 
     ::ShowWindow(hwnd, sw);
 
-    pga->uipvt.Show(false);
+    puiga->uipvt.Show(false);
 }
 
 
@@ -149,9 +132,6 @@ APP::~APP(void)
  */
 int APP::MessagePump(void)
 {
- //   if (pga->puci)
- //       pga->puci->ConsolePump();
-
     MSG msg;
     while (::GetMessage(&msg, nullptr, 0, 0)) {
         if (msg.message == WM_TIMER) {
@@ -223,8 +203,8 @@ void APP::CreateRsrc(void)
     }
 
     CreateRsrcSize();
-    GA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-    pga->CreateRsrc();
+    UIGA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+    puiga->CreateRsrc();
 }
 
 
@@ -281,8 +261,8 @@ void APP::DiscardRsrcSize(void)
 
 void APP::DiscardRsrc(void)
 {
-    pga->DiscardRsrc();
-    GA::DiscardRsrcClass();
+    puiga->DiscardRsrc();
+    UIGA::DiscardRsrcClass();
     SafeRelease(&pdc);
     SafeRelease(&pdevd3);
     SafeRelease(&pdcd3);
@@ -355,7 +335,7 @@ void APP::StopTimer(TID tid)
 
 void APP::DispatchTimer(TID tid, UINT dtm)
 {
-    pga->DispatchTimer(tid, dtm);
+    puiga->DispatchTimer(tid, dtm);
 }
 
 
@@ -368,7 +348,7 @@ void APP::DispatchTimer(TID tid, UINT dtm)
 void APP::OnDestroy(void)
 {
     DiscardRsrcSize();
-    pga->ShowAll(false);
+    puiga->ShowAll(false);
 }
 
 
@@ -381,7 +361,7 @@ void APP::OnSize(UINT dx, UINT dy)
 {
     DiscardRsrcSize();
     CreateRsrc();
-    pga->Resize(PT((float)dx, (float)dy));
+    puiga->Resize(PT((float)dx, (float)dy));
 }
 
 
@@ -394,12 +374,12 @@ void APP::OnPaint(void)
     PAINTSTRUCT ps;
     ::BeginPaint(hwnd, &ps);
 
-    if (pga) {
-        pga->BeginDraw();
+    if (puiga) {
+        puiga->BeginDraw();
         RC rc((float)ps.rcPaint.left, (float)ps.rcPaint.top,
             (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
-        pga->Update(rc);
-        pga->EndDraw();
+        puiga->Update(rc);
+        puiga->EndDraw();
     }
 
     ::EndPaint(hwnd, &ps);
@@ -409,26 +389,26 @@ void APP::OnPaint(void)
 bool APP::OnMouseMove(int x, int y)
 {
     PT pt;
-    UI* pui = pga->PuiHitTest(&pt, x, y);
+    UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui == nullptr)
         return true;
 
-    if (pga->puiCapt) {
+    if (puiga->puiCapt) {
         pui->LeftDrag(pt);
         return true;
     }
 
-    if (pga->puiHover == pui) {
+    if (puiga->puiHover == pui) {
         pui->MouseHover(pt, MHT::Move);
         return true;
     }
 
-    if (pga->puiHover) {
-        PT ptExit = pga->puiHover->PtLocalFromGlobal(PT((float)x, (float)y));
-        pga->puiHover->MouseHover(ptExit, MHT::Exit);
+    if (puiga->puiHover) {
+        PT ptExit = puiga->puiHover->PtLocalFromGlobal(PT((float)x, (float)y));
+        puiga->puiHover->MouseHover(ptExit, MHT::Exit);
     }
     pui->MouseHover(pt, MHT::Enter);
-    pga->SetHover(pui);
+    puiga->SetHover(pui);
     
     return true;
 }
@@ -437,7 +417,7 @@ bool APP::OnMouseMove(int x, int y)
 bool APP::OnLeftDown(int x, int y)
 {
     PT pt;
-    UI* pui = pga->PuiHitTest(&pt, x, y);
+    UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui)
         pui->StartLeftDrag(pt);
     return true;
@@ -451,7 +431,7 @@ bool APP::OnLeftDown(int x, int y)
 bool APP::OnLeftUp(int x, int y)
 {
     PT pt;
-    UI* pui = pga->PuiHitTest(&pt, x, y);
+    UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui)
         pui->EndLeftDrag(pt);
     return true;
@@ -461,7 +441,7 @@ bool APP::OnLeftUp(int x, int y)
 bool APP::OnMouseWheel(int x, int y, int dwheel)
 {
     PT pt;
-    UI* pui = pga->PuiHitTest(&pt, x, y);
+    UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui)
         pui->ScrollWheel(pt, dwheel);
     return true;
@@ -470,7 +450,7 @@ bool APP::OnMouseWheel(int x, int y, int dwheel)
 
 bool APP::OnKeyDown(int vk)
 {
-    UI* pui = pga->PuiFocus();
+    UI* pui = puiga->PuiFocus();
     if (pui)
         pui->KeyDown(vk);
     return true;
@@ -479,7 +459,7 @@ bool APP::OnKeyDown(int vk)
 
 bool APP::OnKeyUp(int vk)
 {
-    UI* pui = pga->PuiFocus();
+    UI* pui = puiga->PuiFocus();
     if (pui)
         pui->KeyUp(vk);
     return true;
@@ -501,6 +481,41 @@ bool APP::OnTimer(UINT tid)
 }
 
 
+/*
+ *  Logging stubs
+ */
+
+
+void APP::ClearLog(void) noexcept
+{
+    puiga->uidb.ClearLog();
+}
+
+void APP::InitLog(int depth) noexcept
+{
+    puiga->uidb.InitLog(depth);
+}
+
+bool APP::FDepthLog(LGT lgt, int& depth) noexcept
+{
+    return puiga->uidb.FDepthLog(lgt, depth);
+}
+
+void APP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
+{
+    return puiga->uidb.AddLog(lgt, lgf, depth, tag, szData);
+}
+
+int APP::DepthLog(void) const noexcept
+{
+    return puiga->uidb.DepthLog();
+}
+
+void APP::SetDepthLog(int depth) noexcept
+{
+    puiga->uidb.SetDepthLog(depth);
+}
+
 /*  
  *
  *  CMDABOUT command
@@ -508,6 +523,26 @@ bool APP::OnTimer(UINT tid)
  *  Just an about dialog box
  *
  */
+
+
+ /*  AboutDlgProc
+  *
+  *  Message handler for about box.
+  */
+INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
+{
+    switch (wm) {
+    case WM_INITDIALOG:
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) != IDOK && LOWORD(wParam) != IDCANCEL)
+            break;
+        ::EndDialog(hdlg, LOWORD(wParam));
+        return (INT_PTR)TRUE;
+    }
+    return (INT_PTR)FALSE;
+}
 
 
 class CMDABOUT : public CMD
@@ -539,8 +574,8 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->NewGame(new RULE, spmvAnimate);
-        app.pga->Redraw();
+        app.puiga->NewGame(new RULE, spmvAnimate);
+        app.puiga->Redraw();
         return 1;
     }
 };
@@ -562,7 +597,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->Play();
+        app.puiga->Play();
         return 1;
     }
 };
@@ -584,7 +619,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->UndoMv(spmvAnimate);
+        app.puiga->ga.UndoMv(spmvAnimate);
         return 1;
     }
 
@@ -611,7 +646,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->RedoMv(spmvAnimate);
+        app.puiga->ga.RedoMv(spmvAnimate);
         return 1;
     }
 
@@ -637,7 +672,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->uibd.FlipBoard(~app.pga->uibd.cpcPointOfView);
+        app.puiga->uibd.FlipBoard(~app.puiga->uibd.cpcPointOfView);
         return 1;
     }
 
@@ -716,7 +751,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->Test();
+        app.puiga->Test();
         return 1;
     }
 
@@ -832,28 +867,28 @@ public:
                 return 1;
         }
 
-        app.pga->XLogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth));
+        LogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth));
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
         uint64_t cmv;
         switch (ddperft.tperft) {
         case TPERFT::Divide:
-            cmv = app.pga->CmvPerftDivide(ddperft.depth);
+            cmv = app.puiga->CmvPerftDivide(ddperft.depth);
             break;
         case TPERFT::Bulk:
-            cmv = app.pga->CmvPerftBulk(ddperft.depth);
+            cmv = app.puiga->ga.CmvPerftBulk(ddperft.depth);
             break;
         default:
-            cmv = app.pga->CmvPerft(ddperft.depth);
+            cmv = app.puiga->ga.CmvPerft(ddperft.depth);
             break;
         }
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
         duration dtp = tpEnd - tpStart;
         microseconds us = duration_cast<microseconds>(dtp);
         float sp = (float)us.count() / 1000.0f;
-        app.pga->XLogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
+        LogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         sp = 1000.0f * (float)cmv / (float)us.count();
-        app.pga->XLogData(L"Speed: " + to_wstring((int)round(sp)) + L" moves/ms");
-        app.pga->XLogClose(L"perft", to_wstring(cmv), LGF::Normal);
+        LogData(L"Speed: " + to_wstring((int)round(sp)) + L" moves/ms");
+        LogClose(L"perft", to_wstring(cmv), LGF::Normal);
         return 1;
     }
 
@@ -886,7 +921,7 @@ public:
         /* create standard players with depth and initialize the game */
 
         for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
-            PL* ppl = app.pga->PplFromCpc(cpc);
+            PL* ppl = app.puiga->ga.PplFromCpc(cpc);
             if (ppl->FHasLevel())
                 ppl->SetLevel(8);
             ppl->SetFecoRandom(0);
@@ -894,22 +929,22 @@ public:
 
         /* start a new untimed game */
 
-        app.pga->NewGame(new RULE, spmvFast);
-        app.pga->prule->SetTmGame(cpcWhite, 0);
-        app.pga->prule->SetTmGame(cpcBlack, 0);
-        app.pga->uiml.ShowClocks(false);
-        app.pga->Layout();
+        app.puiga->NewGame(new RULE, spmvFast);
+        app.puiga->ga.prule->SetTmGame(cpcWhite, 0);
+        app.puiga->ga.prule->SetTmGame(cpcBlack, 0);
+        app.puiga->uiml.ShowClocks(false);
+        app.puiga->Layout();
 
-        app.pga->ClearLog();
-        app.pga->XLogOpen(L"AI Speed Test", L"");
-        int depthSav = app.pga->DepthLog();
-        app.pga->SetDepthLog(2);
+        ClearLog();
+        LogOpen(L"AI Speed Test", L"");
+        int depthSav = DepthLog();
+        SetDepthLog(2);
 
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
 
         for (int imv = 0; imv < 10; imv++) {
             SPMV spmv = spmvFast;
-            MV mv = app.pga->PplToMove()->MvGetNext(spmv);
+            MV mv = app.puiga->ga.PplToMove()->MvGetNext(spmv);
             if (mv.fIsNil())
                 break;
             app.pga->MakeMv(mv, spmvFast);
@@ -921,9 +956,9 @@ public:
         microseconds us = duration_cast<microseconds>(dtp);
         float sp = (float)us.count() / 1000.0f;
 
-        app.pga->SetDepthLog(depthSav);
-        app.pga->XLogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
-        app.pga->XLogClose(L"AI Speed Test", L"", LGF::Normal);
+        SetDepthLog(depthSav);
+        LogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
+        LogClose(L"AI Speed Test", L"", LGF::Normal);
 
         return 1;
     }
@@ -943,12 +978,12 @@ public:
 class DDAIBREAK
 {
 public:
-    GA* pga;
+    UIGA* puiga;
     CPC cpc;
     vector<MVM> vmvm;
     int cRepeat;
 
-    DDAIBREAK() : pga(nullptr), cpc(cpcWhite), cRepeat(1) {
+    DDAIBREAK() : puiga(nullptr), cpc(cpcWhite), cRepeat(1) {
     }
 
     wstring SzDecodeMoveList(void) {
@@ -1025,7 +1060,7 @@ INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam
         ::SetDlgItemTextW(hdlg, ideAIBreakRepeatCount, to_wstring(pddaibreak->cRepeat).c_str());
         HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
         for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
-            PL* ppl = pddaibreak->pga->PplFromCpc(cpc);
+            PL* ppl = pddaibreak->puiga->ga.PplFromCpc(cpc);
             ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)ppl->SzName().c_str());
         }
         ::SendMessageW(hwndCombo, CB_SETCURSEL, (WPARAM)pddaibreak->cpc, 0);
@@ -1090,10 +1125,10 @@ public:
 
     virtual int Execute(void)
     {
-        ddaibreak.pga = app.pga;
+        ddaibreak.puiga = app.puiga;
         if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddAIBreak), app.hwnd, AIBreakDlgProc, (LPARAM)&ddaibreak) != IDOK)
             return 1;
-        app.pga->PplFromCpc(ddaibreak.cpc)->SetAIBreak(ddaibreak.vmvm);
+        app.puiga->ga.PplFromCpc(ddaibreak.cpc)->SetAIBreak(ddaibreak.vmvm);
         return 1;
     }
 };
@@ -1118,7 +1153,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->uipvt.Show(!app.pga->uipvt.FVisible());
+        app.puiga->uipvt.Show(!app.puiga->uipvt.FVisible());
         return 1;
     }
 
@@ -1129,7 +1164,7 @@ public:
 
     virtual int IdsMenu(void) const
     {
-        return app.pga->uipvt.FVisible() ? idsHidePieceValues: idsShowPieceValues;
+        return app.puiga->uipvt.FVisible() ? idsHidePieceValues: idsShowPieceValues;
     }
 };
 
@@ -1197,7 +1232,7 @@ public:
         ofn.lpstrDefExt = L"pgn";
 
         if (::GetOpenFileName(&ofn))
-            app.pga->OpenPGNFile(szFileName);
+            app.puiga->ga.OpenPGNFile(szFileName);
         return 1;
     }
 };
@@ -1272,8 +1307,8 @@ public:
             }
         }
         else {
-            app.pga->InitGame(WszWidenSz(pch).c_str(), spmvAnimate);
-            app.pga->Redraw();
+            app.puiga->InitGame(WszWidenSz(pch).c_str(), spmvAnimate);
+            app.puiga->Redraw();
         }
         return 1;
     }
@@ -1312,9 +1347,9 @@ public:
     {
         DWORD tmOld = app.pga->prule->TmGame(cpcWhite);
         app.pga->prule->SetTmGame(cpcWhite, tmOld ? 0 : 60 * 60 * 1000);
-        app.pga->uiml.ShowClocks(tmOld == 0);
-        app.pga->Layout();
-        app.pga->Redraw();
+        app.puiga->uiml.ShowClocks(tmOld == 0);
+        app.puiga->Layout();
+        app.puiga->Redraw();
         return 1;
     }
 
@@ -1354,8 +1389,8 @@ public:
         else
             level++;
         ppl->SetLevel(level);
-        app.pga->uiml.Redraw();
-        app.pga->uiti.Redraw();
+        app.puiga->uiml.Redraw();
+        app.puiga->uiti.Redraw();
         return 1;
     }
     
@@ -1382,7 +1417,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->uidb.Show(!app.pga->uidb.FVisible());
+        app.puiga->uidb.Show(!app.puiga->uidb.FVisible());
         return 1;
     }
 
@@ -1393,7 +1428,7 @@ public:
 
     virtual int IdsMenu(void) const
     {
-        return app.pga->uidb.FVisible() ? idsHideDebugPanel : idsShowDebugPanel;
+        return app.puiga->uidb.FVisible() ? idsHideDebugPanel : idsShowDebugPanel;
     }
 };
 
@@ -1414,9 +1449,9 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.pga->uidb.DepthLog();
-        app.pga->uidb.SetDepthLog(depth + 1);
-        app.pga->uidb.Redraw();
+        int depth = app.puiga->uidb.DepthLog();
+        app.puiga->uidb.SetDepthLog(depth + 1);
+        app.puiga->uidb.Redraw();
         return 1;
     }
 
@@ -1443,11 +1478,11 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.pga->uidb.DepthLog();
+        int depth = app.puiga->uidb.DepthLog();
         if (depth > 1)
             depth--;
-        app.pga->uidb.SetDepthLog(depth);
-        app.pga->uidb.Redraw();
+        app.puiga->uidb.SetDepthLog(depth);
+        app.puiga->uidb.Redraw();
         return 1;
     }
 
@@ -1474,7 +1509,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.pga->uidb.EnableLogFile(!app.pga->uidb.FLogFileEnabled());
+        app.puiga->uidb.EnableLogFile(!app.puiga->uidb.FLogFileEnabled());
         return 1;
     }
 
@@ -1501,8 +1536,10 @@ public:
 
     virtual int Execute(void)
     {
-        if (app.pga->puci)
-            app.pga->puci->ConsolePump();
+#ifdef LATER
+        if (app.puiga->puci)
+            app.puiga->puci->ConsolePump();
+#endif
         return 1;
     }
 };
@@ -1601,6 +1638,8 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
     switch (wm) {
     case WM_NCCREATE:
         papp = (APP*)((CREATESTRUCT*)lparam)->lpCreateParams;
+        papp->puiga = new UIGA(*papp, *papp->pga);
+        papp->pga->SetUiga(papp->puiga);
         ::SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)papp);
         break;
 

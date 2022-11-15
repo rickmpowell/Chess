@@ -9,11 +9,37 @@
 #pragma once
 
 #include "ti.h"
+#include "uiga.h"
 #include "uibd.h"
 #include "ml.h"
 #include "pl.h"
 #include "debug.h"
 #include "uci.h"
+
+
+/*
+ *
+ *	IGA class
+ *
+ *	This is the interface that defines communication from/to the GA game
+ *	to various outside objects, which can include things like a graphical
+ *	UI, or a UCI server.
+ *
+ *	It should be multiple-inherited into some other object.
+ *
+ */
+
+
+class IGA
+{
+	GA& ga;
+public:
+	IGA(GA& ga) : ga(ga) { }
+	~IGA() { }
+};
+
+class UIGA;
+
 
 
 /*
@@ -84,40 +110,10 @@ public:
  */
 
 
-class APP;
-
-class GA : public UI
+class GA
 {
 	friend class SPA;
-	friend class UITI;
-	friend class UIBD;
-	friend class UIML;
-	friend class UIDB;
-	friend class UIPVT;
-
-protected:
-	static BRS* pbrDesktop;
-
-public:
-	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
-
-	APP& app;
-	UCI* puci;
-	UITI uiti;
-	UIBD uibd;
-	UIML uiml;
-	UIDB uidb;
-	UITIP uitip;
-	UIPVT uipvt;
-
-	UI* puiCapt;	/* mouse capture */
-	UI* puiFocus;	/* keyboard focus */
-	UI* puiHover;	/* current hover UI */
-	map<TID, UI*> mptidpui;	/* windows timer id to UI mapping */
-	SPMV spmvShow;	/* play speed */
-
-	bool fInPlay;
+	friend class UIGA;
 
 public:
 	BDG bdg;	// board
@@ -125,32 +121,22 @@ public:
 	PL* mpcpcppl[cpcMax];	// players
 	RULE* prule;
 	PROCPGN* pprocpgn;	/* process pgn file handler */
-	TID tidClock;
-	DWORD mpcpctmClock[cpcMax];	// player clocks
-	DWORD tmLast;	// time of last move
+
+	UIGA* puiga;	/* TODO: turn this into an interface */
 
 public:
-	GA(APP& app);
+	GA(void);
 	~GA(void);
+	void SetUiga(UIGA* puiga) { this->puiga = puiga; }
 
 	/*
 	 *	Players
 	 */
 
-	inline PL*& PlFromCpc(CPC cpc) 
-	{
-		return mpcpcppl[cpc]; 
-	}
-	
-	inline PL* PplFromCpc(CPC cpc)
-	{
-		return PlFromCpc(cpc); 
-	}
-
-	inline PL* PplToMove(void)
-	{
-		return PplFromCpc(bdg.cpcToMove);
-	}
+	inline PL*& PlFromCpc(CPC cpc) { return mpcpcppl[cpc]; }
+	inline PL* PplFromCpc(CPC cpc) { return PlFromCpc(cpc); }
+	inline PL* PplToMove(void) { return PplFromCpc(bdg.cpcToMove); }
+	void SetPl(CPC cpc, PL* ppl);
 
 	inline CPC CpcFromPpl(PL* ppl) const
 	{
@@ -160,87 +146,22 @@ public:
 		return cpcNil;
 	}
 
-	void SetPl(CPC cpc, PL* ppl);
-
-	/*
-	 *	Drawing
-	 */
-
-	virtual void Draw(const RC& rcUpdate);
-	virtual void PresentSwch(void) const;
-	virtual APP& App(void) const;
-	virtual void BeginDraw(void);
-	virtual void EndDraw(void);
-	virtual void InvalRc(const RC& rc, bool fErase) const;
-	virtual void Layout(void);
-
-	/*
-	 *	Commands
-	 */
-
-	virtual void DispatchCmd(int cmd);
-	virtual void ShowTip(UI* puiAttach, bool fShow);
-	virtual wstring SzTipFromCmd(int cmd) const;
-
-	/*
-	 *	Mouse and keyboard interface
-	 */
-
-	UI* PuiHitTest(PT* ppt, int x, int y);
-	virtual void SetCapt(UI* pui);
-	virtual void ReleaseCapt(void);
-	virtual void SetHover(UI* pui);
-	virtual void SetFocus(UI* pui);
-	UI* PuiFocus(void) const;
-
-	/*
-	 *	Timers
-	 */
-
-	virtual TID StartTimer(UI* pui, UINT dtm);
-	virtual void StopTimer(UI* pui, TID tid);
-	virtual void TickTimer(TID tid, UINT dtm);
-	void DispatchTimer(TID tid, UINT tm);
-
-	/*
-	 *	Modal game loop
-	 */
-	
-	void PumpMsg(void);
-
 	/*
 	 *	Game control
 	 */
 
 	static const wchar_t szInitFEN[];
 
-	void NewGame(RULE* prule, SPMV spmv);
-	void InitGame(const wchar_t* szFEN, SPMV spmv);
-	int Play(void);
+	void NewGame(RULE* prule);
+	void InitGame(const wchar_t* szFEN);
+	void SetRule(RULE* prule);
 	void EndGame(SPMV spmv);
-
-	void InitClocks(void);
-	void StartClocks(void);
-	void SwitchClock(DWORD tmCur);
-	void StartClock(CPC cpc, DWORD tmCur);
-	void PauseClock(CPC cpc, DWORD tmCur);
 
 	void MakeMv(MV mv, SPMV spmv);
 	void UndoMv(SPMV spmv);
 	void RedoMv(SPMV spmv);
 	void MoveToImv(int64_t imv, SPMV spmv);
 	void GenVemv(VEMV& vemv);
-
-	/*	
-	 *	Logging
-	 */
-
-	virtual bool FDepthLog(LGT lgt, int& depth) noexcept;
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
-	virtual void ClearLog(void) noexcept;
-	virtual void SetDepthLog(int depth) noexcept;
-	virtual void InitLog(int depth) noexcept;
-	virtual int DepthLog(void) const noexcept;
 
 	/*
 	 *	Deserializing 
@@ -270,16 +191,8 @@ public:
 	void SerializeMoveList(ostream& os);
 	void WriteSzLine80(ostream& os, string& szLine, const string& szAdd);
 
-	/*
-	 *	Tests and validation
-	 */
-
-	void Test(void);
-	void PerftTest(void);
-	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
 	uint64_t CmvPerft(int depth);
 	uint64_t CmvPerftBulk(int depth);
-	uint64_t CmvPerftDivide(int depth);
 };
 
 

@@ -6,6 +6,7 @@
  *
  */
 
+#include "uiga.h"
 #include "ga.h"
 #include "resources/Resource.h"
 
@@ -14,15 +15,23 @@
 RGINFOPL rginfopl;
 
 
+/*
+ *
+ *	SPINLVL
+ * 
+ *	The level spin control used to pick how smart the AI is in a computer player.
+ * 
+ */
 
 
-SPINLVL::SPINLVL(UIPL* puiParent, int cmdUp, int cmdDown) : SPIN(puiParent, cmdUp, cmdDown), uipl(*puiParent)
+SPINLVL::SPINLVL(UIPL* puiParent, int cmdUp, int cmdDown) : 
+		SPIN(puiParent, cmdUp, cmdDown), uipl(*puiParent)
 {
 }
 
 wstring SPINLVL::SzValue(void) const
 {
-	return to_wstring(uipl.ppl->Level());
+	return to_wstring(uipl.uiga.ga.PplFromCpc(uipl.cpc)->Level());
 }
 
 
@@ -40,8 +49,9 @@ wstring SPINLVL::SzValue(void) const
  *
  *	Player name UI element constructor
  */
-UIPL::UIPL(UI* puiParent, CPC cpc) : UI(puiParent), spinlvl(this, cmdPlayerLvlUp+cpc, cmdPlayerLvlDown+cpc), 
-		ppl(nullptr), cpc(cpc), fChooser(false), iinfoplHit(-1), dyLine(8.0f)
+UIPL::UIPL(UI& uiParent, UIGA& uiga, CPC cpc) : UI(&uiParent), uiga(uiga), cpc(cpc),
+		spinlvl(this, cmdPlayerLvlUp+cpc, cmdPlayerLvlDown+cpc), 
+		fChooser(false), iinfoplHit(-1), dyLine(8.0f)
 {
 }
 
@@ -61,7 +71,7 @@ void UIPL::DiscardRsrc(void)
 
 void UIPL::Layout(void)
 {
-	spinlvl.Show(!fChooser && ppl->FHasLevel());
+	spinlvl.Show(!fChooser && uiga.ga.PplFromCpc(cpc)->FHasLevel());
 	RC rc = RcInterior();
 	rc.right -= 4.0f;
 	rc.left = rc.right - 45.0f;
@@ -111,6 +121,7 @@ void UIPL::Draw(const RC& rcUpdate)
 
 		/* and the player name */
 
+		PL* ppl = uiga.ga.PplFromCpc(cpc);
 		if (ppl) {
 			wstring szName = ppl->SzName();
 			rc.left += 3 * dxyRadius;
@@ -149,18 +160,6 @@ void UIPL::DrawChooserItem(const INFOPL& infopl, RC& rc)
 	DrawSz(sz, ptxText, RC(rcTo.right+13.0f, rcTo.top+2.0f, rc.right, rcTo.bottom-2.0f));
 
 	rc.top = rc.bottom;
-}
-
-
-/*	UIPL::SetPl
- *
- *	Sets the player name to be displayed in the UI element. Does not take
- *	ownership of the PL. Owner is responsible for clearing the PL if the
- *	player changes.
- */
-void UIPL::SetPl(PL* pplNew)
-{
-	ppl = pplNew;
 }
 
 
@@ -209,7 +208,7 @@ void UIPL::LeftDrag(const PT& pt)
  */
 
 
-UIGC::UIGC(UIML* puiml) : UI(puiml), ga(puiml->ga),
+UIGC::UIGC(UIML& uiml) : UI(&uiml), uiga(uiml.uiga),
 		btnResign(this, cmdResign, idbWhiteFlag), btnOfferDraw(this, cmdOfferDraw, idbHandShake),
 		ptxScore(nullptr)
 {
@@ -235,7 +234,7 @@ void UIGC::DiscardRsrc(void)
 
 void UIGC::Layout(void)
 {
-	if (ga.bdg.gs == gsPlaying) {
+	if (uiga.ga.bdg.gs == gsPlaying) {
 		RC rc = RcInterior().Inflate(PT(0, -1.0f));
 		rc.left += 48.0f;
 		SIZ siz = btnResign.SizImg();
@@ -248,8 +247,8 @@ void UIGC::Layout(void)
 		rc.left = rc.right - (rc.DyHeight() * siz.width / siz.height);
 		btnOfferDraw.SetBounds(rc);
 	}
-	btnResign.Show(ga.bdg.gs == gsPlaying);
-	btnOfferDraw.Show(ga.bdg.gs == gsPlaying);
+	btnResign.Show(uiga.ga.bdg.gs == gsPlaying);
+	btnOfferDraw.Show(uiga.ga.bdg.gs == gsPlaying);
 }
 
 
@@ -257,9 +256,9 @@ SIZ UIGC::SizLayoutPreferred(void)
 {
 	SIZ siz = SizSz(L"0", ptxText);
 	siz.width = -1.0f;
-	if (ga.bdg.gs == gsPlaying)
+	if (uiga.ga.bdg.gs == gsPlaying)
 		siz.height *= 1.5;
-	else if (ga.bdg.gs == gsNotStarted)
+	else if (uiga.ga.bdg.gs == gsNotStarted)
 		siz.height *= 1.5;
 	else
 		siz.height *= 5.0f;
@@ -270,9 +269,9 @@ void UIGC::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrBack);
 	
-	if (ga.bdg.gs == gsPlaying)
+	if (uiga.ga.bdg.gs == gsPlaying)
 		return;
-	if (ga.bdg.gs == gsNotStarted)
+	if (uiga.ga.bdg.gs == gsNotStarted)
 		return;
 
 	float dyLine = SizSz(L"A", ptxText).height + 3.0f;
@@ -289,7 +288,7 @@ void UIGC::Draw(const RC& rcUpdate)
 
 	CPC cpcWin = cpcNil;
 
-	switch (ga.bdg.gs) {
+	switch (uiga.ga.bdg.gs) {
 	case gsWhiteCheckMated:
 		DrawSzCenter(L"Checkmate", ptxText, rcEndType);
 		cpcWin = cpcBlack;
@@ -376,7 +375,7 @@ void UICLOCK::DiscardRsrcClass(void)
 }
 
 
-UICLOCK::UICLOCK(UIML* puiml, CPC cpc) : UI(puiml), ga(puiml->ga), cpc(cpc)
+UICLOCK::UICLOCK(UIML& uiml, CPC cpc) : UI(&uiml), uiga(uiml.uiga), cpc(cpc)
 {
 }
 
@@ -402,7 +401,7 @@ SIZ UICLOCK::SizLayoutPreferred(void)
 
 void UICLOCK::Draw(const RC& rcUpdate)
 {
-	DWORD tm = ga.mpcpctmClock[cpc];
+	DWORD tm = uiga.mpcpctmClock[cpc];
 
 	/* fill background */
 
@@ -480,7 +479,7 @@ bool UICLOCK::FTimeOutWarning(DWORD tm) const
 
 void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 {
-	OPACITYBR opacitybr(pbrText, (frac < 500 && cpc == ga.bdg.cpcToMove) ? 0.33f : 1.0f);
+	OPACITYBR opacitybr(pbrText, (frac < 500 && cpc == uiga.ga.bdg.cpcToMove) ? 0.33f : 1.0f);
 	SIZ sizPunc = SizSz(L":", ptxClock);
 	DrawSz(L":", ptxClock, rc, pbrText);
 	rc.left += sizPunc.width;
@@ -496,16 +495,13 @@ void UICLOCK::DrawColon(RC& rc, unsigned frac) const
  */
 
 
-UIML::UIML(GA* pga) : UIPS(pga),  
+UIML::UIML(UIGA& uiga) : UIPS(uiga),  
 		ptxList(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvSel(0),
-		uigc(this)
+		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack), 
+		uiclockWhite(*this, cpcWhite), uiclockBlack(*this, cpcBlack), uigc(*this)
 {
 	for (int col = 0; col < CArray(mpcoldx); col++)
 		mpcoldx[col] = 0.0f;
-	mpcpcpuiclock[cpcWhite] = new UICLOCK(this, cpcWhite);
-	mpcpcpuiclock[cpcBlack] = new UICLOCK(this, cpcBlack);
-	mpcpcpuipl[cpcWhite] = new UIPL(this, cpcWhite);
-	mpcpcpuipl[cpcBlack] = new UIPL(this, cpcBlack);
 }
 
 
@@ -578,6 +574,17 @@ RC UIML::RcFromCol(float y, int col) const
 }
 
 
+UIPL& UIML::UiplFromCpc(CPC cpc)
+{
+	return cpc == cpcWhite ? uiplWhite : uiplBlack;
+}
+
+UICLOCK& UIML::UiclockFromCpc(CPC cpc)
+{
+	return cpc == cpcWhite ? uiclockWhite : uiclockBlack;
+}
+
+
 /*	UIML::Layout
  *
  *	Layout helper for placing the move list panel on the game screen.
@@ -590,17 +597,17 @@ void UIML::Layout(void)
 	RC rc = RcInterior();
 	RC rcView = rc;
 	rc.bottom = rc.top;
-	AdjustUIRcBounds(mpcpcpuipl[~ga.uibd.cpcPointOfView], rc, true);
-	AdjustUIRcBounds(mpcpcpuiclock[~ga.uibd.cpcPointOfView], rc, true);
+	AdjustUIRcBounds(UiplFromCpc(~uiga.uibd.cpcPointOfView), rc, true);
+	AdjustUIRcBounds(UiclockFromCpc(~uiga.uibd.cpcPointOfView), rc, true);
 	rcView.top = rc.bottom;
 
 	/* position the bottom clocks, player names, and game controls */
 
 	rc = RcInterior();
 	rc.top = rc.bottom;
-	AdjustUIRcBounds(mpcpcpuipl[ga.uibd.cpcPointOfView], rc, false);
-	AdjustUIRcBounds(mpcpcpuiclock[ga.uibd.cpcPointOfView], rc, false);
-	AdjustUIRcBounds(&uigc, rc, false); 
+	AdjustUIRcBounds(UiplFromCpc(uiga.uibd.cpcPointOfView), rc, false);
+	AdjustUIRcBounds(UiclockFromCpc(uiga.uibd.cpcPointOfView), rc, false);
+	AdjustUIRcBounds(uigc, rc, false); 
 	rcView.bottom = rc.top;
 
 	/* move list content is whatever is left */
@@ -648,12 +655,6 @@ void UIML::Draw(const RC& rcUpdate)
 }
 
 
-void UIML::SetPl(CPC cpc, PL* ppl)
-{
-	mpcpcpuipl[cpc]->SetPl(ppl);
-}
-
-
 /*	SPSARGMV::RcFromImv
  *
  *	Returns the rectangle of the imv move in the move list. Coordinates
@@ -677,8 +678,8 @@ void UIML::DrawContent(const RC& rcCont)
 {
 	BDG bdgT(bdgInit);
 	float yCont = RcContent().top;
-	for (unsigned imv = 0; imv < ga.bdg.vmvGame.size(); imv++) {
-		MV mv = ga.bdg.vmvGame[imv];
+	for (unsigned imv = 0; imv < uiga.ga.bdg.vmvGame.size(); imv++) {
+		MV mv = uiga.ga.bdg.vmvGame[imv];
 		if (imv % 2 == 0) {
 			RC rc = RcFromCol(yCont + 4.0f + (imv / 2) * dyList, 0);
 			DrawMoveNumber(rc, imv / 2 + 1);
@@ -756,16 +757,16 @@ void UIML::DrawMoveNumber(const RC& rc, int imv)
 
 void UIML::InitGame(void)
 {
-	ShowClocks(ga.prule->TmGame(cpcWhite) != 0);
-	bdgInit = ga.bdg;
+	ShowClocks(uiga.ga.prule->TmGame(cpcWhite) != 0);
+	bdgInit = uiga.ga.bdg;
 	UpdateContSize();
 }
 
 
 void UIML::ShowClocks(bool fTimed)
 {
-	mpcpcpuiclock[cpcWhite]->Show(fTimed);
-	mpcpcpuiclock[cpcBlack]->Show(fTimed);
+	uiclockWhite.Show(fTimed);
+	uiclockBlack.Show(fTimed);
 }
 
 
@@ -788,7 +789,7 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dy = (ga.bdg.vmvGame.size()+1) / 2 * dyList;
+	float dy = (uiga.ga.bdg.vmvGame.size()+1) / 2 * dyList;
 	if (dy == 0)
 		dy = dyList;
 	UIPS::UpdateContSize(SIZ(RcContent().DxWidth(), 4.0f + dy));
@@ -819,7 +820,7 @@ HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 		imv = (int64_t)li * 2 + 1;
 	if (imv < 0)
 		return HTML::EmptyBefore;
-	if (imv >= (int64_t)ga.bdg.vmvGame.size())
+	if (imv >= (int64_t)uiga.ga.bdg.vmvGame.size())
 		return HTML::EmptyAfter;
 	*pimv = imv;
 	return HTML::List;
@@ -832,7 +833,7 @@ void UIML::StartLeftDrag(const PT& pt)
 	if (html != HTML::List)
 		return;
 	SetSel(imv, spmvFast);
-	ga.MoveToImv(imv, spmvAnimate);
+	uiga.ga.MoveToImv(imv, spmvAnimate);
 }
 
 void UIML::EndLeftDrag(const PT& pt)
@@ -849,23 +850,23 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		ga.MoveToImv(ga.bdg.imvCur - 1, spmvAnimate);
+		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur - 1, spmvAnimate);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		ga.MoveToImv(ga.bdg.imvCur + 1, spmvAnimate);
+		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur + 1, spmvAnimate);
 		break;
 	case VK_HOME:
-		ga.MoveToImv(0, spmvAnimate);
+		uiga.ga.MoveToImv(0, spmvAnimate);
 		break;
 	case VK_END:
-		ga.MoveToImv((int)ga.bdg.vmvGame.size() - 1, spmvAnimate);
+		uiga.ga.MoveToImv((int)uiga.ga.bdg.vmvGame.size() - 1, spmvAnimate);
 		break;
 	case VK_PRIOR:
-		ga.MoveToImv(ga.bdg.imvCur - 5*2, spmvAnimate);
+		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur - 5 * 2, spmvAnimate);
 		break;
 	case VK_NEXT:
-		ga.MoveToImv(ga.bdg.imvCur + 5*2, spmvAnimate);
+		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur + 5*2, spmvAnimate);
 		break;
 	default:
 		break;

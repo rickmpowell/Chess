@@ -8,6 +8,8 @@
  */
 
 #include "ga.h"
+#include "uiga.h"
+
 
 
 /*
@@ -30,33 +32,24 @@
 class TEST
 {
 protected:
-	APP& app;
-	GA& ga;
+	UIGA& uiga;
 	TEST* ptestParent;
 	vector<TEST*> rgptest;
 
 public:
-	TEST(GA& ga, TEST* ptestParent);
+	TEST(UIGA& uiga, TEST* ptestParent);
 	virtual ~TEST(void);
 	virtual wstring SzName(void) const;
 	virtual wstring SzSubName(void) const;
 	void Add(TEST* ptest);
 	void Clear(void);
-	bool FDepthLog(LGT lgt, int& depth);
-	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData);
-	inline void LogTemp(const wstring& szData)
-	{
-		int depthLog;
-		if (FDepthLog(LGT::Temp, depthLog))
-			AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
-	}
 	ERR RunAll(void);
 	ERR ErrRun(void);
 	virtual void Run(void);
 	int Error(const string& szMsg);
 	bool FContinueTest(ERR err) const;
 
-	/* board validation */
+	/* independent board validation */
 
 	void ValidateFEN(const char* szFEN) const;
 	void ValidatePieces(const char*& sz) const;
@@ -68,7 +61,7 @@ public:
 };
 
 
-TEST::TEST(GA& ga, TEST* ptestParent) : app(ga.App()), ga(ga), ptestParent(ptestParent)
+TEST::TEST(UIGA& uiga, TEST* ptestParent) : uiga(uiga), ptestParent(ptestParent)
 {
 }
 
@@ -159,19 +152,9 @@ void TEST::Run(void)
 {
 }
 
-bool TEST::FDepthLog(LGT lgt, int& depth)
-{
-	return ga.FDepthLog(lgt, depth);
-}
-
-void TEST::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
-{
-	ga.AddLog(lgt, lgf, depth, tag, szData);
-}
-
 int TEST::Error(const string& szMsg)
 {
-	return app.Error(szMsg, MB_OK);
+	return papp->Error(szMsg, MB_OK);
 }
 
 
@@ -218,7 +201,7 @@ void TEST::ValidatePieces(const char*& sz) const
 			apc = apcPawn;
 CheckPiece:
 			cpc = islower(*sz) ? cpcBlack : cpcWhite;
-			if (ga.bdg.ApcFromSq(sq) != apc || ga.bdg.CpcFromSq(sq) != cpc)
+			if (uiga.ga.bdg.ApcFromSq(sq) != apc || uiga.ga.bdg.CpcFromSq(sq) != cpc)
 				throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
 			sq++; 
 			break;
@@ -231,7 +214,7 @@ CheckPiece:
 		case '7':
 		case '8':
 			for (int dsq = *sz - L'0'; dsq > 0; dsq--, sq++) {
-				if (!ga.bdg.FIsEmpty(sq))
+				if (!uiga.ga.bdg.FIsEmpty(sq))
 					throw EXFAILTEST("FEN piece mismatch at " + (string)sq);
 			}
 			break;
@@ -261,7 +244,7 @@ void TEST::ValidateMoveColor(const char*& sz) const
 			throw EXPARSE("invalid move color");
 		}
 	}
-	if (ga.bdg.cpcToMove != cpc)
+	if (uiga.ga.bdg.cpcToMove != cpc)
 		throw EXFAILTEST("move color mismatch");
 	SkipToWhiteSpace(sz);
 }
@@ -291,7 +274,7 @@ void TEST::ValidateCastle(const char*& sz) const
 			throw EXPARSE("invalid castle state");
 		}
 	}
-	if (ga.bdg.csCur != cs)
+	if (uiga.ga.bdg.csCur != cs)
 		throw EXFAILTEST("mismatched castle state");
 	SkipToWhiteSpace(sz);
 }
@@ -301,14 +284,14 @@ void TEST::ValidateEnPassant(const char*& sz) const
 {
 	SkipWhiteSpace(sz);
 	if (*sz == '-') {
-		if (!ga.bdg.sqEnPassant.fIsNil())
+		if (!uiga.ga.bdg.sqEnPassant.fIsNil())
 			throw EXFAILTEST("en passant square mismatch");
 	}
 	else if (*sz >= 'a' && *sz <= 'h') {
 		int file = *sz - 'a';
 		sz++;
 		if (*sz >= '1' && *sz <= '8') {
-			if (ga.bdg.sqEnPassant != SQ(*sz - '1', file))
+			if (uiga.ga.bdg.sqEnPassant != SQ(*sz - '1', file))
 				throw EXFAILTEST("en passant square mismatch");
 			sz++;
 			if (*sz && *sz != ' ')
@@ -346,12 +329,12 @@ void TEST::SkipToWhiteSpace(const char*& sz) const
 class TESTNEWGAME : public TEST
 {
 public:
-	TESTNEWGAME(GA& ga, TEST* ptestParent) : TEST(ga, ptestParent) { }
+	TESTNEWGAME(UIGA& uiga, TEST* ptestParent) : TEST(uiga, ptestParent) { }
 	wstring SzName(void) const { return L"New Game"; }
 
 	virtual void Run(void)
 	{
-		ga.NewGame(new RULE(0, 0, 0), spmvHidden);
+		uiga.NewGame(new RULE, spmvHidden);
 		ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 };
@@ -367,12 +350,12 @@ public:
 class TESTPERFT : public TEST
 {
 public:
-	TESTPERFT(GA& ga, TEST* ptestParent) : TEST(ga, ptestParent) { }	
+	TESTPERFT(UIGA& uiga, TEST* ptestParent) : TEST(uiga, ptestParent) { }	
 	virtual wstring SzName(void) const { return L"Perft"; }
 
 	virtual void Run(void)
 	{
-		ga.PerftTest();
+		uiga.PerftTest();
 	}
 };
 
@@ -387,7 +370,7 @@ public:
 class TESTUNDO : public TEST
 {
 public:
-	TESTUNDO(GA& ga, TEST* ptestParent) : TEST(ga, ptestParent) { }
+	TESTUNDO(UIGA& uiga, TEST* ptestParent) : TEST(uiga, ptestParent) { }
 	virtual wstring SzName(void) const { return L"Undo"; }
 
 	virtual void Run(void)
@@ -423,11 +406,11 @@ public:
 		ifstream is(szFile, ifstream::in);
 
 		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
-		PROCPGNGA procpgngaSav(ga, new PROCPGNTESTUNDO(ga));
+		PROCPGNGA procpgngaSav(uiga.ga, new PROCPGNTESTUNDO(uiga.ga));
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
 			LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
-			if (ga.DeserializeGame(istkpgn) != ERR::None)
+			if (uiga.ga.DeserializeGame(istkpgn) != ERR::None)
 				break;
 			UndoFullGame();
 			ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -436,14 +419,14 @@ public:
 
 	void UndoFullGame(void)
 	{
-		while (ga.bdg.imvCur >= 0) {
-			BDG bdgInit = ga.bdg;
-			ga.UndoMv(spmvHidden);
-			ga.RedoMv(spmvHidden);
-			assert(ga.bdg == bdgInit);
-			if (ga.bdg != bdgInit)
+		while (uiga.ga.bdg.imvCur >= 0) {
+			BDG bdgInit = uiga.ga.bdg;
+			uiga.ga.UndoMv(spmvHidden);
+			uiga.ga.RedoMv(spmvHidden);
+			assert(uiga.ga.bdg == bdgInit);
+			if (uiga.ga.bdg != bdgInit)
 				throw EXFAILTEST();
-			ga.UndoMv(spmvHidden);
+			uiga.ga.UndoMv(spmvHidden);
 		}
 	}
 };
@@ -481,7 +464,7 @@ class TESTPGNS : public TEST
 {
 	wstring szSub;
 public:
-	TESTPGNS(GA& ga, TEST* ptestParent, const wstring& szSub) : TEST(ga, ptestParent), szSub(szSub) { }
+	TESTPGNS(UIGA& uiga, TEST* ptestParent, const wstring& szSub) : TEST(uiga, ptestParent), szSub(szSub) { }
 	virtual wstring SzName(void) const { return L"Play"; }
 	virtual wstring SzSubName(void) const { return szSub; }
 
@@ -521,14 +504,14 @@ public:
 		ifstream is(szFile, ifstream::in);
 
 		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
-		PROCPGNGA procpgngaSav(ga, new PROCPGNTEST(ga));
+		PROCPGNGA procpgngaSav(uiga.ga, new PROCPGNTEST(uiga.ga));
 		ERR err;
 		ISTKPGN istkpgn(is);
 		istkpgn.SetSzStream(szFileBase);
 		int igame = 0;
 		do {
 			LogTemp(wstring(L"Game ") + to_wstring(++igame));
-			err = ga.DeserializeGame(istkpgn);
+			err = uiga.ga.DeserializeGame(istkpgn);
 		} while (err == ERR::None);
 	}
 };
@@ -543,23 +526,6 @@ ERR PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
 ERR PROCPGNTEST::ProcessMv(MV mv)
 {
 	return PROCPGNOPEN::ProcessMv(mv);
-}
-
-
-/*	GA::Test
- *
- *	This is the top-level test script.
- */
-void GA::Test(void)
-{
-	TEST testRoot(*this, nullptr);
-	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
-	testRoot.Add(new TESTPERFT(*this, &testRoot));
-	testRoot.Add(new TESTUNDO(*this, &testRoot));
-	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
-
-	InitLog(3);
-	testRoot.RunAll();
 }
 
 
@@ -598,30 +564,29 @@ uint64_t GA::CmvPerftBulk(int depth)
 	return cmv;
 }
 
-uint64_t GA::CmvPerftDivide(int depthPerft)
+uint64_t UIGA::CmvPerftDivide(int depthPerft)
 {
 	if (depthPerft == 0)
 		return 1;
 	assert(depthPerft >= 1);
 	VEMV vemv;
-	bdg.GenVemv(vemv, ggLegal);
+	ga.bdg.GenVemv(vemv, ggLegal);
 	if (depthPerft == 1)
 		return vemv.cemv();
 	uint64_t cmv = 0;
 #ifndef NDEBUG
-	BDG bdgInit = bdg;
+	BDG bdgInit = ga.bdg;
 #endif
 	for (EMV emv : vemv) {
-		bdg.MakeMv(emv.mv);
-		LogOpen(TAG(bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", (wstring)bdg)), L"");
-		uint64_t cmvMove = CmvPerft(depthPerft - 1);
+		ga.bdg.MakeMv(emv.mv);
+		LogOpen(TAG(ga.bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", (wstring)ga.bdg)), L"");
+		uint64_t cmvMove = ga.CmvPerft(depthPerft - 1);
 		cmv += cmvMove;
-		bdg.UndoMv();
-		LogClose(bdg.SzDecodeMvPost(emv.mv), to_wstring(cmvMove), LGF::Normal);
-		assert(bdg == bdgInit);
+		ga.bdg.UndoMv();
+		LogClose(ga.bdg.SzDecodeMvPost(emv.mv), to_wstring(cmvMove), LGF::Normal);
+		assert(ga.bdg == bdgInit);
 	}
 	return cmv;
-
 }
 
 
@@ -818,7 +783,7 @@ struct {
 	{L"Perftsuite 162", L"8/8/4k3/8/2p5/8/B2P2K1/8 w - -0 1", {1ULL, 0, 0, 0, 0, 0, 1015133ULL}, 6 }
 };
 
-void GA::PerftTest(void)
+void UIGA::PerftTest(void)
 {
 	for (int iperfttest = 0; iperfttest < CArray(rgperfttest); iperfttest++)
 		RunPerftTest(rgperfttest[iperfttest].szTitle,
@@ -834,7 +799,7 @@ void GA::PerftTest(void)
  *	Cycles through each depth from 1 to depthLast, verifying move counts in mpdepthcmv. 
  *	The tag is just used for debug output.
  */
-void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
+void UIGA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
 	LogOpen(tag, L"");
 	InitGame(szFEN, spmvHidden);
@@ -863,7 +828,7 @@ void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t
 		/* time the perft */
 		
 		time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
-		uint64_t cmvAct = fDivide ? CmvPerftDivide(depth) : CmvPerft(depth);
+		uint64_t cmvAct = fDivide ? CmvPerftDivide(depth) : ga.CmvPerft(depth);
 		time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
 		
 		/* display the results */
@@ -882,10 +847,27 @@ void GA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t
 			goto Done;
 		}
 		LogClose(L"Depth", L"Passed", LGF::Normal);
-
 	}
 	fPassed = true;
 
 Done:
 	LogClose(tag, fPassed ? L"Passed" : L"Failed", LGF::Normal);
 }
+
+
+/*	UIGA::Test
+ *
+ *	This is the top-level test script.
+ */
+void UIGA::Test(void)
+{
+	TEST testRoot(*this, nullptr);
+	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
+	testRoot.Add(new TESTPERFT(*this, &testRoot));
+	testRoot.Add(new TESTUNDO(*this, &testRoot));
+	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
+
+	InitLog(3);
+	testRoot.RunAll();
+}
+

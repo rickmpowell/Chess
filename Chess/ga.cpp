@@ -23,43 +23,9 @@ const wchar_t GA::szInitFEN[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w 
  */
 
 
-ID2D1SolidColorBrush* GA::pbrDesktop;
-
-
-void GA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (pbrDesktop)
-		return;
-	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
-
-	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	UIP::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	UITI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	UIBD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	UIML::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-}
-
-
-void GA::DiscardRsrcClass(void)
-{
-	UI::DiscardRsrcClass();
-	UIP::DiscardRsrcClass();
-	UITI::DiscardRsrcClass();
-	UIBD::DiscardRsrcClass();
-	UIML::DiscardRsrcClass();
-	SafeRelease(&pbrDesktop);
-}
-
-
-GA::GA(APP& app) : UI(nullptr), app(app), puci(nullptr),
-	uiti(this), uibd(this), uiml(this), uipvt(this), uidb(this), uitip(this),
-	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
-	fInPlay(false), prule(nullptr), pprocpgn(nullptr), tidClock(0), spmvShow(spmvAnimate)
+GA::GA() : prule(nullptr), pprocpgn(nullptr), puiga(nullptr)
 {
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = nullptr;
-	tmLast = 0L;
-	mpcpctmClock[cpcWhite] = mpcpctmClock[cpcBlack] = 0;
-	puci = new UCI(this);
 }
 
 
@@ -72,8 +38,6 @@ GA::~GA(void)
 		delete prule;
 	if (pprocpgn)
 		delete pprocpgn;
-	if (puci)
-		delete puci;
 }
 
 
@@ -87,106 +51,6 @@ void GA::SetPl(CPC cpc, PL* ppl)
 	if (mpcpcppl[cpc])
 		delete mpcpcppl[cpc];
 	mpcpcppl[cpc] = ppl;
-	uiml.SetPl(cpc, ppl);
-	uiti.SetPl(cpc, ppl);
-	uipvt.SetPl(cpc, ppl);
-}
-
-
-/*	GA::Draw
- *
- *	Draws the full game on the screen. For now, we have plenty of speed
- *	to do full redraws, so there's no attempt to optimize this.
- */
-void GA::Draw(const RC& rcUpdate)
-{
-	FillRc(rcUpdate, pbrDesktop);
-}
-
-
-void GA::InvalRc(const RC& rc, bool fErase) const
-{
-	RECT rect;
-	rect.left = (int)(rc.left - rcBounds.left);
-	rect.top = (int)(rc.top - rcBounds.top);
-	rect.right = (int)(rc.right - rcBounds.left);
-	rect.bottom = (int)(rc.bottom - rcBounds.top);
-	::InvalidateRect(app.hwnd, &rect, fErase);
-}
-
-
-APP& GA::App(void) const
-{
-	return this->app;
-}
-
-
-void GA::BeginDraw(void)
-{
-	app.CreateRsrc();
-	app.pdc->BeginDraw();
-}
-
-
-void GA::EndDraw(void)
-{
-	if (app.pdc->EndDraw() == D2DERR_RECREATE_TARGET)
-		app.DiscardRsrc();
-	PresentSwch();
-}
-
-
-void GA::PresentSwch(void) const
-{
-	DXGI_PRESENT_PARAMETERS pp = { 0 };
-	app.pswch->Present1(1, 0, &pp);
-}
-
-
-/*	GA::Layout
- *
- *	Lays out the panels on the game board
- */
-void GA::Layout(void)
-{
-	float dxyMargin = 10.0f;
-
-	/* title box panel */
-	
-	RC rc(dxyMargin, dxyMargin, dxyMargin + 210.0f, dxyMargin + 240.0f);
-	uiti.SetBounds(rc);
-
-	/* piece value table panel */
-
-	rc.top = rc.bottom + dxyMargin;
-	rc.bottom = rcBounds.bottom - dxyMargin;
-	uipvt.SetBounds(rc);
-
-	/* board panel */
-	
-	rc.top = dxyMargin;
-	rc.left = rc.right + dxyMargin;
-	/* make board a multiple of 8 pixels wide, which makes squares an even number of pixels
-	   in size, so we get consistent un-antialiased square borders */
-	rc.bottom = rcBounds.bottom - 100.0f;
-	rc.bottom = rc.top + max(176.0f, rc.DyHeight());
-	if ((int)rc.DyHeight() & 7)
-		rc.bottom = rc.top + ((int)rc.DyHeight() & ~7);
-	rc.right = rc.left + rc.DyHeight();
-	uibd.SetBounds(rc);
-
-	/* move list panel */
-
-	rc.left = rc.right + dxyMargin;
-	rc.right = rc.left + uiml.SizLayoutPreferred().width;
-	uiml.SetBounds(rc);
-
-	/* debug panel */
-
-	rc.left = rc.right + dxyMargin;
-	rc.right = rc.left + uidb.SizLayoutPreferred().width;
-	rc.right = max(rc.right, rcBounds.right - dxyMargin);
-	uidb.SetBounds(rc);
 }
 
 
@@ -195,215 +59,47 @@ void GA::Layout(void)
  *	Starts a new game with the given rule set, initializing everything and redrawing 
  *	the screen
  */
-void GA::NewGame(RULE* prule, SPMV spmv)
+void GA::NewGame(RULE* prule)
+{
+	SetRule(prule);
+	InitGame(szInitFEN);
+}
+
+void GA::SetRule(RULE* prule)
 {
 	if (this->prule)
 		delete this->prule;
-	this->prule = prule;	
-	InitGame(szInitFEN, spmv);
+	this->prule = prule;
 }
 
-
-void GA::InitGame(const wchar_t* szFEN, SPMV spmv)
+void GA::InitGame(const wchar_t* szFEN)
 {
-	InitClocks();
 	bdg.InitGame(szFEN);
 	bdgInit = bdg;
-	spmvShow = spmv;
-
-	uibd.InitGame();
-	uiml.InitGame();
-	SetFocus(&uiml);
-}
-
-
-void GA::InitClocks(void)
-{
-	tmLast = 0;
-	mpcpctmClock[cpcWhite] = prule->TmGame(cpcWhite);
-	mpcpctmClock[cpcBlack] = prule->TmGame(cpcBlack);
-}
-
-
-void GA::StartClocks(void)
-{
-	if (prule->TmGame(cpcWhite)) {
-		tmLast = app.TmMessage();
-		tidClock = UI::StartTimer(10);
-		StartClock(bdg.cpcToMove, tmLast);
-	}
 }
 
 
 void GA::EndGame(SPMV spmv)
 {
 	if (prule->TmGame(cpcWhite))
-		app.StopTimer(tidClock);
+		puiga->app.StopTimer(puiga->tidClock);
 
 	if (spmv != spmvHidden) {
-		uiml.EndGame();
+		puiga->uiml.EndGame();
 	}
-}
-
-
-void GA::SetFocus(UI* pui)
-{
-	puiFocus = pui;
-}
-
-
-UI* GA::PuiFocus(void) const
-{
-	return puiFocus;
-}
-
-
-UI* GA::PuiHitTest(PT* ppt, int x, int y)
-{
-	PT pt((float)x, (float)y);
-	UI* pui;
-	if (puiCapt)
-		pui = puiCapt;
-	else
-		pui = PuiFromPt(pt);
-	if (pui)
-		pt = pui->PtLocalFromGlobal(pt);
-	*ppt = pt;
-	return pui;
-}
-
-
-void GA::SetCapt(UI* pui)
-{
-	if (pui) {
-		::SetCapture(app.hwnd);
-		puiCapt = pui;
-	}
-}
-
-
-void GA::ReleaseCapt(void)
-{
-	if (puiCapt == nullptr)
-		return;
-	puiCapt = nullptr;
-	::ReleaseCapture();
-}
-
-
-void GA::SetHover(UI* pui)
-{
-	if (pui == puiHover)
-		return;
-	puiHover = pui;
-}
-
-
-void GA::ShowTip(UI* puiAttach, bool fShow)
-{
-	uitip.AttachOwner(puiAttach);
-	uitip.Show(fShow);
-	if (fShow)
-		uitip.Redraw();
-	else
-		Redraw();
-}
-
-
-wstring GA::SzTipFromCmd(int cmd) const
-{
-	return app.cmdlist.SzTip(cmd);
-}
-
-
-void GA::DispatchCmd(int cmd)
-{
-	app.cmdlist.Execute(cmd);
-}
-
-
-TID GA::StartTimer(UI* pui, UINT dtm)
-{
-	TID tid = App().StartTimer(dtm);
-	mptidpui[tid] = pui;
-	return tid;
-}
-
-
-void GA::StopTimer(UI* pui, TID tid)
-{
-	App().StopTimer(tid);
-	mptidpui.erase(mptidpui.find(tid));
-}
-
-
-void GA::DispatchTimer(TID tid, UINT tmCur)
-{
-	if (mptidpui.find(tid) == mptidpui.end())
-		return;
-	mptidpui[tid]->TickTimer(tid, tmCur);
-}
-
-
-void GA::TickTimer(TID tid, UINT tmCur)
-{
-	if (prule->TmGame(cpcWhite) == 0)
-		return;
-	DWORD dtm = tmCur - tmLast;
-	if (dtm > mpcpctmClock[bdg.cpcToMove]) {
-		dtm = mpcpctmClock[bdg.cpcToMove];
-		bdg.SetGs(bdg.cpcToMove == cpcWhite ? gsWhiteTimedOut : gsBlackTimedOut);
-		EndGame(spmvAnimate);
-	}
-	mpcpctmClock[bdg.cpcToMove] -= dtm;
-	tmLast = tmCur;
-	uiml.mpcpcpuiclock[bdg.cpcToMove]->Redraw();
-}
-
-
-void GA::StartClock(CPC cpc, DWORD tmCur)
-{
-	if (prule->TmGame(cpc) == 0)
-		return;
-}
-
-
-void GA::PauseClock(CPC cpc, DWORD tmCur)
-{
-	if (prule->TmGame(cpc) == 0)
-		return;
-	mpcpctmClock[cpc] -= tmCur - tmLast;
-	uiml.mpcpcpuiclock[cpc]->Redraw();
-}
-
-
-void GA::SwitchClock(DWORD tmCur)
-{
-	if (prule->TmGame(cpcWhite) == 0)
-		return;
-
-	if (tmLast) {
-		PauseClock(bdg.cpcToMove, tmCur);
-		mpcpctmClock[bdg.cpcToMove] += prule->DtmMove(cpcWhite);
-	}
-	else {
-		tidClock = UI::StartTimer(10);
-	}
-	tmLast = tmCur;
-	StartClock(~bdg.cpcToMove, tmCur);
 }
 
 
 void GA::MakeMv(MV mv, SPMV spmvMove)
 {
-	DWORD tm = app.TmMessage();
-	SwitchClock(tm == 0 ? 1 : tm);
-	uibd.MakeMv(mv, spmvMove);
+	DWORD tm = puiga->app.TmMessage();
+	puiga->SwitchClock(tm == 0 ? 1 : tm);
+	puiga->uibd.MakeMv(mv, spmvMove);
 	if (bdg.gs != gsPlaying)
 		EndGame(spmvMove);
 	if (spmvMove != spmvHidden) {
-		uiml.UpdateContSize();
-		uiml.SetSel(bdg.imvCur, spmvMove);
+		puiga->uiml.UpdateContSize();
+		puiga->uiml.SetSel(bdg.imvCur, spmvMove);
 	}
 }
 
@@ -445,12 +141,12 @@ void GA::MoveToImv(int64_t imv, SPMV spmv)
 			spmv = spmvAnimateVeryFast;
 	}
 	while (bdg.imvCur > imv)
-		uibd.UndoMv(spmv);
+		puiga->uibd.UndoMv(spmv);
 	while (bdg.imvCur < imv)
-		uibd.RedoMv(spmv);
+		puiga->uibd.RedoMv(spmv);
 	if (spmv != spmvHidden)
-		uiml.Layout();	// in case game over state changed
-	uiml.SetSel(bdg.imvCur, spmv);
+		puiga->uiml.Layout();	// in case game over state changed
+	puiga->uiml.SetSel(bdg.imvCur, spmv);
 }
 
 
@@ -460,111 +156,3 @@ void GA::GenVemv(VEMV& vemv)
 }
 
 
-/*	GA::Play
- *
- *	Starts playing the game with the current game state.
- */
-int GA::Play(void)
-{
-	struct INPLAY
-	{
-		GA& ga;
-		INPLAY(GA& ga) : ga(ga) { ga.fInPlay = true; }
-		~INPLAY() { ga.fInPlay = false; }
-	} inplay(*this);
-
-	InitLog(2);
-	LogOpen(L"Game", L"");
-	bdg.SetGs(gsPlaying);
-	StartClocks();
-
-	try {
-		do {
-			SPMV spmv = spmvAnimate;
-			MV mv = PplToMove()->MvGetNext(spmv);
-			if (mv.fIsNil())
-				throw EXINT();
-			MakeMv(mv, spmv);
-			SavePGNFile(app.SzAppDataPath() + L"\\current.pgn");
-		} while (bdg.gs == gsPlaying);
-	}
-	catch (...) {
-		LogClose(L"Game", L"Game aborted", LGF::Bold);
-		app.Error(L"Game play has been aborted.", MB_OK);
-		return 1;
-	}
-	LogClose(L"Game", L"", LGF::Normal);
-	return 0;
-}
-
-
-/*	GA::PumpMsg
- *
- *	Pumps and dispatches a system message. Throws an exception if the user 
- *	hit escape.
- */
-void GA::PumpMsg(void)
-{
-	MSG msg;
-	while (::PeekMessageW(&msg, nullptr, 0, 0, PM_NOREMOVE|PM_NOYIELD)) {
-		switch (msg.message) {
-		case WM_TIMER:
-			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
-			DispatchTimer(msg.wParam, msg.time);
-			continue;
-		case WM_QUIT:
-			throw EXINT();
-		default:
-			::PeekMessageW(&msg, msg.hwnd, msg.message, msg.message, PM_REMOVE);
-			if (msg.message == WM_KEYDOWN && msg.wParam == VK_ESCAPE)
-				throw EXINT();
-			break;
-		}
-	if (::TranslateAccelerator(msg.hwnd, app.haccel, &msg))
-		continue;
-	::TranslateMessage(&msg);
-	::DispatchMessageW(&msg);
-	}
-}
-
-
-/*
- *	Logging stub overloads that simply forward to the uidb window, which is where the
- *	real logging happens.
- */
-
-
-bool GA::FDepthLog(LGT lgt, int& depth) noexcept
-{
-	return uidb.FDepthLog(lgt, depth);
-}
-
-
-void GA::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
-{
-	uidb.AddLog(lgt, lgf, depth, tag, szData);
-}
-
-
-void GA::ClearLog(void) noexcept
-{
-	uidb.ClearLog();
-}
-
-
-void GA::SetDepthLog(int depth) noexcept
-{
-	uidb.SetDepthLog(depth);
-}
-
-
-void GA::InitLog(int depth) noexcept
-{
-	uidb.InitLog(depth);
-}
-
-
-int GA::DepthLog(void) const noexcept
-{
-	return uidb.DepthLog();
-}

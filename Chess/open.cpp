@@ -35,10 +35,10 @@ void GA::OpenPGNFile(const wchar_t szFile[])
 	istkpgn.SetSzStream(szFile);
 	PROCPGNGA procpgngaSav(*this, new PROCPGNOPEN(*this));
 	Deserialize(istkpgn);
-	uiml.UpdateContSize();
-	uiml.SetSel((int)bdg.vmvGame.size() - 1, spmvHidden);
-	uiml.FMakeVis(bdg.imvCur);
-	Redraw();
+	puiga->uiml.UpdateContSize();
+	puiga->uiml.SetSel((int)bdg.vmvGame.size() - 1, spmvHidden);
+	puiga->uiml.FMakeVis(bdg.imvCur);
+	puiga->Redraw();
 }
 
 
@@ -62,7 +62,7 @@ bool GA::FIsPgnData(const char* pch) const
  */
 ERR GA::Deserialize(ISTKPGN& istkpgn)
 {
-	NewGame(new RULE(0, 0, 0), spmvHidden);
+	NewGame(new RULE);
 	try {
 		ERR err = DeserializeHeaders(istkpgn);
 		if (err != ERR::None)
@@ -70,7 +70,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
 		DeserializeMoveList(istkpgn);
 	}
 	catch (...) {
-		NewGame(new RULE(0, 0, 0), spmvHidden);
+		NewGame(new RULE);
 		throw;
 	}
 	return ERR::None;
@@ -87,7 +87,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
  */
 ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 {
-	NewGame(new RULE(0, 0, 0), spmvHidden);
+	NewGame(new RULE);
 	istkpgn.SetImvCur(0);
 	ERR err;
 	try {
@@ -189,7 +189,7 @@ GotTag:
 ERR GA::DeserializeMoveList(ISTKPGN& istkpgn)
 {
 	while (DeserializeMove(istkpgn) == ERR::None) {
-		PumpMsg();
+		puiga->PumpMsg();
 	}
 	return ERR::None;
 }

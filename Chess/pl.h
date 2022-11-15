@@ -313,7 +313,6 @@ public:
 	virtual void SetLevel(int level) noexcept;
 	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
 
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	void PumpMsg(bool fForce) noexcept;
 

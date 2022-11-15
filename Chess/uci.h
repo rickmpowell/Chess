@@ -14,9 +14,10 @@
 
 #pragma once
 #include "framework.h"
+#include "uiga.h"
 
 
-class GA;
+class UIGA;
 class CMDU;
 
 
@@ -34,12 +35,12 @@ class CMDU;
 class UCI
 {
 public:
-	GA* pga;
+	UIGA* puiga;
 	bool fInherited;
 	HANDLE hfileStdin, hfileStdout;
 	map<string, CMDU*> mpszpcmdu;
 public:
-	UCI(GA* pga);
+	UCI(UIGA* puiga);
 	~UCI(void);
 
 	void ConsolePump(void);

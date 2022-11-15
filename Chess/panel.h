@@ -31,17 +31,14 @@ public:
 	static void DiscardRsrcClass(void);
 
 protected:
-	GA& ga;
+	UIGA& uiga;
 
 public:
-	UIP(GA* pga);
+	UIP(UIGA& uiga);
 	virtual ~UIP(void);
 	virtual void Draw(const RC& rcUpdate);
 	void SetShadow(void);
-	void AdjustUIRcBounds(UI* pui, RC& rc, bool fTop);
-
-	virtual bool FDepthLog(LGT lgt, int& depth) noexcept;
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
+	void AdjustUIRcBounds(UI& ui, RC& rc, bool fTop);
 };
 
 
@@ -122,7 +119,7 @@ protected:
 	const float dxyScrollBarWidth = 12.0f;
 
 public:
-	UIPS(GA* pga);
+	UIPS(UIGA& uiga);
 
 	virtual void Layout(void);
 	void SetView(const RC& rcView);

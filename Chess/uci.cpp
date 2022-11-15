@@ -30,7 +30,7 @@ void UCI::ConsolePump(void)
 		string szLine = SzReadLine();
 		if (FParseAndDispatch(szLine))
 			break;
-		pga->PumpMsg();
+		puiga->PumpMsg();
 	}
 }
 
@@ -74,7 +74,7 @@ void UCI::WriteSz(const string& sz)
 	DWORD cb;
 	string nsz = sz + "\n";
 	::WriteFile(hfileStdout, nsz.c_str(), (DWORD)nsz.length(), &cb, NULL);
-	pga->AddLog(LGT::Data, LGF::Normal, 0, TAG(WszWidenSz(sz)), L"");
+	Log(LGT::Data, LGF::Normal, 0, TAG(WszWidenSz(sz)), L"");
 }
 
 
@@ -102,7 +102,7 @@ string UCI::SzReadLine(void)
 		sz.push_back(ch);
 	}
 
-	pga->AddLog(LGT::Data, LGF::Bold, 0, TAG(WszWidenSz(sz)), L"");
+	Log(LGT::Data, LGF::Bold, 0, TAG(WszWidenSz(sz)), L"");
 	return sz;
 }
 
@@ -182,7 +182,7 @@ public:
 
 	virtual int Execute(string szArg)
 	{
-		uci.pga->NewGame(new RULE, spmvAnimateFast);
+		uci.puiga->NewGame(new RULE, spmvAnimateFast);
 		return 1;
 	}
 };
@@ -250,7 +250,7 @@ public:
 };
 
 
-UCI::UCI(GA* pga) : pga(pga), hfileStdin(NULL), hfileStdout(NULL)
+UCI::UCI(UIGA* puiga) : puiga(puiga), hfileStdin(NULL), hfileStdout(NULL)
 {
 	fInherited = !::AllocConsole();
 	hfileStdin = ::GetStdHandle(STD_INPUT_HANDLE);

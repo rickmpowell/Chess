@@ -104,6 +104,62 @@ public:
 
 /*
  *
+ *	Logging types
+ *
+ */
+
+
+enum class LGT
+{
+	Open,
+	Close,
+	Data,
+	Temp
+};
+
+enum class LGF {
+	Normal,
+	Bold,
+	Italic,
+	BoldItalic
+};
+
+struct ATTR
+{
+	wstring name;
+	wstring val;
+
+	ATTR(const wstring& name, const wstring& val) : name(name), val(val) {
+	}
+};
+
+
+struct TAG
+{
+	wstring sz;
+	map<wstring, wstring> mpnameval;
+
+	TAG(const wchar_t* sz) : sz(wstring(sz)) {
+	}
+
+	TAG(const wstring& sz) : sz(sz) {
+	}
+
+	TAG(const wstring sz, const ATTR& attr) : sz(sz)
+	{
+		mpnameval[attr.name] = attr.val;
+	}
+
+	TAG(const wstring& sz, const ATTR rgattr[], int cattr) : sz(sz)
+	{
+		for (int iattr = 0; iattr < cattr; iattr++)
+			mpnameval[rgattr[iattr].name] = rgattr[iattr].val;
+	}
+};
+
+
+/*
+ *
  *	APP class
  *
  *	Base application class, which simply initiaizes the app and creates the top-level
@@ -112,11 +168,12 @@ public:
  *
  */
 
+class UIGA;
 class GA;
 
 class APP : public D2
 {
-	friend class GA;
+	friend class UIGA;
 
 public:
 	HINSTANCE hinst;
@@ -139,6 +196,7 @@ public:
 	HCURSOR hcurUp;
 	
 	GA* pga;
+	UIGA* puiga;
 	CMDLIST cmdlist;
 
 public:
@@ -179,12 +237,27 @@ private:
 	bool OnKeyDown(int vk);
 	bool OnKeyUp(int vk);
 
+public:
 	TID StartTimer(UINT dtm);
 	void StopTimer(TID tid);
 	void DispatchTimer(TID tid, UINT dtm);
 
+	/*
+	 *	Logging. For now, this just hard-coded to delegate to the debug panel,
+	 *	but this'll need to change
+	 */
+
+	void ClearLog(void) noexcept;
+	void InitLog(int depth) noexcept;
+	inline bool FDepthLog(LGT lgt, int& depth) noexcept;
+	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
+	inline int DepthLog(void) const noexcept;
+	inline void SetDepthLog(int depth) noexcept;
+
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam);
 };
+
+extern APP* papp;
 
 
 /*
@@ -220,3 +293,56 @@ public:
 	void* PGetData(int cf);
 };
 
+
+inline void InitLog(int depth)
+{
+	papp->InitLog(depth);
+}
+
+inline void ClearLog(void)
+{
+	papp->ClearLog();
+}
+
+inline void SetDepthLog(int depth) noexcept
+{
+	papp->SetDepthLog(depth);
+}
+
+inline int DepthLog(void) noexcept
+{
+	return papp->DepthLog();
+}
+
+inline void LogOpen(const TAG& tag, const wstring& szData)
+{
+	int depthLog;
+	if (papp->FDepthLog(LGT::Open, depthLog))
+		papp->AddLog(LGT::Open, LGF::Normal, depthLog, tag, szData);
+}
+
+inline void LogClose(const wstring& szTag, const wstring& szData, LGF lgf)
+{
+	int depthLog;
+	if (papp->FDepthLog(LGT::Close, depthLog))
+		papp->AddLog(LGT::Close, lgf, depthLog, szTag, szData);
+}
+
+inline void LogData(const wstring& szData)
+{
+	int depthLog;
+	if (papp->FDepthLog(LGT::Data, depthLog))
+		papp->AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData);
+}
+
+inline void LogTemp(const wstring& szData) noexcept
+{
+	int depthLog;
+	if (papp->FDepthLog(LGT::Temp, depthLog))
+		papp->AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
+}
+
+inline void Log(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+{
+	papp->AddLog(lgt, lgf, depth, tag, szData);
+}

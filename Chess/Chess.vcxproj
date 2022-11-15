@@ -121,6 +121,7 @@
     <ClInclude Include="uci.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="uibd.h" />
+    <ClInclude Include="uiga.h" />
     <ClInclude Include="xt.h" />
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +140,7 @@
     <ClCompile Include="uci.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="uibd.cpp" />
+    <ClCompile Include="uiga.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Chess.rc" />

@@ -41,14 +41,14 @@ class UIPL : public UI
 
 private:
 	SPINLVL spinlvl;
-	PL* ppl;
+	UIGA& uiga;
 	CPC cpc;
 	bool fChooser;
 	int iinfoplHit;
 	float dyLine;
 
 public:
-	UIPL(UI* puiParent, CPC cpc);
+	UIPL(UI& uiParent, UIGA& uiga, CPC cpc);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
@@ -58,8 +58,6 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	void DrawChooser(const RC& rcUpdate);
 	void DrawChooserItem(const INFOPL& infopl, RC& rc);
-
-	void SetPl(PL* pplNew);
 
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void StartLeftDrag(const PT& pt);
@@ -84,7 +82,7 @@ class GA;
 class UICLOCK : public UI
 {
 protected:
-	GA& ga;
+	UIGA& uiga;
 	CPC cpc;
 	static TX* ptxClock;
 public:
@@ -94,7 +92,7 @@ public:
 	virtual void DiscardRsrc(void);
 
 public:
-	UICLOCK(UIML* puiml, CPC cpc);
+	UICLOCK(UIML& uiml, CPC cpc);
 	virtual SIZ SizLayoutPreferred(void);
 	virtual void Draw(const RC& rcUpdate);
 	void DrawColon(RC& rc, unsigned frac) const;
@@ -116,7 +114,7 @@ public:
 class UIGC : public UI
 {
 protected:
-	GA& ga;
+	UIGA& uiga;
 	BTNIMG btnResign;
 	BTNIMG btnOfferDraw;
 	TX* ptxScore;
@@ -126,7 +124,7 @@ public:
 	virtual void DiscardRsrc(void);
 
 public:
-	UIGC(UIML* puiml);
+	UIGC(UIML& uiml);
 	virtual void Draw(const RC& rcUpdate);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
@@ -159,6 +157,7 @@ class UIML : public UIPS
 	friend class UIPL;
 	friend class UICLOCK;
 	friend class UIGC;
+	friend class UIGA;
 	friend class GA;
 
 	TX* ptxList;
@@ -173,18 +172,16 @@ class UIML : public UIPS
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int64_t imvSel;
-	UIPL* mpcpcpuipl[cpcMax];
-	UICLOCK* mpcpcpuiclock[cpcMax];
+	UIPL uiplWhite, uiplBlack;
+	UICLOCK uiclockWhite, uiclockBlack;
 	UIGC uigc;
 
 public:
-	UIML(GA* pga);
+	UIML(UIGA& uiga);
 	~UIML(void);
 
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
-
-	void SetPl(CPC cpc, PL* ppl);
 
 	void InitGame(void);
 	void EndGame(void);
@@ -211,4 +208,7 @@ public:
 	virtual void LeftDrag(const PT& pt);
 
 	virtual void KeyDown(int vk);
+
+	UIPL& UiplFromCpc(CPC cpc);
+	UICLOCK& UiclockFromCpc(CPC cpc);
 };

@@ -114,8 +114,8 @@ void UIGTM::Draw(const RC& rcUpdate)
  */
 
 
-UITI::UITI(GA* pga) : UIP(pga), uiicon(this, idbSqChessLogo), uilocale(this), uigt(this), uigtm(this),
-		uiplWhite(this, cpcWhite), uiplBlack(this, cpcBlack)
+UITI::UITI(UIGA& uiga) : UIP(uiga), uiicon(this, idbSqChessLogo), uilocale(this), uigt(this), uigtm(this),
+		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack)
 {
 }
 
@@ -157,16 +157,6 @@ void UITI::Draw(const RC& rcUpdate)
 }
 
 
-void UITI::SetPl(CPC cpc, PL* ppl)
-{
-	if (cpc == cpcWhite)
-		uiplWhite.SetPl(ppl);
-	else
-		uiplBlack.SetPl(ppl);
-}
-
-
-
 /*
  *
  *	UIPVTPL
@@ -176,7 +166,8 @@ void UITI::SetPl(CPC cpc, PL* ppl)
  */
 
 
-UIPVTPL::UIPVTPL(UI* puiParent, GPH gph) : UI(puiParent), ppl(nullptr), gph(gph)
+UIPVTPL::UIPVTPL(UI* puiParent, UIGA& uiga, CPC cpc, GPH gph) : UI(puiParent), 
+		uiga(uiga), cpc(cpc), gph(gph)
 {
 }
 
@@ -195,6 +186,7 @@ ColorF CoGradient(ColorF co1, ColorF co2, float pct)
 
 ColorF UIPVTPL::CoFromApcSq(APC apc, SQ sq) const
 {
+	PL* ppl = uiga.ga.PplFromCpc(cpc);
 	EV dev = ppl->EvFromGphApcSq(gph, apc, sq) - ppl->EvBaseApc(apc);
 	if (dev < 0)
 		return ColorF(CoGradient(ColorF::White, ColorF::Red, -(float)dev/100.0f));
@@ -235,12 +227,6 @@ void UIPVTPL::Draw(const RC& rcUpdate)
 }
 
 
-void UIPVTPL::SetPl(PL* ppl)
-{
-	this->ppl = ppl;
-}
-
-
 void UIPVTPL::SetGph(GPH gph)
 {
 	this->gph = gph;
@@ -256,8 +242,10 @@ void UIPVTPL::SetGph(GPH gph)
  */
 
 
-UIPVT::UIPVT(GA* pga) : UIP(pga), 
-	uipvtplOpening(this, gphMidMin), uipvtplMidGame(this, gphMidMid), uipvtplEndGame(this, gphMidMax)
+UIPVT::UIPVT(UIGA& uiga, CPC cpc) : UIP(uiga), cpc(cpc),
+	uipvtplOpening(this, uiga, cpc, gphMidMin), 
+	uipvtplMidGame(this, uiga, cpc, gphMidMid), 
+	uipvtplEndGame(this, uiga, cpc, gphMidMax)
 {
 }
 
@@ -278,14 +266,4 @@ void UIPVT::Layout(void)
 void UIPVT::Draw(const RC& rcUpdate)
 {
 	FillRc(rcUpdate, pbrGridLine);
-}
-
-
-void UIPVT::SetPl(CPC cpc, PL* ppl)
-{
-	if (cpc == cpcWhite) {
-		uipvtplOpening.SetPl(ppl);
-		uipvtplMidGame.SetPl(ppl);
-		uipvtplEndGame.SetPl(ppl);
-	}
 }

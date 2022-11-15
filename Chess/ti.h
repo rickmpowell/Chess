@@ -69,12 +69,10 @@ class UITI : public UIP
 	UILOCALE uilocale;
 	UIGT uigt;
 	UIGTM uigtm;
-	UIPL uiplWhite;
-	UIPL uiplBlack;
+	UIPL uiplWhite, uiplBlack;
 
 public:
-	UITI(GA* pga);
-	void SetPl(CPC cpc, PL* ppl);
+	UITI(UIGA& uiga);
 	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
 };
@@ -92,13 +90,13 @@ public:
 class UIPVTPL : public UI
 {
 private:
-	PL* ppl;
+	UIGA& uiga;
 	GPH gph;
+	CPC cpc;
 	ColorF CoFromApcSq(APC apc, SQ sq) const;
 public:
-	UIPVTPL(UI* puiParent, GPH gph);
+	UIPVTPL(UI* puiParent, UIGA& uiga, CPC cpc, GPH gph);
 	void Draw(const RC& rcUpdate);
-	void SetPl(PL* ppl);
 	void SetGph(GPH gph);
 };
 
@@ -117,11 +115,11 @@ public:
 class UIPVT : public UIP
 {
 private:
+	CPC cpc;
 	UIPVTPL uipvtplOpening, uipvtplMidGame, uipvtplEndGame;
 
 public:
-	UIPVT(GA* pga);
+	UIPVT(UIGA& uiga, CPC cpc);
 	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
-	void SetPl(CPC cpc, PL* ppl);
 };

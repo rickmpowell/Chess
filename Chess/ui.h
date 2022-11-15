@@ -57,61 +57,6 @@ enum class MHT
 };
 
 
-/*
- *
- *	Logging types 
- * 
- */
-
-
-enum class LGT
-{
-	Open,
-	Close,
-	Data,
-	Temp
-};
-
-enum class LGF {
-	Normal,
-	Bold,
-	Italic,
-	BoldItalic
-};
-
-struct ATTR
-{
-	wstring name;
-	wstring val;
-
-	ATTR(const wstring& name, const wstring& val) : name(name), val(val) {
-	}
-};
-
-
-struct TAG
-{
-	wstring sz;
-	map<wstring, wstring> mpnameval;
-
-	TAG(const wchar_t* sz) : sz(wstring(sz)) {
-	}
-
-	TAG(const wstring& sz) : sz(sz) {
-	}
-
-	TAG(const wstring sz, const ATTR& attr) : sz(sz)
-	{
-		mpnameval[attr.name] = attr.val;
-	}
-
-	TAG(const wstring& sz, const ATTR rgattr[], int cattr) : sz(sz)
-	{
-		for (int iattr = 0; iattr < cattr; iattr++)
-			mpnameval[rgattr[iattr].name] = rgattr[iattr].val;
-	}
-};
-
 
 /*
  *
@@ -216,53 +161,6 @@ public:
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Draw(const RC& rcDraw);
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
-
-	virtual bool FDepthLog(LGT lgt, int& depth) noexcept;
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
-
-	inline void XLogOpen(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal) noexcept
-	{
-		int depthLog;
-		if (FDepthLog(LGT::Open, depthLog))
-			AddLog(LGT::Open, lgf, depthLog, tag, szData);
-	}
-
-#define LogOpen(tag, szData) \
-	{ int depthLog; \
-		if (FDepthLog(LGT::Open, depthLog)) \
-			AddLog(LGT::Open, LGF::Normal, depthLog, tag, szData); }
-
-	inline void XLogClose(const TAG& tag, const wstring& szData, LGF lgf = LGF::Normal) noexcept
-	{
-		int depthLog;
-		if (FDepthLog(LGT::Close, depthLog))
-			AddLog(LGT::Close, lgf, depthLog, tag, szData);
-	}
-
-#define LogClose(szTag, szData, lgf) \
-	{ int depthLog; \
-		if (FDepthLog(LGT::Close, depthLog)) \
-			AddLog(LGT::Close, lgf, depthLog, szTag, szData); }
-
-	inline void XLogData(const wstring& szData) noexcept
-	{
-		int depthLog;
-		if (FDepthLog(LGT::Data, depthLog))
-			AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData);
-	}
-
-#define LogData(szData) \
-	{ int depthLog; \
-		if (FDepthLog(LGT::Data, depthLog)) \
-			AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData); }
-
-	inline void LogTemp(const wstring& szData) noexcept
-	{
-		int depthLog;
-		if (FDepthLog(LGT::Temp, depthLog))
-			AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
-	}
-
 
 	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);

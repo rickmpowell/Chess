@@ -7,7 +7,7 @@
  */
 
 #include "debug.h"
-#include "ga.h"
+#include "uiga.h"
 #include "resources/Resource.h"
 
 bool fValidate = true;
@@ -23,13 +23,13 @@ bool fValidate = true;
 
 
 SPINDEPTH::SPINDEPTH(UIBBDBLOG* puiParent) : SPIN(puiParent, cmdLogDepthUp, cmdLogDepthDown), 
-		ga(puiParent->uidb.ga)
+		uiga(puiParent->uidb.uiga)
 {
 }
 
 wstring SPINDEPTH::SzValue(void) const
 {
-	return to_wstring(ga.uidb.DepthLog());
+	return to_wstring(uiga.uidb.DepthLog());
 }
 
 
@@ -89,7 +89,7 @@ void UIBBDBLOG::Layout(void)
  */
 
 
-UIDB::UIDB(GA* pga) : UIPS(pga), uibbdb(this), uibbdblog(this), 
+UIDB::UIDB(UIGA& uiga) : UIPS(uiga), uibbdb(this), uibbdblog(this), 
 		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyLine(12.0f),
 		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
 {
@@ -140,14 +140,14 @@ void UIDB::Layout(void)
 	RC rc = RcInterior();
 	RC rcView = rc;
 	rc.bottom = rc.top;
-	AdjustUIRcBounds(&uibbdb, rc, true);
+	AdjustUIRcBounds(uibbdb, rc, true);
 	rcView.top = rc.bottom;
 
 	/* positon bottom items */
 	
 	rc = RcInterior();
 	rc.top = rc.bottom;
-	AdjustUIRcBounds(&uibbdblog, rc, false);
+	AdjustUIRcBounds(uibbdblog, rc, false);
 	rcView.bottom = rc.top;
 
 	/* move list content is whatever is left */
@@ -415,7 +415,7 @@ void UIDB::EnableLogFile(bool fEnable)
 		posLog = nullptr;
 	}
 	else {
-		wstring szAppData = ga.app.SzAppDataPath();
+		wstring szAppData = uiga.app.SzAppDataPath();
 		posLog = new ofstream(szAppData + L"\\sqchess.log");
 	}
 }

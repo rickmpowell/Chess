@@ -83,7 +83,7 @@ void UIP::SetShadow(void)
  *
  *	The screen panel constructor.
  */
-UIP::UIP(GA* pga) : UI(pga), ga(*pga)
+UIP::UIP(UIGA& uiga) : UI(&uiga), uiga(uiga)
 {
 }
 
@@ -115,11 +115,11 @@ void UIP::Draw(const RC& rcUpdate)
  *	supplied, depending on fTop. We ask the child for its preferred height by calling
  *	SizLayoutPreferred.
  */
-void UIP::AdjustUIRcBounds(UI* pui, RC& rc, bool fTop)
+void UIP::AdjustUIRcBounds(UI& ui, RC& rc, bool fTop)
 {
-	if (pui == nullptr || !pui->FVisible())
+	if (!ui.FVisible())
 		return;
-	SIZ siz = pui->SizLayoutPreferred();
+	SIZ siz = ui.SizLayoutPreferred();
 	assert(siz.height > 0.0f);
 	if (fTop) {
 		rc.top = rc.bottom;
@@ -129,36 +129,11 @@ void UIP::AdjustUIRcBounds(UI* pui, RC& rc, bool fTop)
 		rc.bottom = rc.top;
 		rc.top = rc.bottom - siz.height;
 	}
-	pui->SetBounds(rc);
+	ui.SetBounds(rc);
 	if (fTop)
 		rc.bottom++;
 	else
 		rc.top--;
-}
-
-
-/*	UIP::FDepthLog
- *
- *	Logging helper, which adjusts the depth of our tree-structured log and returns true 
- *	if the caller should continue to actually log the data. This is used as an optimization
- *	so that we don't bother to actually construct the logging data if we're not going
- *	to actually save the data in the log (the user has control over logging depth).
- */
-bool UIP::FDepthLog(LGT lgt, int& depth) noexcept
-{
-	return ga.uidb.FDepthLog(lgt, depth);
-}
-
-
-/*	UIP::AddLog
- *
- *	The point where we actually log the data to the log. We have a tree-structured log,
- *	with open/close tags for creating depth. Our structure is equivalent to XML, with
- *	attributes on the open tag. 
- */
-void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
-{
-	ga.uidb.AddLog(lgt, lgf, depth, tag, szData);
 }
 
 
@@ -179,7 +154,7 @@ void UIP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szD
  */
 
 
-UIPS::UIPS(GA* pga) : UIP(pga), rcView(0, 0, 0, 0), rcCont(0, 0, 0, 0), sbarVert(this)
+UIPS::UIPS(UIGA& uiga) : UIP(uiga), rcView(0, 0, 0, 0), rcCont(0, 0, 0, 0), sbarVert(this)
 {
 }
 

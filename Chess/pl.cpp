@@ -67,9 +67,9 @@ wstring SzPercent(uint64_t wNum, uint64_t wDen)
  */
 void PL::ReceiveMv(MV mv, SPMV spmv)
 {
-	if (!ga.fInPlay) {
+	if (!ga.puiga->fInPlay) {
 		ga.MakeMv(mv, spmv);
-		ga.Play();
+		ga.puiga->Play();
 	}
 	else {
 		mvNext = mv;
@@ -88,30 +88,6 @@ EV PL::EvBaseApc(APC apc) const noexcept
 {
 	EV mpapcev[apcMax] = { 0, 100, 275, 300, 500, 900, 200 };
 	return mpapcev[apc];
-}
-
-
-bool PL::FDepthLog(LGT lgt, int& depth) noexcept
-{
-	return ga.FDepthLog(lgt, depth);
-}
-
-
-void PL::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
-{
-	ga.AddLog(lgt, lgf, depth, tag, szData);
-}
-
-
-int PL::DepthLog(void) const noexcept
-{
-	return ga.DepthLog();
-}
-
-
-void PL::SetDepthLog(int depthNew) noexcept
-{
-	ga.SetDepthLog(depthNew);
 }
 
 
@@ -183,13 +159,6 @@ PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0),
 	InitWeightTables();
 }
  
-
-void PLAI::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
-{
-	ga.AddLog(lgt, lgf, depth, tag, szData);
-	PumpMsg(true);
-}
-
 
 /*	PLAI::FHasLevel
  *
@@ -273,6 +242,7 @@ protected:
 	const BDG& bdg;
 	wstring szData;
 	LGF lgf;
+
 public:
 	LOGSEARCH(PL& pl, const BDG& bdg) : pl(pl), bdg(bdg), szData(L""), lgf(LGF::Normal)
 	{
@@ -283,15 +253,6 @@ public:
 		szData = szNew;
 		lgf = lgfNew;
 	}
-
-	inline void SetDepthLog(int depth) { pl.SetDepthLog(depth); }
-	inline int DepthLog(void) const { return pl.DepthLog(); }
-	inline bool FDepthLog(LGT lgt, int& depth) { return pl.FDepthLog(lgt, depth); }
-	inline void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
-	{
-		pl.AddLog(lgt, lgf, depth, tag, szData);
-	}
-
 };
 
 class LOGEMV : public LOGSEARCH, public AIBREAK
@@ -894,7 +855,7 @@ void PLAI::PumpMsg(bool fForce) noexcept
 		cYield = -1;
 	if (++cYield % dcYield == 0) {
 		try {
-			ga.PumpMsg();
+			ga.puiga->PumpMsg();
 		}
 		catch (...) {
 			fAbort = true;
@@ -1286,7 +1247,7 @@ MV PLHUMAN::MvGetNext(SPMV& spmv)
 {
 	mvNext = MV();
 	do
-		ga.PumpMsg();
+		ga.puiga->PumpMsg();
 	while (mvNext.fIsNil());
 	MV mv = mvNext;
 	spmv = spmvNext;

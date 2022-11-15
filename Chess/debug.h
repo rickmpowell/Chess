@@ -25,7 +25,7 @@ class UIBBDBLOG;
 
 class SPINDEPTH : public SPIN
 {
-	GA& ga;
+	UIGA& uiga;
 public:
 	SPINDEPTH(UIBBDBLOG* puiParent);
 	virtual wstring SzValue(void) const;
@@ -113,7 +113,7 @@ class UIDB : public UIPS
 	int depthShowDefault;
 	ofstream* posLog;
 public:
-	UIDB(GA* pga);
+	UIDB(UIGA& uiga);
 	~UIDB(void);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
@@ -126,8 +126,8 @@ public:
 	virtual float DyLine(void) const;
 	size_t IlgentryFromY(int y) const;
 
-	virtual bool FDepthLog(LGT lgt, int& depth) noexcept; 
-	virtual void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
+	bool FDepthLog(LGT lgt, int& depth) noexcept; 
+	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
 	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const noexcept;
 	void InitLog(int depth) noexcept;
 	void ClearLog(void) noexcept;

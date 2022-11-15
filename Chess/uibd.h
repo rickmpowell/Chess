@@ -68,7 +68,7 @@ public:
 	vector<ANO> vano;	// annotations
 
 public:
-	UIBD(GA* pga);
+	UIBD(UIGA& uiga);
 	~UIBD(void);
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);

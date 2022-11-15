@@ -122,7 +122,7 @@ void UIBD::DiscardRsrc(void)
  *
  *	Constructor for the board screen panel.
  */
-UIBD::UIBD(GA* pga) : UIP(pga), 
+UIBD::UIBD(UIGA& uiga) : UIP(uiga), 
 		pbmpPieces(nullptr), pgeomCross(nullptr), pgeomArrowHead(nullptr), ptxLabel(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
@@ -186,7 +186,7 @@ void UIBD::Layout(void)
  */
 void UIBD::InitGame(void)
 {
-	ga.bdg.GenVemv(vemvDrag, ggLegal);
+	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
 }
 
 
@@ -207,9 +207,9 @@ FoundMove:
 
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
-	ga.bdg.MakeMv(mv);
-	ga.bdg.GenVemv(vemvDrag, ggLegal);
-	ga.bdg.SetGameOver(vemvDrag, *ga.prule);
+	uiga.ga.bdg.MakeMv(mv);
+	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
+	uiga.ga.bdg.SetGameOver(vemvDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();
 }
@@ -217,13 +217,13 @@ FoundMove:
 
 void UIBD::UndoMv(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && ga.bdg.imvCur >= 0) {
-		MV mv = ga.bdg.vmvGame[ga.bdg.imvCur];
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCur >= 0) {
+		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCur];
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
-	ga.bdg.UndoMv();
-	ga.bdg.GenVemv(vemvDrag, ggLegal);
-	ga.bdg.SetGs(gsPlaying);
+	uiga.ga.bdg.UndoMv();
+	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
+	uiga.ga.bdg.SetGs(gsPlaying);
 	if (spmv != spmvHidden)
 		Redraw();
 }
@@ -231,13 +231,13 @@ void UIBD::UndoMv(SPMV spmv)
 
 void UIBD::RedoMv(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && ga.bdg.imvCur < (int)ga.bdg.vmvGame.size()) {
-		MV mv = ga.bdg.vmvGame[ga.bdg.imvCur+1];
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCur < (int)uiga.ga.bdg.vmvGame.size()) {
+		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCur+1];
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
-	ga.bdg.RedoMv();
-	ga.bdg.GenVemv(vemvDrag, ggLegal);
-	ga.bdg.SetGameOver(vemvDrag, *ga.prule);
+	uiga.ga.bdg.RedoMv();
+	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
+	uiga.ga.bdg.SetGameOver(vemvDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();
 }
@@ -384,9 +384,9 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
  */
 void UIBD::DrawGameState(void)
 {
-	if (ga.bdg.gs == gsPlaying)
+	if (uiga.ga.bdg.gs == gsPlaying)
 		return;
-	switch (ga.bdg.gs) {
+	switch (uiga.ga.bdg.gs) {
 		/* TODO: show checkmate */
 	case gsWhiteCheckMated: break;
 	case gsBlackCheckMated: break;
@@ -421,7 +421,7 @@ RC UIBD::RcFromSq(SQ sq) const
  */
 bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
-	if (sqHover.fIsNil() || ga.bdg.gs != gsPlaying)
+	if (sqHover.fIsNil() || uiga.ga.bdg.gs != gsPlaying)
 		return false;
 	for (EMV emvDrag : vemvDrag) {
 		if (emvDrag.mv.sqFrom() == sqHover && emvDrag.mv.sqTo() == sq) {
@@ -445,7 +445,7 @@ void UIBD::DrawHoverMv(MV mv)
 	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
 	RC rc = RcFromSq(mv.sqTo());
-	if (!ga.bdg.FMvIsCapture(mv)) {
+	if (!uiga.ga.bdg.FMvIsCapture(mv)) {
 		/* moving to an empty square - draw a circle */
 		ELL ell(rc.PtCenter(), PT(dxySquare / 5, dxySquare / 5));
 		FillEll(ell, pbrBlack);
@@ -474,7 +474,7 @@ void UIBD::DrawPieceSq(SQ sq)
 	if (sq.fIsNil())
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-	DrawPc(RcFromSq(sq), opacity, ga.bdg.CpcFromSq(sq), ga.bdg.ApcFromSq(sq));
+	DrawPc(RcFromSq(sq), opacity, uiga.ga.bdg.CpcFromSq(sq), uiga.ga.bdg.ApcFromSq(sq));
 }
 
 
@@ -487,7 +487,7 @@ void UIBD::DrawPieceSq(SQ sq)
 void UIBD::DrawDragPc(const RC& rc)
 {
 	assert(!sqDragInit.fIsNil());
-	DrawPc(rc, 1.0f, ga.bdg.CpcFromSq(sqDragInit), ga.bdg.ApcFromSq(sqDragInit));
+	DrawPc(rc, 1.0f, uiga.ga.bdg.CpcFromSq(sqDragInit), uiga.ga.bdg.ApcFromSq(sqDragInit));
 }
 
 
@@ -593,11 +593,11 @@ void UIBD::FlipBoard(CPC cpcNew)
 		pui->Show(false);
 
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
-		ga.Redraw();
+		uiga.Redraw();
 	angle = 0.0f;
 	cpcPointOfView = cpcNew;
-	ga.Layout();
-	ga.Redraw();
+	uiga.Layout();
+	uiga.Redraw();
 
 	for (UI* pui : vpuiChild)
 		pui->Show(true);
@@ -628,9 +628,9 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 	else
 		file = fileMax - 1 - file;
 	*psq = SQ(rank, file);
-	if (ga.bdg.FIsEmpty(*psq))
+	if (uiga.ga.bdg.FIsEmpty(*psq))
 		return HTBD::Empty;
-	if (ga.bdg.CpcFromSq(*psq) != ga.bdg.cpcToMove)
+	if (uiga.ga.bdg.CpcFromSq(*psq) != uiga.ga.bdg.cpcToMove)
 		return HTBD::OpponentPc;
 
 	if (FMoveablePc(*psq))
@@ -647,7 +647,7 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
  */
 bool UIBD::FMoveablePc(SQ sq) const
 {
-	assert(ga.bdg.CpcFromSq(sq) == ga.bdg.cpcToMove);
+	assert(uiga.ga.bdg.CpcFromSq(sq) == uiga.ga.bdg.cpcToMove);
 	for (EMV emvDrag : vemvDrag)
 		if (emvDrag.mv.sqFrom() == sq)
 			return true;
@@ -691,7 +691,7 @@ void UIBD::EndLeftDrag(const PT& pt)
 	if (!sqTo.fIsNil()) {
 		for (EMV emv : vemvDrag) {
 			if (emv.mv.sqFrom() == sqFrom && emv.mv.sqTo() == sqTo) {
-				ga.PplFromCpc(ga.bdg.cpcToMove)->ReceiveMv(emv.mv, spmvFast);
+				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(emv.mv, spmvFast);
 				goto Done;
 			}
 		}
@@ -741,15 +741,15 @@ void UIBD::MouseHover(const PT& pt, MHT mht)
 	HiliteLegalMoves(htbd == HTBD::MoveablePc ? sq : SQ());
 	switch (htbd) {
 	case HTBD::MoveablePc:
-		::SetCursor(ga.app.hcurHand);
+		::SetCursor(uiga.app.hcurHand);
 		break;
 	case HTBD::Empty:
 	case HTBD::OpponentPc:
 	case HTBD::UnmoveablePc:
-		::SetCursor(ga.app.hcurArrow);
+		::SetCursor(uiga.app.hcurArrow);
 		break;
 	default:
-		::SetCursor(ga.app.hcurArrow);
+		::SetCursor(uiga.app.hcurArrow);
 		break;
 	}
 }
