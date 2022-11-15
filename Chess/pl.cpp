@@ -68,7 +68,7 @@ wstring SzPercent(uint64_t wNum, uint64_t wDen)
 void PL::ReceiveMv(MV mv, SPMV spmv)
 {
 	if (!ga.puiga->fInPlay) {
-		ga.MakeMv(mv, spmv);
+		ga.puiga->MakeMv(mv, spmv);
 		ga.puiga->Play();
 	}
 	else {

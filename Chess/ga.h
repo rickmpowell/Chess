@@ -155,12 +155,12 @@ public:
 	void NewGame(RULE* prule);
 	void InitGame(const wchar_t* szFEN);
 	void SetRule(RULE* prule);
-	void EndGame(SPMV spmv);
+	void EndGame(void);
 
-	void MakeMv(MV mv, SPMV spmv);
-	void UndoMv(SPMV spmv);
-	void RedoMv(SPMV spmv);
-	void MoveToImv(int64_t imv, SPMV spmv);
+	void MakeMv(MV mv);
+	void UndoMv(void);
+	void RedoMv(void);
+	void MoveToImv(int64_t imv);
 	void GenVemv(VEMV& vemv);
 
 	/*

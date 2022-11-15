@@ -833,7 +833,7 @@ void UIML::StartLeftDrag(const PT& pt)
 	if (html != HTML::List)
 		return;
 	SetSel(imv, spmvFast);
-	uiga.ga.MoveToImv(imv, spmvAnimate);
+	uiga.MoveToImv(imv, spmvAnimate);
 }
 
 void UIML::EndLeftDrag(const PT& pt)
@@ -850,23 +850,23 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur - 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCur - 1, spmvAnimate);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur + 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCur + 1, spmvAnimate);
 		break;
 	case VK_HOME:
-		uiga.ga.MoveToImv(0, spmvAnimate);
+		uiga.MoveToImv(0, spmvAnimate);
 		break;
 	case VK_END:
-		uiga.ga.MoveToImv((int)uiga.ga.bdg.vmvGame.size() - 1, spmvAnimate);
+		uiga.MoveToImv((int)uiga.ga.bdg.vmvGame.size() - 1, spmvAnimate);
 		break;
 	case VK_PRIOR:
-		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur - 5 * 2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCur - 5 * 2, spmvAnimate);
 		break;
 	case VK_NEXT:
-		uiga.ga.MoveToImv(uiga.ga.bdg.imvCur + 5*2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCur + 5*2, spmvAnimate);
 		break;
 	default:
 		break;

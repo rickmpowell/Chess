@@ -619,7 +619,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->ga.UndoMv(spmvAnimate);
+        app.puiga->UndoMv(spmvAnimate);
         return 1;
     }
 
@@ -646,7 +646,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->ga.RedoMv(spmvAnimate);
+        app.puiga->RedoMv(spmvAnimate);
         return 1;
     }
 
@@ -947,7 +947,7 @@ public:
             MV mv = app.puiga->ga.PplToMove()->MvGetNext(spmv);
             if (mv.fIsNil())
                 break;
-            app.pga->MakeMv(mv, spmvFast);
+            app.puiga->MakeMv(mv, spmvFast);
         }
 
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();

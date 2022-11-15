@@ -364,6 +364,8 @@ public:
  *
  *	TESTUNDO
  * 
+ *	Undo test. Reads a PGN file and plays and undoes every game in the file.
+ * 
  */
 
 
@@ -421,12 +423,12 @@ public:
 	{
 		while (uiga.ga.bdg.imvCur >= 0) {
 			BDG bdgInit = uiga.ga.bdg;
-			uiga.ga.UndoMv(spmvHidden);
-			uiga.ga.RedoMv(spmvHidden);
+			uiga.ga.UndoMv();
+			uiga.ga.RedoMv();
 			assert(uiga.ga.bdg == bdgInit);
 			if (uiga.ga.bdg != bdgInit)
 				throw EXFAILTEST();
-			uiga.ga.UndoMv(spmvHidden);
+			uiga.ga.UndoMv();
 		}
 	}
 };
@@ -441,12 +443,12 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
 {
 	BDG bdgInit = ga.bdg;
-	ga.MakeMv(mv, spmvHidden);
+	ga.MakeMv(mv);
 	BDG bdgNew = ga.bdg;
-	ga.UndoMv(spmvHidden);
+	ga.UndoMv();
 	if (bdgInit != ga.bdg)
 		throw EXFAILTEST();
-	ga.RedoMv(spmvHidden);
+	ga.RedoMv();
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
 	return ERR::None;

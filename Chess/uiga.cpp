@@ -259,7 +259,7 @@ void UIGA::TickTimer(TID tid, UINT tmCur)
 	if (dtm > mpcpctmClock[cpcToMove]) {
 		dtm = mpcpctmClock[cpcToMove];
 		ga.bdg.SetGs(cpcToMove == cpcWhite ? gsWhiteTimedOut : gsBlackTimedOut);
-		ga.EndGame(spmvAnimate);
+		EndGame(spmvAnimate);
 	}
 	mpcpctmClock[cpcToMove] -= dtm;
 	tmLast = tmCur;
@@ -284,6 +284,14 @@ void UIGA::InitGame(const wchar_t* szFEN, SPMV spmv)
 	SetFocus(&uiml);
 }
 
+void UIGA::EndGame(SPMV spmv)
+{
+	if (ga.prule->TmGame(cpcWhite))
+		app.StopTimer(tidClock);
+
+	if (spmv != spmvHidden)
+		uiml.EndGame();
+}
 
 void UIGA::InitClocks(void)
 {
@@ -335,6 +343,66 @@ void UIGA::SwitchClock(DWORD tmCur)
 }
 
 
+void UIGA::MakeMv(MV mv, SPMV spmvMove)
+{
+	DWORD tm = app.TmMessage();
+	SwitchClock(tm == 0 ? 1 : tm);
+	uibd.MakeMv(mv, spmvMove);
+	if (ga.bdg.gs != gsPlaying)
+		EndGame(spmvMove);
+	if (spmvMove != spmvHidden) {
+		uiml.UpdateContSize();
+		uiml.SetSel(ga.bdg.imvCur, spmvMove);
+	}
+}
+
+
+/*	UIGA::UndoMv
+ *
+ *	Moves the current move pointer back one through the move list and undoes
+ *	the last move on the game board.
+ */
+void UIGA::UndoMv(SPMV spmv)
+{
+	MoveToImv(ga.bdg.imvCur - 1, spmv);
+}
+
+
+/*	UIGA::RedoMv
+ *
+ *	Moves the current move pointer forward through the move list and remakes
+ *	the next move on the game board.
+ */
+void UIGA::RedoMv(SPMV spmv)
+{
+	MoveToImv(ga.bdg.imvCur + 1, spmv);
+}
+
+/*	GA::MoveToImv
+ *
+ *	Move to the given move number in the move list, animating the board as in the
+ *	current game speed mode. imv can be -1 to go to the start of the game, up to
+ *	the last move the game.
+ */
+void UIGA::MoveToImv(int64_t imv, SPMV spmv)
+{
+	imv = clamp(imv, (int64_t)-1, (int64_t)ga.bdg.vmvGame.size() - 1);
+	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvCur - imv) > 1) {
+		spmv = spmvAnimateFast;
+		if (abs(ga.bdg.imvCur - imv) > 5)
+			spmv = spmvAnimateVeryFast;
+	}
+	while (ga.bdg.imvCur > imv)
+		uibd.UndoMv(spmv);
+	while (ga.bdg.imvCur < imv)
+		uibd.RedoMv(spmv);
+	if (spmv != spmvHidden)
+		uiml.Layout();	// in case game over state changed
+	uiml.SetSel(ga.bdg.imvCur, spmv);
+}
+
+
+
 /*	UIGA::Play
  *
  *	Starts playing the game with the current game state.
@@ -359,7 +427,7 @@ int UIGA::Play(void)
 			MV mv = ga.PplToMove()->MvGetNext(spmv);
 			if (mv.fIsNil())
 				throw EXINT();
-			ga.MakeMv(mv, spmv);
+			MakeMv(mv, spmv);
 			ga.SavePGNFile(papp->SzAppDataPath() + L"\\current.pgn");
 		} while (ga.bdg.gs == gsPlaying);
 	}

@@ -79,28 +79,16 @@ void GA::InitGame(const wchar_t* szFEN)
 }
 
 
-void GA::EndGame(SPMV spmv)
+void GA::EndGame(void)
 {
-	if (prule->TmGame(cpcWhite))
-		puiga->app.StopTimer(puiga->tidClock);
-
-	if (spmv != spmvHidden) {
-		puiga->uiml.EndGame();
-	}
 }
 
 
-void GA::MakeMv(MV mv, SPMV spmvMove)
+void GA::MakeMv(MV mv)
 {
-	DWORD tm = puiga->app.TmMessage();
-	puiga->SwitchClock(tm == 0 ? 1 : tm);
-	puiga->uibd.MakeMv(mv, spmvMove);
+	bdg.MakeMv(mv);
 	if (bdg.gs != gsPlaying)
-		EndGame(spmvMove);
-	if (spmvMove != spmvHidden) {
-		puiga->uiml.UpdateContSize();
-		puiga->uiml.SetSel(bdg.imvCur, spmvMove);
-	}
+		EndGame();
 }
 
 
@@ -109,9 +97,9 @@ void GA::MakeMv(MV mv, SPMV spmvMove)
  *	Moves the current move pointer back one through the move list and undoes
  *	the last move on the game board.
  */
-void GA::UndoMv(SPMV spmv)
+void GA::UndoMv(void)
 {
-	MoveToImv(bdg.imvCur - 1, spmv);
+	MoveToImv(bdg.imvCur - 1);
 }
 
 
@@ -120,9 +108,9 @@ void GA::UndoMv(SPMV spmv)
  *	Moves the current move pointer forward through the move list and remakes
  *	the next move on the game board.
  */
-void GA::RedoMv(SPMV spmv)
+void GA::RedoMv(void)
 {
-	MoveToImv(bdg.imvCur + 1, spmv);
+	MoveToImv(bdg.imvCur + 1);
 }
 
 
@@ -132,21 +120,13 @@ void GA::RedoMv(SPMV spmv)
  *	current game speed mode. imv can be -1 to go to the start of the game, up to
  *	the last move the game.
  */
-void GA::MoveToImv(int64_t imv, SPMV spmv)
+void GA::MoveToImv(int64_t imv)
 {
 	imv = clamp(imv, (int64_t)-1, (int64_t)bdg.vmvGame.size() - 1);
-	if (FSpmvAnimate(spmv) && abs(bdg.imvCur - imv) > 1) {
-		spmv = spmvAnimateFast;
-		if (abs(bdg.imvCur - imv) > 5)
-			spmv = spmvAnimateVeryFast;
-	}
 	while (bdg.imvCur > imv)
-		puiga->uibd.UndoMv(spmv);
+		bdg.UndoMv();
 	while (bdg.imvCur < imv)
-		puiga->uibd.RedoMv(spmv);
-	if (spmv != spmvHidden)
-		puiga->uiml.Layout();	// in case game over state changed
-	puiga->uiml.SetSel(bdg.imvCur, spmv);
+		bdg.RedoMv();
 }
 
 

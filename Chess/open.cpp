@@ -220,12 +220,13 @@ ERR GA::DeserializeMove(ISTKPGN& istkpgn)
 				 * think the triple-dot thing should only be legal as the first 
 				 * move in the move list.
 				 */
-				int cchPeriod = 0;
-				do {
+				int cchPeriod;
+				for (cchPeriod = 0; ; cchPeriod++) {
 					delete ptk;
 					ptk = istkpgn.PtkNext();
-					cchPeriod++;
-				} while ((int)*ptk == tkpgnPeriod);
+					if ((int)*ptk != tkpgnPeriod)
+						break;
+				}
 				istkpgn.SetImvCur(2 * (imv - 1) + (cchPeriod >= 3 ? 1 : 0));
 			}
 			break;
@@ -344,7 +345,7 @@ PROCPGN::PROCPGN(GA& ga) : ga(ga)
 
 ERR PROCPGNOPEN::ProcessMv(MV mv)
 {
-	ga.MakeMv(mv, spmvHidden);
+	ga.MakeMv(mv);
 	return ERR::None;
 }
 

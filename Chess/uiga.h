@@ -117,6 +117,12 @@ public:
 
 	void NewGame(RULE* prule, SPMV spmv);
 	void InitGame(const wchar_t* szFEN, SPMV spmv);
+	void EndGame(SPMV spmv);
+	void MakeMv(MV mv, SPMV spmvMove);
+	void UndoMv(SPMV spmv);
+	void RedoMv(SPMV spmv);
+	void MoveToImv(int64_t imv, SPMV spmv);
+
 	void InitClocks(void);
 	void StartClocks(void);
 	void SwitchClock(DWORD tmCur);
