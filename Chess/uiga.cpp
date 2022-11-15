@@ -275,14 +275,20 @@ void UIGA::NewGame(RULE* prule, SPMV spmv)
 
 void UIGA::InitGame(const wchar_t* szFEN, SPMV spmv)
 {
-	spmvShow = spmv;
-
 	ga.InitGame(szFEN);
+	InitUI(spmv);
+}
+
+
+void UIGA::InitUI(SPMV spmv)
+{
+	spmvShow = spmv;
 	InitClocks();
 	uibd.InitGame();
 	uiml.InitGame();
 	SetFocus(&uiml);
 }
+
 
 void UIGA::EndGame(SPMV spmv)
 {

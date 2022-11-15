@@ -41,6 +41,17 @@ GA::~GA(void)
 }
 
 
+/*	GA::SetUiga
+ *
+ *	Attaches the user-interface part of the game to the virtual game
+ */
+void GA::SetUiga(UIGA* puiga)
+{
+	this->puiga = puiga;
+	puiga->InitUI(spmvAnimate);
+}
+
+
 /*	GA::SetPl
  *
  *	Sets the player of the given color. Takes ownership of the PL, which

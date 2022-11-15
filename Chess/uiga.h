@@ -117,6 +117,7 @@ public:
 
 	void NewGame(RULE* prule, SPMV spmv);
 	void InitGame(const wchar_t* szFEN, SPMV spmv);
+	void InitUI(SPMV spmv);
 	void EndGame(SPMV spmv);
 	void MakeMv(MV mv, SPMV spmvMove);
 	void UndoMv(SPMV spmv);

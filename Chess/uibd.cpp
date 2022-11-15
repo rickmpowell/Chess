@@ -15,7 +15,8 @@
  *
  *	UIBD class
  *
- *	Screen panel that displays the board
+ *	Screen panel that displays the board and handles the mouse and keyaboard
+ *	interface for it.
  *
  */
 
@@ -67,10 +68,7 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Black), &pbrBlack);
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
 	pdc->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
-
-
 }
-
 
 
 /*	UIBD::DiscardRsrcClass
@@ -84,7 +82,6 @@ void UIBD::DiscardRsrcClass(void)
 	SafeRelease(&pbrBlack);
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
-
 }
 
 void UIBD::CreateRsrc(void)
@@ -203,8 +200,8 @@ void UIBD::MakeMv(MV mv, SPMV spmv)
 			goto FoundMove;
 	}
 	throw 1;
-FoundMove:
 
+FoundMove:
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	uiga.ga.bdg.MakeMv(mv);

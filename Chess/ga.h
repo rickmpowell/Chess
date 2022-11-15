@@ -127,7 +127,7 @@ public:
 public:
 	GA(void);
 	~GA(void);
-	void SetUiga(UIGA* puiga) { this->puiga = puiga; }
+	void SetUiga(UIGA* puiga);
 
 	/*
 	 *	Players
