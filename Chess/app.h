@@ -109,19 +109,18 @@ public:
  */
 
 
-enum class LGT
-{
-	Open,
-	Close,
-	Data,
-	Temp
+enum LGT : int {
+	lgtOpen,
+	lgtClose,
+	lgtData,
+	lgtTemp
 };
 
-enum class LGF {
-	Normal,
-	Bold,
-	Italic,
-	BoldItalic
+enum LGF : int {
+	lgfNormal,
+	lgfBold,
+	lgfItalic,
+	lgfBoldItalic
 };
 
 struct ATTR
@@ -314,33 +313,20 @@ inline int DepthLog(void) noexcept
 	return papp->DepthLog();
 }
 
-inline void LogOpen(const TAG& tag, const wstring& szData)
-{
-	int depthLog;
-	if (papp->FDepthLog(LGT::Open, depthLog))
-		papp->AddLog(LGT::Open, LGF::Normal, depthLog, tag, szData);
-}
+/* these are done with macros to avoid computation of the string arguments if 
+   we're not actually logging */
 
-inline void LogClose(const wstring& szTag, const wstring& szData, LGF lgf)
-{
-	int depthLog;
-	if (papp->FDepthLog(LGT::Close, depthLog))
-		papp->AddLog(LGT::Close, lgf, depthLog, szTag, szData);
-}
-
-inline void LogData(const wstring& szData)
-{
-	int depthLog;
-	if (papp->FDepthLog(LGT::Data, depthLog))
-		papp->AddLog(LGT::Data, LGF::Normal, depthLog, L"", szData);
-}
-
-inline void LogTemp(const wstring& szData) noexcept
-{
-	int depthLog;
-	if (papp->FDepthLog(LGT::Temp, depthLog))
-		papp->AddLog(LGT::Temp, LGF::Normal, depthLog, L"", szData);
-}
+#define LogHelper(lgt, lgf, tag, szData) \
+	{ \
+		int depthLog; \
+		if (papp->FDepthLog(lgt, depthLog)) \
+			papp->AddLog(lgt, lgf, depthLog, tag, szData); \
+	}
+	
+#define LogOpen(tag, szData, lgf) LogHelper(lgtOpen, lgf, tag, szData)
+#define LogClose(tag, szData, lgf) LogHelper(lgtClose, lgf, tag, szData)
+#define LogData(szData) LogHelper(lgtData, lgfNormal, L"", szData)
+#define LogTemp(szData) LogHelper(lgtTemp, lgfNormal, L"", szData)
 
 inline void Log(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
 {

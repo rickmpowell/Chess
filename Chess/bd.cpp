@@ -1430,11 +1430,13 @@ wstring SzFromEv(EV ev)
 wstring SzFromSct(SCT sct)
 {
 	switch (sct) {
-	case SCT::Eval:
+	case sctEvOther:
 		return L"EV";
-	case SCT::XTable:
+	case sctEvCapture:
+		return L"EVCAP";
+	case sctXTable:
 		return L"XT";
-	case SCT::PrincipalVar:
+	case sctPrincipalVar:
 		return L"PV";
 	default:
 		return L"";

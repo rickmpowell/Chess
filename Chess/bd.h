@@ -306,11 +306,26 @@ inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 
 
 /* score types, used during move enumeration in the ai search */
-enum class SCT {
-	Eval = 0,
-	XTable = 1,
-	PrincipalVar = 2
+enum SCT : int {
+	sctNil = 255,
+	sctPrincipalVar = 0,
+	sctXTable = 1,
+	sctEvCapture = 2,
+	sctEvOther = 3
 };
+
+inline SCT& operator++(SCT& sct)
+{
+	sct = static_cast<SCT>(sct + 1);
+	return sct;
+}
+
+inline SCT operator++(SCT& sct, int)
+{
+	SCT sctT = sct;
+	sct = static_cast<SCT>(sct + 1);
+	return sctT;
+}
 
 wstring SzFromSct(SCT sct);
 

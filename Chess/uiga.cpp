@@ -423,9 +423,11 @@ int UIGA::Play(void)
 	} inplay(*this);
 
 	InitLog(2);
-	LogOpen(L"Game", L"");
+	LogOpen(L"Game", L"", lgfBold);
 	ga.bdg.SetGs(gsPlaying);
 	StartClocks();
+	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++)
+		ga.mpcpcppl[cpc]->StartGame();
 
 	try {
 		do {
@@ -438,11 +440,11 @@ int UIGA::Play(void)
 		} while (ga.bdg.gs == gsPlaying);
 	}
 	catch (...) {
-		LogClose(L"Game", L"Game aborted", LGF::Bold);
+		LogClose(L"Game", L"Game aborted", lgfItalic);
 		papp->Error(L"Game play has been aborted.", MB_OK);
 		return 1;
 	}
-	LogClose(L"Game", L"", LGF::Normal);
+	LogClose(L"Game", L"", lgfNormal);
 	return 0;
 }
 

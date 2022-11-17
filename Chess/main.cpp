@@ -867,7 +867,7 @@ public:
                 return 1;
         }
 
-        LogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth));
+        LogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth), lgfBold);
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
         uint64_t cmv;
         switch (ddperft.tperft) {
@@ -888,7 +888,7 @@ public:
         LogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         sp = 1000.0f * (float)cmv / (float)us.count();
         LogData(L"Speed: " + to_wstring((int)round(sp)) + L" moves/ms");
-        LogClose(L"perft", to_wstring(cmv), LGF::Normal);
+        LogClose(L"perft", to_wstring(cmv), lgfBold);
         return 1;
     }
 
@@ -923,7 +923,7 @@ public:
         for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
             PL* ppl = app.puiga->ga.PplFromCpc(cpc);
             if (ppl->FHasLevel())
-                ppl->SetLevel(8);
+                ppl->SetLevel(6);
             ppl->SetFecoRandom(0);
         }
 
@@ -936,7 +936,7 @@ public:
         app.puiga->Layout();
 
         ClearLog();
-        LogOpen(L"AI Speed Test", L"");
+        LogOpen(L"AI Speed Test", L"", lgfBold);
         int depthSav = DepthLog();
         SetDepthLog(2);
 
@@ -958,7 +958,7 @@ public:
 
         SetDepthLog(depthSav);
         LogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
-        LogClose(L"AI Speed Test", L"", LGF::Normal);
+        LogClose(L"AI Speed Test", L"", lgfBold);
 
         return 1;
     }

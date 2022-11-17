@@ -93,7 +93,7 @@ void TEST::Clear(void)
 
 ERR TEST::RunAll(void)
 {
-	LogOpen(SzName(), SzSubName());
+	LogOpen(SzName(), SzSubName(), lgfNormal);
 
 	ERR err = ErrRun();
 	if (FContinueTest(err)) {
@@ -106,14 +106,14 @@ ERR TEST::RunAll(void)
 
 	switch (err) {
 	case ERR::None:
-		LogClose(SzName(), L"Passed", LGF::Normal);
+		LogClose(SzName(), L"Passed", lgfBold);
 		break;
 	default:
 	case ERR::Failed:
-		LogClose(SzName(), L"Failed", LGF::Bold);
+		LogClose(SzName(), L"Failed", lgfBold);
 		break;
 	case ERR::Interrupted:
-		LogClose(SzName(), L"Interrupted", LGF::Italic);
+		LogClose(SzName(), L"Interrupted", lgfItalic);
 		break;
 	}
 	return err;
@@ -390,14 +390,14 @@ public:
 
 		FindClose(hfind);
 		szSpec = wstring(L"..\\Chess\\Test\\Players\\") + ffd.cFileName;
-		LogOpen(ffd.cFileName, L"");
+		LogOpen(ffd.cFileName, L"", lgfNormal);
 		try {
 			PlayUndoPGNFile(szSpec.c_str());
-			LogClose(ffd.cFileName, L"Passed", LGF::Normal);
+			LogClose(ffd.cFileName, L"Passed", lgfNormal);
 		}
 		catch (EX& ex) {
 			(void)ex;
-			LogClose(ffd.cFileName, L"Failed", LGF::Normal);
+			LogClose(ffd.cFileName, L"Failed", lgfBold);
 			throw;
 		}
 	}
@@ -487,13 +487,13 @@ public:
 				continue;
 			wstring szSpec = szPath + L"\\" + ffd.cFileName;
 			try {
-				LogOpen(ffd.cFileName, L"");
+				LogOpen(ffd.cFileName, L"", lgfNormal);
 				PlayPGNFile(szSpec.c_str());
-				LogClose(ffd.cFileName, L"Passed", LGF::Normal);
+				LogClose(ffd.cFileName, L"Passed", lgfNormal);
 			}
 			catch (exception& ex) {
 				LogData(WszWidenSz(ex.what()));
-				LogClose(ffd.cFileName, L"Failed", LGF::Bold);
+				LogClose(ffd.cFileName, L"Failed", lgfBold);
 				FindClose(hfind);
 				throw;
 			}
@@ -581,11 +581,11 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 #endif
 	for (EMV emv : vemv) {
 		ga.bdg.MakeMv(emv.mv);
-		LogOpen(TAG(ga.bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", (wstring)ga.bdg)), L"");
+		LogOpen(TAG(ga.bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
 		uint64_t cmvMove = ga.CmvPerft(depthPerft - 1);
 		cmv += cmvMove;
 		ga.bdg.UndoMv();
-		LogClose(ga.bdg.SzDecodeMvPost(emv.mv), to_wstring(cmvMove), LGF::Normal);
+		LogClose(ga.bdg.SzDecodeMvPost(emv.mv), to_wstring(cmvMove), lgfNormal);
 		assert(ga.bdg == bdgInit);
 	}
 	return cmv;
@@ -803,7 +803,7 @@ void UIGA::PerftTest(void)
  */
 void UIGA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
-	LogOpen(tag, L"");
+	LogOpen(tag, L"", lgfBold);
 	InitGame(szFEN, spmvHidden);
 	uibd.Redraw();
 
@@ -824,15 +824,15 @@ void UIGA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64
 		/* what we expect to happen */
 
 		PumpMsg();
-		LogOpen(L"Depth", to_wstring(depth));
+		LogOpen(L"Depth", to_wstring(depth), lgfNormal);
 		LogData(L"Expected: " + to_wstring(cmvExp));
-		
+
 		/* time the perft */
-		
+
 		time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
 		uint64_t cmvAct = fDivide ? CmvPerftDivide(depth) : ga.CmvPerft(depth);
 		time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
-		
+
 		/* display the results */
 
 		LogData(L"Actual: " + to_wstring(cmvAct));
@@ -843,17 +843,22 @@ void UIGA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64
 		PumpMsg();
 
 		/* and handle success/failure */
-		
+
 		if (cmvExp != cmvAct) {
-			LogClose(L"Depth", L"Failed", LGF::Normal);
+			LogClose(L"Depth", L"Failed", lgfBold);
 			goto Done;
 		}
-		LogClose(L"Depth", L"Passed", LGF::Normal);
+		LogClose(L"Depth", L"Passed", lgfNormal);
 	}
 	fPassed = true;
 
 Done:
-	LogClose(tag, fPassed ? L"Passed" : L"Failed", LGF::Normal);
+	if (fPassed) {
+		LogClose(tag, L"Passed", lgfNormal);
+	}
+	else {
+		LogClose(tag, L"Failed", lgfBold);
+	}
 }
 
 

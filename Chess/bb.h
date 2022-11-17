@@ -247,6 +247,17 @@ inline CPC operator++(CPC& cpc, int)
 	return cpcT;
 }
 
+inline wstring SzFromCpc(CPC cpc)
+{
+	switch (cpc) {
+	case cpcWhite:
+		return L"White";
+	case cpcBlack:
+		return L"Black";
+	default:
+		return L"(nil)";
+	}
+}
 
 /*
  *

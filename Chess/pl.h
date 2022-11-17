@@ -46,6 +46,7 @@ public:
 	wstring& SzName(void) { return szName; }
 	void SetName(const wstring& szNew) { szName = szNew; }
 
+	virtual void StartGame(void) { }
 	virtual MV MvGetNext(SPMV& spmv) = 0;
 	void ReceiveMv(MV mv, SPMV spmv);
 
@@ -106,10 +107,15 @@ public:
 class PLAI;
 class VEMVSS : public VEMVS
 {
+	SCT sctCur;	/* the score type we're currently enumerating */
+	PLAI* pplai;
 public:
 	VEMVSS(BDG& bdg, PLAI* pplai) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
-	void Reset(BDG& bdg, PLAI* pplai) noexcept;
+	void Reset(BDG& bdg) noexcept;
+private:
+	EMV* PemvBestFromSctCur(int iemvFirst) noexcept;
+	void InitSctCur(BDG& bdg, int iemvFirst) noexcept;
 };
 
 
@@ -163,27 +169,38 @@ public:
 	}
 
 
-	/*	AB::WidenAlpha
+	/*	AB::AdjMissLow
 	 *
 	 *	Increases the size of the alpha-beta window by widening the alpha (low)
 	 *	side. Works by doubling the size, until it gets pretty big, then we just
 	 *	give up and go to infinity.
+	 * 
+	 *	This code is called on low search failure, so we also adjust the beta (high)
+	 *	cut-off down a little, since we probably won't be hitting it in subsequent
+	 *	searches.
 	 */
-	inline void WidenAlpha(void) noexcept {
+	inline void AdjMissLow(void) noexcept {
+		assert(evAlpha != -evInf);	// widening won't work if we're already at inf
 		int dev = evBeta - evAlpha;
+		evBeta -= dev / 2;
 		evAlpha = dev > 200 ? -evInf : max(evAlpha - dev, -evInf);
 		assert(FValid());
 	}
 
 
-	/*	AB::WidenBeta
+	/*	AB::AdjMissHigh
 	 *
 	 *	Increases the size of the a-b window by widening the beta (high) side.
 	 *	Doubles the size, until it gets pretty big, when it just gives up and
 	 *	grows it to infinity.
+	 * 
+	 *	This is called on fail high searches, so we also adjust alpha up a little,
+	 *	since we probably won't be failing low.
 	 */
-	inline void WidenBeta(void) noexcept {
+	inline void AdjMissHigh(void) noexcept {
+		assert(evAlpha != evInf);	// widening doesn't work if we're already at inf
 		int dev = evBeta - evAlpha;
+		evAlpha += dev / 2;
 		evBeta = dev > 200 ? evInf : min(evBeta + dev, evInf);
 		assert(FValid());
 	}
@@ -299,15 +316,17 @@ protected:
 	uint16_t cYield;
 	bool fAbort;
 
+#ifndef NOSTATS
 	/* logging statistics */
 	time_point<high_resolution_clock> tpStart;
 	size_t cemvEval;
 	size_t cemvNode;
-
-	int plySearchLast;
+#endif
 
 public:
 	PLAI(GA& ga);
+
+	virtual void StartGame(void);
 	virtual MV MvGetNext(SPMV& spmv);
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
@@ -323,7 +342,8 @@ protected:
 	inline bool FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
 	inline bool FDeepen(EMV& emvBestOverall, EMV emvBest, AB& ab, int& ply) const noexcept;
 	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept;
-	inline bool FLookupXt(BDG& bdg, int ply, EMV& emvBest, AB ab) const noexcept;
+	inline bool FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int ply) const noexcept;
+	inline XEV* SaveXt(BDG& bdg, EMV emvBest, AB ab, int ply) const noexcept;
 
 	time_point<high_resolution_clock> tpMoveFirst;
 	virtual void InitTimeMan(BDG& bdg) noexcept;

@@ -219,9 +219,9 @@ void UIDB::DrawContent(const RC& rcCont)
 
 		TX* ptx;
 		switch (lgf) {
-		case LGF::Italic: ptx = ptxLogItalic; break;
-		case LGF::Bold: ptx = ptxLogBold; break;
-		case LGF::BoldItalic: ptx = ptxLogBoldItalic; break;
+		case lgfItalic: ptx = ptxLogItalic; break;
+		case lgfBold: ptx = ptxLogBold; break;
+		case lgfBoldItalic: ptx = ptxLogBoldItalic; break;
 		default: ptx = ptxLog; break;
 		}
 		DrawSz(sz, ptx, 
@@ -268,9 +268,9 @@ size_t UIDB::IlgentryFromY(int y) const
  */
 bool UIDB::FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const noexcept
 {
-	if (lgentry2.lgt == LGT::Temp)
+	if (lgentry2.lgt == lgtTemp)
 		return true;
-	if (lgentry1.lgt == LGT::Open && lgentry2.lgt == LGT::Close &&  
+	if (lgentry1.lgt == lgtOpen && lgentry2.lgt == lgtClose &&  
 			lgentry1.depth == lgentry2.depth && lgentry1.tag.sz == lgentry2.tag.sz)
 		return true;
 	return false;
@@ -291,11 +291,11 @@ float UIDB::DyLine(void) const
  */
 bool UIDB::FDepthLog(LGT lgt, int& depth) noexcept
 {
-	if (lgt == LGT::Close)
+	if (lgt == lgtClose)
 		depthCur--;
 	assert(depthCur >= 0);
 	depth = depthCur;
-	if (lgt == LGT::Open)
+	if (lgt == lgtOpen)
 		depthCur++;
 	return depth <= DepthLog();
 }
@@ -316,7 +316,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 
 	assert(depth <= DepthLog());
 
-	if (vlgentry.size() > 0 && vlgentry.back().lgt == LGT::Temp)
+	if (vlgentry.size() > 0 && vlgentry.back().lgt == lgtTemp)
 		vlgentry.pop_back();
 	
 	if (vlgentry.size() > 0 && FCombineLogEntries(vlgentry.back(), lgentry))
@@ -328,7 +328,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 	else
 		lgentry.dyTop = vlgentry.back().dyTop + vlgentry.back().dyHeight;
 
-	if (posLog && lgentry.lgt != LGT::Temp) {
+	if (posLog && lgentry.lgt != lgtTemp) {
 		*posLog << string(4 * (int64_t)lgentry.depth, ' ');
 		if (lgentry.tag.sz.size() > 0) {
 			*posLog << SzFlattenWsz(lgentry.tag.sz);

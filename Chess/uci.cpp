@@ -74,7 +74,7 @@ void UCI::WriteSz(const string& sz)
 	DWORD cb;
 	string nsz = sz + "\n";
 	::WriteFile(hfileStdout, nsz.c_str(), (DWORD)nsz.length(), &cb, NULL);
-	Log(LGT::Data, LGF::Normal, 0, TAG(WszWidenSz(sz)), L"");
+	Log(lgtData, lgfNormal, 0, TAG(WszWidenSz(sz)), L"");
 }
 
 
@@ -102,7 +102,7 @@ string UCI::SzReadLine(void)
 		sz.push_back(ch);
 	}
 
-	Log(LGT::Data, LGF::Bold, 0, TAG(WszWidenSz(sz)), L"");
+	Log(lgtData, lgfBold, 0, TAG(WszWidenSz(sz)), L"");
 	return sz;
 }
 
