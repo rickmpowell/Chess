@@ -136,11 +136,11 @@ public:
 	virtual void KeyUp(int vk);
 	virtual void KeyDown(int vk);
 
-	TID StartTimer(UINT dtm);
+	TID StartTimer(DWORD dmsec);
 	void StopTimer(TID tid);
-	virtual TID StartTimer(UI* pui, UINT dtm);
+	virtual TID StartTimer(UI* pui, DWORD dmsec);
 	virtual void StopTimer(UI* pui, TID tid);
-	virtual void TickTimer(TID tid, UINT tmCur);
+	virtual void TickTimer(TID tid, DWORD dmsec);
 
 
 	virtual void ShowTip(UI* puiAttach, bool fShow);

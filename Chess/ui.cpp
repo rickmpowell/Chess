@@ -469,9 +469,9 @@ void UI::KeyUp(int vk)
 }
 
 
-TID UI::StartTimer(UINT dtm)
+TID UI::StartTimer(DWORD dmsec)
 {
-	return StartTimer(this, dtm);
+	return StartTimer(this, dmsec);
 }
 
 
@@ -481,10 +481,10 @@ void UI::StopTimer(TID tid)
 }
 
 
-TID UI::StartTimer(UI* pui, UINT dtm)
+TID UI::StartTimer(UI* pui, DWORD dmsec)
 {
 	if (puiParent)
-		return puiParent->StartTimer(pui, dtm);
+		return puiParent->StartTimer(pui, dmsec);
 	return 0;
 }
 
@@ -496,7 +496,7 @@ void UI::StopTimer(UI* pui, TID tid)
 }
 
 
-void UI::TickTimer(TID tid, UINT tmCur)
+void UI::TickTimer(TID tid, DWORD msecCur)
 {
 }
 

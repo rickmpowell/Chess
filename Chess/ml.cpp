@@ -358,20 +358,27 @@ void UIGC::Draw(const RC& rcUpdate)
 
 
 IDWriteTextFormat* UICLOCK::ptxClock;
+IDWriteTextFormat* UICLOCK::ptxClockNote;
 
 void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxClock)
 		return;
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 40.0f, L"",
-		&ptxClock);
+							   DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 
+							   40.0f, L"",
+							   &ptxClock);
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+							   DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 
+							   8.0f, L"",
+							   &ptxClockNote);
 }
 
 
 void UICLOCK::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptxClock);
+	SafeRelease(&ptxClockNote);
 }
 
 
@@ -401,23 +408,23 @@ SIZ UICLOCK::SizLayoutPreferred(void)
 
 void UICLOCK::Draw(const RC& rcUpdate)
 {
-	DWORD tm = uiga.mpcpctmClock[cpc];
+	DWORD dmsec = uiga.mpcpcdmsecClock[cpc];
 
 	/* fill background */
 
 	RC rc = RcInterior();
-	COLORBRS colorbrs(pbrAltBack, FTimeOutWarning(tm) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
+	COLORBRS colorbrs(pbrAltBack, FTimeOutWarning(dmsec) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
 	FillRc(rc, pbrAltBack);
 
 	/* break down time into parts */
 
-	unsigned hr = tm / (1000 * 60 * 60);
-	tm = tm % (1000 * 60 * 60);
-	unsigned min = tm / (1000 * 60);
-	tm = tm % (1000 * 60);
-	unsigned sec = tm / 1000;
-	tm = tm % 1000;
-	unsigned frac = tm;
+	unsigned hr = dmsec / (1000 * 60 * 60);
+	dmsec = dmsec % (1000 * 60 * 60);
+	unsigned min = dmsec / (1000 * 60);
+	dmsec = dmsec % (1000 * 60);
+	unsigned sec = dmsec / 1000;
+	dmsec = dmsec % 1000;
+	unsigned frac = dmsec;
 
 	/* convert into text */
 
@@ -471,9 +478,9 @@ void UICLOCK::Draw(const RC& rcUpdate)
 }
 
 
-bool UICLOCK::FTimeOutWarning(DWORD tm) const
+bool UICLOCK::FTimeOutWarning(DWORD dmsec) const
 {
-	return tm < 1000 * 20;
+	return dmsec < 1000 * 20;
 }
 
 
@@ -757,7 +764,7 @@ void UIML::DrawMoveNumber(const RC& rc, int imv)
 
 void UIML::InitGame(void)
 {
-	ShowClocks(uiga.ga.prule->TmGame(cpcWhite) != 0);
+	ShowClocks(!uiga.ga.prule->FUntimed());
 	bdgInit = uiga.ga.bdg;
 	UpdateContSize();
 }
@@ -850,11 +857,11 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		uiga.MoveToImv(uiga.ga.bdg.imvCur - 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCurLast - 1, spmvAnimate);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		uiga.MoveToImv(uiga.ga.bdg.imvCur + 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCurLast + 1, spmvAnimate);
 		break;
 	case VK_HOME:
 		uiga.MoveToImv(0, spmvAnimate);
@@ -863,10 +870,10 @@ void UIML::KeyDown(int vk)
 		uiga.MoveToImv((int)uiga.ga.bdg.vmvGame.size() - 1, spmvAnimate);
 		break;
 	case VK_PRIOR:
-		uiga.MoveToImv(uiga.ga.bdg.imvCur - 5 * 2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCurLast - 5 * 2, spmvAnimate);
 		break;
 	case VK_NEXT:
-		uiga.MoveToImv(uiga.ga.bdg.imvCur + 5*2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvCurLast + 5*2, spmvAnimate);
 		break;
 	default:
 		break;

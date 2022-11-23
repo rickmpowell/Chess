@@ -334,7 +334,7 @@ public:
 
 	virtual void Run(void)
 	{
-		uiga.NewGame(new RULE, spmvHidden);
+		uiga.InitGame(nullptr, nullptr);
 		ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 };
@@ -421,14 +421,14 @@ public:
 
 	void UndoFullGame(void)
 	{
-		while (uiga.ga.bdg.imvCur >= 0) {
+		while (uiga.ga.bdg.imvCurLast >= 0) {
 			BDG bdgInit = uiga.ga.bdg;
-			uiga.ga.UndoMv();
-			uiga.ga.RedoMv();
+			uiga.UndoMv(spmvHidden);
+			uiga.RedoMv(spmvHidden);
 			assert(uiga.ga.bdg == bdgInit);
 			if (uiga.ga.bdg != bdgInit)
 				throw EXFAILTEST();
-			uiga.ga.UndoMv();
+			uiga.UndoMv(spmvHidden);
 		}
 	}
 };
@@ -443,12 +443,12 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
 {
 	BDG bdgInit = ga.bdg;
-	ga.MakeMv(mv);
+	ga.bdg.MakeMv(mv);
 	BDG bdgNew = ga.bdg;
-	ga.UndoMv();
+	ga.bdg.UndoMv();
 	if (bdgInit != ga.bdg)
 		throw EXFAILTEST();
-	ga.RedoMv();
+	ga.bdg.RedoMv();
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
 	return ERR::None;
@@ -804,7 +804,7 @@ void UIGA::PerftTest(void)
 void UIGA::RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
 {
 	LogOpen(tag, L"", lgfBold);
-	InitGame(szFEN, spmvHidden);
+	InitGame(szFEN, nullptr);
 	uibd.Redraw();
 
 	bool fPassed = false;

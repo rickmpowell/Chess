@@ -96,7 +96,6 @@ wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch);
 wstring SzCommaFromLong(int long long w);
 
 
-
 /*
  *
  *	EX class
@@ -155,9 +154,7 @@ public:
 
 enum class ERR {
 	EndOfFile = 1,
-	
 	None = 0,
-	
 	Fatal = -1,
 	Parse = -2,
 	Interrupted = -3,
@@ -829,5 +826,24 @@ inline int bitscanRev(uint64_t grf) noexcept
 	return shf;
 }
 
+
+/*
+ *	IfDebug and IfDebugElse
+ * 
+ *	Be careful using these! They are not protected by parens or brackets
+ */
+
+
+#ifndef NDEBUG
+#define IfDebug(x) x
+#define IfDebugElse(x,y) x
+#define IfRelease(x)
+#define IfReleaseElse(x,y) y
+#else
+#define IfDebug(x) 
+#define IfDebugElse(x,y) y
+#define IfRelease(x) x
+#define IfReleaseElse(x,y) x
+#endif
 
 

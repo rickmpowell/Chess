@@ -203,7 +203,7 @@ public:
 	~APP(void);
 
 	int MessagePump(void);
-	DWORD TmMessage(void);
+	DWORD MsecMessage(void);
 	POINT PtMessage(void);
 
 	wstring SzLoad(int ids) const;
@@ -237,9 +237,9 @@ private:
 	bool OnKeyUp(int vk);
 
 public:
-	TID StartTimer(UINT dtm);
+	TID StartTimer(DWORD dmsec);
 	void StopTimer(TID tid);
-	void DispatchTimer(TID tid, UINT dtm);
+	void DispatchTimer(TID tid, DWORD msec);
 
 	/*
 	 *	Logging. For now, this just hard-coded to delegate to the debug panel,

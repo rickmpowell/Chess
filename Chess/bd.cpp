@@ -187,16 +187,11 @@ void BD::SetEmpty(void) noexcept
  *	are in the same place, the castle states are the same, and the en passant
  *	state is the same.
  * 
- *	This is mainly used to detect 3-repeat draw situations. Note that we don't
- *	have the current move color in the BD, so this isn't' exactly the draw-state
- *	comparison. Caller has to make sure the move color is the same.
+ *	This is mainly used to detect 3-repeat draw situations. 
  */
 bool BD::operator==(const BD& bd) const noexcept
 {
-	for (PC pc = 0; pc < pcMax; ++pc)
-		if (mppcbb[pc] != bd.mppcbb[pc])
-			return false;
-	return csCur == bd.csCur && sqEnPassant == bd.sqEnPassant && cpcToMove == bd.cpcToMove;
+	return habd == bd.habd;
 }
 
 
@@ -1038,7 +1033,7 @@ void BD::ValidateBB(PC pcVal, SQ sq) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : gs(gsPlaying), imvCur(-1), imvPawnOrTakeLast(-1)
+BDG::BDG(void) : gs(gsPlaying), imvCurLast(-1), imvPawnOrTakeLast(-1)
 {
 }
 
@@ -1053,8 +1048,12 @@ BDG::BDG(const wchar_t* szFEN)
 }
 
 
+const wchar_t BDG::szFENInit[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 void BDG::InitGame(const wchar_t* szFEN)
 {
+	if (szFEN == nullptr)
+		szFEN = szFENInit;
 	const wchar_t* sz = szFEN;
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
@@ -1064,7 +1063,7 @@ void BDG::InitGame(const wchar_t* szFEN)
 	InitFENFullmoveCounter(sz);
 
 	vmvGame.clear();
-	imvCur = -1;
+	imvCurLast = -1;
 	imvPawnOrTakeLast = -1;
 	SetGs(gsNotStarted);
 }
@@ -1159,12 +1158,12 @@ wstring BDG::SzFEN(void) const
 	/* halfmove clock */
 
 	sz += L' ';
-	sz += to_wstring(imvCur - imvPawnOrTakeLast);
+	sz += to_wstring(imvCurLast - imvPawnOrTakeLast);
 
 	/* fullmove number */
 
 	sz += L' ';
-	sz += to_wstring(1 + imvCur/2);
+	sz += to_wstring(1 + imvCurLast/2);
 
 	return sz;
 }
@@ -1182,19 +1181,19 @@ void BDG::MakeMv(MV& mv)
 	/* make the move and save the move in the move list */
 
 	MakeMvSq(mv);
-	if (++imvCur == vmvGame.size())
+	if (++imvCurLast == vmvGame.size())
 		vmvGame.push_back(mv);
-	else if (mv != vmvGame[imvCur]) {
-		vmvGame[imvCur] = mv;
+	else if (mv != vmvGame[imvCurLast]) {
+		vmvGame[imvCurLast] = mv;
 		/* all moves after this in the move list are now invalid */
-		for (size_t imv = (size_t)imvCur + 1; imv < vmvGame.size(); imv++)
+		for (size_t imv = (size_t)imvCurLast + 1; imv < vmvGame.size(); imv++)
 			vmvGame[imv] = MV();
 	}
 
 	/* keep track of last pawn move or capture, which is used to detect draws */
 
 	if (mv.apcMove() == apcPawn || mv.fIsCapture())
-		imvPawnOrTakeLast = imvCur;
+		imvPawnOrTakeLast = imvCurLast;
 }
 
 
@@ -1222,17 +1221,17 @@ wstring BDG::SzMoveAndDecode(MV mv)
  */
 void BDG::UndoMv(void)
 {
-	if (imvCur < 0)
+	if (imvCurLast < 0)
 		return;
-	if (imvCur == imvPawnOrTakeLast) {
+	if (imvCurLast == imvPawnOrTakeLast) {
 		/* scan backwards looking for pawn moves or captures */
-		for (imvPawnOrTakeLast = imvCur-1; imvPawnOrTakeLast >= 0; imvPawnOrTakeLast--)
+		for (imvPawnOrTakeLast = imvCurLast-1; imvPawnOrTakeLast >= 0; imvPawnOrTakeLast--)
 			if (vmvGame[imvPawnOrTakeLast].apcMove() == apcPawn || 
 					vmvGame[imvPawnOrTakeLast].fIsCapture())
 				break;
 	}
-	UndoMvSq(vmvGame[imvCur--]);
-	assert(imvCur >= -1);
+	UndoMvSq(vmvGame[imvCurLast--]);
+	assert(imvCurLast >= -1);
 }
 
 
@@ -1243,12 +1242,12 @@ void BDG::UndoMv(void)
  */
 void BDG::RedoMv(void)
 {
-	if (imvCur > (int)vmvGame.size() || vmvGame[imvCur+1].fIsNil())
+	if (imvCurLast > (int)vmvGame.size() || vmvGame[imvCurLast+1].fIsNil())
 		return;
-	imvCur++;
-	MV mv = vmvGame[imvCur];
+	imvCurLast++;
+	MV mv = vmvGame[imvCurLast];
 	if (mv.apcMove() == apcPawn || mv.fIsCapture())
-		imvPawnOrTakeLast = imvCur;
+		imvPawnOrTakeLast = imvCurLast;
 	MakeMvSq(mv);
 }
 
@@ -1337,13 +1336,13 @@ bool BDG::FDraw3Repeat(int cbdDraw) const
 {
 	if (cbdDraw == 0)
 		return false;
-	if (imvCur - imvPawnOrTakeLast < ((int64_t)cbdDraw-1) * 2 * 2)
+	if (imvCurLast - imvPawnOrTakeLast < ((int64_t)cbdDraw-1) * 2 * 2)
 		return false;
 	BD bd = *this;
 	int cbdSame = 1;
-	bd.UndoMvSq(vmvGame[imvCur]);
-	bd.UndoMvSq(vmvGame[imvCur - 1]);
-	for (int64_t imv = imvCur - 2; imv >= imvPawnOrTakeLast + 2; imv -= 2) {
+	bd.UndoMvSq(vmvGame[imvCurLast]);
+	bd.UndoMvSq(vmvGame[imvCurLast - 1]);
+	for (int64_t imv = imvCurLast - 2; imv >= imvPawnOrTakeLast + 2; imv -= 2) {
 		bd.UndoMvSq(vmvGame[imv]);
 		bd.UndoMvSq(vmvGame[imv - 1]);
 		if (bd == *this) {
@@ -1370,7 +1369,7 @@ bool BDG::FDraw3Repeat(int cbdDraw) const
  */
 bool BDG::FDraw50Move(int64_t cmvDraw) const
 {
-	return imvCur - imvPawnOrTakeLast >= cmvDraw * 2;
+	return imvCurLast - imvPawnOrTakeLast >= cmvDraw * 2;
 }
 
 
@@ -1405,8 +1404,12 @@ wstring SzFromEv(EV ev)
 		lstrcpy(pch, L"Inf");
 		pch += lstrlen(pch);
 	}
-	else if (FEvIsAbort(abs(ev))) {
+	else if (ev == evCanceled) {
 		lstrcpy(pch, L"(interrupted)");
+		pch += lstrlen(pch);
+	}
+	else if (ev == evTimedOut) {
+		lstrcpy(pch, L"(timeout)");
 		pch += lstrlen(pch);
 	}
 	else if (FEvIsMate(ev)) {
@@ -1433,7 +1436,7 @@ wstring SzFromSct(SCT sct)
 	case sctEvOther:
 		return L"EV";
 	case sctEvCapture:
-		return L"EVCAP";
+		return L"CAP";
 	case sctXTable:
 		return L"XT";
 	case sctPrincipalVar:
@@ -1446,30 +1449,87 @@ wstring SzFromSct(SCT sct)
 
 wstring SzFromMvm(MVM mvm)
 {
-	wchar_t sz[16], *pch = sz;
+	wchar_t sz[8], *pch = sz;
 
 	*pch++ = L'a' + mvm.sqFrom().file();
 	*pch++ = L'1' + mvm.sqFrom().rank();
 	*pch++ = L'a' + mvm.sqTo().file();
 	*pch++ = L'1' + mvm.sqTo().rank();
-	APC apc;
-	if ((apc = mvm.apcPromote()) != apcNull) {
+	if (mvm.apcPromote() != apcNull) {
 		*pch++ = L'=';
-		switch (apc) {
-		case apcKnight:
-			*pch++ = L'N';
-			break;
-		case apcBishop:
-			*pch++ = L'B';
-			break;
-		case apcRook:
-			*pch++ = L'R';
-			break;
-		case apcQueen:
-			*pch++ = L'Q';
-			break;
-		}
+		*pch++ = L" PNBRQK"[mvm.apcPromote()];
 	}
 	*pch = 0;
 	return wstring(sz);
+}
+
+
+/*
+ *
+ *	RULE class
+ * 
+ */
+
+RULE::RULE(void) : cmvRepeatDraw(3)
+{
+	vtmi.push_back(TMI(0, -1, 1000L * 1 * 60, 1000L * 3));	/* 30min and 3sec is TCEC early time control */
+}
+
+RULE::RULE(int dsecGame, int dsecMove, unsigned cmvRepeatDraw) : cmvRepeatDraw(cmvRepeatDraw)
+{
+	vtmi.push_back(TMI(0, -1, 1000L * dsecGame, 1000L * dsecMove));
+}
+
+bool RULE::FUntimed(void) const
+{
+	return vtmi.size() == 0;
+}
+
+
+/*	RULE::DmsecAddInterval
+ *
+ *	If the current board state is at the transition between timing intervals, returns
+ *	the amount of time to add to the CPC player's clock after move number mvn is made.
+ *	
+ *	WARNING! mvn is 1-based.
+ */
+DWORD RULE::DmsecAddInterval(CPC cpc, int mvn) const
+{
+	for (const TMI& tmi : vtmi) {
+		if (tmi.mvnFirst == mvn)	
+			return tmi.dmsec;
+	}
+
+	return 0;
+}
+
+
+/*	RULE::DmsecAddMove
+ *
+ *	After a player moves, returns the amount of time to modify the player's clock
+ *	based on move bonus.
+ */
+DWORD RULE::DmsecAddMove(CPC cpc, int mvn) const
+{
+	for (const TMI& tmi : vtmi) {
+		if (tmi.mvnLast == -1 || mvn <= tmi.mvnLast)
+			return tmi.dmsecMove;
+	}
+	return 0;
+}
+
+/*	RULE::CmvRepeatDraw
+ *
+ *	Number of repeated positions used for detecting draws. Typically 3.
+ */
+int RULE::CmvRepeatDraw(void) const
+{
+	return cmvRepeatDraw;
+}
+
+void RULE::SetGameTime(CPC cpc, DWORD dsec)
+{
+	vtmi.clear();
+	if (dsec != -1)
+		vtmi.push_back(TMI(1, -1, 1000L*dsec, 0));
 }

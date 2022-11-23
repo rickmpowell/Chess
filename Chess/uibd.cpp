@@ -214,8 +214,8 @@ FoundMove:
 
 void UIBD::UndoMv(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCur >= 0) {
-		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCur];
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCurLast >= 0) {
+		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCurLast];
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.UndoMv();
@@ -228,8 +228,8 @@ void UIBD::UndoMv(SPMV spmv)
 
 void UIBD::RedoMv(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCur < (int)uiga.ga.bdg.vmvGame.size()) {
-		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCur+1];
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCurLast < (int)uiga.ga.bdg.vmvGame.size()) {
+		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCurLast+1];
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.RedoMv();

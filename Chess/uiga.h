@@ -61,8 +61,8 @@ public:
 	SPMV spmvShow;	/* play speed */
 	bool fInPlay;
 	TID tidClock;
-	DWORD mpcpctmClock[cpcMax];	// player clocks
-	DWORD tmLast;	// time of last move
+	DWORD mpcpcdmsecClock[cpcMax];	// player clocks
+	DWORD msecLast;	// time of last move
 
 public:
 	UIGA(APP& app, GA& ga);
@@ -103,21 +103,20 @@ public:
 	 *	Timers
 	 */
 
-	virtual TID StartTimer(UI* pui, UINT dtm);
+	virtual TID StartTimer(UI* pui, DWORD dmsec);
 	virtual void StopTimer(UI* pui, TID tid);
-	virtual void TickTimer(TID tid, UINT dtm);
-	void DispatchTimer(TID tid, UINT tm);
+	virtual void TickTimer(TID tid, DWORD msec);
+	void DispatchTimer(TID tid, DWORD msec);
 
 	/*
 	 *	Modal game loop
 	 */
 
-	int Play(void);
+	void Play(MV mv, SPMV spmv);
 	void PumpMsg(void);
 
-	void NewGame(RULE* prule, SPMV spmv);
-	void InitGame(const wchar_t* szFEN, SPMV spmv);
-	void InitUI(SPMV spmv);
+	void InitGame(const wchar_t* szFEN, RULE* prule);
+	void StartGame(SPMV spmv);
 	void EndGame(SPMV spmv);
 	void MakeMv(MV mv, SPMV spmvMove);
 	void UndoMv(SPMV spmv);
@@ -125,10 +124,8 @@ public:
 	void MoveToImv(int64_t imv, SPMV spmv);
 
 	void InitClocks(void);
-	void StartClocks(void);
-	void SwitchClock(DWORD tmCur);
-	void StartClock(CPC cpc, DWORD tmCur);
-	void PauseClock(CPC cpc, DWORD tmCur);
+	void StartClock(CPC cpc, DWORD msecCur);
+	void PauseClock(CPC cpc, DWORD msecCur);
 
 	/*
 	 *	Tests and validation

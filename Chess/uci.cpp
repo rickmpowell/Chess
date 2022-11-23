@@ -182,7 +182,8 @@ public:
 
 	virtual int Execute(string szArg)
 	{
-		uci.puiga->NewGame(new RULE, spmvAnimateFast);
+		uci.puiga->InitGame(nullptr, nullptr);
+		uci.puiga->StartGame(spmvAnimate);
 		return 1;
 	}
 };

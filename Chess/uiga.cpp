@@ -43,9 +43,9 @@ void UIGA::DiscardRsrcClass(void)
 UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), app(app), ga(ga), 
 		uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uitip(this),
 	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
-	spmvShow(spmvAnimate), fInPlay(false), tmLast(0L), tidClock(0)
+	spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
 {
-	mpcpctmClock[cpcWhite] = mpcpctmClock[cpcBlack] = 0;
+	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
 
 }
 
@@ -227,9 +227,9 @@ void UIGA::DispatchCmd(int cmd)
 }
 
 
-TID UIGA::StartTimer(UI* pui, UINT dtm)
+TID UIGA::StartTimer(UI* pui, DWORD dmsec)
 {
-	TID tid = App().StartTimer(dtm);
+	TID tid = App().StartTimer(dmsec);
 	mptidpui[tid] = pui;
 	return tid;
 }
@@ -242,47 +242,41 @@ void UIGA::StopTimer(UI* pui, TID tid)
 }
 
 
-void UIGA::DispatchTimer(TID tid, UINT tmCur)
+void UIGA::DispatchTimer(TID tid, DWORD msecCur)
 {
 	if (mptidpui.find(tid) == mptidpui.end())
 		return;
-	mptidpui[tid]->TickTimer(tid, tmCur);
+	mptidpui[tid]->TickTimer(tid, msecCur);
 }
 
 
-void UIGA::TickTimer(TID tid, UINT tmCur)
+void UIGA::TickTimer(TID tid, DWORD msecCur)
 {
 	CPC cpcToMove = ga.bdg.cpcToMove;
-	if (ga.prule->TmGame(cpcToMove) == 0)
+	if (ga.prule->FUntimed())
 		return;
-	DWORD dtm = tmCur - tmLast;
-	if (dtm > mpcpctmClock[cpcToMove]) {
-		dtm = mpcpctmClock[cpcToMove];
+	DWORD dmsec = msecCur - msecLast;
+	if (dmsec > mpcpcdmsecClock[cpcToMove]) {
+		dmsec = mpcpcdmsecClock[cpcToMove];
 		ga.bdg.SetGs(cpcToMove == cpcWhite ? gsWhiteTimedOut : gsBlackTimedOut);
 		EndGame(spmvAnimate);
 	}
-	mpcpctmClock[cpcToMove] -= dtm;
-	tmLast = tmCur;
+	mpcpcdmsecClock[cpcToMove] -= dmsec;
+	msecLast = msecCur;
 	uiml.UiclockFromCpc(cpcToMove).Redraw();
 }
 
-void UIGA::NewGame(RULE* prule, SPMV spmv)
+
+/*	UIGA::InitGame
+ *
+ *	Initializes a game with the given FEN starting positoin and rules. szFEN 
+ *	and prule may be null for default values.
+ *
+ *	Game is not started. Call StartGame to get the game moving.
+ */
+void UIGA::InitGame(const wchar_t* szFEN, RULE* prule)
 {
-	ga.SetRule(prule);
-	InitGame(GA::szInitFEN, spmv);
-}
-
-
-void UIGA::InitGame(const wchar_t* szFEN, SPMV spmv)
-{
-	ga.InitGame(szFEN);
-	InitUI(spmv);
-}
-
-
-void UIGA::InitUI(SPMV spmv)
-{
-	spmvShow = spmv;
+	ga.InitGame(szFEN, prule);
 	InitClocks();
 	uibd.InitGame();
 	uiml.InitGame();
@@ -290,75 +284,93 @@ void UIGA::InitUI(SPMV spmv)
 }
 
 
+/*	UIGA::StartGame
+ *
+ *	Starts the game going, which includes turning on the clocks
+ */
+void UIGA::StartGame(SPMV spmv)
+{
+	spmvShow = spmv;
+	ga.bdg.SetGs(gsPlaying);
+	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++)
+		ga.mpcpcppl[cpc]->StartGame();
+
+	tidClock = StartTimer(this, 10);
+	msecLast = app.MsecMessage();
+	StartClock(ga.bdg.cpcToMove, app.MsecMessage());
+}
+
+
+/*	UIGA::EndGame
+ *
+ *	Ends the game, after a draw or someone wins.
+ */
 void UIGA::EndGame(SPMV spmv)
 {
-	if (ga.prule->TmGame(cpcWhite))
+	if (tidClock) {
 		app.StopTimer(tidClock);
-
+		tidClock = 0;
+	}
 	if (spmv != spmvHidden)
 		uiml.EndGame();
 }
 
+
+/*	UIGA::InitClocks
+ *
+ *	Sets up the clocks in preparation of the game starting
+ */
 void UIGA::InitClocks(void)
 {
-	tmLast = 0;
-	mpcpctmClock[cpcWhite] = ga.prule->TmGame(cpcWhite);
-	mpcpctmClock[cpcBlack] = ga.prule->TmGame(cpcBlack);
+	mpcpcdmsecClock[cpcWhite] = ga.prule->DmsecAddInterval(cpcWhite, 0);
+	mpcpcdmsecClock[cpcBlack] = ga.prule->DmsecAddInterval(cpcBlack, 0);
+	ga.SetTimeRemaining(cpcWhite, mpcpcdmsecClock[cpcWhite]);
+	ga.SetTimeRemaining(cpcBlack, mpcpcdmsecClock[cpcBlack]);
 }
 
 
-void UIGA::StartClocks(void)
+/*	UIGA::StartClock
+ *
+ *	Starts the given player's clock.
+ */
+void UIGA::StartClock(CPC cpc, DWORD msecCur)
 {
-	if (ga.prule->TmGame(cpcWhite)) {
-		tmLast = app.TmMessage();
-		tidClock = UI::StartTimer(10);
-		StartClock(ga.bdg.cpcToMove, tmLast);
-	}
-}
-
-void UIGA::StartClock(CPC cpc, DWORD tmCur)
-{
-	if (ga.prule->TmGame(cpc) == 0)
+	if (ga.prule->FUntimed())
 		return;
+	msecLast = msecCur;
+	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);
 }
 
 
-void UIGA::PauseClock(CPC cpc, DWORD tmCur)
+/*	UIGA::PauseClock
+ *
+ *	Pauses the given player's clock at the end of his turn. msecCur is
+ *	used to adjust time remaining until we flag.
+ */
+void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 {
-	if (ga.prule->TmGame(cpc) == 0)
+	if (ga.prule->FUntimed())
 		return;
-	mpcpctmClock[cpc] -= tmCur - tmLast;
+	mpcpcdmsecClock[cpc] -= msecCur - msecLast;
+	int mvn = (int)ga.bdg.imvCurLast / 2 + 1;
+	mpcpcdmsecClock[cpc] +=
+		ga.prule->DmsecAddMove(cpc, mvn) + ga.prule->DmsecAddInterval(cpc, mvn);
+	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);
 	uiml.UiclockFromCpc(cpc).Redraw();
-}
-
-
-void UIGA::SwitchClock(DWORD tmCur)
-{
-	if (ga.prule->TmGame(cpcWhite) == 0)
-		return;
-
-	if (tmLast) {
-		PauseClock(ga.bdg.cpcToMove, tmCur);
-		mpcpctmClock[ga.bdg.cpcToMove] += ga.prule->DtmMove(cpcWhite);
-	}
-	else {
-		tidClock = UI::StartTimer(10);
-	}
-	tmLast = tmCur;
-	StartClock(~ga.bdg.cpcToMove, tmCur);
 }
 
 
 void UIGA::MakeMv(MV mv, SPMV spmvMove)
 {
-	DWORD tm = app.TmMessage();
-	SwitchClock(tm == 0 ? 1 : tm);
+	DWORD msec = app.MsecMessage();
+	PauseClock(ga.bdg.cpcToMove, msec);
+	StartClock(~ga.bdg.cpcToMove, msec);
 	uibd.MakeMv(mv, spmvMove);
 	if (ga.bdg.gs != gsPlaying)
 		EndGame(spmvMove);
 	if (spmvMove != spmvHidden) {
 		uiml.UpdateContSize();
-		uiml.SetSel(ga.bdg.imvCur, spmvMove);
+		uiml.SetSel(ga.bdg.imvCurLast, spmvMove);
 	}
 }
 
@@ -370,7 +382,7 @@ void UIGA::MakeMv(MV mv, SPMV spmvMove)
  */
 void UIGA::UndoMv(SPMV spmv)
 {
-	MoveToImv(ga.bdg.imvCur - 1, spmv);
+	MoveToImv(ga.bdg.imvCurLast - 1, spmv);
 }
 
 
@@ -381,8 +393,9 @@ void UIGA::UndoMv(SPMV spmv)
  */
 void UIGA::RedoMv(SPMV spmv)
 {
-	MoveToImv(ga.bdg.imvCur + 1, spmv);
+	MoveToImv(ga.bdg.imvCurLast + 1, spmv);
 }
+
 
 /*	GA::MoveToImv
  *
@@ -393,59 +406,59 @@ void UIGA::RedoMv(SPMV spmv)
 void UIGA::MoveToImv(int64_t imv, SPMV spmv)
 {
 	imv = clamp(imv, (int64_t)-1, (int64_t)ga.bdg.vmvGame.size() - 1);
-	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvCur - imv) > 1) {
+	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvCurLast - imv) > 1) {
 		spmv = spmvAnimateFast;
-		if (abs(ga.bdg.imvCur - imv) > 5)
+		if (abs(ga.bdg.imvCurLast - imv) > 5)
 			spmv = spmvAnimateVeryFast;
 	}
-	while (ga.bdg.imvCur > imv)
+	while (ga.bdg.imvCurLast > imv)
 		uibd.UndoMv(spmv);
-	while (ga.bdg.imvCur < imv)
+	while (ga.bdg.imvCurLast < imv)
 		uibd.RedoMv(spmv);
 	if (spmv != spmvHidden)
 		uiml.Layout();	// in case game over state changed
-	uiml.SetSel(ga.bdg.imvCur, spmv);
+	uiml.SetSel(ga.bdg.imvCurLast, spmv);
 }
-
 
 
 /*	UIGA::Play
  *
- *	Starts playing the game with the current game state.
+ *	Starts playing the game from the current game state. First move to
+ *	play is sent in mv, which may be nil. spmv is the speed of the 
+ *	animation to use on the board.
  */
-int UIGA::Play(void)
+void UIGA::Play(MV mv, SPMV spmv)
 {
-	struct INPLAY
-	{
-		UIGA& uiga;
-		INPLAY(UIGA& uiga) : uiga(uiga) { uiga.fInPlay = true; }
-		~INPLAY() { uiga.fInPlay = false; }
-	} inplay(*this);
-
+	fInPlay = true;
 	InitLog(2);
 	LogOpen(L"Game", L"", lgfBold);
-	ga.bdg.SetGs(gsPlaying);
-	StartClocks();
-	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++)
-		ga.mpcpcppl[cpc]->StartGame();
-
-	try {
-		do {
-			SPMV spmv = spmvAnimate;
-			MV mv = ga.PplToMove()->MvGetNext(spmv);
+	StartGame(spmvAnimate);
+	if (!mv.fIsNil())
+		MakeMv(mv, spmv);
+	do {
+		SPMV spmv = spmvAnimate;
+		try {
+			mv = ga.PplToMove()->MvGetNext(spmv);
 			if (mv.fIsNil())
-				throw EXINT();
+				break;
 			MakeMv(mv, spmv);
-			ga.SavePGNFile(papp->SzAppDataPath() + L"\\current.pgn");
-		} while (ga.bdg.gs == gsPlaying);
+		}
+		catch (...) {
+			ga.bdg.SetGs(gsCanceled);
+			break;
+		}
+		ga.SavePGNFile(papp->SzAppDataPath() + L"\\current.pgn");
+	} while (ga.bdg.gs == gsPlaying);
+
+	if (ga.bdg.gs == gsCanceled) {
+		papp->Error(L"Game has been canceled.", MB_OK);
+		LogClose(L"Game", L"canceled", lgfItalic);
 	}
-	catch (...) {
-		LogClose(L"Game", L"Game aborted", lgfItalic);
-		papp->Error(L"Game play has been aborted.", MB_OK);
-		return 1;
+	else {
+		LogClose(L"Game", L"over", lgfNormal);
 	}
-	LogClose(L"Game", L"", lgfNormal);
-	return 0;
+
+	fInPlay = false;
 }
 
 

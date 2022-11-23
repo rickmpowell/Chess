@@ -85,6 +85,7 @@ protected:
 	UIGA& uiga;
 	CPC cpc;
 	static TX* ptxClock;
+	static TX* ptxClockNote;
 public:
 	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);

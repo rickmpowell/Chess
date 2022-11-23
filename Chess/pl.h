@@ -35,7 +35,6 @@ protected:
 
 	MV mvNext;
 	SPMV spmvNext;
-	bool fDisableMvLog;
 	int imvmBreakLast;
 	vector<MVM>* pvmvmBreak;
 	int cBreakRepeat;
@@ -283,6 +282,26 @@ public:
 inline wstring to_wstring(AB ab) noexcept { return (wstring)ab; }
 
 
+/*
+ *	TMS - time management styles
+ */
+
+enum TMS : int {
+	tmsConstDepth,
+	tmsTimePerMove,
+	tmsSmart
+};
+
+/*
+ *	SINT search interrupt types
+ */
+
+enum SINT : int {
+	sintNull = 0,
+	sintCanceled,
+	sintTimedOut
+};
+
 
 /*
  *
@@ -313,8 +332,14 @@ protected:
 	mt19937_64 rgen;	/* random number generator */
 	uint64_t habdRand;	/* random number generated at the start of every search used to add randomness
 						   to board eval - which is generated from the Zobrist hash */
+	
+	EMV emvBestOverall;	/* during search, root level best move so far */
+	TMS tms;
+	DWORD dmsecDeadline, dmsecFlag;
+	time_point<high_resolution_clock> tpMoveFirst;
+
 	uint16_t cYield;
-	bool fAbort;
+	SINT sint;
 
 #ifndef NOSTATS
 	/* logging statistics */
@@ -340,14 +365,14 @@ protected:
 	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, AB ab, int ply) noexcept; 
 	inline bool FSearchEmvBest(BDG& bdg, VEMVSS& vemvss, EMV& emvBest, AB ab, int ply, int& plyLim) noexcept;
 	inline bool FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
-	inline bool FDeepen(EMV& emvBestOverall, EMV emvBest, AB& ab, int& ply) const noexcept;
+	inline bool FDeepen(EMV emvBest, AB& ab, int& ply) noexcept;
 	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept;
 	inline bool FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int ply) const noexcept;
 	inline XEV* SaveXt(BDG& bdg, EMV emvBest, AB ab, int ply) const noexcept;
 
-	time_point<high_resolution_clock> tpMoveFirst;
 	virtual void InitTimeMan(BDG& bdg) noexcept;
-	virtual bool FStopSearch(EMV emvBest, int plyLim) noexcept;
+	virtual bool FStopSearch(int plyLim) noexcept;
+	EV EvMaterialTotal(BDG& bdg) const noexcept;
 	
 	virtual EV EvBdgStatic(BDG& bdg, MV mv, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 

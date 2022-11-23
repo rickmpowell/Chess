@@ -16,54 +16,38 @@
  *
  *	RULE
  *
- *	Game rules
+ *	Game rules. The TMI is the time interval information.
  *
  */
 
+struct TMI
+{
+	int mvnFirst;	/* 1-based move number when interval starts */
+	int mvnLast;	/* 1-based move number when interval ends. -1 for no end. */
+	DWORD dmsec;	/* Amount of time to add to the timer at the start of the interval */
+	DWORD dmsecMove;	/* Amount of time to add after each move */
+	
+	TMI(int mvnFirst, int mvnLast, DWORD dmsec, DWORD dmsecMove) : 
+			mvnFirst(mvnFirst), mvnLast(mvnLast),
+			dmsec(dmsec), dmsecMove(dmsecMove)
+	{
+	}
+};
+
+class BDG;
 
 class RULE
 {
-	DWORD tmGame;	// if zero, untimed game
-	DWORD dtmMove;
+	vector<TMI> vtmi;
 	unsigned cmvRepeatDraw; // if zero, no automatic draw detection
 public:
-	RULE(void) : tmGame(5 * 60 * 1000), dtmMove(0 * 1000), cmvRepeatDraw(3) { }
-	RULE(DWORD tmGame, DWORD dtmMove, unsigned cmvRepeatDraw) : tmGame(tmGame), dtmMove(dtmMove),
-		cmvRepeatDraw(cmvRepeatDraw) {
-	}
-
-	/*	RULE::TmGame
-	 *
-	 *	Returns the amount of time a player gets on his clock at the start of
-	 *	the game.
-	 */
-	DWORD TmGame(CPC cpc) const
-	{
-		return tmGame;
-	}
-
-	/*	RULE::DtmMove
-	 *
-	 *	Clock move interval a player gets added to his clock after each move.
-	 */
-	DWORD DtmMove(CPC cpc) const
-	{
-		return dtmMove;
-	}
-
-	/*	RULE::CmvRepeatDraw
-	 *
-	 *	Number of repeated positions used for detecting draws. Typically 3.
-	 */
-	int CmvRepeatDraw(void) const
-	{
-		return cmvRepeatDraw;
-	}
-
-	void SetTmGame(CPC cpc, int tm)
-	{
-		tmGame = tm;
-	}
+	RULE(void);
+	RULE(int dsecGame, int dsecMove, unsigned cmvRepeatDraw);
+	bool FUntimed(void) const;
+	DWORD DmsecAddInterval(CPC cpc, int mvn) const;
+	DWORD DmsecAddMove(CPC cpc, int mvn) const;
+	int CmvRepeatDraw(void) const;
+	void SetGameTime(CPC cpc, DWORD dsec);
 };
 
 
@@ -295,11 +279,12 @@ const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus mov
 const EV evMateMin = evMate - plyMax;
 const EV evTempo = 33;	/* evaluation of a single move advantage */
 const EV evDraw = 0;	/* evaluation of a draw */
-const EV evAbort = evInf + 1;
+const EV evTimedOut = evInf + 1;
+const EV evCanceled = evInf + 2;
 
 inline EV EvMate(int ply) { return evMate - ply; }
 inline bool FEvIsMate(EV ev) { return ev >= evMateMin; }
-inline bool FEvIsAbort(EV ev) { return ev == evAbort; }
+inline bool FEvIsInterrupt(EV ev) { return ev == evCanceled || ev == evTimedOut; }
 inline int PlyFromEvMate(EV ev) { return evMate - ev; }
 wstring SzFromEv(EV ev);
 inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
@@ -1235,17 +1220,24 @@ class BDG : public BD
 {
 public:
 	GS gs;
-	vector<MV> vmvGame;	// the game moves that resulted in bd board state
-	int64_t imvCur;
-	int64_t imvPawnOrTakeLast;	/* index of last pawn or capture move (used directly for 50-move 
-							   draw detection), but it is also a bound on how far back we need 
-							   to search for 3-move repetition draws */
+	vector<MV> vmvGame;		/* the game moves that resulted in bd board state */
+	int64_t imvCurLast;		/* position of current last made move, -1 before first move; may be 
+							   less than vmvGame.size after Undo/Redo */
+	int64_t imvPawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
+							       detection and 3-move repetition draws) */
 
 public:
 	BDG(void);
 	BDG(const wchar_t* szFEN);
 	
-	/* 
+	/*
+	 *	Game control
+	 */
+
+	static const wchar_t szFENInit[];
+	void InitGame(const wchar_t* szFEN);
+
+	/*
 	 *	making moves 
 	 */
 
@@ -1294,7 +1286,6 @@ public:
 	 *	importing FEN strings 
 	 */
 
-	void InitGame(const wchar_t* szFen);
 	void InitFENHalfmoveClock(const wchar_t*& sz);
 	void InitFENFullmoveCounter(const wchar_t*& sz);
 

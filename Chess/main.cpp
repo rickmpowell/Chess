@@ -53,7 +53,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
  */
 APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr), 
         pdevd3(nullptr), pdcd3(nullptr), pdevd2(nullptr), pswch(nullptr), pbmpBackBuf(nullptr), pdc(nullptr),
-        cmdlist()
+        cmdlist(), puiga(nullptr)
 {
     hcurArrow = ::LoadCursor(nullptr, IDC_ARROW);
     hcurMove = ::LoadCursor(nullptr, IDC_SIZEALL);
@@ -99,7 +99,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     pga = new GA();
     pga->SetPl(cpcBlack, rginfopl.PplFactory(*pga, 0));
     pga->SetPl(cpcWhite, rginfopl.PplFactory(*pga, 2));
-    pga->NewGame(new RULE);
+    pga->InitGame(nullptr, nullptr);
     
     /* create the main window */
 
@@ -112,10 +112,16 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
         nullptr, nullptr, hinst, this);
     if (!hwnd)
         throw 1;    // BUG: cleanup haccel
+ 
+    CreateRsrc();
+    puiga = new UIGA(*this, *pga);
+    puiga->CreateRsrc();
+    pga->SetUiga(puiga);
+    puiga->InitGame(nullptr, nullptr);
+    puiga->uipvt.Show(false);
 
     ::ShowWindow(hwnd, sw);
 
-    puiga->uipvt.Show(false);
 }
 
 
@@ -147,7 +153,7 @@ int APP::MessagePump(void)
 }
 
 
-DWORD APP::TmMessage(void)
+DWORD APP::MsecMessage(void)
 {
     return ::GetMessageTime();
 }
@@ -204,7 +210,8 @@ void APP::CreateRsrc(void)
 
     CreateRsrcSize();
     UIGA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-    puiga->CreateRsrc();
+    if (puiga)
+        puiga->CreateRsrc();
 }
 
 
@@ -315,11 +322,11 @@ void APP::Redraw(RC rc)
 
 /*  APP::StartTimer
  *
- *  Creates a timer that goes every dtm milliseconds.
+ *  Creates a timer that goes every dmsec milliseconds.
  */
-TID APP::StartTimer(UINT dtm)
+TID APP::StartTimer(DWORD dmsec)
 {
-    return ::SetTimer(nullptr, 0, dtm, nullptr);
+    return ::SetTimer(nullptr, 0, dmsec, nullptr);
 }
 
 
@@ -333,9 +340,9 @@ void APP::StopTimer(TID tid)
 }
 
 
-void APP::DispatchTimer(TID tid, UINT dtm)
+void APP::DispatchTimer(TID tid, DWORD msec)
 {
-    puiga->DispatchTimer(tid, dtm);
+    puiga->DispatchTimer(tid, msec);
 }
 
 
@@ -348,6 +355,7 @@ void APP::DispatchTimer(TID tid, UINT dtm)
 void APP::OnDestroy(void)
 {
     DiscardRsrcSize();
+    if (puiga)
     puiga->ShowAll(false);
 }
 
@@ -361,7 +369,8 @@ void APP::OnSize(UINT dx, UINT dy)
 {
     DiscardRsrcSize();
     CreateRsrc();
-    puiga->Resize(PT((float)dx, (float)dy));
+    if (puiga)
+        puiga->Resize(PT((float)dx, (float)dy));
 }
 
 
@@ -476,7 +485,7 @@ bool APP::OnKeyUp(int vk)
  */
 bool APP::OnTimer(UINT tid)
 {
-    DispatchTimer(tid, TmMessage());
+    DispatchTimer(tid, MsecMessage());
     return true;
 }
 
@@ -574,7 +583,8 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->NewGame(new RULE, spmvAnimate);
+        app.puiga->InitGame(nullptr, nullptr);
+        app.puiga->Layout();
         app.puiga->Redraw();
         return 1;
     }
@@ -597,7 +607,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->Play();
+        app.puiga->Play(mvNil, spmvAnimate);
         return 1;
     }
 };
@@ -929,9 +939,9 @@ public:
 
         /* start a new untimed game */
 
-        app.puiga->NewGame(new RULE, spmvFast);
-        app.puiga->ga.prule->SetTmGame(cpcWhite, 0);
-        app.puiga->ga.prule->SetTmGame(cpcBlack, 0);
+        app.puiga->InitGame(nullptr, nullptr);
+        app.puiga->ga.prule->SetGameTime(cpcWhite, 0);
+        app.puiga->ga.prule->SetGameTime(cpcBlack, 0);
         app.puiga->uiml.ShowClocks(false);
         app.puiga->Layout();
 
@@ -940,6 +950,7 @@ public:
         int depthSav = DepthLog();
         SetDepthLog(2);
 
+        app.puiga->StartGame(spmvFast);
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
 
         for (int imv = 0; imv < 10; imv++) {
@@ -1307,7 +1318,7 @@ public:
             }
         }
         else {
-            app.puiga->InitGame(WszWidenSz(pch).c_str(), spmvAnimate);
+            app.puiga->InitGame(WszWidenSz(pch).c_str(), nullptr);
             app.puiga->Redraw();
         }
         return 1;
@@ -1345,9 +1356,9 @@ public:
 
     virtual int Execute(void)
     {
-        DWORD tmOld = app.pga->prule->TmGame(cpcWhite);
-        app.pga->prule->SetTmGame(cpcWhite, tmOld ? 0 : 60 * 60 * 1000);
-        app.puiga->uiml.ShowClocks(tmOld == 0);
+        bool fUntimed = app.pga->prule->FUntimed();
+        app.pga->prule->SetGameTime(cpcWhite, fUntimed ? 60 : -1);
+        app.puiga->uiml.ShowClocks(fUntimed);
         app.puiga->Layout();
         app.puiga->Redraw();
         return 1;
@@ -1360,7 +1371,7 @@ public:
 
     virtual int IdsMenu(void) const
     {
-        return app.pga->prule->TmGame(cpcWhite) ? idsClocksOff : idsClocksOn;
+        return app.pga->prule->FUntimed() ? idsClocksOn : idsClocksOff;
     }
 };
 
@@ -1638,8 +1649,6 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
     switch (wm) {
     case WM_NCCREATE:
         papp = (APP*)((CREATESTRUCT*)lparam)->lpCreateParams;
-        papp->puiga = new UIGA(*papp, *papp->pga);
-        papp->pga->SetUiga(papp->puiga);
         ::SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)papp);
         break;
 
@@ -1760,11 +1769,12 @@ wstring SzCommaFromLong(int long long w)
     int iw;
     for (iw = 0; w; w /= 1000)
         rgw[iw++] = w % 1000;
+    iw--;
 
     /* and print out each group */
 
-    assert(iw > 0);
-    sz += to_wstring(rgw[--iw]);
+    assert(iw >= 0);
+    sz += to_wstring(rgw[iw]);
     while (iw > 0) {
         sz += L",";
         int wT = rgw[--iw];

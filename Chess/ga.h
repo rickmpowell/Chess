@@ -116,9 +116,10 @@ class GA
 	friend class UIGA;
 
 public:
-	BDG bdg;	// board
-	BDG bdgInit;	// initial board used to start the game (used on FEN load)
-	PL* mpcpcppl[cpcMax];	// players
+	BDG bdg;
+	BDG bdgInit;
+	PL* mpcpcppl[cpcMax];
+	DWORD mpcpcdmsec[cpcMax];	// time remaining on the players' clocks at start of move
 	RULE* prule;
 	PROCPGN* pprocpgn;	/* process pgn file handler */
 
@@ -150,18 +151,12 @@ public:
 	 *	Game control
 	 */
 
-	static const wchar_t szInitFEN[];
-
-	void NewGame(RULE* prule);
-	void InitGame(const wchar_t* szFEN);
+	void InitGame(const wchar_t* szFEN, RULE* prule);
 	void SetRule(RULE* prule);
 	void EndGame(void);
 
-	void MakeMv(MV mv);
-	void UndoMv(void);
-	void RedoMv(void);
-	void MoveToImv(int64_t imv);
-	void GenVemv(VEMV& vemv);
+	void SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept;
+	DWORD DmsecRemaining(CPC cpc) const noexcept;
 
 	/*
 	 *	Deserializing 
