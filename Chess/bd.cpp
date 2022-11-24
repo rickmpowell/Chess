@@ -1468,18 +1468,33 @@ wstring SzFromMvm(MVM mvm)
  *
  *	RULE class
  * 
+ *	Our one-shop stop for all the rule variants that we might have. Includes stuff
+ *	like time control, repeat position counts, etc.
+ * 
  */
+
 
 RULE::RULE(void) : cmvRepeatDraw(3)
 {
-	vtmi.push_back(TMI(0, -1, 1000L * 1 * 60, 1000L * 3));	/* 30min and 3sec is TCEC early time control */
+	vtmi.push_back(TMI(0, -1, msecMin*30, msecSec*3));	/* 30min and 3sec is TCEC early time control */
 }
 
+
+/*	RULE::RULE
+ *
+ *	Create a new rule set with simple game/move increments and the number of repeated
+ *	positions to trigger a draw.
+ */
 RULE::RULE(int dsecGame, int dsecMove, unsigned cmvRepeatDraw) : cmvRepeatDraw(cmvRepeatDraw)
 {
-	vtmi.push_back(TMI(0, -1, 1000L * dsecGame, 1000L * dsecMove));
+	vtmi.push_back(TMI(0, -1, msecSec * dsecGame, msecSec * dsecMove));
 }
 
+
+/*	RULE::FUntimed
+ *
+ *	Returns true if this is an untimed game.
+ */
 bool RULE::FUntimed(void) const
 {
 	return vtmi.size() == 0;
@@ -1518,6 +1533,7 @@ DWORD RULE::DmsecAddMove(CPC cpc, int mvn) const
 	return 0;
 }
 
+
 /*	RULE::CmvRepeatDraw
  *
  *	Number of repeated positions used for detecting draws. Typically 3.
@@ -1527,9 +1543,18 @@ int RULE::CmvRepeatDraw(void) const
 	return cmvRepeatDraw;
 }
 
+
+/*	RULE::SetGameTime
+ *
+ *	Sets the amount of time each player gets on their game clock. -1 for an
+ *	untimed game.
+ * 
+ *	This is not a very good general purpose time control API. Should be replaced
+ *	with something more generally useful.
+ */
 void RULE::SetGameTime(CPC cpc, DWORD dsec)
 {
 	vtmi.clear();
 	if (dsec != -1)
-		vtmi.push_back(TMI(1, -1, 1000L*dsec, 0));
+		vtmi.push_back(TMI(1, -1, msecSec*dsec, 0));
 }
