@@ -522,8 +522,8 @@ EMV* VEMVSS::PemvBestFromSctCur(int iemvFirst) noexcept
  *	never be visited because of pruning. 
  * 
  *	Currently we break moves into ... (1) the principal variation, (2) any other 
- *	move in the transposition table that was fully evaluated, and (3) everything 
- *	else.
+ *	move in the transposition table that was fully evaluated, (3) captures, and
+ *	and (4) everything else.
  */
 void VEMVSS::InitSctCur(BDG& bdg, int iemvFirst) noexcept
 {
@@ -627,6 +627,8 @@ bool VEMVSQ::FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept
  *
  *	Returns information in spmv for how the board should be display the move,
  *	but this isn't used in AI players. 
+ * 
+ *	For an AI, this is the root node of the alpha-beta search, 
  */
 MV PLAI::MvGetNext(SPMV& spmv)
 {
@@ -877,7 +879,8 @@ bool PLAI::FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept
  *
  *	Helper function that adjusts evaluations in checkmates and stalemates. Modifies
  *	evBest to be the checkmate/stalemate if we're in that state. cmvLegal is the
- *	count of legal moves in vmvev, and vmvev is the full pseudo-legal move list.
+ *	count of legal moves in the move list, and vemvs is the move enumerator, which 
+ *	kept sstrack of how many legal moves there were..
  */
 void PLAI::TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept
 {
@@ -940,8 +943,8 @@ bool PLAI::FDeepen(EMV emvBest, AB& ab, int& ply) noexcept
 void PLAI::InitTimeMan(BDG& bdg) noexcept
 {
 	static const DWORD mpleveldmsec[] = { 0,
-		500, 1000, 2*1000, 5*1000, 10*1000, 15*1000, 30*1000,
-		60*1000, 2*60*1000, 5*60*1000
+		msecHalfSec, 1*msecSec, 2*msecSec, 5*msecSec, 10*msecSec, 15*msecSec, 30*msecSec,
+		1*msecMin, 2*msecMin, 5*msecMin
 	};
 
 	CPC cpc = bdg.cpcToMove;
@@ -1007,7 +1010,7 @@ bool PLAI::FStopSearch(int plyLim) noexcept
 		time_point<high_resolution_clock> tp = high_resolution_clock::now();
 		duration dtp = tp - tpMoveFirst;
 		microseconds usec = duration_cast<microseconds>(dtp);
-		return usec.count() >= 1000LL * dmsecDeadline;
+		return usec.count() >= usecMsec * dmsecDeadline;
 	}
 	case tmsConstDepth:
 	{
@@ -1046,10 +1049,10 @@ void PLAI::PumpMsg(bool fForce) noexcept
 			time_point<high_resolution_clock> tp = high_resolution_clock::now();
 			duration dtp = tp - tpMoveFirst;
 			microseconds usec = duration_cast<microseconds>(dtp);
-			if (usec.count() > 1500LL * dmsecDeadline) // we've taken 1.5 times too long... timeout
+			if (usec.count() > (msecSec * (dmsecDeadline+dmsecDeadline/2))) // we've taken 1.5 times too long... timeout
 				sint = sintTimedOut;
 			/* if we're within a half-second of flagging, bail out right away */
-			else if (dmsecFlag != -1 && usec.count() > 1000LL * dmsecFlag - 500LL)
+			else if (dmsecFlag != -1 && usec.count() > usecMsec * dmsecFlag - msecHalfSec)
 				sint = sintTimedOut;
 		}
 	}
