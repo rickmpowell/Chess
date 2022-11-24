@@ -847,3 +847,16 @@ inline int bitscanRev(uint64_t grf) noexcept
 #endif
 
 
+/*
+ *
+ *	Time constants
+ *
+ */
+
+
+const DWORD usecMsec = 1000L;	// micro-seconds in a millisecond
+const DWORD msecSec = 1000L;	// milliseconds in a second
+const DWORD msecHalfSec = 500L;
+const DWORD secMin = 60L;
+const DWORD msecMin = secMin * msecSec;
+
