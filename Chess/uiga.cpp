@@ -217,13 +217,13 @@ void UIGA::ShowTip(UI* puiAttach, bool fShow)
 
 wstring UIGA::SzTipFromCmd(int cmd) const
 {
-	return app.cmdlist.SzTip(cmd);
+	return app.vcmd.SzTip(cmd);
 }
 
 
 void UIGA::DispatchCmd(int cmd)
 {
-	app.cmdlist.Execute(cmd);
+	app.vcmd.Execute(cmd);
 }
 
 

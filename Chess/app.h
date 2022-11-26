@@ -61,7 +61,7 @@ class APP;
 
 class CMD
 {
-	friend class CMDLIST;
+	friend class VCMD;
 
 protected:
 	APP& app;
@@ -82,19 +82,17 @@ public:
 
 /*
  *
- *	CMDLIST
+ *	VCMD
  *
  *	The command list, used for dispatching to command handlers.
  *
  */
 
 
-class CMDLIST {
-private:
-	vector<CMD*> vpcmd;
+class VCMD : public vector<CMD*> {
 public:
-	CMDLIST(void);
-	~CMDLIST(void);
+	VCMD(void);
+	~VCMD(void);
 	void Add(CMD* pcmd);
 	int Execute(int icmd);
 	void InitMenu(HMENU hmenu);
@@ -196,7 +194,7 @@ public:
 	
 	GA* pga;
 	UIGA* puiga;
-	CMDLIST cmdlist;
+	VCMD vcmd;
 
 public:
 	APP(HINSTANCE hinst, int sw);

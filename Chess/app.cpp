@@ -83,78 +83,79 @@ void D2::Cleanup(void)
 
 /*
  *
- *  CMDLIST
+ *  VCMD
  *
- *  This is the collection of commands the application handles.
+ *  This is the collection of commands the application handles. We keep them
+ *	collected 
  *
  */
 
 
-CMDLIST::CMDLIST(void)
+VCMD::VCMD(void)
 {
 }
 
 
-CMDLIST::~CMDLIST(void)
+VCMD::~VCMD(void)
 {
-	while (vpcmd.size() > 0) {
-		CMD* pcmd = vpcmd.back();
-		vpcmd.pop_back();
+	while (size() > 0) {
+		CMD* pcmd = back();
+		pop_back();
 		delete pcmd;
 	}
 }
 
 
-/*  CMDLIST::Add
+/*  VCMD::Add
  *
  *  Adds the given command to the command list. The command list takes
  *  ownership of the command.
  */
-void CMDLIST::Add(CMD* pcmd)
+void VCMD::Add(CMD* pcmd)
 {
-	size_t ccmd = vpcmd.size();
+	size_t ccmd = size();
 	if (pcmd->icmd >= ccmd) {
-		vpcmd.resize(pcmd->icmd + 1);
+		resize(pcmd->icmd + 1);
 		for (size_t icmd = ccmd; icmd < pcmd->icmd + 1; icmd++)
-			vpcmd[icmd] = nullptr;
+			(*this)[icmd] = nullptr;
 	}
-	assert(vpcmd[pcmd->icmd] == nullptr);
-	vpcmd[pcmd->icmd] = pcmd;
+	assert((*this)[pcmd->icmd] == nullptr);
+	(*this)[pcmd->icmd] = pcmd;
 }
 
 
-/*  CMDLIST::Execute
+/*  VCMD::Execute
  *
  *  Executes the given command.
  */
-int CMDLIST::Execute(int icmd)
+int VCMD::Execute(int icmd)
 {
-	assert(icmd < vpcmd.size());
-	assert(vpcmd[icmd] != nullptr);
-	return vpcmd[icmd]->Execute();
+	assert(icmd < size());
+	assert((*this)[icmd] != nullptr);
+	return (*this)[icmd]->Execute();
 }
 
 
-/*  CMDLIST::InitMenu
+/*  VCMD::InitMenu
  *
  *  Called before the given menu drops something down, so that variable menu text
  *  can be set up.
  */
-void CMDLIST::InitMenu(HMENU hmenu)
+void VCMD::InitMenu(HMENU hmenu)
 {
-	for (size_t icmd = 0; icmd < vpcmd.size(); icmd++)
-		if (vpcmd[icmd])
-			vpcmd[icmd]->InitMenu(hmenu);
+	for (size_t icmd = 0; icmd < size(); icmd++)
+		if ((*this)[icmd])
+			(*this)[icmd]->InitMenu(hmenu);
 }
 
 
-/*  CMDLIST::SzTip
+/*  VCMD::SzTip
  *
  *  Returns the tip text for the given command.
  */
-wstring CMDLIST::SzTip(int icmd)
+wstring VCMD::SzTip(int icmd)
 {
-	return vpcmd[icmd]->SzTip();
+	return (*this)[icmd]->SzTip();
 }
 
 

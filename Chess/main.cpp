@@ -53,7 +53,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
  */
 APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr), 
         pdevd3(nullptr), pdcd3(nullptr), pdevd2(nullptr), pswch(nullptr), pbmpBackBuf(nullptr), pdc(nullptr),
-        cmdlist(), puiga(nullptr)
+        puiga(nullptr)
 {
     hcurArrow = ::LoadCursor(nullptr, IDC_ARROW);
     hcurMove = ::LoadCursor(nullptr, IDC_SIZEALL);
@@ -1584,42 +1584,42 @@ public:
  */
 bool APP::OnCommand(int cmd)
 {
-    return cmdlist.Execute(cmd);
+    return vcmd.Execute(cmd);
 }
 
 
 void APP::InitCmdList(void)
 {
-    cmdlist.Add(new CMDABOUT(*this, cmdAbout));
-    cmdlist.Add(new CMDNEWGAME(*this, cmdNewGame));
-    cmdlist.Add(new CMDTEST(*this, cmdTest));
-    cmdlist.Add(new CMDEXIT(*this, cmdExit));
-    cmdlist.Add(new CMDUNDOMOVE(*this, cmdUndoMove));
-    cmdlist.Add(new CMDREDOMOVE(*this, cmdRedoMove));
-    cmdlist.Add(new CMDROTATEBOARD(*this, cmdRotateBoard));
-    cmdlist.Add(new CMDOFFERDRAW(*this, cmdOfferDraw));
-    cmdlist.Add(new CMDRESIGN(*this, cmdResign));
-    cmdlist.Add(new CMDPLAY(*this, cmdPlay));
-    cmdlist.Add(new CMDSAVEPGN(*this, cmdSavePGN));
-    cmdlist.Add(new CMDOPENPGN(*this, cmdOpenPGN));
-    cmdlist.Add(new CMDCOPY(*this, cmdCopy));
-    cmdlist.Add(new CMDPASTE(*this, cmdPaste));
-    cmdlist.Add(new CMDSETUPBOARD(*this, cmdSetupBoard));
-    cmdlist.Add(new CMDCLOCKTOGGLE(*this, cmdClockOnOff));
-    cmdlist.Add(new CMDDEBUGPANEL(*this, cmdDebugPanel));
-    cmdlist.Add(new CMDLOGDEPTHUP(*this, cmdLogDepthUp));
-    cmdlist.Add(new CMDLOGDEPTHDOWN(*this, cmdLogDepthDown));
-    cmdlist.Add(new CMDLOGFILETOGGLE(*this, cmdLogFileToggle));
-    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUp));
-    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUpBlack));
-    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDown));
-    cmdlist.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDownBlack));
-    cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivide, true));
-    cmdlist.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivideGo, false));
-    cmdlist.Add(new CMDSHOWPIECEVALUES(*this, cmdShowPieceValues));
-    cmdlist.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
-    cmdlist.Add(new CMDAIBREAK(*this, cmdAIBreak));
-    cmdlist.Add(new CMDLINKUCI(*this, cmdLinkUCI));
+    vcmd.Add(new CMDABOUT(*this, cmdAbout));
+    vcmd.Add(new CMDNEWGAME(*this, cmdNewGame));
+    vcmd.Add(new CMDTEST(*this, cmdTest));
+    vcmd.Add(new CMDEXIT(*this, cmdExit));
+    vcmd.Add(new CMDUNDOMOVE(*this, cmdUndoMove));
+    vcmd.Add(new CMDREDOMOVE(*this, cmdRedoMove));
+    vcmd.Add(new CMDROTATEBOARD(*this, cmdRotateBoard));
+    vcmd.Add(new CMDOFFERDRAW(*this, cmdOfferDraw));
+    vcmd.Add(new CMDRESIGN(*this, cmdResign));
+    vcmd.Add(new CMDPLAY(*this, cmdPlay));
+    vcmd.Add(new CMDSAVEPGN(*this, cmdSavePGN));
+    vcmd.Add(new CMDOPENPGN(*this, cmdOpenPGN));
+    vcmd.Add(new CMDCOPY(*this, cmdCopy));
+    vcmd.Add(new CMDPASTE(*this, cmdPaste));
+    vcmd.Add(new CMDSETUPBOARD(*this, cmdSetupBoard));
+    vcmd.Add(new CMDCLOCKTOGGLE(*this, cmdClockOnOff));
+    vcmd.Add(new CMDDEBUGPANEL(*this, cmdDebugPanel));
+    vcmd.Add(new CMDLOGDEPTHUP(*this, cmdLogDepthUp));
+    vcmd.Add(new CMDLOGDEPTHDOWN(*this, cmdLogDepthDown));
+    vcmd.Add(new CMDLOGFILETOGGLE(*this, cmdLogFileToggle));
+    vcmd.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUp));
+    vcmd.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUpBlack));
+    vcmd.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDown));
+    vcmd.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlDownBlack));
+    vcmd.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivide, true));
+    vcmd.Add(new CMDPERFTDIVIDE(*this, cmdPerftDivideGo, false));
+    vcmd.Add(new CMDSHOWPIECEVALUES(*this, cmdShowPieceValues));
+    vcmd.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
+    vcmd.Add(new CMDAIBREAK(*this, cmdAIBreak));
+    vcmd.Add(new CMDLINKUCI(*this, cmdLinkUCI));
 }
 
 
@@ -1631,7 +1631,7 @@ void APP::InitCmdList(void)
 bool APP::OnInitMenu(void)
 {
     HMENU hmenu = ::GetMenu(hwnd);
-    cmdlist.InitMenu(hmenu);
+    vcmd.InitMenu(hmenu);
     return true;
 }
 
