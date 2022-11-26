@@ -650,13 +650,13 @@ MV PLAI::MvGetNext(SPMV& spmv)
 	/* main iterative deepening and aspiration window loop */
 
 	AB ab(-evInf, evInf);
-	for (int plyLim = 2; !FStopSearch(plyLim); ) {
+	for (int plyLim = 1; !FStopSearch(plyLim); ) {
 		vemvss.Reset(bdg);
 		EMV emvBest = EMV(MV(), -evInf);
 		LOGITD logitd(*this, bdg, emvBest, ab, plyLim);
 		FSearchEmvBest(bdg, vemvss, emvBest, ab, 0, plyLim);
 		SaveXt(bdg, emvBest, ab, plyLim);
-		if (FDeepen(emvBest, ab, plyLim))
+		if (vemvss.size() == 1 || FDeepen(emvBest, ab, plyLim))
 			break;
 	}
 
@@ -913,7 +913,7 @@ bool PLAI::FDeepen(EMV emvBest, AB& ab, int& ply) noexcept
 	if (emvBest.ev == evTimedOut) {
 		assert(!emvBestOverall.mv.fIsNil());
 		return true;
-	}
+	}	
 
 	/* If the search failed with a narrow a-b window, widen the window up some and
 	   try again */
