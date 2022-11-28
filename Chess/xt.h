@@ -22,23 +22,23 @@
  */
 
 /*
- *	EVT - evaluation types stored in the transposition table, tells if the board 
+ *	TEV - evaluation types stored in the transposition table, tells if the board 
  *	evaluation is equal to the saved value, above it, or below it. 
  * 
  *	Comparison operators return the relative importance of the transposition entry,
  *	all else being equal. PV nodes are most important, cut nodes second, etc.
  */
 
-enum EVT : int {
-	evtNull = 0,
-	evtLower = 1,
-	evtHigher = 2,
-	evtEqual = 3
+enum TEV : int {
+	tevNull = 0,
+	tevLower = 1,
+	tevHigher = 2,
+	tevEqual = 3
 };
 
-inline int crunch(EVT evt) noexcept { return evt - (evt >> 1); }
-inline bool operator>(EVT evt1, EVT evt2) noexcept { return crunch(evt1) > crunch(evt2); }
-inline bool operator<(EVT evt1, EVT evt2) noexcept { return crunch(evt1) < crunch(evt2); }
+inline int crunch(TEV tev) noexcept { return tev - (tev >> 1); }
+inline bool operator>(TEV tev1, TEV tev2) noexcept { return crunch(tev1) > crunch(tev2); }
+inline bool operator<(TEV tev1, TEV tev2) noexcept { return crunch(tev1) < crunch(tev2); }
 
 
 /*
@@ -56,19 +56,19 @@ private:
 	uint64_t uhabd;
 	uint64_t uev : 16,
 		umv : 32,
-		uevt : 2,
+		utev : 2,
 		uply : 8,
 		uage:6;
 public:
 
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	inline XEV(void) { }
-	inline XEV(HABD habd, MV mv, EVT evt, EV ev, int ply) 
-	{ uhabd = habd;  umv = mv; uevt = evt; uev = ev; uply = ply; }
+	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int ply) 
+	{ uhabd = habd;  umv = mv; utev = tev; uev = ev; uply = ply; }
 	inline EV ev(void) const noexcept { return static_cast<EV>(uev); }
 	inline void SetEv(EV ev) noexcept { assert(ev != evInf && ev != -evInf);  uev = static_cast<uint16_t>(ev); }
-	inline EVT evt(void) const noexcept { return static_cast<EVT>(uevt); }
-	inline void SetEvt(EVT evt) noexcept { uevt = static_cast<unsigned>(evt); }
+	inline TEV tev(void) const noexcept { return static_cast<TEV>(utev); }
+	inline void SetTev(TEV tev) noexcept { utev = static_cast<unsigned>(tev); }
 	inline int ply(void) const noexcept { return static_cast<int>(uply); }
 	inline void SetPly(int ply) noexcept { uply = (unsigned)ply; }
 	inline bool FMatchHabd(HABD habd) const noexcept { return uhabd == habd; }
@@ -77,10 +77,10 @@ public:
 	inline MV mv(void) const noexcept { return umv; }
 	inline void SetAge(unsigned age) noexcept { this->uage = age; }
 	inline unsigned age(void) const noexcept { return uage; }
-	inline void Save(HABD habd, EV ev, EVT evt, int ply, MV mv, unsigned age) noexcept {
+	inline void Save(HABD habd, EV ev, TEV tev, int ply, MV mv, unsigned age) noexcept {
 		SetHabd(habd);
 		SetEv(ev);
-		SetEvt(evt);
+		SetTev(tev);
 		SetPly(ply);
 		SetMv(mv);
 		SetAge(age);
@@ -165,9 +165,9 @@ public:
 				throw 1;
 		}
 		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
-			rgxev2[ixev2].xevDeep.SetEvt(evtNull);
+			rgxev2[ixev2].xevDeep.SetTev(tevNull);
 			rgxev2[ixev2].xevDeep.SetAge(0);
-			rgxev2[ixev2].xevNew.SetEvt(evtNull);
+			rgxev2[ixev2].xevNew.SetTev(tevNull);
 			rgxev2[ixev2].xevNew.SetAge(0);
 		}
 #ifndef NOSTATS
@@ -196,13 +196,13 @@ public:
 		/* age out really old entries, and bump the table age */
 		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
 			if (Dage(rgxev2[ixev2].xevDeep) > ageMax / 2) {
-				rgxev2[ixev2].xevDeep.SetEvt(evtNull);
+				rgxev2[ixev2].xevDeep.SetTev(tevNull);
 #ifndef NOSTATS
 				cxevInUse--;
 #endif
 			}
 			if (Dage(rgxev2[ixev2].xevNew) > ageMax / 2) {
-				rgxev2[ixev2].xevNew.SetEvt(evtNull);
+				rgxev2[ixev2].xevNew.SetTev(tevNull);
 #ifndef NOSTATS
 				cxevInUse--;
 #endif
@@ -228,7 +228,7 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	inline XEV* Save(const BDG& bdg, const EMV& emv, EVT evt, int ply) noexcept
+	inline XEV* Save(const BDG& bdg, const EMV& emv, TEV tev, int ply) noexcept
 	{
 		assert(emv.ev != evInf && emv.ev != -evInf);
 #ifndef NOSTATS
@@ -237,29 +237,29 @@ public:
 		/* keep track of the deepest search */
 
 		XEV2& xev2 = (*this)[bdg];
-		if (!(evt < xev2.xevDeep.evt()) && ply >= xev2.xevDeep.ply()) {
+		if (!(tev < xev2.xevDeep.tev()) && ply >= xev2.xevDeep.ply()) {
 #ifndef NOSTATS
-			if (xev2.xevDeep.evt() == evtNull)
+			if (xev2.xevDeep.tev() == tevNull)
 				cxevInUse++;
 			else
 				cxevSaveReplace++;
 			if (!xev2.xevDeep.FMatchHabd(bdg.habd))
 				cxevSaveCollision++;
 #endif
-			xev2.xevDeep.Save(bdg.habd, emv.ev, evt, ply, emv.mv, age);
+			xev2.xevDeep.Save(bdg.habd, emv.ev, tev, ply, emv.mv, age);
 			return &xev2.xevDeep;
 		}
 
-		if (!(evt < xev2.xevNew.evt())) {
+		if (!(tev < xev2.xevNew.tev())) {
 #ifndef NOSTATS
-			if (xev2.xevNew.evt() == evtNull)
+			if (xev2.xevNew.tev() == tevNull)
 				cxevInUse++;
 			else
 				cxevSaveReplace++;
 			if (!xev2.xevNew.FMatchHabd(bdg.habd))
 				cxevSaveCollision++;
 #endif
-			xev2.xevNew.Save(bdg.habd, emv.ev, evt, ply, emv.mv, age);
+			xev2.xevNew.Save(bdg.habd, emv.ev, tev, ply, emv.mv, age);
 			return &xev2.xevNew;
 		}
 
@@ -278,7 +278,7 @@ public:
 		cxevProbe++;
 #endif
 		XEV2& xev2 = (*this)[bdg];
-		if (xev2.xevDeep.evt() == evtNull)
+		if (xev2.xevDeep.tev() == tevNull)
 			return nullptr;
 		if (xev2.xevDeep.FMatchHabd(bdg.habd)) {
 			if (ply > xev2.xevDeep.ply())
@@ -289,7 +289,7 @@ public:
 			return &xev2.xevDeep;
 		}
 CheckNew:
-		if (xev2.xevNew.evt() == evtNull)
+		if (xev2.xevNew.tev() == tevNull)
 			return nullptr;
 		if (xev2.xevNew.FMatchHabd(bdg.habd)) {
 			if (ply > xev2.xevNew.ply())

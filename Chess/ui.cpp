@@ -964,11 +964,11 @@ void BTN::LeftDrag(const PT& pt)
 
 void BTN::MouseHover(const PT& pt, MHT mht)
 {
-	if (mht == MHT::Enter) {
+	if (mht == mhtEnter) {
 		Hilite(true);
 		ShowTip(this, true);
 	}
-	else if (mht == MHT::Exit) {
+	else if (mht == mhtExit) {
 		Hilite(false);
 		ShowTip(this, false);
 	}

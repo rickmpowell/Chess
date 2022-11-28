@@ -105,14 +105,14 @@ ERR TEST::RunAll(void)
 	}
 
 	switch (err) {
-	case ERR::None:
+	case errNone:
 		LogClose(SzName(), L"Passed", lgfBold);
 		break;
 	default:
-	case ERR::Failed:
+	case errFailed:
 		LogClose(SzName(), L"Failed", lgfBold);
 		break;
-	case ERR::Interrupted:
+	case errInterrupted:
 		LogClose(SzName(), L"Interrupted", lgfItalic);
 		break;
 	}
@@ -126,19 +126,19 @@ ERR TEST::ErrRun(void)
 	}
 	catch (exception& ex) {
 		LogData(WszWidenSz(ex.what()));
-		return ERR::Failed;
+		return errFailed;
 	}
 	catch (...) {
 		LogData(L"Unknown exception");
-		return ERR::Failed;
+		return errFailed;
 	}
-	return ERR::None;
+	return errNone;
 
 }
 
 bool TEST::FContinueTest(ERR err) const
 {
-	if (err == ERR::Interrupted)
+	if (err == errInterrupted)
 		return false;
 	return true;
 }
@@ -412,7 +412,7 @@ public:
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
 			LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
-			if (uiga.ga.DeserializeGame(istkpgn) != ERR::None)
+			if (uiga.ga.DeserializeGame(istkpgn) != errNone)
 				break;
 			UndoFullGame();
 			ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -451,7 +451,7 @@ ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
 	ga.bdg.RedoMv();
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -514,7 +514,7 @@ public:
 		do {
 			LogTemp(wstring(L"Game ") + to_wstring(++igame));
 			err = uiga.ga.DeserializeGame(istkpgn);
-		} while (err == ERR::None);
+		} while (err == errNone);
 	}
 };
 

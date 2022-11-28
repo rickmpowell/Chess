@@ -370,7 +370,7 @@ void UIPS::ScrollPage(int dpage)
 
 SBAR::SBAR(UIPS* puipsParent) : UI(puipsParent), puips(puipsParent),
 		yTopCont(0), yBotCont(100.0f), yTopView(0), yBotView(0),
-		tidScroll(0), fScrollDelay(false), htsbarTrack(HTSBAR::None), ptMouseInit(0, 0), ptThumbTopInit(0, 0)
+		tidScroll(0), fScrollDelay(false), htsbarTrack(htsbarNone), ptMouseInit(0, 0), ptThumbTopInit(0, 0)
 {
 }
 
@@ -465,15 +465,15 @@ HTSBAR SBAR::HitTest(const PT& pt)
 {
 	RC rcInt = RcInterior();
 	if (!rcInt.FContainsPt(pt))
-		return HTSBAR::None;
+		return htsbarNone;
 	RC rcThumb = RcThumb();
 	if (pt.y < rcThumb.top)
-		return HTSBAR::PageUp;
+		return htsbarPageUp;
 	if (pt.y < rcThumb.bottom)
-		return HTSBAR::Thumb;
+		return htsbarThumb;
 	if (pt.y < rcInt.bottom)
-		return HTSBAR::PageDown;
-	return HTSBAR::None;
+		return htsbarPageDown;
+	return htsbarNone;
 }
 
 
@@ -490,30 +490,30 @@ void SBAR::StartLeftDrag(const PT& pt)
 
 	switch (htsbarTrack = HitTest(ptMouseInit = pt)) {
 
-	case HTSBAR::PageUp:
+	case htsbarPageUp:
 		StartScrollRepeat();
 		puips->ScrollPage(1);
 		break;
-	case HTSBAR::PageDown:
+	case htsbarPageDown:
 		StartScrollRepeat();
 		puips->ScrollPage(-1);
 		break;
 
-	case HTSBAR::LineUp:
+	case htsbarLineUp:
 		StartScrollRepeat();
 		puips->ScrollLine(1);
 		break;
-	case HTSBAR::LineDown:
+	case htsbarLineDown:
 		StartScrollRepeat();
 		puips->ScrollLine(-1);
 		break;
 
-	case HTSBAR::Thumb:
+	case htsbarThumb:
 		ptThumbTopInit = RcThumb().PtTopLeft();
 		break;
 
 	default:
-		htsbarTrack = HTSBAR::None;
+		htsbarTrack = htsbarNone;
 		ReleaseCapt();
 		break;
 	}
@@ -529,9 +529,9 @@ void SBAR::StartLeftDrag(const PT& pt)
 void SBAR::EndLeftDrag(const PT& pt)
 {
 	EndScrollRepeat();
-	if (htsbarTrack == HTSBAR::Thumb)	// one last thumb positioning when thumbing
+	if (htsbarTrack == htsbarThumb)	// one last thumb positioning when thumbing
 		LeftDrag(pt);
-	htsbarTrack = HTSBAR::None;
+	htsbarTrack = htsbarNone;
 	ReleaseCapt();
 }
 
@@ -543,10 +543,10 @@ void SBAR::EndLeftDrag(const PT& pt)
  */
 void SBAR::LeftDrag(const PT& ptMouse)
 {
-	if (htsbarTrack != HTSBAR::Thumb)
+	if (htsbarTrack != htsbarThumb)
 		return;
 	HTSBAR htsbar = HitTest(ptMouse);
-	if (htsbar == HTSBAR::None)
+	if (htsbar == htsbarNone)
 		return;
 
 	/* compute where the top of the thumb is in the content area */
@@ -579,16 +579,16 @@ void SBAR::TickTimer(TID tid, UINT dtm)
 	
 	ContinueScrollRepeat();
 	switch (htsbar) {
-	case HTSBAR::LineUp:
+	case htsbarLineUp:
 		puips->ScrollLine(1);
 		break;
-	case HTSBAR::LineDown:
+	case htsbarLineDown:
 		puips->ScrollLine(-1);
 		break;
-	case HTSBAR::PageUp:
+	case htsbarPageUp:
 		puips->ScrollPage(1);
 		break;
-	case HTSBAR::PageDown:
+	case htsbarPageDown:
 		puips->ScrollPage(-1);
 		break;
 	default:

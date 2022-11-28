@@ -65,7 +65,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
 	InitGame(nullptr, nullptr);
 	try {
 		ERR err = DeserializeHeaders(istkpgn);
-		if (err != ERR::None)
+		if (err != errNone)
 			return err;
 		DeserializeMoveList(istkpgn);
 	}
@@ -73,7 +73,7 @@ ERR GA::Deserialize(ISTKPGN& istkpgn)
 		InitGame(nullptr, nullptr);
 		throw;
 	}
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -92,7 +92,7 @@ ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 	ERR err;
 	try {
 		err = DeserializeHeaders(istkpgn);
-		if (err != ERR::None)
+		if (err != errNone)
 			return err;
 	}
 	catch (EXPARSE& ex) {
@@ -116,21 +116,21 @@ ERR GA::DeserializeGame(ISTKPGN& istkpgn)
 ERR GA::DeserializeHeaders(ISTKPGN& istkpgn)
 {
 	ERR err;
-	if ((err = DeserializeTag(istkpgn)) != ERR::None)
+	if ((err = DeserializeTag(istkpgn)) != errNone)
 		return err;
 	pprocpgn->ProcessTag(tkpgnTagsStart, "");
-	while (DeserializeTag(istkpgn) != ERR::EndOfFile)
+	while (DeserializeTag(istkpgn) != errEndOfFile)
 		;
 	assert(pprocpgn);
 	pprocpgn->ProcessTag(tkpgnTagsEnd, "");
-	return ERR::None;
+	return errNone;
 }
 
 
 /*	GA::DeserializeTag
  *
  *	Deserializes a single tag from the PGN file header section. Returns 0 on success,
- *	returns ERR::EndOfFile if end of tag section.
+ *	returns errEndOfFile if end of tag section.
  */
 ERR GA::DeserializeTag(ISTKPGN& istkpgn)
 {
@@ -153,7 +153,7 @@ ERR GA::DeserializeTag(ISTKPGN& istkpgn)
 		switch ((int)*tks.ptkStart) {
 		case tkpgnBlankLine:
 		case tkpgnEnd:
-			return ERR::EndOfFile;	// blank line signifies end of tags
+			return errEndOfFile;	// blank line signifies end of tags
 		case tkpgnLBracket:
 			goto GotTag;
 		default:
@@ -175,7 +175,7 @@ GotTag:
 	/* we have a well-formed tag */
 	ProcessTag(tks.ptkSym->sz(), tks.ptkVal->sz());
 
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -188,10 +188,10 @@ GotTag:
  */
 ERR GA::DeserializeMoveList(ISTKPGN& istkpgn)
 {
-	while (DeserializeMove(istkpgn) == ERR::None) {
+	while (DeserializeMove(istkpgn) == errNone) {
 		puiga->PumpMsg();
 	}
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -211,7 +211,7 @@ ERR GA::DeserializeMove(ISTKPGN& istkpgn)
 					throw EXPARSE(ex.what(), istkpgn);
 				}
 				delete ptk;
-				return ERR::None;
+				return errNone;
 			}
 			else {
 				/* eat all the consecutive trailing periods after a move number */
@@ -234,13 +234,13 @@ ERR GA::DeserializeMove(ISTKPGN& istkpgn)
 		case tkpgnBlankLine:
 		case tkpgnEnd:
 			delete ptk;
-			return ERR::EndOfFile;
+			return errEndOfFile;
 		default:
 			istkpgn.UngetTk(ptk);
-			return ERR::EndOfFile;
+			return errEndOfFile;
 		}
 	}
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -272,7 +272,7 @@ ERR GA::ProcessTag(const string& szTag, const string& szVal)
 			break;
 		}
 	}
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -289,10 +289,10 @@ ERR GA::ParseAndProcessMove(const string& szMove)
 
 	MV mv;
 	const char* pch = szMove.c_str();
-	if (bdg.ParseMv(pch, mv) == ERR::EndOfFile)
-		return ERR::EndOfFile;
+	if (bdg.ParseMv(pch, mv) == errEndOfFile)
+		return errEndOfFile;
 	pprocpgn->ProcessMv(mv);
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -346,7 +346,7 @@ PROCPGN::PROCPGN(GA& ga) : ga(ga)
 ERR PROCPGNOPEN::ProcessMv(MV mv)
 {
 	ga.bdg.MakeMv(mv);
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -368,7 +368,7 @@ ERR PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
 	default:
 		break;
 	}
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -379,29 +379,29 @@ ERR PROCPGNOPEN::ProcessTag(int tkpgn, const string& szValue)
 string to_string(TKMV tkmv)
 {
 	switch (tkmv) {
-	case TKMV::Error: return "<Error>";
-	case TKMV::End: return "<End>";
-	case TKMV::King: return "K";
-	case TKMV::Queen: return "Q";
-	case TKMV::Rook: return "R";
-	case TKMV::Bishop: return "B";
-	case TKMV::Knight: return "N";
-	case TKMV::Pawn: return "P";
-	case TKMV::Square: return "<Square>";
-	case TKMV::File: return "<File>";
-	case TKMV::Rank: return "<Rank>";
-	case TKMV::Take: return "x";
-	case TKMV::To: return "-";
-	case TKMV::Promote: return "=";
-	case TKMV::Check: return "+";
-	case TKMV::Mate: return "#";
-	case TKMV::EnPassant: return "e.p.";
-	case TKMV::CastleKing: return "O-O";
-	case TKMV::CastleQueen: return "O-O-O";
-	case TKMV::WhiteWins: return "1-0";
-	case TKMV::BlackWins: return "0-1";
-	case TKMV::Draw: return "1/2-1/2";
-	case TKMV::InProgress: return "*";
+	case tkmvError: return "<Error>";
+	case tkmvEnd: return "<End>";
+	case tkmvKing: return "K";
+	case tkmvQueen: return "Q";
+	case tkmvRook: return "R";
+	case tkmvBishop: return "B";
+	case tkmvKnight: return "N";
+	case tkmvPawn: return "P";
+	case tkmvSquare: return "<Square>";
+	case tkmvFile: return "<File>";
+	case tkmvRank: return "<Rank>";
+	case tkmvTake: return "x";
+	case tkmvTo: return "-";
+	case tkmvPromote: return "=";
+	case tkmvCheck: return "+";
+	case tkmvMate: return "#";
+	case tkmvEnPassant: return "e.p.";
+	case tkmvCastleKing: return "O-O";
+	case tkmvCastleQueen: return "O-O-O";
+	case tkmvWhiteWins: return "1-0";
+	case tkmvBlackWins: return "0-1";
+	case tkmvDraw: return "1/2-1/2";
+	case tkmvInProgress: return "*";
 	default:
 		break;
 	}
@@ -438,35 +438,35 @@ ERR BDG::ParseMv(const char*& pch, MV& mv)
 	TKMV tkmv = TkmvScan(pch, sq1);
 
 	switch (tkmv) {
-	case TKMV::King:
-	case TKMV::Queen:
-	case TKMV::Rook:
-	case TKMV::Bishop:
-	case TKMV::Knight:
-	case TKMV::Pawn:
+	case tkmvKing:
+	case tkmvQueen:
+	case tkmvRook:
+	case tkmvBishop:
+	case tkmvKnight:
+	case tkmvPawn:
 		return ParsePieceMv(vemv, tkmv, pchInit, pch, mv);
-	case TKMV::Square:
+	case tkmvSquare:
 		return ParseSquareMv(vemv, sq1, pchInit, pch, mv);
-	case TKMV::File:
+	case tkmvFile:
 		return ParseFileMv(vemv, sq1, pchInit, pch, mv);
-	case TKMV::Rank:
+	case tkmvRank:
 		return ParseRankMv(vemv, sq1, pchInit, pch, mv);
-	case TKMV::CastleKing:
+	case tkmvCastleKing:
 		file = fileKingKnight;
 		goto BuildCastle;
-	case TKMV::CastleQueen:
+	case tkmvCastleQueen:
 		file = fileQueenBishop;
 BuildCastle:
 		rank = RankBackFromCpc(cpcToMove);
 		mv = MV(SQ(rank, fileKing), SQ(rank, file), PC(cpcToMove, apcKing));
-		return ERR::None;
-	case TKMV::WhiteWins:
-	case TKMV::BlackWins:
-	case TKMV::Draw:
-	case TKMV::InProgress:
-		return ERR::EndOfFile;
-	case TKMV::End:
-		return ERR::EndOfFile;	// the move symbol is blank - can this happen?
+		return errNone;
+	case tkmvWhiteWins:
+	case tkmvBlackWins:
+	case tkmvDraw:
+	case tkmvInProgress:
+		return errEndOfFile;
+	case tkmvEnd:
+		return errEndOfFile;	// the move symbol is blank - can this happen?
 	default:
 		/* all other tokens are illegal */
 		throw EXPARSE(format("Illegal token {}", to_string(tkmv)));
@@ -477,12 +477,12 @@ BuildCastle:
 APC ApcFromTkmv(TKMV tkmv)
 {
 	switch (tkmv) {
-	case TKMV::Pawn: return apcPawn;
-	case TKMV::Knight: return apcKnight;
-	case TKMV::Bishop: return apcBishop;
-	case TKMV::Rook: return apcRook;
-	case TKMV::Queen: return apcQueen;
-	case TKMV::King: return apcKing;
+	case tkmvPawn: return apcPawn;
+	case tkmvKnight: return apcKnight;
+	case tkmvBishop: return apcBishop;
+	case tkmvRook: return apcRook;
+	case tkmvQueen: return apcQueen;
+	case tkmvKing: return apcKing;
 	default:
 		break;
 	}
@@ -498,23 +498,23 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 	tkmv = TkmvScan(pch, sq);
 
 	switch (tkmv) {
-	case TKMV::To:	/* B-c5 or Bxc5 */
-	case TKMV::Take:
-		if (TkmvScan(pch, sq) != TKMV::Square)
+	case tkmvTo:	/* B-c5 or Bxc5 */
+	case tkmvTake:
+		if (TkmvScan(pch, sq) != tkmvSquare)
 			throw EXPARSE(format("Missing destination square (got {})", to_string(tkmv)));
 		mv = MvMatchPieceTo(vemv, apc, -1, -1, sq, pchInit, pch);
 		break;
 
-	case TKMV::Square:	/* Bc5, Bd3c5, Bd3-c5, Bd3xc5 */
+	case tkmvSquare:	/* Bc5, Bd3c5, Bd3-c5, Bd3xc5 */
 	{
 		const char* pchNext = pch;
 		SQ sqTo;
 		tkmv = TkmvScan(pchNext, sqTo);
-		if (tkmv == TKMV::To || tkmv == TKMV::Take) { /* eat the to/take */
+		if (tkmv == tkmvTo || tkmv == tkmvTake) { /* eat the to/take */
 			pch = pchNext;
 			tkmv = TkmvScan(pchNext, sqTo);
 		}
-		if (tkmv != TKMV::Square) { /* Bc5 */
+		if (tkmv != tkmvSquare) { /* Bc5 */
 			/* look up piece that can move to this square */
 			mv = MvMatchPieceTo(vemv, apc, -1, -1, sq, pchInit, pch);
 			break;
@@ -525,32 +525,32 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 		break;
 	}
 
-	case TKMV::File: /* Bdc5 or Bd-c5 */
+	case tkmvFile: /* Bdc5 or Bd-c5 */
 	{
 		const char* pchNext = pch;
 		SQ sqTo;
 		tkmv = TkmvScan(pchNext, sqTo);
-		if (tkmv == TKMV::To || tkmv == TKMV::Take) {
+		if (tkmv == tkmvTo || tkmv == tkmvTake) {
 			pch = pchNext;
 			tkmv = TkmvScan(pchNext, sqTo);
 		}
-		if (tkmv != TKMV::Square)
+		if (tkmv != tkmvSquare)
 			throw EXPARSE(format("Expected destination square (got {})", to_string(tkmv)));
 		pch = pchNext;
 		mv = MvMatchPieceTo(vemv, apc, -1, sq.file(), sqTo, pchInit, pch);
 		break;
 	}
 
-	case TKMV::Rank:
+	case tkmvRank:
 	{
 		const char* pchNext = pch;
 		SQ sqTo;
 		tkmv = TkmvScan(pchNext, sqTo);
-		if (tkmv == TKMV::To || tkmv == TKMV::Take) {
+		if (tkmv == tkmvTo || tkmv == tkmvTake) {
 			pch = pchNext;
 			tkmv = TkmvScan(pchNext, sqTo);
 		}
-		if (tkmv != TKMV::Square)
+		if (tkmv != tkmvSquare)
 			throw EXPARSE(format("Expected a square (got {})", to_string(tkmv)));
 		pch = pchNext;
 		mv = MvMatchPieceTo(vemv, apc, sq.rank(), -1, sqTo, pchInit, pch);
@@ -571,11 +571,11 @@ ERR BDG::ParseSquareMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*
 	SQ sqTo;
 
 	TKMV tkmv = TkmvScan(pchNext, sq);
-	if (tkmv == TKMV::To || tkmv == TKMV::Take) {
+	if (tkmv == tkmvTo || tkmv == tkmvTake) {
 		pch = pchNext;
 		tkmv = TkmvScan(pchNext, sq);
 	}
-	if (TkmvScan(pchNext, sq) == TKMV::Square) {
+	if (TkmvScan(pchNext, sq) == tkmvSquare) {
 		pch = pchNext;
 		mv = MvMatchFromTo(vemv, sq, sqTo, pchInit, pch);
 	}
@@ -592,12 +592,12 @@ ERR BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 	for (;;) {
 		SQ sqT;
 		switch (TkmvScan(pchNext, sqT)) {
-		case TKMV::Check:
-		case TKMV::Mate:
-		case TKMV::EnPassant:
+		case tkmvCheck:
+		case tkmvMate:
+		case tkmvEnPassant:
 			pch = pchNext;
 			break;
-		case TKMV::Promote:
+		case tkmvPromote:
 		{
 			pch = pchNext;
 			TKMV tkmv = TkmvScan(pchNext, sqT);
@@ -608,19 +608,19 @@ ERR BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 			mv.SetApcPromote(apc);
 			break;
 		}
-		case TKMV::End:
-			return ERR::None;
-		case TKMV::WhiteWins:
-		case TKMV::BlackWins:
-		case TKMV::Draw:
-		case TKMV::InProgress:
-			return ERR::None;
+		case tkmvEnd:
+			return errNone;
+		case tkmvWhiteWins:
+		case tkmvBlackWins:
+		case tkmvDraw:
+		case tkmvInProgress:
+			return errNone;
 		default:
 			throw EXPARSE("Not a valid move suffix");
 		}
 	}
 
-	return ERR::None;
+	return errNone;
 }
 
 
@@ -630,11 +630,11 @@ ERR BDG::ParseFileMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 	const char* pchNext = pch;
 	SQ sqTo;
 	TKMV tkmv = TkmvScan(pchNext, sqTo);
-	if (tkmv == TKMV::To || tkmv == TKMV::Take) {
+	if (tkmv == tkmvTo || tkmv == tkmvTake) {
 		pch = pchNext;
 		tkmv = TkmvScan(pchNext, sqTo);
 	}
-	if (tkmv != TKMV::Square)
+	if (tkmv != tkmvSquare)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
 	mv = MvMatchPieceTo(vemv, apcPawn, -1, sq.file(), sqTo, pchInit, pch);
@@ -648,11 +648,11 @@ ERR BDG::ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 	const char* pchNext = pch;
 	SQ sqTo;
 	TKMV tkmv = TkmvScan(pchNext, sqTo);
-	if (tkmv == TKMV::To || tkmv == TKMV::Take) {
+	if (tkmv == tkmvTo || tkmv == tkmvTake) {
 		pch = pchNext;
 		tkmv = TkmvScan(pchNext, sqTo);
 	}
-	if (tkmv != TKMV::Square)
+	if (tkmv != tkmvSquare)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
 	mv = MvMatchPieceTo(vemv, apcPawn, sq.rank(), -1, sqTo, pchInit, pch);
@@ -687,23 +687,23 @@ MV BDG::MvMatchFromTo(const VEMV& vemv, SQ sqFrom, SQ sqTo, const char* pchFirst
 TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 {
 	char ch;
-	int rank, file;
+	int file;
 
 	if (!*pch)
-		return TKMV::End;
+		return tkmvEnd;
 
 	struct {
 		const char* szKeyWord;
 		TKMV tkmv;
 	} mpsztkmv[] = {
-		{"0-0-0", TKMV::CastleQueen},
-		{"O-O-O", TKMV::CastleQueen},
-		{"0-0", TKMV::CastleKing},
-		{"O-O", TKMV::CastleKing},
-		{"e.p.", TKMV::EnPassant},
-		{"1-0", TKMV::WhiteWins},
-		{"0-1", TKMV::BlackWins},
-		{"1/2-1/2", TKMV::Draw},
+		{"0-0-0", tkmvCastleQueen},
+		{"O-O-O", tkmvCastleQueen},
+		{"0-0", tkmvCastleKing},
+		{"O-O", tkmvCastleKing},
+		{"e.p.", tkmvEnPassant},
+		{"1-0", tkmvWhiteWins},
+		{"0-1", tkmvBlackWins},
+		{"1/2-1/2", tkmvDraw},
 	};
 	for (int isz = 0; isz < CArray(mpsztkmv); isz++) {
 		int ich;
@@ -713,22 +713,22 @@ TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 		}
 		pch += ich;
 		return mpsztkmv[isz].tkmv;
-	NextKeyWord:;
+NextKeyWord: ;
 	}
 
 	switch (ch = *pch++) {
-	case 'P': return TKMV::Pawn;
-	case 'B': return TKMV::Bishop;
-	case 'N': return TKMV::Knight;
-	case 'R': return TKMV::Rook;
-	case 'Q': return TKMV::Queen;
-	case 'K': return TKMV::King;
-	case 'x': return TKMV::Take;
-	case '-': return TKMV::To;
-	case '+': return TKMV::Check;
-	case '#': return TKMV::Mate;
-	case '*': return TKMV::InProgress;
-	case '=': return TKMV::Promote;
+	case 'P': return tkmvPawn;
+	case 'B': return tkmvBishop;
+	case 'N': return tkmvKnight;
+	case 'R': return tkmvRook;
+	case 'Q': return tkmvQueen;
+	case 'K': return tkmvKing;
+	case 'x': return tkmvTake;
+	case '-': return tkmvTo;
+	case '+': return tkmvCheck;
+	case '#': return tkmvMate;
+	case '*': return tkmvInProgress;
+	case '=': return tkmvPromote;
 	case 'a':
 	case 'b':
 	case 'c':
@@ -738,13 +738,12 @@ TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 	case 'g':
 	case 'h':
 		file = ch - 'a';
-		if (*pch >= '1' && *pch <= '8') {
+		if (in_range(*pch, '1', '8')) {
 			sq = SQ(*pch++ - '1', file);
-			return TKMV::Square;
+			return tkmvSquare;
 		}
 		sq = SQ(0, file);
-		return TKMV::File;
-		break;
+		return tkmvFile;
 	case '1':
 	case '2':
 	case '3':
@@ -753,12 +752,10 @@ TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 	case '6':
 	case '7':
 	case '8':
-		rank = ch - '1';
-		sq = SQ(rank, 0);
-		return TKMV::Rank;
-		break;
+		sq = SQ(ch - '1', 0);
+		return tkmvRank;
 	default:
-		return TKMV::Error;
+		return tkmvError;
 	}
 }
 
@@ -785,11 +782,7 @@ void ISTKPGN::WhiteSpace(bool fReturn)
 
 bool ISTKPGN::FIsSymbol(char ch, bool fFirst) const
 {
-	if (ch >= 'a' && ch <= 'z')
-		return true;
-	if (ch >= 'A' && ch <= 'Z')
-		return true;
-	if (ch >= '0' && ch <= '9')
+	if (in_range(ch, 'a', 'z') || in_range(ch, 'A', 'Z') || in_range(ch, '0', '9'))
 		return true;
 	if (fFirst)
 		return false;
@@ -802,7 +795,7 @@ char ISTKPGN::ChSkipWhite(void)
 	char ch;
 	do
 		ch = ChNext();
-	while (FIsWhite(ch));
+	while (isblank(ch));
 	return ch;
 }
 
@@ -818,7 +811,7 @@ TK* ISTKPGN::PtkNext(void)
 Retry:
 	char ch = ChNext();
 
-	if (FIsWhite(ch)) {
+	if (isblank(ch)) {
 		ch = ChSkipWhite();
 		if (fWhiteSpace) {
 			UngetCh(ch);
@@ -866,7 +859,7 @@ Retry:
 		/* single line comments */
 		do
 			ch = ChNext();
-		while (!FIsEnd(ch) && ch != '\n');
+		while (ch && ch != '\n');
 		if (!fWhiteSpace)
 			goto Retry;
 		return new TK(tkpgnLineComment);
@@ -874,7 +867,7 @@ Retry:
 	case '{':
 		/* bracketed comments */
 		do {
-			if (FIsEnd(ch = ChNext()))
+			if (!(ch = ChNext()))
 				throw EXPARSE("missing end of comment");
 		} while (ch != '}');
 		if (!fWhiteSpace)
@@ -887,12 +880,12 @@ Retry:
 		/* TODO: what should we actually do with these things? */
 		int w = 0;
 		ch = ChNext();
-		if (!FIsDigit(ch))
+		if (!in_range(ch, '0', '9'))
 			throw EXPARSE("invalid numeric annotation integer");
 		do {
 			w = w * 10 + ch - '0';
 			ch = ChNext();
-		} while (!FIsDigit(ch));
+		} while (!in_range(ch, '0', '9'));
 		UngetCh(ch);
 		return new TKW(tkpgnNumAnno, w);
 	}
@@ -904,11 +897,11 @@ Retry:
 		char* pch = szString;
 		do {
 			ch = ChNext();
-			if (FIsEnd(ch))
+			if (!ch)
 				throw EXPARSE("missing closing quote on string");
 			if (ch == '\\') {
 				ch = ChNext();
-				if (FIsEnd(ch))
+				if (!ch)
 					throw EXPARSE("improper character escape in string");
 			}
 			*pch++ = ch;
@@ -918,19 +911,6 @@ Retry:
 	}
 
 	default:
-#ifdef NOPE
-		/* can you believe this? PGN files don't have integers as a token */
-		if (FIsDigit(ch)) {
-			int w = 0;
-			do {
-				w = w * 10 + ch - '0';
-				ch = ChNext();
-			} while (FIsDigit(ch));
-			UngetCh(ch);
-			return new TKW(tkpgnInteger, w);
-		}
-#endif
-
 		/* symbols? ignore any characters that are illegal in this context */
 		if (!FIsSymbol(ch, true))
 			goto Retry;
@@ -1034,35 +1014,13 @@ void ISTK::UngetCh(char ch)
 }
 
 
-bool ISTK::FIsWhite(char ch) const
-{
-	return ch == ' ' || ch == '\t';
-}
-
-
-bool ISTK::FIsEnd(char ch) const
-{
-	return ch == '\0';
-}
-
-
-bool ISTK::FIsDigit(char ch) const
-{
-	return ch >= '0' && ch <= '9';
-}
-
-
 bool ISTK::FIsSymbol(char ch, bool fFirst) const
 {
-	if (ch >= 'a' && ch <= 'z')
-		return true;
-	if (ch >= 'A' && ch <= 'Z')
-		return true;
-	if (ch == '_')
+	if (in_range(ch, 'a', 'z') || in_range(ch, 'A', 'Z') || ch == '_')
 		return true;
 	if (fFirst)
 		return false;
-	if (ch >= '0' && ch <= '9')
+	if (in_range(ch, '0', '9'))
 		return true;
 	return false;
 }

@@ -408,15 +408,15 @@ bool APP::OnMouseMove(int x, int y)
     }
 
     if (puiga->puiHover == pui) {
-        pui->MouseHover(pt, MHT::Move);
+        pui->MouseHover(pt, mhtMove);
         return true;
     }
 
     if (puiga->puiHover) {
         PT ptExit = puiga->puiHover->PtLocalFromGlobal(PT((float)x, (float)y));
-        puiga->puiHover->MouseHover(ptExit, MHT::Exit);
+        puiga->puiHover->MouseHover(ptExit, mhtExit);
     }
-    pui->MouseHover(pt, MHT::Enter);
+    pui->MouseHover(pt, mhtEnter);
     puiga->SetHover(pui);
     
     return true;
@@ -782,18 +782,18 @@ public:
  */
 
 
-enum class TPERFT {
-    Normal = 0,
-    Bulk = 1,
-    Divide = 2
+enum TPERFT {
+    tperftNormal = 0,
+    tperftBulk = 1,
+    tperftDivide = 2
 };
 
 wstring to_wstring(TPERFT tperft)
 {
     switch (tperft) {
-    case TPERFT::Bulk:
+    case tperftBulk:
         return L"Bulk";
-    case TPERFT::Divide:
+    case tperftDivide:
         return L"Divide";
     default:
         return L"Normal";
@@ -815,9 +815,9 @@ INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lpar
         ::SetWindowLongPtr(hdlg, DWLP_USER, lparam);
         ::SetDlgItemTextW(hdlg, idePerftDepth, to_wstring(pddperft->depth).c_str());
         HWND hwndCombo = ::GetDlgItem(hdlg, idcPerftType);
-        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(TPERFT::Normal).c_str());
-        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(TPERFT::Bulk).c_str());
-        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(TPERFT::Divide).c_str());
+        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(tperftNormal).c_str());
+        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(tperftBulk).c_str());
+        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(tperftDivide).c_str());
         ::SendMessageW(hwndCombo, CB_SETCURSEL, (WPARAM)pddperft->tperft, 0);
         HWND hwndParent = GetParent(hdlg);
         RECT rcParent, rcDlg;
@@ -881,10 +881,10 @@ public:
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
         uint64_t cmv;
         switch (ddperft.tperft) {
-        case TPERFT::Divide:
+        case tperftDivide:
             cmv = app.puiga->CmvPerftDivide(ddperft.depth);
             break;
-        case TPERFT::Bulk:
+        case tperftBulk:
             cmv = app.puiga->ga.CmvPerftBulk(ddperft.depth);
             break;
         default:
@@ -913,7 +913,7 @@ public:
     }
 };
 
-DDPERFT CMDPERFTDIVIDE::ddperft = { TPERFT::Bulk, 6 };
+DDPERFT CMDPERFTDIVIDE::ddperft = { tperftBulk, 6 };
 
 
 /*  

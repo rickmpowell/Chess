@@ -149,7 +149,7 @@ void UIPL::DrawChooserItem(const INFOPL& infopl, RC& rc)
 
 	BMP* pbmpLogo = PbmpFromPngRes(rginfopl.IdbFromInfopl(infopl));
 	wstring sz = infopl.szName;
-	if (infopl.tpl == TPL::AI)
+	if (infopl.tpl == tplAI)
 		sz += L" (level " + to_wstring(infopl.level) + L")";
 	SIZ siz = pbmpLogo->GetSize();
 	RC rcTo = rc;
@@ -685,18 +685,18 @@ void UIML::DrawContent(const RC& rcCont)
 {
 	BDG bdgT(bdgInit);
 	float yCont = RcContent().top;
-	for (unsigned imv = 0; imv < uiga.ga.bdg.vmvGame.size(); imv++) {
-		MV mv = uiga.ga.bdg.vmvGame[imv];
+	for (unsigned imv = 0; imv < bdgT.vmvGame.size(); imv++) {
+		MV mv = bdgT.vmvGame[imv];
 		if (imv % 2 == 0) {
 			RC rc = RcFromCol(yCont + 4.0f + (imv / 2) * dyList, 0);
 			DrawMoveNumber(rc, imv / 2 + 1);
 		}
-		if (!mv.fIsNil()) {
-			RC rc = RcFromImv(imv);
-			if (imv == imvSel)
-				FillRc(rc, pbrHilite);
-			DrawAndMakeMv(rc, bdgT, mv);
-		}
+		if (mv.fIsNil())
+			continue;
+		RC rc = RcFromImv(imv);
+		if (imv == imvSel)
+			FillRc(rc, pbrHilite);
+		DrawAndMakeMv(rc, bdgT, mv);
 	}
 }
 
@@ -811,33 +811,33 @@ bool UIML::FMakeVis(int64_t imv)
 HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 {
 	if (pt.x < 0 || pt.x >= RcContent().right)
-		return HTML::Miss;
+		return htmlMiss;
 	if (pt.x > RcView().right) {
 		/* TODO: move this into UIPS */
-		return HTML::Thumb;
+		return htmlThumb;
 	}
 
 	int li = (int)floor((pt.y - RcContent().top) / DyLine());
 	if (pt.x < mpcoldx[0])
-		return HTML::MoveNumber;
+		return htmlMoveNumber;
 	int64_t imv = -1;
 	if (pt.x < mpcoldx[0] + mpcoldx[1])
 		imv = (int64_t)li * 2;
 	else if (pt.x < mpcoldx[0] + mpcoldx[1] + mpcoldx[2])
 		imv = (int64_t)li * 2 + 1;
 	if (imv < 0)
-		return HTML::EmptyBefore;
+		return htmlEmptyBefore;
 	if (imv >= (int64_t)uiga.ga.bdg.vmvGame.size())
-		return HTML::EmptyAfter;
+		return htmlEmptyAfter;
 	*pimv = imv;
-	return HTML::List;
+	return htmlList;
 }
 
 void UIML::StartLeftDrag(const PT& pt)
 {
 	int64_t imv;
 	HTML html = HtmlHitTest(pt, &imv);
-	if (html != HTML::List)
+	if (html != htmlList)
 		return;
 	SetSel(imv, spmvFast);
 	uiga.MoveToImv(imv, spmvAnimate);

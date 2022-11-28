@@ -152,13 +152,13 @@ public:
 };
 
 
-enum class ERR {
-	EndOfFile = 1,
-	None = 0,
-	Fatal = -1,
-	Parse = -2,
-	Interrupted = -3,
-	Failed = -4
+enum ERR {
+	errEndOfFile = 1,
+	errNone = 0,
+	errFatal = -1,
+	errParse = -2,
+	errInterrupted = -3,
+	errFailed = -4
 };
 
 

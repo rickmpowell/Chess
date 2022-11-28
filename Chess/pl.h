@@ -446,18 +446,18 @@ public:
  */
 
 
-enum class TPL	// types of players
+enum TPL	// types of players
 {
-	AI,
-	Human,
-	Stream
+	tplAI,
+	tplHuman,
+	tplStream
 };
 
-enum class IDCLASSPL	// player classes
+enum IDCLASSPL	// player classes
 {
-	AI,
-	AI2,
-	Human
+	idclassplAI,
+	idclassplAI2,
+	idclassplHuman
 };
 
 struct INFOPL

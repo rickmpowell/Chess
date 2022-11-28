@@ -51,13 +51,13 @@ public:
  */
 
 
-enum class HTSBAR {
-	None,
-	LineUp,
-	LineDown,
-	PageUp,
-	PageDown,
-	Thumb
+enum HTSBAR {
+	htsbarNone,
+	htsbarLineUp,
+	htsbarLineDown,
+	htsbarPageUp,
+	htsbarPageDown,
+	htsbarThumb
 };
 
 

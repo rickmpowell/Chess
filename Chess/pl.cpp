@@ -533,9 +533,9 @@ void VEMVSS::InitSctCur(BDG& bdg, int iemvFirst) noexcept
 		/* first time through the enumeration, snag the principal variation. This can
 		   be done very quickly with just a transposition table probe. While we're at
 		   it, go ahead and reset all the other moves */
-		XEV xevT(0, mvNil, evtNull, evCanceled, 0);
+		XEV xevT(0, mvNil, tevNull, evCanceled, 0);
 		XEV* pxev = xt.Find(bdg, 0);
-		if (pxev == nullptr || pxev->evt() != evtEqual)
+		if (pxev == nullptr || pxev->tev() != tevEqual)
 			pxev = &xevT;
 		for (int iemv = iemvFirst; iemv < cemv(); iemv++) {
 			EMV& emv = (*this)[iemv];
@@ -557,7 +557,7 @@ void VEMVSS::InitSctCur(BDG& bdg, int iemvFirst) noexcept
 			assert(emv.sct() == sctNil);	// should all be marked nil by pv pass
 			bdg.MakeMvSq(emv.mv);
 			XEV* pxev = xt.Find(bdg, 0);
-			if (pxev != nullptr && pxev->evt() != evtHigher) {
+			if (pxev != nullptr && pxev->tev() != tevHigher) {
 				emv.SetSct(sctXTable);
 				emv.ev = -pxev->ev();
 			}
@@ -801,16 +801,16 @@ bool PLAI::FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int ply) const noexcept
 	
 	/* adjust the alpha-beta interval based on the entry */
 
-	switch (pxev->evt()) {
-	case evtEqual:
+	switch (pxev->tev()) {
+	case tevEqual:
 		emvBest.ev = pxev->ev();
 		break;
-	case evtHigher:
+	case tevHigher:
 		if (!(pxev->ev() > ab))
 			return false;
 		emvBest.ev = ab.evBeta;
 		break;
-	case evtLower:
+	case tevLower:
 		if (!(pxev->ev() < ab))
 			return false;
 		emvBest.ev = ab.evAlpha;
@@ -831,11 +831,11 @@ bool PLAI::FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int ply) const noexcept
 XEV* PLAI::SaveXt(BDG& bdg, EMV emvBest, AB ab, int ply) const noexcept
 {
 	if (emvBest.ev < ab)
-		return xt.Save(bdg, emvBest, evtLower, ply);
+		return xt.Save(bdg, emvBest, tevLower, ply);
 	else if (emvBest.ev > ab)
-		return xt.Save(bdg, emvBest, evtHigher, ply);
+		return xt.Save(bdg, emvBest, tevHigher, ply);
 	else
-		return xt.Save(bdg, emvBest, evtEqual, ply);
+		return xt.Save(bdg, emvBest, tevEqual, ply);
 }
 
 
@@ -1472,13 +1472,13 @@ MV PLHUMAN::MvGetNext(SPMV& spmv)
 
 RGINFOPL::RGINFOPL(void) 
 {
-	vinfopl.push_back(INFOPL(IDCLASSPL::AI, TPL::AI, L"SQ Mobly", 5));
-	vinfopl.push_back(INFOPL(IDCLASSPL::AI, TPL::AI, L"Max Mobly", 10));
-	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"SQ Mathilda", 3));
-	vinfopl.push_back(INFOPL(IDCLASSPL::AI2, TPL::AI, L"Max Mathilda", 10));
-	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Rick Powell"));
-	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Hazel the Dog"));
-	vinfopl.push_back(INFOPL(IDCLASSPL::Human, TPL::Human, L"Allain de Leon"));
+	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobly", 5));
+	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"Max Mobly", 10));
+	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"SQ Mathilda", 3));
+	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"Max Mathilda", 10));
+	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Rick Powell"));
+	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Hazel the Dog"));
+	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Allain de Leon"));
 }
 
 
@@ -1496,13 +1496,13 @@ PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
 {
 	PL* ppl = nullptr;
 	switch (vinfopl[iinfopl].idclasspl) {
-	case IDCLASSPL::AI:
+	case idclassplAI:
 		ppl = new PLAI(ga);
 		break;
-	case IDCLASSPL::AI2:
+	case idclassplAI2:
 		ppl = new PLAI2(ga);
 		break;
-	case IDCLASSPL::Human:
+	case idclassplHuman:
 		ppl = new PLHUMAN(ga, vinfopl[iinfopl].szName);
 		break;
 	default:
@@ -1521,7 +1521,7 @@ PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
 int RGINFOPL::IdbFromInfopl(const INFOPL& infopl) const
 {
 	switch (infopl.tpl) {
-	case TPL::AI:
+	case tplAI:
 		return idbAiLogo;
 	default:
 		break;

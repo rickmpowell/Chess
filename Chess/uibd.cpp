@@ -124,7 +124,7 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		sqDragInit(SQ()), sqHover(SQ())
+		sqDragInit(sqNil), sqHover(sqNil)
 {
 }
 
@@ -552,7 +552,7 @@ void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned framefMax)
 		Redraw(rcFrame|rcDragPc);
 		rcFrame = rcDragPc;
 	}
-	sqDragInit = SQ();
+	sqDragInit = sqNil;
 }
 
 
@@ -615,9 +615,9 @@ void UIBD::FlipBoard(CPC cpcNew)
 HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 {
 	if (!RcInterior().FContainsPt(pt))
-		return HTBD::None;
+		return htbdNone;
 	if (!rcSquares.FContainsPt(pt))
-		return HTBD::Static;
+		return htbdStatic;
 	int rank = (int)((pt.y - rcSquares.top) / dxySquare);
 	int file = (int)((pt.x - rcSquares.left) / dxySquare);
 	if (cpcPointOfView == cpcWhite)
@@ -626,14 +626,14 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 		file = fileMax - 1 - file;
 	*psq = SQ(rank, file);
 	if (uiga.ga.bdg.FIsEmpty(*psq))
-		return HTBD::Empty;
+		return htbdEmpty;
 	if (uiga.ga.bdg.CpcFromSq(*psq) != uiga.ga.bdg.cpcToMove)
-		return HTBD::OpponentPc;
+		return htbdOpponentPc;
 
 	if (FMoveablePc(*psq))
-		return HTBD::MoveablePc;
+		return htbdMoveablePc;
 	else
-		return HTBD::UnmoveablePc;
+		return htbdUnmoveablePc;
 }
 
 
@@ -660,10 +660,10 @@ void UIBD::StartLeftDrag(const PT& pt)
 {
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
-	sqHover = SQ();
+	sqHover = sqNil;
 	SetCapt(this);
 
-	if (htbd == HTBD::MoveablePc) {
+	if (htbd == htbdMoveablePc) {
 		ptDragInit = pt;
 		sqDragInit = sq;
 		ptDragCur = pt;
@@ -682,7 +682,7 @@ void UIBD::EndLeftDrag(const PT& pt)
 	if (sqDragInit.fIsNil())
 		return;
 	SQ sqFrom = sqDragInit;
-	sqDragInit = SQ();
+	sqDragInit = sqNil;
 	SQ sqTo;
 	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
@@ -735,14 +735,14 @@ void UIBD::MouseHover(const PT& pt, MHT mht)
 {
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
-	HiliteLegalMoves(htbd == HTBD::MoveablePc ? sq : SQ());
+	HiliteLegalMoves(htbd == htbdMoveablePc ? sq : sqNil);
 	switch (htbd) {
-	case HTBD::MoveablePc:
+	case htbdMoveablePc:
 		::SetCursor(uiga.app.hcurHand);
 		break;
-	case HTBD::Empty:
-	case HTBD::OpponentPc:
-	case HTBD::UnmoveablePc:
+	case htbdEmpty:
+	case htbdOpponentPc:
+	case htbdUnmoveablePc:
 		::SetCursor(uiga.app.hcurArrow);
 		break;
 	default:

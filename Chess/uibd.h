@@ -24,15 +24,15 @@
 /*
  *	Hit test codes
  */
-enum class HTBD
+enum HTBD
 {
-	None,
-	Static,
-	FlipBoard,
-	Empty,
-	OpponentPc,
-	MoveablePc,
-	UnmoveablePc
+	htbdNone,
+	htbdStatic,
+	htbdFlipBoard,
+	htbdEmpty,
+	htbdOpponentPc,
+	htbdMoveablePc,
+	htbdUnmoveablePc
 };
 
 

@@ -48,12 +48,12 @@ inline unsigned DframeFromSpmv(SPMV spmv)
 	return 0;
 }
 
-enum class MHT
+enum MHT
 {
-	Nil,
-	Enter,
-	Move,
-	Exit
+	mhtNil,
+	mhtEnter,
+	mhtMove,
+	mhtExit
 };
 
 

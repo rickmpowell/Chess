@@ -319,9 +319,10 @@ wstring SzFromSct(SCT sct);
  *
  *	EMV structure
  *
- *	Just a little holder of move evaluation information which is used for
- *	generating AI move lists and alpha-beta pruning. We generate moves into
- *	this sized element (instead of just a simple move list) to speed up search.
+ *	Just a little holder of a move along with move evaluation information, which is 
+ *	used for generating AI move lists and alpha-beta pruning. All movegens generate 
+ *	moves into this sized element (instead of just a simple move list) to minimize 
+ *	the amount of copying needed during AI search.
  *
  */
 
@@ -329,7 +330,7 @@ wstring SzFromSct(SCT sct);
 class EMV
 {
 public:
-	MV mv;
+	MV mv;		
 	EV ev;
 	uint16_t usct;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
@@ -338,10 +339,14 @@ public:
 #pragma warning(suppress:26495)	 
 	EMV(uint64_t emv) noexcept { *(uint64_t*)this = emv; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
+
+	/* comparison operations work on the eval */
+
 	inline bool operator>(const EMV& emv) const noexcept { return usct > emv.usct || (usct == emv.usct && ev > emv.ev); }
 	inline bool operator<(const EMV& emv) const noexcept { return usct < emv.usct || (usct == emv.usct && ev < emv.ev); }
 	inline bool operator>=(const EMV& emv) const noexcept {  return !(*this < emv); }
 	inline bool operator<=(const EMV& emv) const noexcept { return !(*this > emv); }
+	
 	inline void SetSct(SCT sct) noexcept { usct = static_cast<uint16_t>(sct); }
 	inline SCT sct() const noexcept { return static_cast<SCT>(usct); }
 };
@@ -554,7 +559,7 @@ public:
 	inline citerator begin(void) const noexcept { return citerator(this, 0); }
 	inline citerator end(void) const noexcept { return citerator(this, size()); }
 
-	void AppendMvOverflow(MV mv)
+	void push_back_overflow(MV mv)
 	{
 		if (pvemvOverflow == nullptr) {
 			assert(cemvCur == cemvPreMax);
@@ -565,29 +570,23 @@ public:
 	}
 
 
-	inline void AppendMv(MV mv)
+	inline void push_back(MV mv)
 	{
 		assert(FValid()); 
 		if (cemvCur < cemvPreMax)
 			aemv[cemvCur++] = mv;
 		else
-			AppendMvOverflow(mv);
+			push_back_overflow(mv);
 		assert(FValid());
 	}
 
 
-	inline void AppendMv(SQ sqFrom, SQ sqTo, PC pcMove)
+	inline void push_back(SQ sqFrom, SQ sqTo, PC pcMove)
 	{
-		assert(FValid());
-		if (cemvCur < cemvPreMax) {
-			aemv[cemvCur] = MV(sqFrom, sqTo, pcMove);
-			cemvCur++;
-		}
-		else
-			AppendMvOverflow(MV(sqFrom, sqTo, pcMove));
+		push_back(MV(sqFrom, sqTo, pcMove));
 	}
 
-	void InsertOverflow(int iemv, const EMV& emv) noexcept
+	void insert_overflow(int iemv, const EMV& emv) noexcept
 	{
 		if (pvemvOverflow == nullptr)
 			pvemvOverflow = new vector<uint64_t>;
@@ -600,11 +599,11 @@ public:
 		cemvCur++;
 	}
 
-	inline void Insert(int iemv, const EMV& emv) noexcept
+	inline void insert(int iemv, const EMV& emv) noexcept
 	{
 		assert(FValid());
 		if (cemvCur >= cemvPreMax)
-			InsertOverflow(iemv, emv);
+			insert_overflow(iemv, emv);
 		else {
 			memmove(&aemv[iemv+1], &aemv[iemv], sizeof(uint64_t) * (cemvCur - iemv));
 			aemv[iemv] = emv;
@@ -612,7 +611,7 @@ public:
 		}
 	}
 
-	void Resize(int cemvNew)
+	void resize(int cemvNew)
 	{
 		assert(FValid());
 		if (cemvNew > cemvPreMax) {
@@ -631,7 +630,7 @@ public:
 	}
 
 
-	void Reserve(int cemv)
+	void reserve(int cemv)
 	{
 		if (cemv <= cemvPreMax)
 			return;
@@ -641,7 +640,7 @@ public:
 	}
 
 
-	void Clear(void) noexcept
+	void clear(void) noexcept
 	{
 		if (pvemvOverflow) {
 			delete pvemvOverflow;
@@ -1025,12 +1024,10 @@ public:
 		return PcFromSq(sq).apc();
 	}
 
-
 	inline bool FIsEmpty(SQ sq) const noexcept
 	{
 		return bbUnoccupied.fSet(sq);
 	}
-
 
 	inline bool FCanCastle(CPC cpc, int csSide) const noexcept
 	{
@@ -1169,37 +1166,37 @@ public:
  */
 
 
-enum class TKMV {
-	Error,
-	End,
+enum TKMV {
+	tkmvError,
+	tkmvEnd,
 	
-	King,
-	Queen,
-	Rook,
-	Bishop,
-	Knight,
-	Pawn,
+	tkmvKing,
+	tkmvQueen,
+	tkmvRook,
+	tkmvBishop,
+	tkmvKnight,
+	tkmvPawn,
 
-	Square,
-	File,
-	Rank,
+	tkmvSquare,
+	tkmvFile,
+	tkmvRank,
 
-	Take,
-	To,
+	tkmvTake,
+	tkmvTo,
 	
-	Promote,
+	tkmvPromote,
 	
-	Check,
-	Mate,
-	EnPassant,
+	tkmvCheck,
+	tkmvMate,
+	tkmvEnPassant,
 	
-	CastleKing,
-	CastleQueen,
+	tkmvCastleKing,
+	tkmvCastleQueen,
 
-	WhiteWins,
-	BlackWins,
-	Draw,
-	InProgress
+	tkmvWhiteWins,
+	tkmvBlackWins,
+	tkmvDraw,
+	tkmvInProgress
 };
 
 
@@ -1227,9 +1224,10 @@ public:
 							       detection and 3-move repetition draws) */
 
 public:
-	BDG(void);
+	BDG(void) noexcept;
 	BDG(const wchar_t* szFEN);
-	
+	BDG(const BDG& bdg) noexcept;
+
 	/*
 	 *	Game control
 	 */
@@ -1348,7 +1346,7 @@ class ANO
 public:
 	ANO(void) { }
 	~ANO(void) { }
-	ANO(SQ sq) : sqFrom(sq), sqTo(SQ()) { }
+	ANO(SQ sq) : sqFrom(sq), sqTo(sqNil) { }
 	ANO(SQ sqFrom, SQ sqTo) : sqFrom(sqFrom), sqTo(sqTo) { }
 };
 
@@ -1420,9 +1418,6 @@ protected:
 
 	char ChNext(void);
 	void UngetCh(char ch);
-	bool FIsWhite(char ch) const;
-	bool FIsEnd(char ch) const;
-	bool FIsDigit(char ch) const;
 	virtual bool FIsSymbol(char ch, bool fFirst) const;
 
 public:

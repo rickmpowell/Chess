@@ -140,15 +140,15 @@ public:
  * 
  */
 
-enum class HTML {
-	Miss,
-	PageUp,
-	PageDown,
-	Thumb,
-	MoveNumber,
-	List,
-	EmptyBefore,
-	EmptyAfter
+enum HTML {
+	htmlMiss,
+	htmlPageUp,
+	htmlPageDown,
+	htmlThumb,
+	htmlMoveNumber,
+	htmlList,
+	htmlEmptyBefore,
+	htmlEmptyAfter
 };
 
 class PL;

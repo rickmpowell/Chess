@@ -174,7 +174,7 @@ void BD::SetEmpty(void) noexcept
 
 	csCur = 0;
 	cpcToMove = cpcWhite;
-	sqEnPassant = SQ();
+	sqEnPassant = sqNil;
 	
 	habd = 0L;
 	gph = gphMax;
@@ -216,7 +216,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
 	int rank = rankMax - 1;
 	SQ sq = SQ(rank, 0);
 	const wchar_t* pch;
-	for (pch = szFEN; *pch != L' ' && *pch != L'\0'; pch++) {
+	for (pch = szFEN; *pch && !isspace(*pch); pch++) {
 		switch (*pch) {
 		case 'p': AddPieceFEN(sq++, PC(cpcBlack, apcPawn)); break;
 		case 'r': AddPieceFEN(sq++, PC(cpcBlack, apcRook)); break;
@@ -283,14 +283,14 @@ Done:
 
 void BD::SkipToSpace(const wchar_t*& sz)
 {
-	while (*sz && *sz != L' ')
+	while (*sz && !isspace(*sz))
 		sz++;
 }
 
 
 void BD::SkipToNonSpace(const wchar_t*& sz)
 {
-	while (*sz && *sz == L' ')
+	while (*sz && isspace(*sz))
 		sz++;
 }
 
@@ -318,19 +318,16 @@ Done:
 void BD::InitFENEnPassant(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);
-	SetEnPassant(SQ());
-	int rank = -1, file = -1;
-	for (; *sz && *sz != L' '; sz++) {
-		if (*sz >= L'a' && *sz <= L'h')
-			file = *sz - L'a';
-		else if (*sz >= L'1' && *sz <= L'8')
-			rank = *sz - '1';
+	SQ sq;
+	for (; *sz && !isspace(*sz); sz++) {
+		if (in_range(*sz, L'a', L'h'))
+			sq.SetFile(*sz - L'a');
+		else if (in_range(*sz, L'1', L'8'))
+			sq.SetRank(*sz - '1');
 		else if (*sz == '-')
-			rank = file = -1;
+			sq = sqNil;
 	}
-	if (rank != -1 && file != -1)
-		SetEnPassant(SQ(rank, file));
-	SkipToSpace(sz);
+	SetEnPassant(sq);
 }
 
 
@@ -416,7 +413,7 @@ void BD::MakeMvSq(MV& mv)
 		break;
 	}
 
-	SetEnPassant(SQ());
+	SetEnPassant(sqNil);
 Done:
 	ToggleToMove();
 	Validate();
@@ -438,7 +435,7 @@ void BD::UndoMvSq(MV mv)
 	if (mv.fEpPrev())
 		SetEnPassant(SQ(RankToEpFromCpc(cpcMove), mv.fileEpPrev()));
 	else
-		SetEnPassant(SQ());
+		SetEnPassant(sqNil);
 
 	/* put piece back in source square, undoing any pawn promotion that might
 	   have happened */
@@ -519,7 +516,7 @@ void BD::RemoveInCheckMoves(VEMV& vemv, CPC cpcMove)
 			vemv[imvDest++] = emv.mv;
 		UndoMvSq(emv.mv);
 	}
-	vemv.Resize(imvDest);
+	vemv.resize(imvDest);
 }
 
 
@@ -709,7 +706,7 @@ APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
  */
 void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
 {
-	vemv.Clear();
+	vemv.clear();
 
 	GenVemvPawnMvs(vemv, mppcbb[PC(cpcMove, apcPawn)], cpcMove);
 
@@ -778,7 +775,7 @@ void BD::GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const
 {
 	for (; bbTo; bbTo.ClearLow()) {
 		SQ sqTo = bbTo.sqLow();
-		vemv.AppendMv(sqTo + dsq, sqTo, pcMove);
+		vemv.push_back(sqTo + dsq, sqTo, pcMove);
 	}
 }
 
@@ -791,7 +788,7 @@ void BD::GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const
 void BD::GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const
 {
 	for (; bbTo; bbTo.ClearLow())
-		vemv.AppendMv(sqFrom, bbTo.sqLow(), pcMove);
+		vemv.push_back(sqFrom, bbTo.sqLow(), pcMove);
 }
 
 
@@ -839,7 +836,7 @@ void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const
 			bbFrom = ((bbEnPassant - bbFileA) << 7) | ((bbEnPassant - bbFileH) << 9);
 		for (bbFrom &= bbPawns; bbFrom; bbFrom.ClearLow()) {
 			SQ sqFrom = bbFrom.sqLow();
-			vemv.AppendMv(sqFrom, sqEnPassant, PC(cpcMove, apcPawn));
+			vemv.push_back(sqFrom, sqEnPassant, PC(cpcMove, apcPawn));
 		}
 	}
 }
@@ -853,10 +850,10 @@ void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const
  */
 void BD::AddVemvMvPromotions(VEMV& vemv, MV mv) const
 {
-	vemv.AppendMv(mv.SetApcPromote(apcQueen));
-	vemv.AppendMv(mv.SetApcPromote(apcRook));
-	vemv.AppendMv(mv.SetApcPromote(apcBishop));
-	vemv.AppendMv(mv.SetApcPromote(apcKnight));
+	vemv.push_back(mv.SetApcPromote(apcQueen));
+	vemv.push_back(mv.SetApcPromote(apcRook));
+	vemv.push_back(mv.SetApcPromote(apcBishop));
+	vemv.push_back(mv.SetApcPromote(apcKnight));
 }
 
 
@@ -871,11 +868,11 @@ void BD::GenVemvCastle(VEMV& vemv, SQ sqKing, CPC cpcMove) const
 	BB bbKing = BB(sqKing);
 	if (FCanCastle(cpcMove, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
 		if (ApcBbAttacked(bbKing | (bbKing << 1), ~cpcMove) == apcNull)
-			vemv.AppendMv(sqKing, sqKing + 2, PC(cpcMove, apcKing));
+			vemv.push_back(sqKing, sqKing + 2, PC(cpcMove, apcKing));
 	}
 	if (FCanCastle(cpcMove, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
 		if (ApcBbAttacked(bbKing | (bbKing >> 1), ~cpcMove) == apcNull) 
-			vemv.AppendMv(sqKing, sqKing - 2, PC(cpcMove, apcKing));
+			vemv.push_back(sqKing, sqKing - 2, PC(cpcMove, apcKing));
 	}
 }
 
@@ -987,7 +984,19 @@ void BD::Validate(void) const
 
 	/* check for valid en passant situations */
 
+	assert(sqEnPassant.fValid());
 	if (!sqEnPassant.fIsNil()) {
+		if (sqEnPassant.rank() == rank3) {
+			assert(cpcToMove == cpcBlack);
+			assert(mppcbb[pcWhitePawn].fSet(SQ(rank4, sqEnPassant.file())));
+		}
+		else if (sqEnPassant.rank() == rank6) {
+			assert(cpcToMove == cpcWhite);
+			assert(mppcbb[pcBlackPawn].fSet(SQ(rank5, sqEnPassant.file())));
+		}
+		else {
+			assert(false);
+		}
 	}
 
 	/* game phase should be accurate */
@@ -1033,7 +1042,7 @@ void BD::ValidateBB(PC pcVal, SQ sq) const
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) : gs(gsPlaying), imvCurLast(-1), imvPawnOrTakeLast(-1)
+BDG::BDG(void) noexcept : gs(gsPlaying), imvCurLast(-1), imvPawnOrTakeLast(-1)
 {
 }
 
@@ -1048,6 +1057,12 @@ BDG::BDG(const wchar_t* szFEN)
 }
 
 
+BDG::BDG(const BDG& bdg) noexcept : BD(bdg), gs(bdg.gs), vmvGame(bdg.vmvGame), 
+		imvPawnOrTakeLast(bdg.imvPawnOrTakeLast), imvCurLast(bdg.imvCurLast)
+{
+}
+
+
 const wchar_t BDG::szFENInit[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 void BDG::InitGame(const wchar_t* szFEN)
@@ -1055,6 +1070,12 @@ void BDG::InitGame(const wchar_t* szFEN)
 	if (szFEN == nullptr)
 		szFEN = szFENInit;
 	const wchar_t* sz = szFEN;
+
+	vmvGame.clear();
+	imvCurLast = -1;
+	imvPawnOrTakeLast = -1;
+	SetGs(gsNotStarted);
+
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
 	InitFENCastle(sz);
@@ -1062,10 +1083,7 @@ void BDG::InitGame(const wchar_t* szFEN)
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
 
-	vmvGame.clear();
-	imvCurLast = -1;
-	imvPawnOrTakeLast = -1;
-	SetGs(gsNotStarted);
+
 }
 
 
