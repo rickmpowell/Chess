@@ -1448,16 +1448,16 @@ wstring SzFromEv(EV ev)
 }
 
 
-wstring SzFromSct(SCT sct)
+wstring SzFromTsc(TSC tsc)
 {
-	switch (sct) {
-	case sctEvOther:
+	switch (tsc) {
+	case tscEvOther:
 		return L"EV";
-	case sctEvCapture:
+	case tscEvCapture:
 		return L"CAP";
-	case sctXTable:
+	case tscXTable:
 		return L"XT";
-	case sctPrincipalVar:
+	case tscPrincipalVar:
 		return L"PV";
 	default:
 		return L"";

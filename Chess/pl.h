@@ -106,15 +106,15 @@ public:
 class PLAI;
 class VEMVSS : public VEMVS
 {
-	SCT sctCur;	/* the score type we're currently enumerating */
+	TSC tscCur;	/* the score type we're currently enumerating */
 	PLAI* pplai;
 public:
 	VEMVSS(BDG& bdg, PLAI* pplai) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	void Reset(BDG& bdg) noexcept;
 private:
-	EMV* PemvBestFromSctCur(int iemvFirst) noexcept;
-	void InitSctCur(BDG& bdg, int iemvFirst) noexcept;
+	EMV* PemvBestFromTscCur(int iemvFirst) noexcept;
+	void InitTscCur(BDG& bdg, int iemvFirst) noexcept;
 };
 
 

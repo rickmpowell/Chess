@@ -291,28 +291,28 @@ inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 
 
 /* score types, used during move enumeration in the ai search */
-enum SCT : int {
-	sctNil = 255,
-	sctPrincipalVar = 0,
-	sctXTable = 1,
-	sctEvCapture = 2,
-	sctEvOther = 3
+enum TSC : int {
+	tscNil = 255,
+	tscPrincipalVar = 0,
+	tscXTable = 1,
+	tscEvCapture = 2,
+	tscEvOther = 3
 };
 
-inline SCT& operator++(SCT& sct)
+inline TSC& operator++(TSC& tsc)
 {
-	sct = static_cast<SCT>(sct + 1);
-	return sct;
+	tsc = static_cast<TSC>(tsc + 1);
+	return tsc;
 }
 
-inline SCT operator++(SCT& sct, int)
+inline TSC operator++(TSC& tsc, int)
 {
-	SCT sctT = sct;
-	sct = static_cast<SCT>(sct + 1);
-	return sctT;
+	TSC tscT = tsc;
+	tsc = static_cast<TSC>(tsc + 1);
+	return tscT;
 }
 
-wstring SzFromSct(SCT sct);
+wstring SzFromTsc(TSC tsc);
 
 
 /*
@@ -332,23 +332,23 @@ class EMV
 public:
 	MV mv;		
 	EV ev;
-	uint16_t usct;	// score type, used by ai search to enumerate good moves first for alpha-beta
+	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
-	EMV(MV mv = MV()) noexcept : mv(mv), ev(0), usct(0) { }
-	EMV(MV mv, EV ev) noexcept : mv(mv), ev(ev), usct(0) { }
+	EMV(MV mv = MV()) noexcept : mv(mv), ev(0), utsc(0) { }
+	EMV(MV mv, EV ev) noexcept : mv(mv), ev(ev), utsc(0) { }
 #pragma warning(suppress:26495)	 
 	EMV(uint64_t emv) noexcept { *(uint64_t*)this = emv; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
 
 	/* comparison operations work on the eval */
 
-	inline bool operator>(const EMV& emv) const noexcept { return usct > emv.usct || (usct == emv.usct && ev > emv.ev); }
-	inline bool operator<(const EMV& emv) const noexcept { return usct < emv.usct || (usct == emv.usct && ev < emv.ev); }
+	inline bool operator>(const EMV& emv) const noexcept { return utsc > emv.utsc || (utsc == emv.utsc && ev > emv.ev); }
+	inline bool operator<(const EMV& emv) const noexcept { return utsc < emv.utsc || (utsc == emv.utsc && ev < emv.ev); }
 	inline bool operator>=(const EMV& emv) const noexcept {  return !(*this < emv); }
 	inline bool operator<=(const EMV& emv) const noexcept { return !(*this > emv); }
 	
-	inline void SetSct(SCT sct) noexcept { usct = static_cast<uint16_t>(sct); }
-	inline SCT sct() const noexcept { return static_cast<SCT>(usct); }
+	inline void SetTsc(TSC tsc) noexcept { utsc = static_cast<uint16_t>(tsc); }
+	inline TSC tsc() const noexcept { return static_cast<TSC>(utsc); }
 };
 
 static_assert(sizeof(EMV) == sizeof(uint64_t));

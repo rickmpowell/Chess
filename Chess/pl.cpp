@@ -290,7 +290,7 @@ public:
 		if (FExpandLog(emvPrev))
 			SetDepthLog(depthLogSav + 1);
 		LogOpen(TAG(bdg.SzDecodeMvPost(emvPrev.mv), ATTR(L"FEN", bdg)),
-				wjoin(wstring(1, chType) + to_wstring(ply), SzFromSct(emvPrev.sct()), SzFromEv(-emvPrev.ev), abInit),
+				wjoin(wstring(1, chType) + to_wstring(ply), SzFromTsc(emvPrev.tsc()), SzFromEv(-emvPrev.ev), abInit),
 				lgfNormal);
 	}
 
@@ -439,7 +439,7 @@ void VEMVS::UndoMv(BDG& bdg) noexcept
  */
 
 
-VEMVSS::VEMVSS(BDG& bdg, PLAI* pplai) noexcept : VEMVS(bdg), pplai(pplai), sctCur(sctPrincipalVar)
+VEMVSS::VEMVSS(BDG& bdg, PLAI* pplai) noexcept : VEMVS(bdg), pplai(pplai), tscCur(tscPrincipalVar)
 {
 	Reset(bdg);
 }
@@ -453,8 +453,8 @@ VEMVSS::VEMVSS(BDG& bdg, PLAI* pplai) noexcept : VEMVS(bdg), pplai(pplai), sctCu
 void VEMVSS::Reset(BDG& bdg) noexcept
 {
 	VEMVS::Reset(bdg);
-	sctCur = sctPrincipalVar;
-	InitSctCur(bdg, 0);
+	tscCur = tscPrincipalVar;
+	InitTscCur(bdg, 0);
 }
 
 
@@ -479,8 +479,8 @@ bool VEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemvNext) noexcept
 		/* swap the best move into the next emv to return */
 
 		EMV* pemvBest;
-		for ( ; (pemvBest = PemvBestFromSctCur(iemvNext)) == nullptr; 
-				sctCur++, InitSctCur(bdg, iemvNext))
+		for ( ; (pemvBest = PemvBestFromTscCur(iemvNext)) == nullptr; 
+				tscCur++, InitTscCur(bdg, iemvNext))
 			;
 		pemvNext = &(*this)[iemvNext++];
 		swap(*pemvNext, *pemvBest);
@@ -498,16 +498,16 @@ bool VEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemvNext) noexcept
 }
 
 
-/*	VEMVSS::PemvBestFromSctCur
+/*	VEMVSS::PemvBestFromTscCur
  *
  *	Finds the best move from the movelist that matches the current score type
  *	that we're enumerating. Returns nullptr if no matches.
  */
-EMV* VEMVSS::PemvBestFromSctCur(int iemvFirst) noexcept
+EMV* VEMVSS::PemvBestFromTscCur(int iemvFirst) noexcept
 {
 	EMV* pemvBest = nullptr; 
 	for (int iemvBest = iemvFirst; iemvBest < cemv(); iemvBest++) {
-		if ((*this)[iemvBest].sct() == sctCur && 
+		if ((*this)[iemvBest].tsc() == tscCur && 
 				(pemvBest == nullptr || (*this)[iemvBest].ev > pemvBest->ev))
 			pemvBest = &(*this)[iemvBest];
 	}
@@ -515,7 +515,7 @@ EMV* VEMVSS::PemvBestFromSctCur(int iemvFirst) noexcept
 }
 
 
-/*	VEMVSS::InitSctCur
+/*	VEMVSS::InitTscCur
  *
  *	Prepares the enumeration for the next score type. We try to lazy evaluate as 
  *	many moves as possible so we don't waste time evaluating positions that might
@@ -525,10 +525,10 @@ EMV* VEMVSS::PemvBestFromSctCur(int iemvFirst) noexcept
  *	move in the transposition table that was fully evaluated, (3) captures, and
  *	and (4) everything else.
  */
-void VEMVSS::InitSctCur(BDG& bdg, int iemvFirst) noexcept
+void VEMVSS::InitTscCur(BDG& bdg, int iemvFirst) noexcept
 {
-	switch (sctCur) {
-	case sctPrincipalVar:
+	switch (tscCur) {
+	case tscPrincipalVar:
 	{
 		/* first time through the enumeration, snag the principal variation. This can
 		   be done very quickly with just a transposition table probe. While we're at
@@ -540,25 +540,25 @@ void VEMVSS::InitSctCur(BDG& bdg, int iemvFirst) noexcept
 		for (int iemv = iemvFirst; iemv < cemv(); iemv++) {
 			EMV& emv = (*this)[iemv];
 			if (pxev->mv() != emv.mv)
-				emv.SetSct(sctNil);
+				emv.SetTsc(tscNil);
 			else {
-				emv.SetSct(sctPrincipalVar);
+				emv.SetTsc(tscPrincipalVar);
 				emv.ev = -pxev->ev();
 			}
 		}
 		break;
 	}
 
-	case sctXTable:
+	case tscXTable:
 	{
 		/* get the eval of any element we find in the tranposition table */
 		for (int iemv = iemvFirst; iemv < cemv(); iemv++) {
 			EMV& emv = (*this)[iemv];
-			assert(emv.sct() == sctNil);	// should all be marked nil by pv pass
+			assert(emv.tsc() == tscNil);	// should all be marked nil by pv pass
 			bdg.MakeMvSq(emv.mv);
 			XEV* pxev = xt.Find(bdg, 0);
 			if (pxev != nullptr && pxev->tev() != tevHigher) {
-				emv.SetSct(sctXTable);
+				emv.SetTsc(tscXTable);
 				emv.ev = -pxev->ev();
 			}
 			bdg.UndoMvSq(emv.mv);
@@ -566,17 +566,17 @@ void VEMVSS::InitSctCur(BDG& bdg, int iemvFirst) noexcept
 		break;
 	}
 
-	case sctEvCapture:
-	case sctEvOther:
+	case tscEvCapture:
+	case tscEvOther:
 	{
 		/* the remainder of the moves need static eval */
 		for (int iemv = iemvFirst; iemv < cemv(); iemv++) {
 			EMV& emv = (*this)[iemv];
-			assert(emv.sct() == sctNil);
-			if (sctCur == sctEvCapture && !emv.mv.fIsCapture())
+			assert(emv.tsc() == tscNil);
+			if (tscCur == tscEvCapture && !emv.mv.fIsCapture())
 				continue;
 			bdg.MakeMvSq(emv.mv);
-			emv.SetSct(sctCur);
+			emv.SetTsc(tscCur);
 			emv.ev = -pplai->EvBdgStatic(bdg, emv.mv, false);
 			bdg.UndoMvSq(emv.mv);
 		}
@@ -1397,6 +1397,8 @@ EV PLAI::EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
 	/* connected pawns */
 	
 	/* open files */
+
+	/* weak squares */
 
 	return ev;
 }
