@@ -1,6 +1,6 @@
 /*
  *
- *	ml.cpp
+ *	uiml.cpp
  *
  *	The move list panel on the screen
  *

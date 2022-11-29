@@ -33,7 +33,7 @@
     <ClInclude Include="ui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ml.h">
+    <ClInclude Include="uiml.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="uibd.h">
@@ -42,7 +42,7 @@
     <ClInclude Include="app.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ti.h">
+    <ClInclude Include="uiti.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="debug.h">
@@ -51,7 +51,7 @@
     <ClInclude Include="bb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="panel.h">
+    <ClInclude Include="uipa.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="eval_plai.h">
@@ -89,13 +89,13 @@
     <ClCompile Include="ui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ml.cpp">
+    <ClCompile Include="uiml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="uibd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ti.cpp">
+    <ClCompile Include="uiti.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="debug.cpp">
@@ -107,7 +107,7 @@
     <ClCompile Include="open.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="panel.cpp">
+    <ClCompile Include="uipa.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="app.cpp">

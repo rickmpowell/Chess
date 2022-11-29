@@ -1,6 +1,6 @@
 /*
  *
- *	panel.h
+ *	uipa.h
  * 
  *	Definitions for screen panel UI elements
  * 

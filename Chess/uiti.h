@@ -1,6 +1,6 @@
 /*
  *
- *	ti.h
+ *	uiti.h
  * 
  *	Title block panel
  *
@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "panel.h"
-#include "ml.h"
+#include "uipa.h"
+#include "uiml.h"
 
 
 

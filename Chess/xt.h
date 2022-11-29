@@ -54,14 +54,14 @@ class XEV
 {
 private:
 	uint64_t uhabd;
-	uint64_t uev : 16,
-		umv : 32,
-		utev : 2,
+	uint32_t umv;
+	uint16_t utev : 2,
 		uply : 8,
-		uage:6;
+		uage : 6;
+	uint16_t uev;
 public:
 
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+#pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
 	inline XEV(void) { }
 	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int ply) 
 	{ uhabd = habd;  umv = mv; utev = tev; uev = ev; uply = ply; }
@@ -126,6 +126,8 @@ class XT
 	XEV2* rgxev2;
 public:
 	const uint32_t cxev2Max = 1UL << 23;
+	static_assert(sizeof(XEV2) == (1 << 5));
+	const uint32_t cxev2MaxMask = cxev2Max - 1;
 	const uint32_t cxevMax = cxev2Max * 2;
 	unsigned age;
 #ifndef NOSTATS
@@ -219,7 +221,7 @@ public:
 	 */
 	inline XEV2& operator[](const BDG& bdg) noexcept
 	{
-		return rgxev2[bdg.habd & (cxev2Max - 1)];
+		return rgxev2[bdg.habd & cxev2MaxMask];
 	}
 
 
@@ -272,23 +274,21 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as ply. Returns nullptr if no such entry exists.
 	 */
-	inline XEV* Find(const BDG& bdg, int ply) noexcept 
+	inline /*__declspec(noinline)*/ XEV* Find(const BDG& bdg, int ply) noexcept
 	{
 #ifndef NOSTATS
 		cxevProbe++;
 #endif
 		XEV2& xev2 = (*this)[bdg];
-		if (xev2.xevDeep.tev() == tevNull)
+		if (xev2.xevDeep.tev() == tevNull) [[likely]]
 			return nullptr;
-		if (xev2.xevDeep.FMatchHabd(bdg.habd)) {
-			if (ply > xev2.xevDeep.ply())
-				goto CheckNew;
+		if (xev2.xevDeep.FMatchHabd(bdg.habd) && ply <= xev2.xevDeep.ply()) {
 #ifndef NOSTATS
 			cxevProbeHit++;
 #endif
 			return &xev2.xevDeep;
 		}
-CheckNew:
+
 		if (xev2.xevNew.tev() == tevNull)
 			return nullptr;
 		if (xev2.xevNew.FMatchHabd(bdg.habd)) {

@@ -1,6 +1,6 @@
 /*
  *
- *	ml.h
+ *	uiml.h
  * 
  *	Definitions for the move list screen panel. This thing is mostly UI
  *	stuff.
@@ -8,7 +8,7 @@
  */
 
 #pragma once
-#include "panel.h"
+#include "uipa.h"
 #include "bd.h"
 #include "pl.h"
 

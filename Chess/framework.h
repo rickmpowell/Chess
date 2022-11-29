@@ -59,17 +59,17 @@ using namespace std;
 using namespace chrono;
 
 
+
 /*
- *
  *	Turn on/off validation by setting fValidate, which speeds up debug versions 
  *	a bit, which almost makes the debug version fast enough to play, but not quite.
- * 
  */
 
 
 #ifndef NDEBUG
 extern bool fValidate;
 #endif
+//#define NOSTATS
 
 
 /*

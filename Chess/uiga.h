@@ -9,11 +9,11 @@
 #pragma once
 #include "ui.h"
 #include "app.h"
-#include "panel.h"
+#include "uipa.h"
 #include "uci.h"
 #include "uibd.h"
-#include "ti.h"
-#include "ml.h"
+#include "uiti.h"
+#include "uiml.h"
 #include "debug.h"
 #include "ga.h"
 

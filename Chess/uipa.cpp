@@ -1,12 +1,12 @@
 /*
  *
- *	panel.cpp
+ *	uipa.cpp
  * 
  *	Screen panels, or top level UI elements
  * 
  */
 
-#include "panel.h"
+#include "uipa.h"
 #include "ga.h"
 #include "debug.h"
 

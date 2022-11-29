@@ -1,13 +1,13 @@
 /*
  *
- *	ti.cpp
+ *	uiti.cpp
  * 
  *	The title panel on the screen. Includes interfaces for starting new
  *	game, loading games, setting game type attributes, etc.
  * 
  */
 
-#include "ti.h"
+#include "uiti.h"
 #include "ga.h"
 #include "resources/Resource.h"
 

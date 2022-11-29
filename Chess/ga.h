@@ -8,10 +8,10 @@
 
 #pragma once
 
-#include "ti.h"
+#include "uiti.h"
 #include "uiga.h"
 #include "uibd.h"
-#include "ml.h"
+#include "uiml.h"
 #include "pl.h"
 #include "debug.h"
 #include "uci.h"
