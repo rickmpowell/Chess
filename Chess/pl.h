@@ -108,13 +108,15 @@ class VEMVSS : public VEMVS
 {
 	TSC tscCur;	/* the score type we're currently enumerating */
 	PLAI* pplai;
+
 public:
 	VEMVSS(BDG& bdg, PLAI* pplai) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	void Reset(BDG& bdg) noexcept;
+
 private:
 	EMV* PemvBestFromTscCur(int iemvFirst) noexcept;
-	void InitTscCur(BDG& bdg, int iemvFirst) noexcept;
+	void PrepTscCur(BDG& bdg, int iemvFirst) noexcept;
 };
 
 
@@ -148,13 +150,8 @@ public:
 	EV evAlpha;
 	EV evBeta;
 
-	inline AB(EV evAlpha, EV evBeta) noexcept : evAlpha(evAlpha), evBeta(evBeta) {
-		assert(FValid());
-	}
-
-	bool FValid(void) const noexcept {
-		return evAlpha < evBeta;
-	}
+	inline AB(EV evAlpha, EV evBeta) noexcept : evAlpha(evAlpha), evBeta(evBeta) { assert(FValid()); }
+	bool FValid(void) const noexcept { return evAlpha < evBeta; }
 
 	
 	/*	AB unary - operator
@@ -283,13 +280,13 @@ inline wstring to_wstring(AB ab) noexcept { return (wstring)ab; }
 
 
 /*
- *	TMS - time management styles
+ *	TTM - time management styles
  */
 
-enum TMS : int {
-	tmsConstDepth,
-	tmsTimePerMove,
-	tmsSmart
+enum TTM : int {
+	ttmConstDepth,
+	ttmTimePerMove,
+	ttmSmart
 };
 
 /*
@@ -334,7 +331,7 @@ protected:
 						   to board eval - which is generated from the Zobrist hash */
 	
 	EMV emvBestOverall;	/* during search, root level best move so far */
-	TMS tms;
+	TTM ttm;
 	DWORD dmsecDeadline, dmsecFlag;
 	time_point<high_resolution_clock> tpMoveFirst;
 
@@ -369,6 +366,8 @@ protected:
 	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept;
 	inline bool FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int ply) const noexcept;
 	inline XEV* SaveXt(BDG& bdg, EMV emvBest, AB ab, int ply) const noexcept;
+	inline bool FTryFutility(BDG& bdg, EMV& emvBest, AB ab, int ply, int plyLim) noexcept;
+	inline bool FTryNullMove(BDG& bdg, const EMV& emvPrev, EMV& emvBest, AB ab, int ply, int plyLim) noexcept;
 
 	virtual void InitTimeMan(BDG& bdg) noexcept;
 	virtual bool FStopSearch(int plyLim) noexcept;
@@ -394,6 +393,7 @@ protected:
 	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept;
+	int CsqWeak(BDG& bdg, CPC cpc) const noexcept;
 };
 
 

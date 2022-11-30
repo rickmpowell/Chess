@@ -959,16 +959,19 @@ public:
 	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
-	bool FBbAttackedByQueen(BB bbQueens, BB bb, CPC cpcBy) const noexcept;
-	bool FBbAttackedByRook(BB bbRooks, BB bb, CPC cpcBy) const noexcept;
-	bool FBbAttackedByBishop(BB bbBishops, BB bb, CPC cpcBy) const noexcept;
 
-	BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
-	BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
-	BB BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept;
-	BB BbKingAttacked(BB bbKing, CPC cpcBy) const noexcept;
-	BB BbKnightAttacked(BB bbKnights, CPC cpcBy) const noexcept;
-	
+	inline BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	inline BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	inline BB BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept;
+	inline BB BbKingAttacked(BB bbKing) const noexcept;
+	inline BB BbKnightAttacked(BB bbKnights) const noexcept;
+	inline BB BbBishopAttacked(BB bbBishops) const noexcept;
+	inline BB BbBishop1Attacked(BB bbBishops) const noexcept;
+	inline BB BbRookAttacked(BB bbRooks) const noexcept;
+	inline BB BbRook1Attacked(BB bbRooks) const noexcept;
+	inline BB BbQueenAttacked(BB bbQueens) const noexcept;
+	inline BB BbQueen1Attacked(BB bbQueen) const noexcept;
+
 	/*	BD::ApcSqAttacked
 	 *
 	 *	Returns the lowest piece type of the pieces attacking sqAttacked. The piece

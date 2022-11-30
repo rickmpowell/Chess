@@ -448,17 +448,17 @@ public:
 	MPBB(void);
 	
 	/* given a direction and a square, returns squares we attack in that direction */
-	inline BB BbSlideTo(SQ sq, DIR dir) noexcept { assert(sq < 64); return mpsqdirbbSlide[sq][dir];}
+	inline BB BbSlideTo(SQ sq, DIR dir) const noexcept { assert(sq < 64); return mpsqdirbbSlide[sq][dir];}
 	
 	/* quick collection of squares a king can move to */
-	inline BB BbKingTo(SQ sq) noexcept { return mpsqbbKing[sq]; }
+	inline BB BbKingTo(SQ sq) const noexcept { return mpsqbbKing[sq]; }
 
 	/* quick collection of squares a knight can move to */
-	inline BB BbKnightTo(uint8_t sq) noexcept { return mpsqbbKnight[sq]; }
+	inline BB BbKnightTo(uint8_t sq) const noexcept { return mpsqbbKnight[sq]; }
 
 	/* the 3-wide pawn alley in front of a pawn, used to determine if the pawn is a
 	   a passed pawn or not */
-	inline BB BbPassedPawnAlley(uint8_t sq, CPC cpc) noexcept { return mpsqbbPassedPawnAlley[sq-8][static_cast<int>(cpc)]; }
+	inline BB BbPassedPawnAlley(uint8_t sq, CPC cpc) const noexcept { return mpsqbbPassedPawnAlley[sq-8][static_cast<int>(cpc)]; }
 };
 
 /* we compute a global of these for movegen and eval to use */

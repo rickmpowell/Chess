@@ -145,7 +145,7 @@ public:
 
 
 PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
-		tms(IfReleaseElse(tmsSmart, tmsConstDepth)),
+		ttm(IfReleaseElse(ttmSmart, ttmConstDepth)),
 #ifndef NOSTATS
 		cemvEval(0), cemvNode(0),
 #endif
@@ -253,14 +253,8 @@ protected:
 	wstring szData;
 
 public:
-	LOGSEARCH(PL& pl, const BDG& bdg) noexcept : pl(pl), bdg(bdg)
-	{
-	}
-
-	inline void SetData(const wstring& szNew) noexcept
-	{
-		szData = szNew;
-	}
+	inline LOGSEARCH(PL& pl, const BDG& bdg) noexcept : pl(pl), bdg(bdg) { }
+	inline void SetData(const wstring& szNew) noexcept { szData = szNew; }
 };
 
 class LOGEMV : public LOGSEARCH, public AIBREAK
@@ -454,7 +448,7 @@ void VEMVSS::Reset(BDG& bdg) noexcept
 {
 	VEMVS::Reset(bdg);
 	tscCur = tscPrincipalVar;
-	InitTscCur(bdg, 0);
+	PrepTscCur(bdg, 0);
 }
 
 
@@ -480,7 +474,7 @@ bool VEMVSS::FMakeMvNext(BDG& bdg, EMV*& pemvNext) noexcept
 
 		EMV* pemvBest;
 		for ( ; (pemvBest = PemvBestFromTscCur(iemvNext)) == nullptr; 
-				tscCur++, InitTscCur(bdg, iemvNext))
+				tscCur++, PrepTscCur(bdg, iemvNext))
 			;
 		pemvNext = &(*this)[iemvNext++];
 		swap(*pemvNext, *pemvBest);
@@ -515,7 +509,7 @@ EMV* VEMVSS::PemvBestFromTscCur(int iemvFirst) noexcept
 }
 
 
-/*	VEMVSS::InitTscCur
+/*	VEMVSS::PrepTscCur
  *
  *	Prepares the enumeration for the next score type. We try to lazy evaluate as 
  *	many moves as possible so we don't waste time evaluating positions that might
@@ -525,7 +519,7 @@ EMV* VEMVSS::PemvBestFromTscCur(int iemvFirst) noexcept
  *	move in the transposition table that was fully evaluated, (3) captures, and
  *	and (4) everything else.
  */
-void VEMVSS::InitTscCur(BDG& bdg, int iemvFirst) noexcept
+void VEMVSS::PrepTscCur(BDG& bdg, int iemvFirst) noexcept
 {
 	switch (tscCur) {
 	case tscPrincipalVar:
@@ -679,7 +673,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
  */
 EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, AB abInit, int ply, int plyLim) noexcept
 {
-	/* we're at depth, go to quiescence */
+	/* we're at depth, go to quiescence to get static eval */
 
 	if (ply >= plyLim)
 		return EvBdgQuiescent(bdg, emvPrev, abInit, ply);
@@ -688,12 +682,14 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, AB abInit, int ply, int plyLim
 	LOGEMV logemv(*this, bdg, emvPrev, emvBest, abInit, ply, L' ');
 	
 	/* check transposition table, check futility pruning, and try the null move
-	   pruning trick */
+	   heuristic pruning trick */
 
 	if (FLookupXt(bdg, emvBest, abInit, plyLim - ply))
+		return emvBest.ev;	
+	if (FTryFutility(bdg, emvBest, abInit, ply, plyLim))
 		return emvBest.ev;
-	/* TODO: futility pruning */
-	/* TODO: null move pruning */
+	if (FTryNullMove(bdg, emvPrev, emvBest, abInit, ply, plyLim))
+		return emvBest.ev;
 
 	/* full search */
 
@@ -703,6 +699,49 @@ EV PLAI::EvBdgDepth(BDG& bdg, const EMV& emvPrev, AB abInit, int ply, int plyLim
 	
 	SaveXt(bdg, emvBest, abInit, plyLim - ply);
 	return emvBest.ev;
+}
+
+
+bool PLAI::FTryFutility(BDG& bdg, EMV& emvBest, AB ab, int ply, int plyLim) noexcept
+{
+	return false;
+}
+
+
+/*	PLAI::FTryNullMove
+ *
+ *	The null-move pruning heuristic. This heuristic has primary assumption that at
+ *	least one move improves the player's position. So we try just skipping our turn
+ *	(the null move) and continue with a quick search with a narrow a-b window and 
+ *	reduced depth and see if we get a prune. If we do, then this is probably a shitty 
+ *	position.
+ * 
+ *	This trick doesn't work if we're in check because the null move would be illegal. 
+ *	Zugzwang positions violate the primary assumption - if they occur, this technique
+ *	would cause improper evals.
+ * 
+ *	Returns true if we successfully found a pruning situation and search can be stopped.
+ */
+bool PLAI::FTryNullMove(BDG& bdg, const EMV& emvPrev, EMV& emvBest, AB ab, int ply, int plyLim) noexcept
+{
+#ifdef LATER
+	if (bdg.FInCheck() || !FCanNullMove())
+		return false;
+	if (fVerify && plyLim - ply <= 1)
+		return false;
+
+	bdg.MakeMvNull();
+	emvBest.ev = -EvBdgDepth(bdg, emvBest, AB(-ab.evBeta, -ab.evBeta+1), ply+1, plyLim-R, fVerify);
+	bdg.UndoMvNull();
+	if (!(emvBest.ev > ab))
+		return false;
+	if (!fVerify)
+		return true;
+
+	VEMVSS vemvss(bdg, this);
+	if (!FSearchEmvBest(bdg, vemvss, emvBest, ab, ply, plyLim-1, false))
+#endif
+	return false;
 }
 
 
@@ -880,7 +919,7 @@ bool PLAI::FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept
  *	Helper function that adjusts evaluations in checkmates and stalemates. Modifies
  *	evBest to be the checkmate/stalemate if we're in that state. cmvLegal is the
  *	count of legal moves in the move list, and vemvs is the move enumerator, which 
- *	kept sstrack of how many legal moves there were..
+ *	kept track of how many legal moves there were.
  */
 void PLAI::TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept
 {
@@ -911,12 +950,14 @@ bool PLAI::FDeepen(EMV emvBest, AB& ab, int& ply) noexcept
 		return true;
 	}
 	if (emvBest.ev == evTimedOut) {
+		/* we only time out when we have already found at least one best overall move */
 		assert(!emvBestOverall.mv.fIsNil());
 		return true;
 	}	
 
 	/* If the search failed with a narrow a-b window, widen the window up some and
 	   try again */
+
 	if (emvBest.ev < ab)
 		ab.AdjMissLow();
 	else if (emvBest.ev > ab)
@@ -925,6 +966,7 @@ bool PLAI::FDeepen(EMV emvBest, AB& ab, int& ply) noexcept
 		/* yay, we found a move - go deeper in the next pass, but use a tight
 		   a-b window at first in hopes we'll get lots of pruning which will help
 		   search very quickly */
+
 		emvBestOverall = emvBest;
 		if (FEvIsMate(emvBest.ev) || FEvIsMate(-emvBest.ev))
 			return true;
@@ -950,8 +992,8 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 	CPC cpc = bdg.cpcToMove;
 	dmsecFlag = -1;
 	tpMoveFirst = high_resolution_clock::now();
-	switch (tms) {
-	case tmsSmart:
+	switch (ttm) {
+	case ttmSmart:
 		if (!ga.prule->FUntimed()) {
 			dmsecFlag = ga.DmsecRemaining(cpc);
 			DWORD dmsecMove = ga.prule->DmsecAddMove(cpc, ((int)bdg.imvCurLast+1)/2+1);
@@ -963,9 +1005,9 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 			LogData(wjoin(L"Time target:", SzCommaFromLong(dmsecDeadline), L"ms"));
 			break;
 		}
-		tms = tmsTimePerMove;
+		ttm = ttmTimePerMove;
 		[[fallthrough]];
-	case tmsTimePerMove:
+	case ttmTimePerMove:
 		dmsecDeadline = mpleveldmsec[level];
 		break;
 	default:
@@ -1002,17 +1044,17 @@ bool PLAI::FStopSearch(int plyLim) noexcept
 	if (emvBestOverall.mv.fIsNil())
 		return false;
 
-	switch (tms) {
+	switch (ttm) {
 
-	case tmsSmart:
-	case tmsTimePerMove:
+	case ttmSmart:
+	case ttmTimePerMove:
 	{
 		time_point<high_resolution_clock> tp = high_resolution_clock::now();
 		duration dtp = tp - tpMoveFirst;
 		microseconds usec = duration_cast<microseconds>(dtp);
 		return usec.count() >= usecMsec * dmsecDeadline;
 	}
-	case tmsConstDepth:
+	case ttmConstDepth:
 	{
 		/* different levels get different depths */
 		return plyLim > level + 1;
@@ -1043,7 +1085,7 @@ void PLAI::PumpMsg(bool fForce) noexcept
 		ga.puiga->PumpMsg();
 		if (ga.bdg.gs != gsPlaying)
 			sint = sintCanceled;		// someone has flagged the game, abort the search
-		else if (tms != tmsConstDepth && !emvBestOverall.mv.fIsNil()) {
+		else if (ttm != ttmConstDepth && !emvBestOverall.mv.fIsNil()) {
 			/* interrupt searches that have been going on way too long, or if we're about
 			   to flag */
 			time_point<high_resolution_clock> tp = high_resolution_clock::now();
@@ -1260,10 +1302,15 @@ EV PLAI::EvFromPst(const BDG& bdg) const noexcept
 		return mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove];
 	}
 
+	/* end game */
+
 	if (FInEndGame(gph)) {
 		ComputeMpcpcev1(bdg, mpcpcev1, mpapcsqevEndGame);
 		return mpcpcev1[bdg.cpcToMove] - mpcpcev1[~bdg.cpcToMove];
 	}
+
+	/* middle game, which ramps from opening to mid-mid, then ramps from mid-mid
+	   to end game */
 
 	if (gph <= gphMidMid) {
 		ComputeMpcpcev2(bdg, mpcpcev1, mpcpcev2, mpapcsqevOpening, mpapcsqevMiddleGame);
@@ -1377,6 +1424,24 @@ int PLAI::CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept
 }
 
 
+/*	PLAI::CsqWeak
+ *
+ *	A weak square is one that can never be attacked/defended by a pawn.
+ */
+int PLAI::CsqWeak(BDG& bdg, CPC cpc) const noexcept
+{
+	DIR dir = cpc == cpcWhite ? dirNorth : dirSouth;
+	BB bbNotWeak(0);
+	for (BB bbPawns = bdg.mppcbb[PC(cpc, apcPawn)]; bbPawns; bbPawns.ClearLow()) {
+		SQ sqPawn = bbPawns.sqLow();
+		bbNotWeak |= mpbb.BbPassedPawnAlley(sqPawn, cpc) - mpbb.BbSlideTo(sqPawn, dir);
+	}
+	/* only count weak squares in the middle ranks */
+	bbNotWeak &= bbRank3 | bbRank4 | bbRank5 | bbRank6;
+	return (~bbNotWeak).csq() - 32;
+}
+
+
 /*	PLAI::EvBdgPawnStructure
  *
  *	Returns the pawn structure evaluation of the board position from the
@@ -1395,10 +1460,21 @@ EV PLAI::EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept
 	/* backwards pawns */
 
 	/* connected pawns */
-	
+
 	/* open files */
 
-	/* weak squares */
+#ifdef WEAK_SQUARES
+	/* weak squares - this doesn't work very well because it scales too large when
+	   you use just a count of squares; need to weigh the squares by how weak they 
+	   are */
+
+	if (bdg.gph < gphMidMax) {
+		int csq = CsqWeak(bdg, cpc);
+		if (bdg.gph > gphMidMid)
+			csq /= 2;
+		ev -= csq;
+	}
+#endif
 
 	return ev;
 }

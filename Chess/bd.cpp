@@ -536,21 +536,20 @@ bool BD::FMvIsQuiescent(MV mv) const noexcept
  */
 bool BD::FInCheck(CPC cpc) const noexcept
 {
-	BB bbKing = mppcbb[PC(cpc, apcKing)].sqLow();
-
 	CPC cpcBy = ~cpc;
+
+	/* for sliding pieces, reverse the attack to originate in the king, which is
+	   more efficient becuase we know there is only one king */
+	BB bbKing = mppcbb[PC(cpc, apcKing)];
 	BB bbQueen = mppcbb[PC(cpcBy, apcQueen)];
-	if (FBbAttackedByBishop(mppcbb[PC(cpcBy, apcBishop)] | bbQueen, bbKing, cpcBy))
+	if (BbBishop1Attacked(bbKing) & (bbQueen | mppcbb[PC(cpcBy, apcBishop)]))
 		return true;
-	if (FBbAttackedByRook(mppcbb[PC(cpcBy, apcRook)] | bbQueen, bbKing, cpcBy))
+	if (BbRook1Attacked(bbKing) & (bbQueen | mppcbb[PC(cpcBy, apcRook)]))
 		return true;
-	if (BbKnightAttacked(mppcbb[PC(cpcBy, apcKnight)], cpcBy) & bbKing)
-		return true;
-	if (BbPawnAttacked(mppcbb[PC(cpcBy, apcPawn)], cpcBy) & bbKing)
-		return true;
-	if (BbKingAttacked(mppcbb[PC(cpcBy, apcKing)], cpcBy) & bbKing)
-		return true;
-	return false;
+	BB bbAttacks = BbKnightAttacked(mppcbb[PC(cpcBy, apcKnight)]) |
+		BbPawnAttacked(mppcbb[PC(cpcBy, apcPawn)], cpcBy) |
+		BbKingAttacked(mppcbb[PC(cpcBy, apcKing)]);
+	return bbAttacks & bbKing;
 }
 
 
@@ -570,7 +569,7 @@ BB BD::BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept
  *
  *	Returns a bitboard of all squares a knight attacks.
  */
-BB BD::BbKnightAttacked(BB bbKnights, CPC cpcBy) const noexcept
+BB BD::BbKnightAttacked(BB bbKnights) const noexcept
 {
 	BB bb1 = BbWestOne(bbKnights) | BbEastOne(bbKnights);
 	BB bb2 = BbWestTwo(bbKnights) | BbEastTwo(bbKnights);
@@ -611,66 +610,68 @@ BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept
 }
 
 
-bool BD::FBbAttackedByBishop(BB bbBishops, BB bb, CPC cpcBy) const noexcept
+BB BD::BbBishop1Attacked(BB bbBishop) const noexcept
 {
-	for ( ; bbBishops; bbBishops.ClearLow()) {
-		SQ sq = bbBishops.sqLow();
-		if (BbFwdSlideAttacks(dirNorthEast, sq) & bb)
-			return true;
-		if (BbFwdSlideAttacks(dirNorthWest, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirSouthEast, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirSouthWest, sq) & bb)
-			return true;
-	}
-	return false;
+	SQ sq = bbBishop.sqLow();
+	return BbFwdSlideAttacks(dirNorthEast, sq) |
+		BbFwdSlideAttacks(dirNorthWest, sq) |
+		BbRevSlideAttacks(dirSouthEast, sq) |
+		BbRevSlideAttacks(dirSouthWest, sq);
 }
 
 
-bool BD::FBbAttackedByRook(BB bbRooks, BB bb, CPC cpcBy) const noexcept
+BB BD::BbBishopAttacked(BB bbBishops) const noexcept
 {
-	for ( ; bbRooks; bbRooks.ClearLow()) {
-		SQ sq = bbRooks.sqLow();
-		if (BbFwdSlideAttacks(dirNorth, sq) & bb)
-			return true;
-		if (BbFwdSlideAttacks(dirEast, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirSouth, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirWest, sq) & bb)
-			return true;
-	}
-	return false;
+	BB bbAttacks = 0;
+	for ( ; bbBishops; bbBishops.ClearLow())
+		bbAttacks |= BbBishop1Attacked(bbBishops);
+	return bbAttacks;
 }
 
 
-bool BD::FBbAttackedByQueen(BB bbQueens, BB bb, CPC cpcBy) const noexcept
+BB BD::BbRook1Attacked(BB bbRook) const noexcept
 {
-	for ( ; bbQueens; bbQueens.ClearLow()) {
-		SQ sq = bbQueens.sqLow();
-		if (BbFwdSlideAttacks(dirNorth, sq) & bb)
-			return true;
-		if (BbFwdSlideAttacks(dirEast, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirSouth, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirWest, sq) & bb)
-			return true;
-		if (BbFwdSlideAttacks(dirNorthEast, sq) & bb)
-			return true;
-		if (BbFwdSlideAttacks(dirNorthWest, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirSouthEast, sq) & bb)
-			return true;
-		if (BbRevSlideAttacks(dirSouthWest, sq) & bb)
-			return true;
-	}
-	return false;
+	SQ sq = bbRook.sqLow();
+	return BbFwdSlideAttacks(dirNorth, sq) |
+		BbFwdSlideAttacks(dirEast, sq) |
+		BbRevSlideAttacks(dirSouth, sq) |
+		BbRevSlideAttacks(dirWest, sq);
 }
 
 
-BB BD::BbKingAttacked(BB bbKing, CPC cpcBy) const noexcept
+BB BD::BbRookAttacked(BB bbRooks) const noexcept
+{
+	BB bbAttacks = 0;
+	for ( ; bbRooks; bbRooks.ClearLow())
+		bbAttacks |= BbRook1Attacked(bbRooks);
+	return bbAttacks;
+}
+
+
+BB BD::BbQueen1Attacked(BB bbQueen) const noexcept
+{
+	SQ sq = bbQueen.sqLow();
+	return BbFwdSlideAttacks(dirNorth, sq) |
+		BbFwdSlideAttacks(dirEast, sq) |
+		BbRevSlideAttacks(dirSouth, sq) |
+		BbRevSlideAttacks(dirWest, sq) |
+		BbFwdSlideAttacks(dirNorthEast, sq) |
+		BbFwdSlideAttacks(dirNorthWest, sq) |
+		BbRevSlideAttacks(dirSouthEast, sq) |
+		BbRevSlideAttacks(dirSouthWest, sq);
+}
+
+
+BB BD::BbQueenAttacked(BB bbQueens) const noexcept
+{
+	BB bbAttacks = 0;
+	for ( ; bbQueens; bbQueens.ClearLow())
+		bbAttacks |= BbQueen1Attacked(bbQueens);
+	return bbAttacks;
+}
+
+
+BB BD::BbKingAttacked(BB bbKing) const noexcept
 {
 	return mpbb.BbKingTo(bbKing.sqLow());
 }
@@ -685,15 +686,15 @@ APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 {
 	if (BbPawnAttacked(mppcbb[PC(cpcBy, apcPawn)], cpcBy) & bbAttacked)
 		return apcPawn;
-	if (BbKnightAttacked(mppcbb[PC(cpcBy, apcKnight)], cpcBy) & bbAttacked)
+	if (BbKnightAttacked(mppcbb[PC(cpcBy, apcKnight)]) & bbAttacked)
 		return apcKnight;
-	if (FBbAttackedByBishop(mppcbb[PC(cpcBy, apcBishop)], bbAttacked, cpcBy))
+	if (BbBishopAttacked(mppcbb[PC(cpcBy, apcBishop)]) & bbAttacked)
 		return apcBishop;
-	if (FBbAttackedByRook(mppcbb[PC(cpcBy, apcRook)], bbAttacked, cpcBy))
+	if (BbRookAttacked(mppcbb[PC(cpcBy, apcRook)]) & bbAttacked)
 		return apcRook;
-	if (FBbAttackedByQueen(mppcbb[PC(cpcBy, apcQueen)], bbAttacked, cpcBy))
+	if (BbQueenAttacked(mppcbb[PC(cpcBy, apcQueen)]) & bbAttacked)
 		return apcQueen;
-	if (BbKingAttacked(mppcbb[PC(cpcBy, apcKing)], cpcBy) & bbAttacked)
+	if (BbKingAttacked(mppcbb[PC(cpcBy, apcKing)]) & bbAttacked)
 		return apcKing;
 	return apcNull;
 }
@@ -715,17 +716,14 @@ void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
 	for (BB bb = mppcbb[PC(cpcMove, apcKnight)]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
 		BB bbTo = mpbb.BbKnightTo(sqFrom);
-		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[(int)cpcMove], PC(cpcMove, apcKnight));
+		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, apcKnight));
 	}
 
 	/* generate bishop moves */
 
 	for (BB bb = mppcbb[PC(cpcMove, apcBishop)]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		BB bbTo = BbFwdSlideAttacks(dirNorthEast, sqFrom) |
-				BbRevSlideAttacks(dirSouthEast, sqFrom) |
-				BbRevSlideAttacks(dirSouthWest, sqFrom) |
-				BbFwdSlideAttacks(dirNorthWest, sqFrom);
+		BB bbTo = BbBishop1Attacked(bb); 
 		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, apcBishop));
 	}
 
@@ -733,10 +731,7 @@ void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
 
 	for (BB bb = mppcbb[PC(cpcMove, apcRook)]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		BB bbTo = BbFwdSlideAttacks(dirNorth, sqFrom) |
-				BbFwdSlideAttacks(dirEast, sqFrom) |
-				BbRevSlideAttacks(dirSouth, sqFrom) |
-				BbRevSlideAttacks(dirWest, sqFrom);
+		BB bbTo = BbRook1Attacked(bb);
 		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, apcRook));
 	}
 
@@ -744,14 +739,7 @@ void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
 
 	for (BB bb = mppcbb[PC(cpcMove, apcQueen)]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		BB bbTo = BbFwdSlideAttacks(dirNorth, sqFrom) |
-				BbFwdSlideAttacks(dirNorthEast, sqFrom) |
-				BbFwdSlideAttacks(dirEast, sqFrom) |
-				BbRevSlideAttacks(dirSouthEast, sqFrom) |
-				BbRevSlideAttacks(dirSouth, sqFrom) |
-				BbRevSlideAttacks(dirSouthWest, sqFrom) |
-				BbRevSlideAttacks(dirWest, sqFrom) |
-				BbFwdSlideAttacks(dirNorthWest, sqFrom);
+		BB bbTo = BbQueen1Attacked(bb);
 		GenVemvBbMvs(vemv, sqFrom, bbTo - mpcpcbb[cpcMove], PC(cpcMove, apcQueen));
 	}
 
@@ -1226,8 +1214,10 @@ wstring BDG::SzMoveAndDecode(MV mv)
 	wstring sz = SzDecodeMv(mv, true);
 	CPC cpc = CpcFromSq(mv.sqFrom());
 	MakeMv(mv);
-	if (FInCheck(~cpc))
+	if (FInCheck(~cpc)) {
+		/* TODO: check for mates */
 		sz += L'+';
+	}
 	return sz;
 }
 

@@ -541,11 +541,12 @@ uint64_t GA::CmvPerft(int depth)
 	if (depth == 0)
 		return 1;
 	VEMV vemv;
-	bdg.GenVemv(vemv, ggLegal);
+	bdg.GenVemv(vemv, ggPseudo);
 	uint64_t cmv = 0;
 	for (EMV emv : vemv) {
 		bdg.MakeMv(emv.mv);
-		cmv += CmvPerft(depth - 1);
+		if (!bdg.FInCheck(~bdg.cpcToMove))
+			cmv += CmvPerft(depth - 1);
 		bdg.UndoMv();
 	}
 	return cmv;

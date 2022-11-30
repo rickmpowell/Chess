@@ -685,8 +685,8 @@ void UIML::DrawContent(const RC& rcCont)
 {
 	BDG bdgT(bdgInit);
 	float yCont = RcContent().top;
-	for (unsigned imv = 0; imv < bdgT.vmvGame.size(); imv++) {
-		MV mv = bdgT.vmvGame[imv];
+	for (int imv = 0; imv < uiga.ga.bdg.vmvGame.size(); imv++) {
+		MV mv = uiga.ga.bdg.vmvGame[imv];
 		if (imv % 2 == 0) {
 			RC rc = RcFromCol(yCont + 4.0f + (imv / 2) * dyList, 0);
 			DrawMoveNumber(rc, imv / 2 + 1);
