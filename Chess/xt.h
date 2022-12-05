@@ -56,39 +56,39 @@ private:
 	uint64_t uhabd;
 	uint32_t umv;
 	uint16_t utev : 2,
-		uply : 8,
+		udepth : 8,
 		uage : 6;
 	uint16_t uev;
 public:
 
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
-	inline XEV(void) { }
-	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int ply) 
-	{ uhabd = habd;  umv = mv; utev = tev; uev = ev; uply = ply; }
+	inline XEV(void) { SetNull(); }
+	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int depth) 
+	{ uhabd = habd;  umv = mv; utev = tev; uev = ev; udepth = depth; }
+	inline void SetNull(void) noexcept { *(uint64_t*)this = 0; *((uint64_t*)this + 1) = 0; }
 	inline EV ev(void) const noexcept { return static_cast<EV>(uev); }
 	inline void SetEv(EV ev) noexcept { assert(ev != evInf && ev != -evInf);  uev = static_cast<uint16_t>(ev); }
 	inline TEV tev(void) const noexcept { return static_cast<TEV>(utev); }
 	inline void SetTev(TEV tev) noexcept { utev = static_cast<unsigned>(tev); }
-	inline int ply(void) const noexcept { return static_cast<int>(uply); }
-	inline void SetPly(int ply) noexcept { uply = (unsigned)ply; }
+	inline int depth(void) const noexcept { return static_cast<int>(udepth); }
+	inline void SetDepth(int depth) noexcept { udepth = (unsigned)depth; }
 	inline bool FMatchHabd(HABD habd) const noexcept { return uhabd == habd; }
 	inline void SetHabd(HABD habd) noexcept { uhabd = habd; }
 	inline void SetMv(MV mv) noexcept { this->umv = mv; }
 	inline MV mv(void) const noexcept { return umv; }
 	inline void SetAge(unsigned age) noexcept { this->uage = age; }
 	inline unsigned age(void) const noexcept { return uage; }
-	inline void Save(HABD habd, EV ev, TEV tev, int ply, MV mv, unsigned age) noexcept {
+	inline void Save(HABD habd, EV ev, TEV tev, int depth, MV mv, unsigned age) noexcept {
 		SetHabd(habd);
 		SetEv(ev);
 		SetTev(tev);
-		SetPly(ply);
+		SetDepth(depth);
 		SetMv(mv);
 		SetAge(age);
 	}
 
 };
 
-const unsigned ageMax = 16;
 
 static_assert(sizeof(XEV) == 16);
 
@@ -125,10 +125,11 @@ class XT
 {
 	XEV2* rgxev2;
 public:
-	const uint32_t cxev2Max = 1UL << 23;
+	const uint32_t cxev2Max = 1UL << /*23*/ 18;
 	static_assert(sizeof(XEV2) == (1 << 5));
 	const uint32_t cxev2MaxMask = cxev2Max - 1;
 	const uint32_t cxevMax = cxev2Max * 2;
+	const unsigned ageMax = 2;
 	unsigned age;
 #ifndef NOSTATS
 	/* cache stats */
@@ -167,10 +168,8 @@ public:
 				throw 1;
 		}
 		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
-			rgxev2[ixev2].xevDeep.SetTev(tevNull);
-			rgxev2[ixev2].xevDeep.SetAge(0);
-			rgxev2[ixev2].xevNew.SetTev(tevNull);
-			rgxev2[ixev2].xevNew.SetAge(0);
+			rgxev2[ixev2].xevDeep.SetNull();
+			rgxev2[ixev2].xevNew.SetNull();
 		}
 #ifndef NOSTATS
 		cxevProbe = cxevProbeCollision = cxevProbeHit = 0;
@@ -197,17 +196,19 @@ public:
 	{
 		/* age out really old entries, and bump the table age */
 		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
-			if (Dage(rgxev2[ixev2].xevDeep) > ageMax / 2) {
-				rgxev2[ixev2].xevDeep.SetTev(tevNull);
+			if (Dage(rgxev2[ixev2].xevDeep) >= ageMax - 1) {
 #ifndef NOSTATS
-				cxevInUse--;
+				if (rgxev2[ixev2].xevDeep.tev() != tevNull)
+					cxevInUse--;
 #endif
+				rgxev2[ixev2].xevDeep.SetNull();
 			}
-			if (Dage(rgxev2[ixev2].xevNew) > ageMax / 2) {
-				rgxev2[ixev2].xevNew.SetTev(tevNull);
+			if (Dage(rgxev2[ixev2].xevNew) >= ageMax - 1) {
 #ifndef NOSTATS
-				cxevInUse--;
+				if (rgxev2[ixev2].xevNew.tev() != tevNull)
+					cxevInUse--;
 #endif
+				rgxev2[ixev2].xevNew.SetNull();
 			}
 		}
 		age = (age + 1) & (ageMax - 1);
@@ -230,7 +231,7 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	inline XEV* Save(const BDG& bdg, const EMV& emv, TEV tev, int ply) noexcept
+	inline XEV* Save(const BDG& bdg, const EMV& emv, TEV tev, int depth) noexcept
 	{
 		assert(emv.ev != evInf && emv.ev != -evInf);
 #ifndef NOSTATS
@@ -239,16 +240,17 @@ public:
 		/* keep track of the deepest search */
 
 		XEV2& xev2 = (*this)[bdg];
-		if (!(tev < xev2.xevDeep.tev()) && ply >= xev2.xevDeep.ply()) {
+		if (!(tev < xev2.xevDeep.tev()) && depth >= xev2.xevDeep.depth()) {
 #ifndef NOSTATS
 			if (xev2.xevDeep.tev() == tevNull)
 				cxevInUse++;
-			else
+			else {
 				cxevSaveReplace++;
-			if (!xev2.xevDeep.FMatchHabd(bdg.habd))
-				cxevSaveCollision++;
+				if (!xev2.xevDeep.FMatchHabd(bdg.habd))
+					cxevSaveCollision++;
+			}
 #endif
-			xev2.xevDeep.Save(bdg.habd, emv.ev, tev, ply, emv.mv, age);
+			xev2.xevDeep.Save(bdg.habd, emv.ev, tev, depth, emv.mv, age);
 			return &xev2.xevDeep;
 		}
 
@@ -256,12 +258,13 @@ public:
 #ifndef NOSTATS
 			if (xev2.xevNew.tev() == tevNull)
 				cxevInUse++;
-			else
+			else {
 				cxevSaveReplace++;
-			if (!xev2.xevNew.FMatchHabd(bdg.habd))
-				cxevSaveCollision++;
+				if (!xev2.xevNew.FMatchHabd(bdg.habd))
+					cxevSaveCollision++;
+			}
 #endif
-			xev2.xevNew.Save(bdg.habd, emv.ev, tev, ply, emv.mv, age);
+			xev2.xevNew.Save(bdg.habd, emv.ev, tev, depth, emv.mv, age);
 			return &xev2.xevNew;
 		}
 
@@ -272,9 +275,9 @@ public:
 	/*	XT::Find
 	 *
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
-	 *	at least as deep as ply. Returns nullptr if no such entry exists.
+	 *	at least as deep as depth. Returns nullptr if no such entry exists.
 	 */
-	inline /*__declspec(noinline)*/ XEV* Find(const BDG& bdg, int ply) noexcept
+	/*inline*/ __declspec(noinline) XEV* Find(const BDG& bdg, int depth) noexcept
 	{
 #ifndef NOSTATS
 		cxevProbe++;
@@ -282,7 +285,7 @@ public:
 		XEV2& xev2 = (*this)[bdg];
 		if (xev2.xevDeep.tev() == tevNull) [[likely]]
 			return nullptr;
-		if (xev2.xevDeep.FMatchHabd(bdg.habd) && ply <= xev2.xevDeep.ply()) {
+		if (xev2.xevDeep.FMatchHabd(bdg.habd) && depth <= xev2.xevDeep.depth()) {
 #ifndef NOSTATS
 			cxevProbeHit++;
 #endif
@@ -292,7 +295,7 @@ public:
 		if (xev2.xevNew.tev() == tevNull)
 			return nullptr;
 		if (xev2.xevNew.FMatchHabd(bdg.habd)) {
-			if (ply > xev2.xevNew.ply())
+			if (depth > xev2.xevNew.depth())
 				return nullptr;
 #ifndef NOSTATS
 			cxevProbeHit++;

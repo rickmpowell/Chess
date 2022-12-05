@@ -338,7 +338,7 @@ void BD::InitFENEnPassant(const wchar_t*& sz)
  *	information needed to undo the move (i.e., saves state for captures,
  *	castling, en passant, and pawn promotion).
  */
-void BD::MakeMvSq(MV& mv)
+void BD::MakeMvSq(MV& mv) noexcept
 {
 	Validate();
 	assert(!mv.fIsNil());
@@ -424,8 +424,13 @@ Done:
  *
  *	Undo the move made on the board
  */
-void BD::UndoMvSq(MV mv)
+void BD::UndoMvSq(MV mv) noexcept
 {
+	if (mv.fIsNil()) {
+		UndoMvNullSq(mv);
+		return;
+	}
+
 	assert(FIsEmpty(mv.sqFrom()));
 	CPC cpcMove = mv.cpcMove();
 
@@ -480,13 +485,49 @@ void BD::UndoMvSq(MV mv)
 }
 
 
+/*	BD::MakeMvNullSq
+ *
+ *	Makes a null move, i.e., skips the current movers turn. This is not a legal
+ *	move, of course, but it is used by some AI heuristics, so we cobble up enough
+ *	of the idea to get it to work. Keeps all board state, bitboars, and checksums.
+ * 
+ *	The returned mv includes the information necessary to undo the move. We ignore
+ *	the move on entry.
+ */
+void BD::MakeMvNullSq(MV& mv) noexcept
+{
+	mv = mvNil;
+	mv.SetPcMove(PC(cpcToMove, apcNull));
+	mv.SetCsEp(csCur, sqEnPassant);
+	SetEnPassant(sqNil);
+	ToggleToMove();
+	Validate();
+}
+
+
+/*	BD::UndoMvNullSq
+ * 
+ *	Undoes a null move made by MakeMvNullSq.
+ */
+void BD::UndoMvNullSq(MV mv) noexcept
+{
+	assert(mv.fIsNil());
+	if (mv.fEpPrev())
+		SetEnPassant(SQ(RankToEpFromCpc(mv.cpcMove()), mv.fileEpPrev()));
+	else
+		SetEnPassant(sqNil);
+	ToggleToMove();
+	Validate();
+}
+
+
 /*	BDG::GenVemv
  *
  *	Generates the legal moves for the current player who has the move.
  *	Optionally doesn't bother to remove moves that would leave the
  *	king in check.
  */
-void BD::GenVemv(VEMV& vemv, GG gg)
+void BD::GenVemv(VEMV& vemv, GG gg) noexcept
 {
 	GenVemv(vemv, cpcToMove, gg);
 }
@@ -498,7 +539,7 @@ void BD::GenVemv(VEMV& vemv, GG gg)
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenVemv(VEMV& vemv, CPC cpcMove, GG gg)
+void BD::GenVemv(VEMV& vemv, CPC cpcMove, GG gg) noexcept
 {
 	Validate();
 	GenVemvColor(vemv, cpcMove);
@@ -507,7 +548,11 @@ void BD::GenVemv(VEMV& vemv, CPC cpcMove, GG gg)
 }
 
 
-void BD::RemoveInCheckMoves(VEMV& vemv, CPC cpcMove)
+/*	BD::RemoveInCheckMoves
+ *
+ *	Removes the invalid check moves from a pseudo move list.
+ */
+void BD::RemoveInCheckMoves(VEMV& vemv, CPC cpcMove) noexcept
 {
  	unsigned imvDest = 0;
 	for (EMV emv : vemv) {
@@ -705,7 +750,7 @@ APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
  *	Generates moves for the given color pieces. Does not check if the king is left in
  *	check, so caller must weed those moves out.
  */
-void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
+void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const noexcept
 {
 	vemv.clear();
 
@@ -759,7 +804,7 @@ void BD::GenVemvColor(VEMV& vemv, CPC cpcMove) const
  *	Generates all moves with destination squares in bbTo and square offset to
  *	the soruce square dsq 
  */
-void BD::GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const
+void BD::GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const noexcept
 {
 	for (; bbTo; bbTo.ClearLow()) {
 		SQ sqTo = bbTo.sqLow();
@@ -773,14 +818,14 @@ void BD::GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const
  *	Generates all moves with the source square sqFrom and the destination squares
  *	in bbTo.
  */
-void BD::GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const
+void BD::GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const noexcept
 {
 	for (; bbTo; bbTo.ClearLow())
 		vemv.push_back(sqFrom, bbTo.sqLow(), pcMove);
 }
 
 
-void BD::GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const
+void BD::GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept
 {
 	if (bbTo & bbRankPromotion) {
 		for (BB bbT = bbTo & bbRankPromotion; bbT; bbT.ClearLow()) {
@@ -793,7 +838,7 @@ void BD::GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC 
 }
 
 
-void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const
+void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const noexcept
 {
 	if (cpcMove == cpcWhite) {
 		BB bbTo = (bbPawns << 8) & bbUnoccupied;
@@ -836,7 +881,7 @@ void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const
  *	to the move list, which includes promotions to queen, rook, knight, and
  *	bishop.
  */
-void BD::AddVemvMvPromotions(VEMV& vemv, MV mv) const
+void BD::AddVemvMvPromotions(VEMV& vemv, MV mv) const noexcept
 {
 	vemv.push_back(mv.SetApcPromote(apcQueen));
 	vemv.push_back(mv.SetApcPromote(apcRook));
@@ -851,7 +896,7 @@ void BD::AddVemvMvPromotions(VEMV& vemv, MV mv) const
  *	check and intermediate squares are not under attack, checks for intermediate 
  *	squares are empty, but does not check the final king destination for in check.
  */
-void BD::GenVemvCastle(VEMV& vemv, SQ sqKing, CPC cpcMove) const
+void BD::GenVemvCastle(VEMV& vemv, SQ sqKing, CPC cpcMove) const noexcept
 {
 	BB bbKing = BB(sqKing);
 	if (FCanCastle(cpcMove, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
@@ -922,7 +967,7 @@ void BD::RemoveApcFromGph(APC apc) noexcept
  *	Checks the board state for internal consistency
  */
 #ifndef NDEBUG
-void BD::Validate(void) const
+void BD::Validate(void) const noexcept
 {
 	if (!fValidate)
 		return;
@@ -998,7 +1043,7 @@ void BD::Validate(void) const
 }
 
 
-void BD::ValidateBB(PC pcVal, SQ sq) const
+void BD::ValidateBB(PC pcVal, SQ sq) const noexcept
 {
 	for (CPC cpc = cpcWhite; cpc <= cpcBlack; ++cpc)
 		for (APC apc = apcPawn; apc < apcMax; ++apc) {
@@ -1180,7 +1225,7 @@ wstring BDG::SzFEN(void) const
  *	Make a move on the board, and keeps the move list for the game. Caller is
  *	responsible for testing for game over.
  */
-void BDG::MakeMv(MV& mv)
+void BDG::MakeMv(MV& mv) noexcept
 {
 	assert(!mv.fIsNil());
 
@@ -1200,6 +1245,17 @@ void BDG::MakeMv(MV& mv)
 
 	if (mv.apcMove() == apcPawn || mv.fIsCapture())
 		imvPawnOrTakeLast = imvCurLast;
+}
+
+
+void BDG::MakeMvNull(void) noexcept
+{
+	MV mv;
+	MakeMvNullSq(mv);
+	if (++imvCurLast == vmvGame.size())
+		vmvGame.push_back(mv);
+	else 
+		vmvGame[imvCurLast] = mv;
 }
 
 
@@ -1227,7 +1283,7 @@ wstring BDG::SzMoveAndDecode(MV mv)
  *	Undoes the last made move at imvCur. Caller is responsible for resetting game
  *	over state
  */
-void BDG::UndoMv(void)
+void BDG::UndoMv(void) noexcept
 {
 	if (imvCurLast < 0)
 		return;
@@ -1248,7 +1304,7 @@ void BDG::UndoMv(void)
  *	Redoes that last undone move, which will be at imvCur+1. Caller is responsible
  *	for testing for game-over state afterwards.
  */
-void BDG::RedoMv(void)
+void BDG::RedoMv(void) noexcept
 {
 	if (imvCurLast > (int)vmvGame.size() || vmvGame[imvCurLast+1].fIsNil())
 		return;
@@ -1265,7 +1321,7 @@ void BDG::RedoMv(void)
  *	Tests for the game in an end state. Returns the new state. Takes the legal move
  *	list for the current to-move player and the rule struture.
  */
-GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const
+GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const noexcept
 {
 	if (cmvToMove == 0) {
 		if (FInCheck(cpcToMove))
@@ -1286,7 +1342,7 @@ GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const
 }
 
 
-void BDG::SetGameOver(const VEMV& vemv, const RULE& rule)
+void BDG::SetGameOver(const VEMV& vemv, const RULE& rule) noexcept
 {
 	SetGs(GsTestGameOver(vemv.cemv(), rule));
 }
@@ -1297,7 +1353,7 @@ void BDG::SetGameOver(const VEMV& vemv, const RULE& rule)
  *	Returns true if we're in a board state where no one can force checkmate on the
  *	other player.
  */
-bool BDG::FDrawDead(void) const
+bool BDG::FDrawDead(void) const noexcept
 {
 	/* any pawns, rooks, or queens means no draw */
 
@@ -1340,7 +1396,7 @@ bool BDG::FDrawDead(void) const
  *	all pieces in the same place, castle state is the same, and en passant possibility
  *	is the same.
  */
-bool BDG::FDraw3Repeat(int cbdDraw) const
+bool BDG::FDraw3Repeat(int cbdDraw) const noexcept
 {
 	if (cbdDraw == 0)
 		return false;
@@ -1375,7 +1431,7 @@ bool BDG::FDraw3Repeat(int cbdDraw) const
  *	If we've gone 50 moves (black and white both gone 50 moves each) without a pawn move
  *	or a capture. 
  */
-bool BDG::FDraw50Move(int64_t cmvDraw) const
+bool BDG::FDraw50Move(int64_t cmvDraw) const noexcept
 {
 	return imvCurLast - imvPawnOrTakeLast >= cmvDraw * 2;
 }
@@ -1385,7 +1441,7 @@ bool BDG::FDraw50Move(int64_t cmvDraw) const
  *
  *	Sets the game state.
  */
-void BDG::SetGs(GS gs)
+void BDG::SetGs(GS gs) noexcept
 {
 	this->gs = gs;
 }
@@ -1422,7 +1478,7 @@ wstring SzFromEv(EV ev)
 	}
 	else if (FEvIsMate(ev)) {
 		*pch++ = L'#';
-		pch = PchDecodeInt((PlyFromEvMate(ev) + 1) / 2, pch);
+		pch = PchDecodeInt((DepthFromEvMate(ev) + 1) / 2, pch);
 	}
 	else if (ev > evInf)
 		*pch++ = L'*';
@@ -1484,7 +1540,10 @@ wstring SzFromMvm(MVM mvm)
 
 RULE::RULE(void) : cmvRepeatDraw(3)
 {
-	vtmi.push_back(TMI(0, -1, msecMin*30, msecSec*3));	/* 30min and 3sec is TCEC early time control */
+	//vtmi.push_back(TMI(0, -1, msecMin*30, msecSec*3));	/* 30min and 3sec is TCEC early time control */
+	vtmi.push_back(TMI(0, 40, msecMin * 100, 0));
+	vtmi.push_back(TMI(41, 60, msecMin * 50, 0));
+	vtmi.push_back(TMI(61, -1, msecMin * 15, msecSec * 30));
 }
 
 

@@ -223,7 +223,6 @@ public:
 	inline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
 	inline MV& SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); return *this; }
 	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
-
 	inline MV& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
 	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
 	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
@@ -273,19 +272,19 @@ wstring SzFromMvm(MVM mvm);
 
 typedef int16_t EV;
 
-const int plyMax = 127;
+const int depthMax = 127;
 const EV evInf = 160 * 100;	/* largest possible evaluation, in centi-pawns */
 const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
-const EV evMateMin = evMate - plyMax;
+const EV evMateMin = evMate - depthMax;
 const EV evTempo = 33;	/* evaluation of a single move advantage */
 const EV evDraw = 0;	/* evaluation of a draw */
 const EV evTimedOut = evInf + 1;
 const EV evCanceled = evInf + 2;
 
-inline EV EvMate(int ply) { return evMate - ply; }
+inline EV EvMate(int depth) { return evMate - depth; }
 inline bool FEvIsMate(EV ev) { return ev >= evMateMin; }
 inline bool FEvIsInterrupt(EV ev) { return ev == evCanceled || ev == evTimedOut; }
-inline int PlyFromEvMate(EV ev) { return evMate - ev; }
+inline int DepthFromEvMate(EV ev) { return evMate - ev; }
 wstring SzFromEv(EV ev);
 inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 
@@ -935,27 +934,29 @@ public:
 
 	/* making moves */
 
-	void MakeMvSq(MV& mv);
-	void UndoMvSq(MV mv);
+	void MakeMvSq(MV& mv) noexcept;
+	void UndoMvSq(MV mv) noexcept;
+	void MakeMvNullSq(MV& mv) noexcept;
+	void UndoMvNullSq(MV mv) noexcept;
 
 	/* move generation */
 	
-	void GenVemv(VEMV& vemv, GG gg);
-	void GenVemv(VEMV& vemv, CPC cpcMove, GG gg);
-	void GenVemvColor(VEMV& vemv, CPC cpcMove) const;
-	void GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const;
-	void GenVemvCastle(VEMV& vemv, SQ sqFrom, CPC cpcMove) const;
-	void AddVemvMvPromotions(VEMV& vemv, MV mv) const;
-	void GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const;
-	void GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const;
-	void GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const;
-	void GenVemvBbPromotionMvs(VEMV& vemv, BB bbTo, int dsq) const;
+	void GenVemv(VEMV& vemv, GG gg) noexcept;
+	void GenVemv(VEMV& vemv, CPC cpcMove, GG gg) noexcept;
+	void GenVemvColor(VEMV& vemv, CPC cpcMove) const noexcept;
+	void GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const noexcept;
+	void GenVemvCastle(VEMV& vemv, SQ sqFrom, CPC cpcMove) const noexcept;
+	void AddVemvMvPromotions(VEMV& vemv, MV mv) const noexcept;
+	void GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
+	void GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const noexcept;
+	void GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
+	void GenVemvBbPromotionMvs(VEMV& vemv, BB bbTo, int dsq) const noexcept;
 	
 	/*
 	 *	checking squares for attack 
 	 */
 
-	void RemoveInCheckMoves(VEMV& vemv, CPC cpc);
+	void RemoveInCheckMoves(VEMV& vemv, CPC cpc) noexcept;
 	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
@@ -1151,11 +1152,11 @@ public:
 	 */
 
 #ifndef NDEBUG
-	void Validate(void) const;
-	void ValidateBB(PC pc, SQ sq) const;
+	void Validate(void) const noexcept;
+	void ValidateBB(PC pc, SQ sq) const noexcept;
 #else
-	inline void Validate(void) const { }
-	inline void ValidateBB(PC pck, SQ sq) const { }
+	inline void Validate(void) const noexcept { }
+	inline void ValidateBB(PC pck, SQ sq) const noexcept { }
 #endif
 };
 
@@ -1242,20 +1243,21 @@ public:
 	 *	making moves 
 	 */
 
-	void MakeMv(MV& mv);
-	void UndoMv(void);
-	void RedoMv(void);
+	void MakeMv(MV& mv) noexcept;
+	void UndoMv(void) noexcept;
+	void RedoMv(void) noexcept;
+	void MakeMvNull(void) noexcept;
 	
 	/* 
 	 *	game over tests
 	 */
 
-	GS GsTestGameOver(int cmvToMove, const RULE& rule) const;
-	void SetGameOver(const VEMV& vemv, const RULE& rule);
-	bool FDrawDead(void) const;
-	bool FDraw3Repeat(int cbdDraw) const;
-	bool FDraw50Move(int64_t cmvDraw) const;
-	void SetGs(GS gs); 
+	GS GsTestGameOver(int cmvToMove, const RULE& rule) const noexcept;
+	void SetGameOver(const VEMV& vemv, const RULE& rule) noexcept;
+	bool FDrawDead(void) const noexcept;
+	bool FDraw3Repeat(int cbdDraw) const noexcept;
+	bool FDraw50Move(int64_t cmvDraw) const noexcept;
+	void SetGs(GS gs) noexcept; 
 
 	/*
 	 *	decoding moves 

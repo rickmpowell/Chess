@@ -87,7 +87,7 @@ public:
 	int cmvLegal;
 
 public:
-	inline VEMVS(BDG& bdg) noexcept;
+	inline VEMVS(BDG& bdg, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
@@ -110,7 +110,7 @@ class VEMVSS : public VEMVS
 	PLAI* pplai;
 
 public:
-	VEMVSS(BDG& bdg, PLAI* pplai) noexcept;
+	VEMVSS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	void Reset(BDG& bdg) noexcept;
 
@@ -132,7 +132,7 @@ private:
 class VEMVSQ : public VEMVS
 {
 public:
-	VEMVSQ(BDG& bdg) noexcept;
+	VEMVSQ(BDG& bdg, GG gg) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 };
 
@@ -301,6 +301,20 @@ enum SINT : int {
 
 
 /*
+ *	TS search options, can be or'ed together
+ */
+
+enum TS : int {
+	tsAll = 0,
+	tsNoNullMove = 0x0001
+};
+
+inline TS operator+(TS ts1, TS ts2) noexcept { return static_cast<TS>(ts1 | ts2); }
+inline TS operator-(TS ts1, TS ts2) noexcept { return static_cast<TS>(ts1 & ~ts2); }
+inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<int>(ts1) & static_cast<int>(ts2)) != 0; }
+
+
+/*
  *
  *	PLAI class
  * 
@@ -334,6 +348,8 @@ protected:
 	TTM ttm;
 	DWORD dmsecDeadline, dmsecFlag;
 	time_point<high_resolution_clock> tpMoveFirst;
+	
+	XT xt;	
 
 	uint16_t cYield;
 	SINT sint;
@@ -349,7 +365,6 @@ public:
 	PLAI(GA& ga);
 
 	virtual void StartGame(void);
-	virtual MV MvGetNext(SPMV& spmv);
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
 	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
@@ -357,29 +372,33 @@ public:
 	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	void PumpMsg(bool fForce) noexcept;
 
+	/* search */
+
+public:
+	virtual MV MvGetNext(SPMV& spmv);
 protected:
-	EV EvBdgDepth(BDG& bdg, const EMV& emvPrev, AB ab, int ply, int plyLim) noexcept;
-	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, AB ab, int ply) noexcept; 
-	inline bool FSearchEmvBest(BDG& bdg, VEMVSS& vemvss, EMV& emvBest, AB ab, int ply, int& plyLim) noexcept;
-	inline bool FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& plyLim) const noexcept;
-	inline bool FDeepen(EMV emvBest, AB& ab, int& ply) noexcept;
-	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int ply) const noexcept;
-	inline bool FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int ply) const noexcept;
-	inline XEV* SaveXt(BDG& bdg, EMV emvBest, AB ab, int ply) const noexcept;
-	inline bool FTryFutility(BDG& bdg, EMV& emvBest, AB ab, int ply, int plyLim) noexcept;
-	inline bool FTryNullMove(BDG& bdg, const EMV& emvPrev, EMV& emvBest, AB ab, int ply, int plyLim) noexcept;
+	EV EvBdgSearch(BDG& bdg, const EMV& emvPrev, AB ab, int depth, int depthLim, TS ts) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, AB ab, int depth, TS ts) noexcept; 
+	inline bool FSearchEmvBest(BDG& bdg, VEMVSS& vemvss, EMV& emvBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
+	inline bool FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& depthLim) const noexcept;
+	inline bool FDeepen(EMV emvBest, AB& ab, int& depth) noexcept;
+	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int depth) const noexcept;
+	inline bool FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int depth) noexcept;
+	inline XEV* SaveXt(BDG& bdg, EMV emvBest, AB ab, int depth) noexcept;
+	inline bool FTryFutility(BDG& bdg, EMV& emvBest, AB ab, int depth, int depthLim, TS ts) noexcept;
+	inline bool FTryNullMove(BDG& bdg, EMV& emvBest, AB ab, int depth, int depthLim, TS ts) noexcept;
+
+	/* time management */
 
 	virtual void InitTimeMan(BDG& bdg) noexcept;
-	virtual bool FStopSearch(int plyLim) noexcept;
+	virtual bool FStopSearch(int depthLim) noexcept;
 	EV EvMaterialTotal(BDG& bdg) const noexcept;
 	
+	/* eval */
+
 	virtual EV EvBdgStatic(BDG& bdg, MV mv, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
-
-	void StartMoveLog(void);
-	void EndMoveLog(void);
-
 	virtual void InitWeightTables(void);
 	void InitWeightTable(const EV mpapcev[apcMax], const EV mpapcsqdev[apcMax][64], EV mpapcsqev[apcMax][64]);
 	EV EvFromPst(const BDG& bdg) const noexcept;
@@ -394,6 +413,11 @@ protected:
 	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CsqWeak(BDG& bdg, CPC cpc) const noexcept;
+
+	/* logging */
+	
+	void StartMoveLog(void);
+	void EndMoveLog(void);
 };
 
 
