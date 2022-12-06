@@ -277,7 +277,7 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as depth. Returns nullptr if no such entry exists.
 	 */
-	/*inline*/ __declspec(noinline) XEV* Find(const BDG& bdg, int depth) noexcept
+	inline /*__declspec(noinline)*/ XEV* Find(const BDG& bdg, int depth) noexcept
 	{
 #ifndef NOSTATS
 		cxevProbe++;
