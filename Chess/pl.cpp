@@ -421,6 +421,23 @@ void VEMVS::UndoMv(BDG& bdg) noexcept
 }
 
 
+/*	VEMVS::FOnlyOneMove
+ *
+ *	Returns true if there is only one legal move. The legal move is returned
+ *	in emv.
+ * 
+ *	WARNING! For now, this only works if the VEMVS constructor was called with 
+ *	ggLegal.
+ */
+bool VEMVS::FOnlyOneMove(EMV& emv) const noexcept
+{
+	if (size() != 1)
+		return false;
+	emv = (*this)[0];
+	return true;
+}
+
+
 /*
  *
  *	VEMVSS class
@@ -543,7 +560,7 @@ void VEMVSS::PrepTscCur(BDG& bdg, int iemvFirst) noexcept
 
 	case tscXTable:
 	{
-#ifdef TESTING
+//#ifdef TESTING
 		/* get the eval of any element we find in the tranposition table */
 		for (int iemv = iemvFirst; iemv < cemv(); iemv++) {
 			EMV& emv = (*this)[iemv];
@@ -556,7 +573,7 @@ void VEMVSS::PrepTscCur(BDG& bdg, int iemvFirst) noexcept
 			}
 			bdg.UndoMvSq(emv.mv);
 		}
-#endif
+//#endif
 		break;
 	}
 
@@ -650,7 +667,7 @@ MV PLAI::MvGetNext(SPMV& spmv)
 		LOGITD logitd(*this, bdg, emvBest, ab, depthLim);
 		FSearchEmvBest(bdg, vemvss, emvBest, ab, 0, depthLim, tsAll);
 		SaveXt(bdg, emvBest, ab, depthLim);
-		if (vemvss.size() == 1 || FDeepen(emvBest, ab, depthLim))
+		if (vemvss.FOnlyOneMove(emvBestOverall) || !FDeepen(emvBest, ab, depthLim))
 			break;
 	}
 
@@ -692,12 +709,11 @@ EV PLAI::EvBdgSearch(BDG& bdg, const EMV& emvPrev, AB abInit, int depth, int dep
 	if (FTryNullMove(bdg, emv, abInit, depth, depthLim, ts))
 		return emv.ev;
 
-	/* full search */
+	/* if none of those optimizations work, do a full search */
 
 	VEMVSS vemvss(bdg, this, ggPseudo);
 	if (!FSearchEmvBest(bdg, vemvss, emvBest, abInit, depth, depthLim, ts))
 		TestForMates(bdg, vemvss, emvBest, depth);
-	
 	SaveXt(bdg, emvBest, abInit, depthLim - depth);
 	return emvBest.ev;
 }
@@ -724,19 +740,19 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, AB abInit, int depth, TS t
 	AB ab = abInit;
 	emvBest.mv = mvNil;
 	emvBest.ev = EvBdgStatic(bdg, emvPrev.mv, true);
-	if (FPrune(&emvBest, emvBest, ab, depthLim))
-		return emvBest.ev;
+	if (!FPrune(&emvBest, emvBest, ab, depthLim)) {
 
-	/* recursively evaluate noisy moves */
-	
-	VEMVSQ vemvsq(bdg, ggPseudo);
-	for (EMV* pemv; vemvsq.FMakeMvNext(bdg, pemv); ) {
-		pemv->ev = -EvBdgQuiescent(bdg, *pemv, -ab, depth + 1, ts);
-		vemvsq.UndoMv(bdg);
-		if (FPrune(pemv, emvBest, ab, depthLim))
-			goto Done;
+		/* then recursively evaluate noisy moves */
+		
+		VEMVSQ vemvsq(bdg, ggPseudo);
+		for (EMV* pemv; vemvsq.FMakeMvNext(bdg, pemv); ) {
+			pemv->ev = -EvBdgQuiescent(bdg, *pemv, -ab, depth + 1, ts);
+			vemvsq.UndoMv(bdg);
+			if (FPrune(pemv, emvBest, ab, depthLim))
+				goto Done;
+		}
+		TestForMates(bdg, vemvsq, emvBest, depth);
 	}
-	TestForMates(bdg, vemvsq, emvBest, depth);
 
 Done:
 	SaveXt(bdg, emvBest, abInit, 0);
@@ -939,19 +955,19 @@ void PLAI::TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int depth) const n
  *	loop. Our loop is set up to handle both deepening and aspiration windows, so
  *	sometimes we increase the depth, other times we widen the aspiration window.
  *
- *	Returns true if we should abort the search, which happens if we find a forced
- *	mate or some interrupt occurs.
+ *	Returns false if we should we couldn't deepen, which means we aborted the search, 
+ *	which happens if we find a forced mate or some interrupt occurs.
  */
 bool PLAI::FDeepen(EMV emvBest, AB& ab, int& depth) noexcept
 {
 	if (emvBest.ev == evCanceled) {
 		emvBestOverall.mv = mvNil;
-		return true;
+		return false;
 	}
 	if (emvBest.ev == evTimedOut) {
 		/* we only time out when we have already found at least one best overall move */
 		assert(!emvBestOverall.mv.fIsNil());
-		return true;
+		return false;
 	}	
 
 	/* If the search failed with a narrow a-b window, widen the window up some and
@@ -968,18 +984,25 @@ bool PLAI::FDeepen(EMV emvBest, AB& ab, int& depth) noexcept
 
 		emvBestOverall = emvBest;
 		if (FEvIsMate(emvBest.ev) || FEvIsMate(-emvBest.ev))
-			return true;
+			return false;
 		ab = ab.AbAspiration(emvBest.ev, 20);
 		depth++;
 	}
-	return false;
+	return true;
 }
 
 
 /*	PLAI::InitTimeMan
  *
  *	Gets us ready for the intelligence that will determine how long we spend analyzing the
- *	move.
+ *	move. Time management happens in two places: during the main iterative deepening loop,
+ *	and as an interrupt on the clock tick. 
+ * 
+ *	This basically sets a deadline. If we ever exceed the deadline in the iterative 
+ *	deepening, we immediately stop the search. However, the iterative deepening loop may 
+ *	not have control for minutes at a time. So, on the clock tick, we also check, but 
+ *	we'll let the AI think quite a way past the deadline if we're in the middle of a long
+ *	search.
  */
 void PLAI::InitTimeMan(BDG& bdg) noexcept
 {
@@ -991,6 +1014,7 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 	CPC cpc = bdg.cpcToMove;
 	dmsecFlag = -1;
 	tpMoveFirst = high_resolution_clock::now();
+	
 	switch (ttm) {
 	case ttmSmart:
 		if (!ga.prule->FUntimed()) {
@@ -1047,20 +1071,58 @@ bool PLAI::FStopSearch(int depthLim) noexcept
 
 	case ttmSmart:
 	case ttmTimePerMove:
-	{
-		time_point<high_resolution_clock> tp = high_resolution_clock::now();
-		duration dtp = tp - tpMoveFirst;
-		microseconds usec = duration_cast<microseconds>(dtp);
-		return usec.count() >= usecMsec * dmsecDeadline;
-	}
+		return DmsecMoveSoFar() >= dmsecDeadline;
 	case ttmConstDepth:
-	{
 		/* different levels get different depths */
 		return depthLim > level + 1;
 	}
-	}
 
 	return true;
+}
+
+long long PLAI::DmsecMoveSoFar(void) const noexcept
+{
+	time_point<high_resolution_clock> tp = high_resolution_clock::now();
+	duration dtp = tp - tpMoveFirst;
+	milliseconds dmsec = duration_cast<milliseconds>(dtp);
+	return dmsec.count();
+}
+
+
+
+/*	PLAI::SintTimeMan
+ *
+ *	Returns whether we should interrupt search or not. Type of interrupt is
+ *	returned. InitTimeMan sets up the variables we need in order to detect it's
+ *	time to stop this search.
+ * 
+ *	Returns sintNull if there is no interrupt.
+ */
+SINT PLAI::SintTimeMan(void) const noexcept
+{
+	/* if someone flagged, stop the search */
+
+	if (ga.bdg.gs != gsPlaying)
+		return sintCanceled;
+
+	/* if we're doing constant depth search, we do no time management; we also must
+	   have a possible best move before we can interrupt */
+
+	if (ttm == ttmConstDepth || emvBestOverall.mv.fIsNil())
+		return sintNull;
+	
+	/* the deadline is just a suggestion - we'll actually abort the search if we go
+	   50% beyond it */
+
+	long long dmsec = DmsecMoveSoFar();
+	if (dmsec > dmsecDeadline + dmsecDeadline / 2)
+		return sintTimedOut;
+
+	/* if we're within a half-second of flagging, bail out right away */
+
+	if (dmsecFlag != -1 && dmsec > dmsecFlag - msecHalfSec)
+		return sintTimedOut;
+	return sintNull;
 }
 
 
@@ -1082,20 +1144,7 @@ void PLAI::PumpMsg(bool fForce) noexcept
 		return;
 	try {
 		ga.puiga->PumpMsg();
-		if (ga.bdg.gs != gsPlaying)
-			sint = sintCanceled;		// someone has flagged the game, abort the search
-		else if (ttm != ttmConstDepth && !emvBestOverall.mv.fIsNil()) {
-			/* interrupt searches that have been going on way too long, or if we're about
-			   to flag */
-			time_point<high_resolution_clock> tp = high_resolution_clock::now();
-			duration dtp = tp - tpMoveFirst;
-			microseconds usec = duration_cast<microseconds>(dtp);
-			if (usec.count() > (msecSec * (dmsecDeadline+dmsecDeadline/2))) // we've taken 1.5 times too long... timeout
-				sint = sintTimedOut;
-			/* if we're within a half-second of flagging, bail out right away */
-			else if (dmsecFlag != -1 && usec.count() > usecMsec * dmsecFlag - msecHalfSec)
-				sint = sintTimedOut;
-		}
+		sint = SintTimeMan();
 	}
 	catch (...) {
 		sint = sintCanceled;

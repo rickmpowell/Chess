@@ -91,6 +91,7 @@ public:
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
+	bool FOnlyOneMove(EMV& emv) const noexcept;
 };
 
 
@@ -392,7 +393,9 @@ protected:
 
 	virtual void InitTimeMan(BDG& bdg) noexcept;
 	virtual bool FStopSearch(int depthLim) noexcept;
+	SINT SintTimeMan(void) const noexcept;
 	EV EvMaterialTotal(BDG& bdg) const noexcept;
+	long long DmsecMoveSoFar(void) const noexcept;
 	
 	/* eval */
 
