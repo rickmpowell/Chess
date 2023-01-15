@@ -113,6 +113,9 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="ga.h" />
     <ClInclude Include="app.h" />
+    <ClInclude Include="mv.h" />
+    <ClInclude Include="pc.h" />
+    <ClInclude Include="rule.h" />
     <ClInclude Include="uiml.h" />
     <ClInclude Include="uipa.h" />
     <ClInclude Include="pl.h" />
