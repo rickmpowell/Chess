@@ -12,7 +12,7 @@
  *	words and bytes line up within the structure. Modify this code with care.
  * 
  *	There are three basic move types: MVM (a mini-move), a MV (contains undo
- *	information), and an EMV (an evaluated move).
+ *	information), and an MVE (an evaluated move).
  *	
  */
 #pragma once
@@ -213,7 +213,7 @@ wstring SzFromTsc(TSC tsc);
 
 /*
  *
- *	EMV structure
+ *	MVE structure
  *
  *	A move along with move evaluation information, which is used for generating AI move 
  *	lists and alpha-beta pruning. All movegens generate moves into this sized element 
@@ -225,253 +225,253 @@ wstring SzFromTsc(TSC tsc);
  */
 
 
-class EMV : public MV
+class MVE : public MV
 {
 public:
 	EV ev;
 	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
-	EMV(MV mv = MV()) noexcept : MV(mv), ev(0), utsc(0) { }
-	EMV(MV mv, EV ev) noexcept : MV(mv), ev(ev), utsc(0) { }
+	MVE(MV mv = MV()) noexcept : MV(mv), ev(0), utsc(0) { }
+	MVE(MV mv, EV ev) noexcept : MV(mv), ev(ev), utsc(0) { }
 #pragma warning(suppress:26495)	 
-	EMV(uint64_t emv) noexcept { *(uint64_t*)this = emv; }
+	MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
 
 	/* comparison operations work on the eval */
 
-	inline bool operator>(const EMV& emv) const noexcept { return utsc > emv.utsc || (utsc == emv.utsc && ev > emv.ev); }
-	inline bool operator<(const EMV& emv) const noexcept { return utsc < emv.utsc || (utsc == emv.utsc && ev < emv.ev); }
-	inline bool operator>=(const EMV& emv) const noexcept { return !(*this < emv); }
-	inline bool operator<=(const EMV& emv) const noexcept { return !(*this > emv); }
+	inline bool operator>(const MVE& mve) const noexcept { return utsc > mve.utsc || (utsc == mve.utsc && ev > mve.ev); }
+	inline bool operator<(const MVE& mve) const noexcept { return utsc < mve.utsc || (utsc == mve.utsc && ev < mve.ev); }
+	inline bool operator>=(const MVE& mve) const noexcept { return !(*this < mve); }
+	inline bool operator<=(const MVE& mve) const noexcept { return !(*this > mve); }
 
 	inline void SetTsc(TSC tsc) noexcept { utsc = static_cast<uint16_t>(tsc); }
 	inline TSC tsc() const noexcept { return static_cast<TSC>(utsc); }
 	inline void SetMv(MV mv) noexcept { *(MV*)this = mv; }
 };
 
-static_assert(sizeof(EMV) == sizeof(uint64_t));
+static_assert(sizeof(MVE) == sizeof(uint64_t));
 
 
 /*
  *
- *	VEMV class
+ *	VMVE class
  *
- *	Generated move list. Has simple array semantics. Actually stores an EMV, which
+ *	Generated move list. Has simple array semantics. Actually stores an MVE, which
  *	is just handy extra room for an evaluation during AI search.
  *
  */
 
 
-const size_t cemvPreMax = 60;
+const size_t cmvePreMax = 60;
 
-class VEMV
+class VMVE
 {
 private:
-	uint64_t aemv[cemvPreMax];
-	int cemvCur;
-	vector<uint64_t>* pvemvOverflow;
+	uint64_t amve[cmvePreMax];
+	int cmveCur;
+	vector<uint64_t>* pvmveOverflow;
 
 public:
-	VEMV() : cemvCur(0), pvemvOverflow(nullptr)
+	VMVE() : cmveCur(0), pvmveOverflow(nullptr)
 	{
-		aemv[0] = 0;
+		amve[0] = 0;
 	}
 
-	~VEMV()
+	~VMVE()
 	{
-		if (pvemvOverflow)
-			delete pvemvOverflow;
+		if (pvmveOverflow)
+			delete pvmveOverflow;
 	}
 
-	VEMV(const VEMV& vemv) : cemvCur(vemv.cemvCur), pvemvOverflow(nullptr)
+	VMVE(const VMVE& vmve) : cmveCur(vmve.cmveCur), pvmveOverflow(nullptr)
 	{
-		assert(vemv.FValid());
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (vemv.pvemvOverflow)
-			pvemvOverflow = new vector<uint64_t>(*vemv.pvemvOverflow);
+		assert(vmve.FValid());
+		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+		if (vmve.pvmveOverflow)
+			pvmveOverflow = new vector<uint64_t>(*vmve.pvmveOverflow);
 	}
 
 
-	/*	VEMV move constructor
+	/*	VMVE move constructor
 	 *
 	 *	Moves data from one GMV to another. Note that the source GMV is trashed.
 	 */
-	VEMV(VEMV&& vemv) noexcept : cemvCur(vemv.cemvCur), pvemvOverflow(vemv.pvemvOverflow)
+	VMVE(VMVE&& vmve) noexcept : cmveCur(vmve.cmveCur), pvmveOverflow(vmve.pvmveOverflow)
 	{
-		assert(vemv.FValid());
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		vemv.cemvCur = 0;
-		vemv.pvemvOverflow = nullptr;
+		assert(vmve.FValid());
+		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+		vmve.cmveCur = 0;
+		vmve.pvmveOverflow = nullptr;
 	}
 
 
-	VEMV& operator=(const VEMV& vemv)
+	VMVE& operator=(const VMVE& vmve)
 	{
-		assert(vemv.FValid());
-		cemvCur = vemv.cemvCur;
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (vemv.pvemvOverflow) {
-			if (pvemvOverflow)
-				*pvemvOverflow = *vemv.pvemvOverflow;
+		assert(vmve.FValid());
+		cmveCur = vmve.cmveCur;
+		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+		if (vmve.pvmveOverflow) {
+			if (pvmveOverflow)
+				*pvmveOverflow = *vmve.pvmveOverflow;
 			else
-				pvemvOverflow = new vector<uint64_t>(*vemv.pvemvOverflow);
+				pvmveOverflow = new vector<uint64_t>(*vmve.pvmveOverflow);
 		}
 		else {
-			if (pvemvOverflow) {
-				delete pvemvOverflow;
-				pvemvOverflow = nullptr;
+			if (pvmveOverflow) {
+				delete pvmveOverflow;
+				pvmveOverflow = nullptr;
 			}
 		}
 		assert(FValid());
 		return *this;
 	}
 
-	VEMV& operator=(VEMV&& vemv) noexcept
+	VMVE& operator=(VMVE&& vmve) noexcept
 	{
-		if (this == &vemv)
+		if (this == &vmve)
 			return *this;
-		cemvCur = vemv.cemvCur;
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (pvemvOverflow != nullptr) {
-			delete pvemvOverflow;
-			pvemvOverflow = nullptr;
+		cmveCur = vmve.cmveCur;
+		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+		if (pvmveOverflow != nullptr) {
+			delete pvmveOverflow;
+			pvmveOverflow = nullptr;
 		}
-		pvemvOverflow = vemv.pvemvOverflow;
-		vemv.pvemvOverflow = nullptr;
+		pvmveOverflow = vmve.pvmveOverflow;
+		vmve.pvmveOverflow = nullptr;
 		return *this;
 	}
 
 #ifndef NDEBUG
 	bool FValid(void) const noexcept
 	{
-		return (cemvCur <= cemvPreMax && pvemvOverflow == nullptr) ||
-			(cemvCur > cemvPreMax && pvemvOverflow != nullptr && pvemvOverflow->size() + cemvPreMax == cemvCur);
+		return (cmveCur <= cmvePreMax && pvmveOverflow == nullptr) ||
+			(cmveCur > cmvePreMax && pvmveOverflow != nullptr && pvmveOverflow->size() + cmvePreMax == cmveCur);
 	}
 #endif
 
-	inline int cemv(void) const noexcept
+	inline int cmve(void) const noexcept
 	{
 		assert(FValid());
-		return cemvCur;
+		return cmveCur;
 	}
 
 
-	inline EMV& operator[](int iemv) noexcept
+	inline MVE& operator[](int imve) noexcept
 	{
 		assert(FValid());
-		assert(iemv >= 0 && iemv < cemvCur);
-		if (iemv < cemvPreMax)
-			return *(EMV*)&aemv[iemv];
+		assert(imve >= 0 && imve < cmveCur);
+		if (imve < cmvePreMax)
+			return *(MVE*)&amve[imve];
 		else {
-			assert(pvemvOverflow != nullptr);
-			return *(EMV*)&(*pvemvOverflow)[iemv - cemvPreMax];
+			assert(pvmveOverflow != nullptr);
+			return *(MVE*)&(*pvmveOverflow)[imve - cmvePreMax];
 		}
 	}
 
-	inline const EMV& operator[](int iemv) const noexcept
+	inline const MVE& operator[](int imve) const noexcept
 	{
 		assert(FValid());
-		assert(iemv >= 0 && iemv < cemvCur);
-		if (iemv < cemvPreMax)
-			return *(EMV*)&aemv[iemv];
+		assert(imve >= 0 && imve < cmveCur);
+		if (imve < cmvePreMax)
+			return *(MVE*)&amve[imve];
 		else {
-			assert(pvemvOverflow != nullptr);
-			return *(EMV*)&(*pvemvOverflow)[iemv - cemvPreMax];
+			assert(pvmveOverflow != nullptr);
+			return *(MVE*)&(*pvmveOverflow)[imve - cmvePreMax];
 		}
 	}
 
 	/* iterator and const iterator for the arrays */
 
 	class iterator {
-		VEMV* pvemv;
-		int iemv;
+		VMVE* pvmve;
+		int imve;
 	public:
 		using difference_type = int;
-		using value_type = EMV;
-		using pointer = EMV*;
-		using reference = EMV&;
+		using value_type = MVE;
+		using pointer = MVE*;
+		using reference = MVE&;
 		using iterator_category = random_access_iterator_tag;
 
-		inline iterator(VEMV* pvemv, difference_type iemv) noexcept : pvemv(pvemv), iemv(iemv) { }
-		inline iterator(const iterator& it) noexcept : pvemv(it.pvemv), iemv(it.iemv) { }
-		inline iterator& operator=(const iterator& it) noexcept { pvemv = it.pvemv; iemv = it.iemv; return *this; }
-		inline reference operator[](difference_type diemv) const noexcept { return (*pvemv)[iemv + diemv]; }
-		inline reference operator*() const noexcept { return (*pvemv)[iemv]; }
-		inline pointer operator->() const noexcept { return &(*pvemv)[iemv]; }
-		inline iterator& operator++() noexcept { iemv++; return *this; }
-		inline iterator operator++(int) noexcept { int iemvT = iemv; iemv++; return iterator(pvemv, iemvT); }
-		inline iterator& operator--() noexcept { iemv--; return *this; }
-		inline iterator operator--(int) noexcept { int iemvT = iemv; iemv--; return iterator(pvemv, iemvT); }
-		inline iterator operator+(difference_type diemv) const noexcept { return iterator(pvemv, iemv + diemv); }
-		inline iterator operator-(difference_type diemv) const noexcept { return iterator(pvemv, iemv - diemv); }
-		inline iterator& operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
-		inline iterator& operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
-		friend inline iterator operator+(difference_type diemv, iterator const& it) { return iterator(it.pvemv, diemv + it.iemv); }
-		inline difference_type operator-(const iterator& it) const noexcept { return iemv - it.iemv; }
-		inline bool operator==(const iterator& it) const noexcept { return iemv == it.iemv; }
-		inline bool operator!=(const iterator& it) const noexcept { return iemv != it.iemv; }
-		inline bool operator<(const iterator& it) const noexcept { return iemv < it.iemv; }
+		inline iterator(VMVE* pvmve, difference_type imve) noexcept : pvmve(pvmve), imve(imve) { }
+		inline iterator(const iterator& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
+		inline iterator& operator=(const iterator& it) noexcept { pvmve = it.pvmve; imve = it.imve; return *this; }
+		inline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
+		inline reference operator*() const noexcept { return (*pvmve)[imve]; }
+		inline pointer operator->() const noexcept { return &(*pvmve)[imve]; }
+		inline iterator& operator++() noexcept { imve++; return *this; }
+		inline iterator operator++(int) noexcept { int imveT = imve; imve++; return iterator(pvmve, imveT); }
+		inline iterator& operator--() noexcept { imve--; return *this; }
+		inline iterator operator--(int) noexcept { int imveT = imve; imve--; return iterator(pvmve, imveT); }
+		inline iterator operator+(difference_type dimve) const noexcept { return iterator(pvmve, imve + dimve); }
+		inline iterator operator-(difference_type dimve) const noexcept { return iterator(pvmve, imve - dimve); }
+		inline iterator& operator+=(difference_type dimve) noexcept { imve += dimve; return *this; }
+		inline iterator& operator-=(difference_type dimve) noexcept { imve -= dimve; return *this; }
+		friend inline iterator operator+(difference_type dimve, iterator const& it) { return iterator(it.pvmve, dimve + it.imve); }
+		inline difference_type operator-(const iterator& it) const noexcept { return imve - it.imve; }
+		inline bool operator==(const iterator& it) const noexcept { return imve == it.imve; }
+		inline bool operator!=(const iterator& it) const noexcept { return imve != it.imve; }
+		inline bool operator<(const iterator& it) const noexcept { return imve < it.imve; }
 	};
 
 	class citerator {
-		const VEMV* pvemv;
-		int iemv;
+		const VMVE* pvmve;
+		int imve;
 	public:
 		using difference_type = int;
-		using value_type = EMV;
-		using pointer = const EMV*;
-		using reference = const EMV&;
+		using value_type = MVE;
+		using pointer = const MVE*;
+		using reference = const MVE&;
 		typedef random_access_iterator_tag iterator_category;
 
-		inline citerator(const VEMV* pvemv, int iemv) noexcept : pvemv(pvemv), iemv(iemv) { }
-		inline citerator(const citerator& it) noexcept : pvemv(it.pvemv), iemv(it.iemv) { }
-		//		inline citerator operator=(const citerator& cit) noexcept { pvemv = cit.pvemv; iemv = cit.iemv; return *this; }
+		inline citerator(const VMVE* pvmve, int imve) noexcept : pvmve(pvmve), imve(imve) { }
+		inline citerator(const citerator& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
+		//		inline citerator operator=(const citerator& cit) noexcept { pvmve = cit.pvmve; imve = cit.imve; return *this; }
 
-		inline reference operator[](difference_type diemv) const noexcept { return (*pvemv)[iemv + diemv]; }
-		inline reference operator*() const noexcept { return (*pvemv)[iemv]; }
-		inline pointer operator->() const noexcept { return &(*pvemv)[iemv]; }
+		inline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
+		inline reference operator*() const noexcept { return (*pvmve)[imve]; }
+		inline pointer operator->() const noexcept { return &(*pvmve)[imve]; }
 
-		inline citerator operator++() noexcept { iemv++; return *this; }
-		inline citerator operator++(int) noexcept { citerator cit = *this; iemv++; return cit; }
-		inline citerator operator--() noexcept { iemv--; return *this; }
-		inline citerator operator--(int) noexcept { citerator it = *this; iemv--; return it; }
+		inline citerator operator++() noexcept { imve++; return *this; }
+		inline citerator operator++(int) noexcept { citerator cit = *this; imve++; return cit; }
+		inline citerator operator--() noexcept { imve--; return *this; }
+		inline citerator operator--(int) noexcept { citerator it = *this; imve--; return it; }
 
-		inline citerator operator+(difference_type diemv) const noexcept { return citerator(pvemv, iemv + diemv); }
-		inline citerator operator-(difference_type diemv) const noexcept { return citerator(pvemv, iemv - diemv); }
-		inline citerator operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
-		inline citerator operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
-		friend inline citerator operator+(difference_type diemv, const citerator& cit) { return citerator(cit.pvemv, diemv + cit.iemv); }
-		inline difference_type operator-(const citerator& cit) const noexcept { return iemv - cit.iemv; }
+		inline citerator operator+(difference_type dimve) const noexcept { return citerator(pvmve, imve + dimve); }
+		inline citerator operator-(difference_type dimve) const noexcept { return citerator(pvmve, imve - dimve); }
+		inline citerator operator+=(difference_type dimve) noexcept { imve += dimve; return *this; }
+		inline citerator operator-=(difference_type dimve) noexcept { imve -= dimve; return *this; }
+		friend inline citerator operator+(difference_type dimve, const citerator& cit) { return citerator(cit.pvmve, dimve + cit.imve); }
+		inline difference_type operator-(const citerator& cit) const noexcept { return imve - cit.imve; }
 
-		inline bool operator==(const citerator& cit) const noexcept { return iemv == cit.iemv; }
-		inline bool operator!=(const citerator& cit) const noexcept { return iemv != cit.iemv; }
-		inline bool operator<(const citerator& cit) const noexcept { return iemv < cit.iemv; }
+		inline bool operator==(const citerator& cit) const noexcept { return imve == cit.imve; }
+		inline bool operator!=(const citerator& cit) const noexcept { return imve != cit.imve; }
+		inline bool operator<(const citerator& cit) const noexcept { return imve < cit.imve; }
 	};
 
-	inline int size(void) const noexcept { return cemv(); }
+	inline int size(void) const noexcept { return cmve(); }
 	inline iterator begin(void) noexcept { return iterator(this, 0); }
 	inline iterator end(void) noexcept { return iterator(this, size()); }
 	inline citerator begin(void) const noexcept { return citerator(this, 0); }
 	inline citerator end(void) const noexcept { return citerator(this, size()); }
 
-	void push_back_overflow(EMV emv)
+	void push_back_overflow(MVE mve)
 	{
-		if (pvemvOverflow == nullptr) {
-			assert(cemvCur == cemvPreMax);
-			pvemvOverflow = new vector<uint64_t>;
+		if (pvmveOverflow == nullptr) {
+			assert(cmveCur == cmvePreMax);
+			pvmveOverflow = new vector<uint64_t>;
 		}
-		pvemvOverflow->push_back(emv);
-		cemvCur++;
+		pvmveOverflow->push_back(mve);
+		cmveCur++;
 	}
 
 
 	inline void push_back(MV mv)
 	{
 		assert(FValid());
-		if (cemvCur < cemvPreMax)
-			aemv[cemvCur++] = EMV(mv);
+		if (cmveCur < cmvePreMax)
+			amve[cmveCur++] = MVE(mv);
 		else
-			push_back_overflow(EMV(mv));
+			push_back_overflow(MVE(mv));
 		assert(FValid());
 	}
 
@@ -481,66 +481,66 @@ public:
 		push_back(MV(sqFrom, sqTo, pcMove));
 	}
 
-	void insert_overflow(int iemv, const EMV& emv) noexcept
+	void insert_overflow(int imve, const MVE& mve) noexcept
 	{
-		if (pvemvOverflow == nullptr)
-			pvemvOverflow = new vector<uint64_t>;
-		if (iemv >= cemvPreMax)
-			pvemvOverflow->insert(pvemvOverflow->begin() + (iemv - cemvPreMax), emv);
+		if (pvmveOverflow == nullptr)
+			pvmveOverflow = new vector<uint64_t>;
+		if (imve >= cmvePreMax)
+			pvmveOverflow->insert(pvmveOverflow->begin() + (imve - cmvePreMax), mve);
 		else {
-			pvemvOverflow->insert(pvemvOverflow->begin(), aemv[cemvPreMax - 1]);
-			memmove(&aemv[iemv + 1], &aemv[iemv], sizeof(uint64_t) * (cemvPreMax - iemv - 1));
+			pvmveOverflow->insert(pvmveOverflow->begin(), amve[cmvePreMax - 1]);
+			memmove(&amve[imve + 1], &amve[imve], sizeof(uint64_t) * (cmvePreMax - imve - 1));
 		}
-		cemvCur++;
+		cmveCur++;
 	}
 
-	inline void insert(int iemv, const EMV& emv) noexcept
+	inline void insert(int imve, const MVE& mve) noexcept
 	{
 		assert(FValid());
-		if (cemvCur >= cemvPreMax)
-			insert_overflow(iemv, emv);
+		if (cmveCur >= cmvePreMax)
+			insert_overflow(imve, mve);
 		else {
-			memmove(&aemv[iemv + 1], &aemv[iemv], sizeof(uint64_t) * (cemvCur - iemv));
-			aemv[iemv] = emv;
-			cemvCur++;
+			memmove(&amve[imve + 1], &amve[imve], sizeof(uint64_t) * (cmveCur - imve));
+			amve[imve] = mve;
+			cmveCur++;
 		}
 	}
 
-	void resize(int cemvNew)
+	void resize(int cmveNew)
 	{
 		assert(FValid());
-		if (cemvNew > cemvPreMax) {
-			if (pvemvOverflow == nullptr)
-				pvemvOverflow = new vector<uint64_t>;
-			pvemvOverflow->resize(cemvNew - cemvPreMax);
+		if (cmveNew > cmvePreMax) {
+			if (pvmveOverflow == nullptr)
+				pvmveOverflow = new vector<uint64_t>;
+			pvmveOverflow->resize(cmveNew - cmvePreMax);
 		}
 		else {
-			if (pvemvOverflow != nullptr) {
-				delete pvemvOverflow;
-				pvemvOverflow = nullptr;
+			if (pvmveOverflow != nullptr) {
+				delete pvmveOverflow;
+				pvmveOverflow = nullptr;
 			}
 		}
-		cemvCur = cemvNew;
+		cmveCur = cmveNew;
 		assert(FValid());
 	}
 
 
-	void reserve(int cemv)
+	void reserve(int cmve)
 	{
-		if (cemv <= cemvPreMax)
+		if (cmve <= cmvePreMax)
 			return;
-		if (pvemvOverflow == nullptr)
-			pvemvOverflow = new vector<uint64_t>;
-		pvemvOverflow->reserve(cemv - cemvPreMax);
+		if (pvmveOverflow == nullptr)
+			pvmveOverflow = new vector<uint64_t>;
+		pvmveOverflow->reserve(cmve - cmvePreMax);
 	}
 
 
 	void clear(void) noexcept
 	{
-		if (pvemvOverflow) {
-			delete pvemvOverflow;
-			pvemvOverflow = nullptr;
+		if (pvmveOverflow) {
+			delete pvmveOverflow;
+			pvmveOverflow = nullptr;
 		}
-		cemvCur = 0;
+		cmveCur = 0;
 	}
 };

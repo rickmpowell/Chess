@@ -231,9 +231,9 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	inline XEV* Save(const BDG& bdg, const EMV& emv, TEV tev, int depth) noexcept
+	inline XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int depth) noexcept
 	{
-		assert(emv.ev != evInf && emv.ev != -evInf);
+		assert(mve.ev != evInf && mve.ev != -evInf);
 #ifndef NOSTATS
 		cxevSave++;
 #endif
@@ -250,7 +250,7 @@ public:
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevDeep.Save(bdg.habd, emv.ev, tev, depth, emv, age);
+			xev2.xevDeep.Save(bdg.habd, mve.ev, tev, depth, mve, age);
 			return &xev2.xevDeep;
 		}
 
@@ -264,7 +264,7 @@ public:
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevNew.Save(bdg.habd, emv.ev, tev, depth, emv, age);
+			xev2.xevNew.Save(bdg.habd, mve.ev, tev, depth, mve, age);
 			return &xev2.xevNew;
 		}
 

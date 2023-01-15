@@ -316,22 +316,22 @@ public:
 
 	/* move generation */
 	
-	void GenVemv(VEMV& vemv, GG gg) noexcept;
-	void GenVemv(VEMV& vemv, CPC cpcMove, GG gg) noexcept;
-	void GenVemvColor(VEMV& vemv, CPC cpcMove) const noexcept;
-	void GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const noexcept;
-	void GenVemvCastle(VEMV& vemv, SQ sqFrom, CPC cpcMove) const noexcept;
-	void AddVemvMvPromotions(VEMV& vemv, MV mv) const noexcept;
-	void GenVemvBbPawnMvs(VEMV& vemv, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
-	void GenVemvBbMvs(VEMV& vemv, BB bbTo, int dsq, PC pcMove) const noexcept;
-	void GenVemvBbMvs(VEMV& vemv, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
-	void GenVemvBbPromotionMvs(VEMV& vemv, BB bbTo, int dsq) const noexcept;
+	void GenVmve(VMVE& vmve, GG gg) noexcept;
+	void GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
+	void GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept;
+	void GenVmvePawnMvs(VMVE& vmve, BB bbPawns, CPC cpcMove) const noexcept;
+	void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
+	void AddVmveMvPromotions(VMVE& vmve, MV mv) const noexcept;
+	void GenVmveBbPawnMvs(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
+	void GenVmveBbMvs(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
+	void GenVmveBbMvs(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
+	void GenVmveBbPromotionMvs(VMVE& vmve, BB bbTo, int dsq) const noexcept;
 	
 	/*
 	 *	checking squares for attack 
 	 */
 
-	void RemoveInCheckMoves(VEMV& vemv, CPC cpc) noexcept;
+	void RemoveInCheckMoves(VMVE& vmve, CPC cpc) noexcept;
 	bool FMvIsQuiescent(MV mv) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
@@ -621,7 +621,7 @@ public:
 	 */
 
 	GS GsTestGameOver(int cmvToMove, int cmvRepeatDraw) const noexcept;
-	void SetGameOver(const VEMV& vemv, const RULE& rule) noexcept;
+	void SetGameOver(const VMVE& vmve, const RULE& rule) noexcept;
 	bool FDrawDead(void) const noexcept;
 	bool FDraw3Repeat(int cbdDraw) const noexcept;
 	bool FDraw50Move(int64_t cmvDraw) const noexcept;
@@ -633,9 +633,9 @@ public:
 
 	wstring SzMoveAndDecode(MV mv);
 	wstring SzDecodeMv(MV mv, bool fPretty);
-	bool FMvApcAmbiguous(const VEMV& vemv, MV mv) const;
-	bool FMvApcRankAmbiguous(const VEMV& vemv, MV mv) const;
-	bool FMvApcFileAmbiguous(const VEMV& vemv, MV mv) const;
+	bool FMvApcAmbiguous(const VMVE& vmve, MV mv) const;
+	bool FMvApcRankAmbiguous(const VMVE& vmve, MV mv) const;
+	bool FMvApcFileAmbiguous(const VMVE& vmve, MV mv) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
 	wstring SzDecodeMvPost(MV mv) const;
 
@@ -644,13 +644,13 @@ public:
 	 */
 
 	ERR ParseMv(const char*& pch, MV& mv);
-	ERR ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseSquareMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParsePieceMv(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseSquareMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
 	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
-	ERR ParseFileMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	MV MvMatchPieceTo(const VEMV& vemv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
-	MV MvMatchFromTo(const VEMV& vemv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	ERR ParseFileMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	ERR ParseRankMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
+	MV MvMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	MV MvMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 
 	/*

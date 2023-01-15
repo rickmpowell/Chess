@@ -429,8 +429,8 @@ string to_string(TKMV tkmv)
  */
 ERR BDG::ParseMv(const char*& pch, MV& mv)
 {
-	VEMV vemv;
-	GenVemv(vemv, ggLegal);
+	VMVE vmve;
+	GenVmve(vmve, ggLegal);
 
 	const char* pchInit = pch;
 	int rank, file;
@@ -444,13 +444,13 @@ ERR BDG::ParseMv(const char*& pch, MV& mv)
 	case tkmvBishop:
 	case tkmvKnight:
 	case tkmvPawn:
-		return ParsePieceMv(vemv, tkmv, pchInit, pch, mv);
+		return ParsePieceMv(vmve, tkmv, pchInit, pch, mv);
 	case tkmvSquare:
-		return ParseSquareMv(vemv, sq1, pchInit, pch, mv);
+		return ParseSquareMv(vmve, sq1, pchInit, pch, mv);
 	case tkmvFile:
-		return ParseFileMv(vemv, sq1, pchInit, pch, mv);
+		return ParseFileMv(vmve, sq1, pchInit, pch, mv);
 	case tkmvRank:
-		return ParseRankMv(vemv, sq1, pchInit, pch, mv);
+		return ParseRankMv(vmve, sq1, pchInit, pch, mv);
 	case tkmvCastleKing:
 		file = fileKingKnight;
 		goto BuildCastle;
@@ -491,7 +491,7 @@ APC ApcFromTkmv(TKMV tkmv)
 }
 
 
-ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const
+ERR BDG::ParsePieceMv(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const
 {
 	SQ sq;
 	APC apc = ApcFromTkmv(tkmv);
@@ -502,7 +502,7 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 	case tkmvTake:
 		if (TkmvScan(pch, sq) != tkmvSquare)
 			throw EXPARSE(format("Missing destination square (got {})", to_string(tkmv)));
-		mv = MvMatchPieceTo(vemv, apc, -1, -1, sq, pchInit, pch);
+		mv = MvMatchPieceTo(vmve, apc, -1, -1, sq, pchInit, pch);
 		break;
 
 	case tkmvSquare:	/* Bc5, Bd3c5, Bd3-c5, Bd3xc5 */
@@ -516,12 +516,12 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 		}
 		if (tkmv != tkmvSquare) { /* Bc5 */
 			/* look up piece that can move to this square */
-			mv = MvMatchPieceTo(vemv, apc, -1, -1, sq, pchInit, pch);
+			mv = MvMatchPieceTo(vmve, apc, -1, -1, sq, pchInit, pch);
 			break;
 		}
 		/* Bd5c4 */
 		pch = pchNext;
-		mv = MvMatchFromTo(vemv, sq, sqTo, pchInit, pch);
+		mv = MvMatchFromTo(vmve, sq, sqTo, pchInit, pch);
 		break;
 	}
 
@@ -537,7 +537,7 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 		if (tkmv != tkmvSquare)
 			throw EXPARSE(format("Expected destination square (got {})", to_string(tkmv)));
 		pch = pchNext;
-		mv = MvMatchPieceTo(vemv, apc, -1, sq.file(), sqTo, pchInit, pch);
+		mv = MvMatchPieceTo(vmve, apc, -1, sq.file(), sqTo, pchInit, pch);
 		break;
 	}
 
@@ -553,7 +553,7 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 		if (tkmv != tkmvSquare)
 			throw EXPARSE(format("Expected a square (got {})", to_string(tkmv)));
 		pch = pchNext;
-		mv = MvMatchPieceTo(vemv, apc, sq.rank(), -1, sqTo, pchInit, pch);
+		mv = MvMatchPieceTo(vmve, apc, sq.rank(), -1, sqTo, pchInit, pch);
 		break;
 	}
 
@@ -564,7 +564,7 @@ ERR BDG::ParsePieceMv(const VEMV& vemv, TKMV tkmv, const char* pchInit, const ch
 }
 
 
-ERR BDG::ParseSquareMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const
+ERR BDG::ParseSquareMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const
 {
 	/* e4, e4e5, e4-e5, e4xe5 */
 	const char* pchNext = pch;
@@ -577,10 +577,10 @@ ERR BDG::ParseSquareMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*
 	}
 	if (TkmvScan(pchNext, sq) == tkmvSquare) {
 		pch = pchNext;
-		mv = MvMatchFromTo(vemv, sq, sqTo, pchInit, pch);
+		mv = MvMatchFromTo(vmve, sq, sqTo, pchInit, pch);
 	}
 	else { /* e4: plain square is a pawn move */
-		mv = MvMatchPieceTo(vemv, apcPawn, -1, -1, sq, pchInit, pch);
+		mv = MvMatchPieceTo(vmve, apcPawn, -1, -1, sq, pchInit, pch);
 	}
 	return ParseMvSuffixes(mv, pch);
 }
@@ -624,7 +624,7 @@ ERR BDG::ParseMvSuffixes(MV& mv, const char*& pch) const
 }
 
 
-ERR BDG::ParseFileMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const
+ERR BDG::ParseFileMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const
 {
 	/* de4, d-e4, dxe4 */
 	const char* pchNext = pch;
@@ -637,12 +637,12 @@ ERR BDG::ParseFileMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 	if (tkmv != tkmvSquare)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
-	mv = MvMatchPieceTo(vemv, apcPawn, -1, sq.file(), sqTo, pchInit, pch);
+	mv = MvMatchPieceTo(vmve, apcPawn, -1, sq.file(), sqTo, pchInit, pch);
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-ERR BDG::ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& pch, MV& mv) const
+ERR BDG::ParseRankMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const
 {
 	/* 7e4, 7-e4, 7xe4 */
 	const char* pchNext = pch;
@@ -655,30 +655,30 @@ ERR BDG::ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 	if (tkmv != tkmvSquare)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
-	mv = MvMatchPieceTo(vemv, apcPawn, sq.rank(), -1, sqTo, pchInit, pch);
+	mv = MvMatchPieceTo(vmve, apcPawn, sq.rank(), -1, sqTo, pchInit, pch);
 	return ParseMvSuffixes(mv, pch);
 }
 
 
-MV BDG::MvMatchPieceTo(const VEMV& vemv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
+MV BDG::MvMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
 {
-	for (EMV emvSearch : vemv) {
-		if (emvSearch.sqTo() == sqTo && emvSearch.apcMove() == apc) {
-			if (fileFrom != -1 && fileFrom != emvSearch.sqFrom().file())
+	for (MVE mveSearch : vmve) {
+		if (mveSearch.sqTo() == sqTo && mveSearch.apcMove() == apc) {
+			if (fileFrom != -1 && fileFrom != mveSearch.sqFrom().file())
 				continue;
-			if (rankFrom != -1 && rankFrom != emvSearch.sqFrom().rank())
+			if (rankFrom != -1 && rankFrom != mveSearch.sqFrom().rank())
 				continue;
-			return emvSearch;
+			return mveSearch;
 		}
 	}
 	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim - pchFirst)));
 }
 
-MV BDG::MvMatchFromTo(const VEMV& vemv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
+MV BDG::MvMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
 {
-	for (EMV emvSearch : vemv) {
-		if (emvSearch.sqFrom() == sqFrom && emvSearch.sqTo() == sqTo)
-			return emvSearch;
+	for (MVE mveSearch : vmve) {
+		if (mveSearch.sqFrom() == sqFrom && mveSearch.sqTo() == sqTo)
+			return mveSearch;
 	}
 	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim-pchFirst)));
 }

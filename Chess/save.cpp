@@ -160,8 +160,8 @@ const wchar_t mpapcchFig[cpcMax][apcMax] =
 
 wstring BDG::SzDecodeMv(MV mv, bool fPretty)
 {
-	VEMV vemv;
-	GenVemv(vemv, ggPseudo);
+	VMVE vmve;
+	GenVmve(vmve, ggPseudo);
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mv.sqFrom();
@@ -213,11 +213,11 @@ FinishCastle:
 	/* for ambiguous moves, we need to add various from square qualifiers depending
 	 * on where the ambiguity is */
 
-	if (FMvApcAmbiguous(vemv, mv)) {
-		if (!FMvApcFileAmbiguous(vemv, mv))
+	if (FMvApcAmbiguous(vmve, mv)) {
+		if (!FMvApcFileAmbiguous(vmve, mv))
 			*pch++ = L'a' + sqFrom.file();
 		else {
-			if (FMvApcRankAmbiguous(vemv, mv))
+			if (FMvApcRankAmbiguous(vmve, mv))
 				*pch++ = L'a' + sqFrom.file();
 			*pch++ = L'1' + sqFrom.rank();
 		}
@@ -255,42 +255,42 @@ FinishMove:
 }
 
 
-bool BDG::FMvApcAmbiguous(const VEMV& vemv, MV mv) const
+bool BDG::FMvApcAmbiguous(const VMVE& vmve, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (EMV emvOther : vemv) {
-		if (emvOther.sqTo() != sqTo || emvOther.sqFrom() == sqFrom)
+	for (MVE mveOther : vmve) {
+		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (emvOther.apcMove() == mv.apcMove())
+		if (mveOther.apcMove() == mv.apcMove())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvApcRankAmbiguous(const VEMV& vemv, MV mv) const
+bool BDG::FMvApcRankAmbiguous(const VMVE& vmve, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (EMV emvOther : vemv) {
-		if (emvOther.sqTo() != sqTo || emvOther.sqFrom() == sqFrom)
+	for (MVE mveOther : vmve) {
+		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (emvOther.apcMove() == mv.apcMove() && emvOther.sqFrom().rank() == sqFrom.rank())
+		if (mveOther.apcMove() == mv.apcMove() && mveOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvApcFileAmbiguous(const VEMV& vemv, MV mv) const
+bool BDG::FMvApcFileAmbiguous(const VMVE& vmve, MV mv) const
 {
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
-	for (EMV emvOther : vemv) {
-		if (emvOther.sqTo() != sqTo || emvOther.sqFrom() == sqFrom)
+	for (MVE mveOther : vmve) {
+		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (emvOther.apcMove() == mv.apcMove() && emvOther.sqFrom().file() == sqFrom.file())
+		if (mveOther.apcMove() == mv.apcMove() && mveOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;

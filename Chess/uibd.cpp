@@ -183,7 +183,7 @@ void UIBD::Layout(void)
  */
 void UIBD::InitGame(void)
 {
-	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
+	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 }
 
 
@@ -195,8 +195,8 @@ void UIBD::InitGame(void)
  */
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
-	for (EMV emvDrag : vemvDrag) {
-		if (emvDrag.sqFrom() == mv.sqFrom() && emvDrag.sqTo() == mv.sqTo())
+	for (MVE mveDrag : vmveDrag) {
+		if (mveDrag.sqFrom() == mv.sqFrom() && mveDrag.sqTo() == mv.sqTo())
 			goto FoundMove;
 	}
 	throw 1;
@@ -205,8 +205,8 @@ FoundMove:
 	if (FSpmvAnimate(spmv))
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	uiga.ga.bdg.MakeMv(mv);
-	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
-	uiga.ga.bdg.SetGameOver(vemvDrag, *uiga.ga.prule);
+	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();
 }
@@ -219,7 +219,7 @@ void UIBD::UndoMv(SPMV spmv)
 		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.UndoMv();
-	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
+	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGs(gsPlaying);
 	if (spmv != spmvHidden)
 		Redraw();
@@ -233,8 +233,8 @@ void UIBD::RedoMv(SPMV spmv)
 		AnimateMv(mv, DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.RedoMv();
-	uiga.ga.bdg.GenVemv(vemvDrag, ggLegal);
-	uiga.ga.bdg.SetGameOver(vemvDrag, *uiga.ga.prule);
+	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();
 }
@@ -420,9 +420,9 @@ bool UIBD::FHoverSq(SQ sq, MV& mv)
 {
 	if (sqHover.fIsNil() || uiga.ga.bdg.gs != gsPlaying)
 		return false;
-	for (EMV emvDrag : vemvDrag) {
-		if (emvDrag.sqFrom() == sqHover && emvDrag.sqTo() == sq) {
-			mv = emvDrag;
+	for (MVE mveDrag : vmveDrag) {
+		if (mveDrag.sqFrom() == sqHover && mveDrag.sqTo() == sq) {
+			mv = mveDrag;
 			return true;
 		}
 	}
@@ -645,8 +645,8 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(uiga.ga.bdg.CpcFromSq(sq) == uiga.ga.bdg.cpcToMove);
-	for (EMV emvDrag : vemvDrag)
-		if (emvDrag.sqFrom() == sq)
+	for (MVE mveDrag : vmveDrag)
+		if (mveDrag.sqFrom() == sq)
 			return true;
 	return false;
 }
@@ -686,9 +686,9 @@ void UIBD::EndLeftDrag(const PT& pt)
 	SQ sqTo;
 	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
-		for (EMV emv : vemvDrag) {
-			if (emv.sqFrom() == sqFrom && emv.sqTo() == sqTo) {
-				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(emv, spmvFast);
+		for (MVE mve : vmveDrag) {
+			if (mve.sqFrom() == sqFrom && mve.sqTo() == sqTo) {
+				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(mve, spmvFast);
 				goto Done;
 			}
 		}

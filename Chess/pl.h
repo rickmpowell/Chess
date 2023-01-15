@@ -68,7 +68,7 @@ public:
 
 /*
  *
- *	VEMVS class
+ *	VMVES class
  *
  *	A move list class that has smart enumeration used in alpha-beta search.
  *	Variants for the various types of enumerations we have to do, including
@@ -81,60 +81,60 @@ public:
 
 class PLAI;
 
-class VEMVS : public VEMV
+class VMVES : public VMVE
 {
 public:
-	int iemvNext;
+	int imveNext;
 	int cmvLegal;
 	PLAI* pplai;
 
 public:
-	inline VEMVS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
+	inline VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
-	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
+	inline bool FMakeMvNext(BDG& bdg, MVE*& pmve) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
-	bool FOnlyOneMove(EMV& emv) const noexcept;
+	bool FOnlyOneMove(MVE& mve) const noexcept;
 };
 
 
 /*
  *
- *	VEMVSS
+ *	VMVESS
  *
  *	Sorted move enumerator, used for optimizing alpha-beta search orer.
  *
  */
 
 
-class VEMVSS : public VEMVS
+class VMVESS : public VMVES
 {
 	TSC tscCur;	/* the score type we're currently enumerating */
 
 public:
-	VEMVSS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
+	VMVESS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
+	bool FMakeMvNext(BDG& bdg, MVE*& pmve) noexcept;
 	void Reset(BDG& bdg) noexcept;
 
 private:
-	EMV* PemvBestFromTscCur(int iemvFirst) noexcept;
-	void PrepTscCur(BDG& bdg, int iemvFirst) noexcept;
+	MVE* PmveBestFromTscCur(int imveFirst) noexcept;
+	void PrepTscCur(BDG& bdg, int imveFirst) noexcept;
 };
 
 
 /*
  *
- *	VEMVSQ enumeration
+ *	VMVESQ enumeration
  *
  *	Enumerates noisy moves
  *
  */
 
 
-class VEMVSQ : public VEMVS
+class VMVESQ : public VMVES
 {
 public:
-	VEMVSQ(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
+	VMVESQ(BDG& bdg, PLAI* pplai, GG gg) noexcept;
+	bool FMakeMvNext(BDG& bdg, MVE*& pmve) noexcept;
 };
 
 
@@ -327,21 +327,21 @@ inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<int>(ts1) &
 
 class STBF {
 public:
-	unsigned long long cemvNode;
-	unsigned long long cemvGen;
+	unsigned long long cmveNode;
+	unsigned long long cmveGen;
 public:
-	STBF(unsigned long long cemvNode, unsigned long long cemvGen) noexcept : cemvNode(cemvNode), cemvGen(cemvGen) {}
-	STBF(void) noexcept : cemvNode(0), cemvGen(0) {}
-	inline void Init(void) noexcept { cemvNode = 0; cemvGen = 0; }
-	STBF operator+(const STBF& stbf) const noexcept { return STBF(cemvNode + stbf.cemvNode, cemvGen + stbf.cemvGen); }
-	inline STBF& operator+=(STBF& stbf) noexcept { cemvNode += stbf.cemvNode; cemvGen += stbf.cemvGen; return *this; }
-	inline void AddNode(int cemv) noexcept { cemvNode += cemv; }
-	inline void AddGen(int cemv) noexcept { cemvGen += cemv; }
+	STBF(unsigned long long cmveNode, unsigned long long cmveGen) noexcept : cmveNode(cmveNode), cmveGen(cmveGen) {}
+	STBF(void) noexcept : cmveNode(0), cmveGen(0) {}
+	inline void Init(void) noexcept { cmveNode = 0; cmveGen = 0; }
+	STBF operator+(const STBF& stbf) const noexcept { return STBF(cmveNode + stbf.cmveNode, cmveGen + stbf.cmveGen); }
+	inline STBF& operator+=(STBF& stbf) noexcept { cmveNode += stbf.cmveNode; cmveGen += stbf.cmveGen; return *this; }
+	inline void AddNode(int cmve) noexcept { cmveNode += cmve; }
+	inline void AddGen(int cmve) noexcept { cmveGen += cmve; }
 	
 	operator wstring() noexcept { 
-		if (cemvGen == 0)
+		if (cmveGen == 0)
 			return wstring(L"/0");
-		int w100 = (int)round(100.0 * (double)cemvNode / (double)cemvGen);
+		int w100 = (int)round(100.0 * (double)cmveNode / (double)cmveGen);
 		wchar_t sz[12], * pch = sz;
 		int wInt = w100 / 100;
 		pch = PchDecodeInt(wInt, pch);
@@ -367,12 +367,12 @@ public:
 
 class PLAI : public PL
 {
-	friend class VEMVS;
-	friend class VEMVSS;
-	friend class VEMVSQ;
-	friend class LOGEMV;
-	friend class LOGEMVS;
-	friend class LOGEMVQ;
+	friend class VMVES;
+	friend class VMVESS;
+	friend class VMVESQ;
+	friend class LOGMVE;
+	friend class LOGMVES;
+	friend class LOGMVEQ;
 	friend class LOGITD;
 
 protected:
@@ -390,7 +390,7 @@ protected:
 	uint64_t habdRand;	/* random number generated at the start of every search used to add randomness
 						   to board eval - which is generated from the Zobrist hash */
 	
-	EMV emvBestOverall;	/* during search, root level best move so far */
+	MVE mveBestOverall;	/* during search, root level best move so far */
 	TTM ttm;
 	DWORD dmsecDeadline, dmsecFlag;
 	time_point<high_resolution_clock> tpMoveFirst;
@@ -403,7 +403,7 @@ protected:
 #ifndef NOSTATS
 	/* logging statistics */
 	time_point<high_resolution_clock> tpStart;
-	size_t cemvTotalEval;
+	size_t cmveTotalEval;
 	STBF stbfTotal;
 	STBF stbfMain;
 	STBF stbfQuiescent;
@@ -425,16 +425,16 @@ public:
 public:
 	virtual MV MvGetNext(SPMV& spmv);
 protected:
-	EV EvBdgSearch(BDG& bdg, const EMV& emvPrev, AB ab, int depth, int depthLim, TS ts) noexcept;
-	EV EvBdgQuiescent(BDG& bdg, const EMV& emvPrev, AB ab, int depth, TS ts) noexcept; 
-	inline bool FSearchEmvBest(BDG& bdg, VEMVSS& vemvss, EMV& emvBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
-	inline bool FPrune(EMV* pemv, EMV& emvBest, AB& ab, int& depthLim) const noexcept;
-	inline bool FDeepen(EMV emvBest, AB& ab, int& depth) noexcept;
-	inline void TestForMates(BDG& bdg, VEMVS& vemvs, EMV& emvBest, int depth) const noexcept;
-	inline bool FLookupXt(BDG& bdg, EMV& emvBest, AB ab, int depth) noexcept;
-	inline XEV* SaveXt(BDG& bdg, EMV emvBest, AB ab, int depth) noexcept;
-	inline bool FTryFutility(BDG& bdg, EMV& emvBest, AB ab, int depth, int depthLim, TS ts) noexcept;
-	inline bool FTryNullMove(BDG& bdg, EMV& emvBest, AB ab, int depth, int depthLim, TS ts) noexcept;
+	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int depth, int depthLim, TS ts) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int depth, TS ts) noexcept; 
+	inline bool FSearchEmvBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
+	inline bool FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& depthLim) const noexcept;
+	inline bool FDeepen(MVE mveBest, AB& ab, int& depth) noexcept;
+	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int depth) const noexcept;
+	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int depth) noexcept;
+	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int depth) noexcept;
+	inline bool FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept;
+	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept;
 
 	/* time management */
 
