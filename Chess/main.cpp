@@ -1785,3 +1785,10 @@ wstring SzCommaFromLong(int long long w)
 
     return sz;
 }
+
+
+int WInterpolate(int wFrom, int wFrom1, int wFrom2, int wTo1, int wTo2)
+{
+    return wTo1 + (wFrom - wFrom1) * (wTo2 - wTo1) / (wFrom2 - wFrom1);
+}
+

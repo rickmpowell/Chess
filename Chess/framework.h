@@ -94,6 +94,7 @@ string SzFlattenWsz(const wstring& wsz);
 wstring WszWidenSz(const string& sz);
 wchar_t* PchDecodeInt(unsigned imv, wchar_t* pch);
 wstring SzCommaFromLong(int long long w);
+int WInterpolate(int wFrom, int wFromFirst, int wFromLim, int wToFirst, int wToLim);
 
 
 /*
