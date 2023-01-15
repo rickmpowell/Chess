@@ -28,6 +28,8 @@
  *	Dialog definitions
  */
 
+#define idtNil			-1
+
 #define iddAbout		1
 
 #define iddTestPerft	2
