@@ -55,19 +55,19 @@ class XEV
 private:
 	uint64_t uhabd;
 	uint32_t umv;
-	uint16_t utev : 2,
-		udepth : 8,
-		uage : 6;
-	uint16_t uev;
+	uint32_t utev : 2,
+		udepth : 7,
+		uage : 5,
+		uevBiased : 15,
+		unused : 3;
 public:
 
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
 	inline XEV(void) { SetNull(); }
-	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int depth) 
-	{ uhabd = habd;  umv = mv; utev = tev; uev = ev; udepth = depth; }
+	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int depth) { Save(habd, ev, tev, depth, mv, 0); }
 	inline void SetNull(void) noexcept { *(uint64_t*)this = 0; *((uint64_t*)this + 1) = 0; }
-	inline EV ev(void) const noexcept { return static_cast<EV>(uev); }
-	inline void SetEv(EV ev) noexcept { assert(ev != evInf && ev != -evInf);  uev = static_cast<uint16_t>(ev); }
+	inline EV ev(void) const noexcept { return static_cast<EV>(uevBiased)-evBias; }
+	inline void SetEv(EV ev) noexcept { assert(ev < evInf && ev > -evInf);  uevBiased = static_cast<uint16_t>(ev+evBias); }
 	inline TEV tev(void) const noexcept { return static_cast<TEV>(utev); }
 	inline void SetTev(TEV tev) noexcept { utev = static_cast<unsigned>(tev); }
 	inline int depth(void) const noexcept { return static_cast<int>(udepth); }
@@ -125,7 +125,7 @@ class XT
 {
 	XEV2* rgxev2;
 public:
-	const uint32_t cxev2Max = 1UL << /*23*/ 18;
+	const uint32_t cxev2Max = 1UL << /*23*/ 16;
 	static_assert(sizeof(XEV2) == (1 << 5));
 	const uint32_t cxev2MaxMask = cxev2Max - 1;
 	const uint32_t cxevMax = cxev2Max * 2;
@@ -133,14 +133,14 @@ public:
 	unsigned age;
 #ifndef NOSTATS
 	/* cache stats */
-	uint64_t cxevProbe, cxevProbeCollision, cxevProbeHit;
+	uint64_t cxevProbe, cxevProbeHit;
 	uint64_t cxevSave, cxevSaveCollision, cxevSaveReplace, cxevInUse;
 #endif
 
 public:
 	XT(void) : rgxev2(nullptr), 
 #ifndef NOSTATS
-		cxevProbe(0), cxevProbeCollision(0), cxevProbeHit(0),  
+		cxevProbe(0), cxevProbeHit(0),  
 		cxevSave(0), cxevSaveCollision(0), cxevSaveReplace(0), cxevInUse(0),
 #endif
 		age(0)
@@ -172,7 +172,7 @@ public:
 			rgxev2[ixev2].xevNew.SetNull();
 		}
 #ifndef NOSTATS
-		cxevProbe = cxevProbeCollision = cxevProbeHit = 0;
+		cxevProbe = cxevProbeHit = 0;
 		cxevSave = cxevSaveCollision = cxevSaveReplace = 0;
 		cxevInUse = 0;
 #endif
@@ -250,7 +250,7 @@ public:
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevDeep.Save(bdg.habd, emv.ev, tev, depth, emv.mv, age);
+			xev2.xevDeep.Save(bdg.habd, emv.ev, tev, depth, emv, age);
 			return &xev2.xevDeep;
 		}
 
@@ -264,7 +264,7 @@ public:
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevNew.Save(bdg.habd, emv.ev, tev, depth, emv.mv, age);
+			xev2.xevNew.Save(bdg.habd, emv.ev, tev, depth, emv, age);
 			return &xev2.xevNew;
 		}
 
@@ -283,28 +283,25 @@ public:
 		cxevProbe++;
 #endif
 		XEV2& xev2 = (*this)[bdg];
-		if (xev2.xevDeep.tev() == tevNull) [[likely]]
-			return nullptr;
-		if (xev2.xevDeep.FMatchHabd(bdg.habd) && depth <= xev2.xevDeep.depth()) {
+		if (xev2.xevDeep.tev()) {
+			if (xev2.xevDeep.FMatchHabd(bdg.habd) && depth <= xev2.xevDeep.depth()) {
 #ifndef NOSTATS
-			cxevProbeHit++;
+				cxevProbeHit++;
 #endif
-			return &xev2.xevDeep;
+				return &xev2.xevDeep;
+			}
 		}
 
-		if (xev2.xevNew.tev() == tevNull)
-			return nullptr;
-		if (xev2.xevNew.FMatchHabd(bdg.habd)) {
-			if (depth > xev2.xevNew.depth())
-				return nullptr;
+		if (xev2.xevNew.tev()) {
+			if (xev2.xevNew.FMatchHabd(bdg.habd)) {
+				if (depth > xev2.xevNew.depth())
+					return nullptr;
 #ifndef NOSTATS
-			cxevProbeHit++;
+				cxevProbeHit++;
 #endif
-			return &xev2.xevNew;
+				return &xev2.xevNew;
+			}
 		}
-#ifndef NOSTATS
-		cxevProbeCollision++;
-#endif
 		return nullptr;
 	}
  };

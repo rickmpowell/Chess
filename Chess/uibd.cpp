@@ -196,7 +196,7 @@ void UIBD::InitGame(void)
 void UIBD::MakeMv(MV mv, SPMV spmv)
 {
 	for (EMV emvDrag : vemvDrag) {
-		if (emvDrag.mv.sqFrom() == mv.sqFrom() && emvDrag.mv.sqTo() == mv.sqTo())
+		if (emvDrag.sqFrom() == mv.sqFrom() && emvDrag.sqTo() == mv.sqTo())
 			goto FoundMove;
 	}
 	throw 1;
@@ -421,8 +421,8 @@ bool UIBD::FHoverSq(SQ sq, MV& mv)
 	if (sqHover.fIsNil() || uiga.ga.bdg.gs != gsPlaying)
 		return false;
 	for (EMV emvDrag : vemvDrag) {
-		if (emvDrag.mv.sqFrom() == sqHover && emvDrag.mv.sqTo() == sq) {
-			mv = emvDrag.mv;
+		if (emvDrag.sqFrom() == sqHover && emvDrag.sqTo() == sq) {
+			mv = emvDrag;
 			return true;
 		}
 	}
@@ -646,7 +646,7 @@ bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(uiga.ga.bdg.CpcFromSq(sq) == uiga.ga.bdg.cpcToMove);
 	for (EMV emvDrag : vemvDrag)
-		if (emvDrag.mv.sqFrom() == sq)
+		if (emvDrag.sqFrom() == sq)
 			return true;
 	return false;
 }
@@ -687,8 +687,8 @@ void UIBD::EndLeftDrag(const PT& pt)
 	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
 		for (EMV emv : vemvDrag) {
-			if (emv.mv.sqFrom() == sqFrom && emv.mv.sqTo() == sqTo) {
-				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(emv.mv, spmvFast);
+			if (emv.sqFrom() == sqFrom && emv.sqTo() == sqTo) {
+				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(emv, spmvFast);
 				goto Done;
 			}
 		}

@@ -663,12 +663,12 @@ ERR BDG::ParseRankMv(const VEMV& vemv, SQ sq, const char* pchInit, const char*& 
 MV BDG::MvMatchPieceTo(const VEMV& vemv, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
 {
 	for (EMV emvSearch : vemv) {
-		if (emvSearch.mv.sqTo() == sqTo && emvSearch.mv.apcMove() == apc) {
-			if (fileFrom != -1 && fileFrom != emvSearch.mv.sqFrom().file())
+		if (emvSearch.sqTo() == sqTo && emvSearch.apcMove() == apc) {
+			if (fileFrom != -1 && fileFrom != emvSearch.sqFrom().file())
 				continue;
-			if (rankFrom != -1 && rankFrom != emvSearch.mv.sqFrom().rank())
+			if (rankFrom != -1 && rankFrom != emvSearch.sqFrom().rank())
 				continue;
-			return emvSearch.mv;
+			return emvSearch;
 		}
 	}
 	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim - pchFirst)));
@@ -677,8 +677,8 @@ MV BDG::MvMatchPieceTo(const VEMV& vemv, APC apc, int rankFrom, int fileFrom, SQ
 MV BDG::MvMatchFromTo(const VEMV& vemv, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
 {
 	for (EMV emvSearch : vemv) {
-		if (emvSearch.mv.sqFrom() == sqFrom && emvSearch.mv.sqTo() == sqTo)
-			return emvSearch.mv;
+		if (emvSearch.sqFrom() == sqFrom && emvSearch.sqTo() == sqTo)
+			return emvSearch;
 	}
 	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim-pchFirst)));
 }

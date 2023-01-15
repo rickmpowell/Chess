@@ -260,9 +260,9 @@ bool BDG::FMvApcAmbiguous(const VEMV& vemv, MV mv) const
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	for (EMV emvOther : vemv) {
-		if (emvOther.mv.sqTo() != sqTo || emvOther.mv.sqFrom() == sqFrom)
+		if (emvOther.sqTo() != sqTo || emvOther.sqFrom() == sqFrom)
 			continue;
-		if (emvOther.mv.apcMove() == mv.apcMove())
+		if (emvOther.apcMove() == mv.apcMove())
 			return true;
 	}
 	return false;
@@ -274,9 +274,9 @@ bool BDG::FMvApcRankAmbiguous(const VEMV& vemv, MV mv) const
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	for (EMV emvOther : vemv) {
-		if (emvOther.mv.sqTo() != sqTo || emvOther.mv.sqFrom() == sqFrom)
+		if (emvOther.sqTo() != sqTo || emvOther.sqFrom() == sqFrom)
 			continue;
-		if (emvOther.mv.apcMove() == mv.apcMove() && emvOther.mv.sqFrom().rank() == sqFrom.rank())
+		if (emvOther.apcMove() == mv.apcMove() && emvOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
@@ -288,9 +288,9 @@ bool BDG::FMvApcFileAmbiguous(const VEMV& vemv, MV mv) const
 	SQ sqFrom = mv.sqFrom();
 	SQ sqTo = mv.sqTo();
 	for (EMV emvOther : vemv) {
-		if (emvOther.mv.sqTo() != sqTo || emvOther.mv.sqFrom() == sqFrom)
+		if (emvOther.sqTo() != sqTo || emvOther.sqFrom() == sqFrom)
 			continue;
-		if (emvOther.mv.apcMove() == mv.apcMove() && emvOther.mv.sqFrom().file() == sqFrom.file())
+		if (emvOther.apcMove() == mv.apcMove() && emvOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;

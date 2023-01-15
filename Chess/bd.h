@@ -10,644 +10,9 @@
 #pragma once
 #include "framework.h"
 #include "bb.h"
-
-
-/*
- *
- *	RULE
- *
- *	Game rules. The TMI is the time interval information.
- *
- */
-
-struct TMI
-{
-	int mvnFirst;	/* 1-based move number when interval starts */
-	int mvnLast;	/* 1-based move number when interval ends. -1 for no end. */
-	DWORD dmsec;	/* Amount of time to add to the timer at the start of the interval */
-	DWORD dmsecMove;	/* Amount of time to add after each move */
-	
-	TMI(int mvnFirst, int mvnLast, DWORD dmsec, DWORD dmsecMove) : 
-			mvnFirst(mvnFirst), mvnLast(mvnLast),
-			dmsec(dmsec), dmsecMove(dmsecMove)
-	{
-	}
-};
-
-class BDG;
-
-class RULE
-{
-	vector<TMI> vtmi;
-	unsigned cmvRepeatDraw; // if zero, no automatic draw detection
-public:
-	RULE(void);
-	RULE(int dsecGame, int dsecMove, unsigned cmvRepeatDraw);
-	bool FUntimed(void) const;
-	DWORD DmsecAddInterval(CPC cpc, int mvn) const;
-	DWORD DmsecAddMove(CPC cpc, int mvn) const;
-	int CmvRepeatDraw(void) const;
-	void SetGameTime(CPC cpc, DWORD dsec);
-};
-
-
-/*
- *
- *	APC enumeration
- *
- *	Actual piece types
- *
- */
-
-
-enum APC : int {
-	apcError = -1,
-	apcNull = 0,
-	apcPawn = 1,
-	apcKnight = 2,
-	apcBishop = 3,
-	apcRook = 4,
-	apcQueen = 5,
-	apcKing = 6,
-	apcMax = 7,
-	Bishop2 = 7	// only used for draw detection computation to keep track of bishop square color
-};
-
-inline APC& operator++(APC& apc)
-{
-	apc = static_cast<APC>(apc + 1);
-	return apc;
-}
-
-inline APC operator++(APC& apc, int)
-{
-	APC apcT = apc;
-	apc = static_cast<APC>(apc + 1);
-	return apcT;
-}
-
-inline APC& operator+=(APC& apc, int dapc)
-{
-	apc = static_cast<APC>(static_cast<int>(apc) + dapc);
-	return apc;
-}
-
-
-/*
- *
- *	PC class
- * 
- *	Simple class for typing piece/color combination
- */
-
-
-class PC
-{
-	uint8_t upc;
-public:
-	PC(uint8_t upc) noexcept : upc(upc) { }
-	PC(CPC cpc, APC apc) noexcept : upc((static_cast<uint8_t>(cpc) << 3) | static_cast<uint8_t>(apc)) { }
-	APC apc(void) const noexcept { return static_cast<APC>(upc & 7); }
-	CPC cpc(void) const noexcept { return static_cast<CPC>((upc >> 3) & 1); }
-	inline operator uint8_t() const noexcept { return upc; }
-	inline PC& operator++() { upc++; return *this; }
-	inline PC operator++(int) { uint8_t upcT = upc++; return PC(upcT); }
-};
-
-const uint8_t pcMax = 2*8;
-const PC pcWhitePawn(cpcWhite, apcPawn);
-const PC pcBlackPawn(cpcBlack, apcPawn);
-const PC pcWhiteKnight(cpcWhite, apcKnight);
-const PC pcBlackKnight(cpcBlack, apcKnight);
-const PC pcWhiteBishop(cpcWhite, apcBishop);
-const PC pcBlackBishop(cpcBlack, apcBishop);
-const PC pcWhiteRook(cpcWhite, apcRook);
-const PC pcBlackRook(cpcBlack, apcRook);
-const PC pcWhiteQueen(cpcWhite, apcQueen);
-const PC pcBlackQueen(cpcBlack, apcQueen);
-const PC pcWhiteKing(cpcWhite, apcKing);
-const PC pcBlackKing(cpcBlack, apcKing);
-
-
-/*	
- * 
- *	MV and MVM type
- *
- *	A move is a from and to square, with a little extra info for
- *	weird moves, along with enough information to undo the move.
- * 
- *	Low word is the from/to square, along with the type of piece
- *	that is moving. We store the piece with apc and color
- *	
- *	The high word is mostly used for undo information and includes
- *	previous castle state, the type of piece captured (if a capture),
- *	and en passant state. It also includes the piece promoted to for
- *	pawn promotions.
- * 
- *   15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
- *  +--+--------+--------+--------+--------+--------+
- *  |XX|apc prom|       to        |      from       |  <<= minimum amount needed to recreate the move
- *  +--+--------+--------+--------+--------+--------+
- *  +--+-----+-----+--------+--+--------+--+--------+
- *  |XX| cs state  |ep file |ep|apc capt|  pc move  |  <<= mostly undo information
- *  +--+-----+-----+--------+--+--------+--+--------+
- *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
- *
- *	The first word of the move is the mini-move (MVM), which is the 
- *	minimal amount of information needed, along with the board state, 
- *	to specify a move. The redundant information could be filled in 
- *	from the BD before the move is made.
- */
-
-class MVM {
-private:
-	uint16_t usqFrom : 6,
-		usqTo : 6,
-		uapcPromote : 3,
-		unused1 : 1;
-public:
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVM(void) noexcept { *(uint16_t*)this = 0; }
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVM(uint16_t u) noexcept { *(uint16_t*)this = u; }
-	inline MVM(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
-	inline operator uint16_t() const noexcept { return *(uint16_t*)this; }
-
-	inline SQ sqFrom(void) const noexcept { return usqFrom; }
-	inline SQ sqTo(void) const noexcept { return usqTo; }
-	inline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
-	inline MVM& SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); return *this; }
-	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
-};
-
-static_assert(sizeof(MVM) == sizeof(uint16_t));
-
-
-class MV {
-private:
-	uint16_t 
-		usqFrom : 6,
-		usqTo : 6,
-		uapcPromote : 3,
-		unused1 : 1;
-	uint16_t		
-		upcMove : 4,	// the piece that is moving
-		uapcCapt : 3,	// for captures, the piece we take
-		ufEnPassant : 1,	// en passant state
-		ufileEnPassant : 3,	
-		ucs : 4,		// saved castle state
-		unused2 : 1;
-
-public:
-
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(void) noexcept { *(uint32_t*)this = 0; }
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(uint32_t u) noexcept { *(uint32_t*)this = u; }
-#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(MVM mvm) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mvm; }
-	inline operator uint32_t() const noexcept { return *(uint32_t*)this; }
-	inline operator MVM() const noexcept { return *(MVM*)this; }
-
-	inline MV(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
-	{
-		assert(pcMove.apc() != apcNull);
-		*(uint32_t*)this = 0;	// initialize everything else to 0
-		usqFrom = sqFrom;
-		usqTo = sqTo;
-		upcMove = pcMove;
-	}
-
-	inline SQ sqFrom(void) const noexcept { return usqFrom; }
-	inline SQ sqTo(void) const noexcept { return usqTo; }
-	inline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
-	inline MV& SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); return *this; }
-	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
-	inline MV& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
-	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
-	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
-	inline PC pcMove(void) const noexcept { return PC(upcMove); }
-	inline void SetCapture(APC apc) noexcept { uapcCapt = static_cast<uint16_t>(apc); }
-	
-	inline void SetCsEp(int cs, SQ sqEnPassant) noexcept
-	{
-		ucs = cs;
-		ufEnPassant = !sqEnPassant.fIsNil();
-		if (ufEnPassant)
-			ufileEnPassant = sqEnPassant.file();
-	}
-
-	inline int csPrev(void) const noexcept { return ucs; }
-	inline int fileEpPrev(void) const noexcept { return ufileEnPassant; }
-	inline bool fEpPrev(void) const noexcept { return ufEnPassant; }
-	inline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
-	inline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
-	inline bool operator==(const MV& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
-	inline bool operator!=(const MV& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
-	inline bool operator==(const MVM& mvm) const noexcept { return *(uint16_t*)this == (uint16_t)mvm; }
-	inline bool operator!=(const MVM& mvm) const noexcept { return *(uint16_t*)this != (uint16_t)mvm; }
-};
-
-static_assert(sizeof(MV) == sizeof(uint32_t));
-
-const MV mvNil = MV();
-const MVM mvmNil = MVM();
-const MV mvAll = MV(sqH8, sqH8, PC(cpcWhite, apcError));
-const MVM mvmAll = MVM(sqH8, sqH8);
-wstring SzFromMvm(MVM mvm);
-
-
-/*
- *
- *	EV type
- * 
- *	A board evaluation. This is a signed integer, in centi-pawns, or 1/100 of a 
- *	pawn. We support "infinite" evaluations, mate-in-X moves evaluations, various 
- *	special evaluations representing things like aborted searches, etc.
- * 
- *	For you bit-packers out there, this'll fit in 15-bits.
- * 
- */
-
-
-typedef int16_t EV;
-
-const int depthMax = 127;
-const EV evInf = 160 * 100;	/* largest possible evaluation, in centi-pawns */
-const EV evMate = evInf - 1;	/* checkmates are given evals of evalMate minus moves to mate */
-const EV evMateMin = evMate - depthMax;
-const EV evTempo = 33;	/* evaluation of a single move advantage */
-const EV evDraw = 0;	/* evaluation of a draw */
-const EV evTimedOut = evInf + 1;
-const EV evCanceled = evInf + 2;
-
-inline EV EvMate(int depth) { return evMate - depth; }
-inline bool FEvIsMate(EV ev) { return ev >= evMateMin; }
-inline bool FEvIsInterrupt(EV ev) { return ev == evCanceled || ev == evTimedOut; }
-inline int DepthFromEvMate(EV ev) { return evMate - ev; }
-wstring SzFromEv(EV ev);
-inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
-
-
-/* score types, used during move enumeration in the ai search */
-enum TSC : int {
-	tscNil = 255,
-	tscPrincipalVar = 0,
-	tscXTable = 1,
-	tscEvCapture = 2,
-	tscEvOther = 3
-};
-
-inline TSC& operator++(TSC& tsc)
-{
-	tsc = static_cast<TSC>(tsc + 1);
-	return tsc;
-}
-
-inline TSC operator++(TSC& tsc, int)
-{
-	TSC tscT = tsc;
-	tsc = static_cast<TSC>(tsc + 1);
-	return tscT;
-}
-
-wstring SzFromTsc(TSC tsc);
-
-
-/*
- *
- *	EMV structure
- *
- *	Just a little holder of a move along with move evaluation information, which is 
- *	used for generating AI move lists and alpha-beta pruning. All movegens generate 
- *	moves into this sized element (instead of just a simple move list) to minimize 
- *	the amount of copying needed during AI search.
- *
- */
-
-
-class EMV
-{
-public:
-	MV mv;		
-	EV ev;
-	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
-
-	EMV(MV mv = MV()) noexcept : mv(mv), ev(0), utsc(0) { }
-	EMV(MV mv, EV ev) noexcept : mv(mv), ev(ev), utsc(0) { }
-#pragma warning(suppress:26495)	 
-	EMV(uint64_t emv) noexcept { *(uint64_t*)this = emv; }
-	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
-
-	/* comparison operations work on the eval */
-
-	inline bool operator>(const EMV& emv) const noexcept { return utsc > emv.utsc || (utsc == emv.utsc && ev > emv.ev); }
-	inline bool operator<(const EMV& emv) const noexcept { return utsc < emv.utsc || (utsc == emv.utsc && ev < emv.ev); }
-	inline bool operator>=(const EMV& emv) const noexcept {  return !(*this < emv); }
-	inline bool operator<=(const EMV& emv) const noexcept { return !(*this > emv); }
-	
-	inline void SetTsc(TSC tsc) noexcept { utsc = static_cast<uint16_t>(tsc); }
-	inline TSC tsc() const noexcept { return static_cast<TSC>(utsc); }
-};
-
-static_assert(sizeof(EMV) == sizeof(uint64_t));
-
-
-/*
- *
- *	VEMV class
- * 
- *	Generated move list. Has simple array semantics. Actually stores an EMV, which
- *	is just handy extra room for an evaluation during search.
- * 
- */
-
-
-const size_t cemvPreMax = 60;
-
-class VEMV
-{
-private:
-	uint64_t aemv[cemvPreMax];
-	int cemvCur;
-	vector<uint64_t>* pvemvOverflow;
-
-public:
-	VEMV() : cemvCur(0), pvemvOverflow(nullptr)
-	{
-		aemv[0] = 0;
-	}
-
-	~VEMV()
-	{
-		if (pvemvOverflow)
-			delete pvemvOverflow;
-	}
-
-	/*	VEMV copy constructor
-	 */
-	VEMV(const VEMV& vemv) : cemvCur(vemv.cemvCur), pvemvOverflow(nullptr)
-	{
-		assert(vemv.FValid());
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (vemv.pvemvOverflow)
-			pvemvOverflow = new vector<uint64_t>(*vemv.pvemvOverflow);
-	}
-
-
-	/*	VEMV move constructor
-	 *
-	 *	Moves data from one GMV to another. Note that the source GMV is trashed.
-	 */
-	VEMV(VEMV&& vemv) noexcept : cemvCur(vemv.cemvCur), pvemvOverflow(vemv.pvemvOverflow)
-	{
-		assert(vemv.FValid());
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		vemv.cemvCur = 0;
-		vemv.pvemvOverflow = nullptr;
-	}
-
-
-	VEMV& operator=(const VEMV& vemv)
-	{
-		assert(vemv.FValid());
-		cemvCur = vemv.cemvCur;
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (vemv.pvemvOverflow) {
-			if (pvemvOverflow)
-				*pvemvOverflow = *vemv.pvemvOverflow;
-			else
-				pvemvOverflow = new vector<uint64_t>(*vemv.pvemvOverflow);
-		}
-		else {
-			if (pvemvOverflow) {
-				delete pvemvOverflow;
-				pvemvOverflow = nullptr;
-			}
-		}
-		assert(FValid());
-		return *this;
-	}
-
-	VEMV& operator=(VEMV&& vemv) noexcept
-	{
-		if (this == &vemv)
-			return *this;
-		cemvCur = vemv.cemvCur;
-		memcpy(aemv, vemv.aemv, min(cemvCur, cemvPreMax) * sizeof(uint64_t));
-		if (pvemvOverflow != nullptr) {
-			delete pvemvOverflow;
-			pvemvOverflow = nullptr;
-		}
-		pvemvOverflow = vemv.pvemvOverflow;
-		vemv.pvemvOverflow = nullptr;
-		return *this;
-	}
-
-#ifndef NDEBUG
-	bool FValid(void) const noexcept
-	{
-		return (cemvCur <= cemvPreMax && pvemvOverflow == nullptr) ||
-			(cemvCur > cemvPreMax && pvemvOverflow != nullptr && pvemvOverflow->size() + cemvPreMax == cemvCur);
-	}
-#endif
-
-
-	inline int cemv(void) const noexcept
-	{
-		assert(FValid());
-		return cemvCur;
-	}
-
-
-	inline EMV& operator[](int iemv) noexcept
-	{
-		assert(FValid());
-		assert(iemv >= 0 && iemv < cemvCur);
-		if (iemv < cemvPreMax)
-			return *(EMV*)&aemv[iemv];
-		else {
-			assert(pvemvOverflow != nullptr);
-			return *(EMV*)&(*pvemvOverflow)[iemv - cemvPreMax];
-		}
-	}
-
-	inline const EMV& operator[](int iemv) const noexcept
-	{
-		assert(FValid());
-		assert(iemv >= 0 && iemv < cemvCur);
-		if (iemv < cemvPreMax)
-			return *(EMV*)&aemv[iemv];
-		else {
-			assert(pvemvOverflow != nullptr);
-			return *(EMV*)&(*pvemvOverflow)[iemv - cemvPreMax];
-		}
-	}
-
-	/* iterator and const iterator for the arrays */
-
-	class iterator {
-		VEMV* pvemv;
-		int iemv;
-	public:
-		using difference_type = int;
-		using value_type = EMV;
-		using pointer = EMV*;
-		using reference = EMV&;
-		using iterator_category = random_access_iterator_tag;
-
-		inline iterator(VEMV* pvemv, difference_type iemv) noexcept : pvemv(pvemv), iemv(iemv) { }
-		inline iterator(const iterator& it) noexcept : pvemv(it.pvemv), iemv(it.iemv) { }
-		inline iterator& operator=(const iterator& it) noexcept { pvemv = it.pvemv; iemv = it.iemv; return *this; }
-		inline reference operator[](difference_type diemv) const noexcept { return (*pvemv)[iemv + diemv]; }
-		inline reference operator*() const noexcept { return (*pvemv)[iemv]; }
-		inline pointer operator->() const noexcept { return &(*pvemv)[iemv]; }
-		inline iterator& operator++() noexcept { iemv++; return *this; }
-		inline iterator operator++(int) noexcept { int iemvT = iemv; iemv++; return iterator(pvemv, iemvT); }
-		inline iterator& operator--() noexcept { iemv--; return *this; }
-		inline iterator operator--(int) noexcept { int iemvT = iemv; iemv--; return iterator(pvemv, iemvT); }
-		inline iterator operator+(difference_type diemv) const noexcept { return iterator(pvemv, iemv + diemv); }
-		inline iterator operator-(difference_type diemv) const noexcept { return iterator(pvemv, iemv - diemv); }
-		inline iterator& operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
-		inline iterator& operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
-		friend inline iterator operator+(difference_type diemv, iterator const& it) { return iterator(it.pvemv, diemv + it.iemv); }
-		inline difference_type operator-(const iterator& it) const noexcept { return iemv - it.iemv; }
-		inline bool operator==(const iterator& it) const noexcept { return iemv == it.iemv; }
-		inline bool operator!=(const iterator& it) const noexcept { return iemv != it.iemv; }
-		inline bool operator<(const iterator& it) const noexcept { return iemv < it.iemv; }
-	};
-
-	class citerator {
-		const VEMV* pvemv;
-		int iemv;
-	public:
-		using difference_type = int;
-		using value_type = EMV;
-		using pointer = const EMV*;
-		using reference = const EMV&;
-		typedef random_access_iterator_tag iterator_category;
-
-		inline citerator(const VEMV* pvemv, int iemv) noexcept : pvemv(pvemv), iemv(iemv) { }
-		inline citerator(const citerator& it) noexcept : pvemv(it.pvemv), iemv(it.iemv) { }
-//		inline citerator operator=(const citerator& cit) noexcept { pvemv = cit.pvemv; iemv = cit.iemv; return *this; }
-
-		inline reference operator[](difference_type diemv) const noexcept { return (*pvemv)[iemv + diemv]; }
-		inline reference operator*() const noexcept { return (*pvemv)[iemv]; }
-		inline pointer operator->() const noexcept { return &(*pvemv)[iemv]; }
-
-		inline citerator operator++() noexcept { iemv++; return *this; }
-		inline citerator operator++(int) noexcept { citerator cit = *this; iemv++; return cit; }
-		inline citerator operator--() noexcept { iemv--; return *this; }
-		inline citerator operator--(int) noexcept { citerator it = *this; iemv--; return it; }
-
-		inline citerator operator+(difference_type diemv) const noexcept { return citerator(pvemv, iemv + diemv); }
-		inline citerator operator-(difference_type diemv) const noexcept { return citerator(pvemv, iemv - diemv); }
-		inline citerator operator+=(difference_type diemv) noexcept { iemv += diemv; return *this; }
-		inline citerator operator-=(difference_type diemv) noexcept { iemv -= diemv; return *this; }
-		friend inline citerator operator+(difference_type diemv, const citerator& cit) { return citerator(cit.pvemv, diemv + cit.iemv); }
-		inline difference_type operator-(const citerator& cit) const noexcept { return iemv - cit.iemv; }
-
-		inline bool operator==(const citerator& cit) const noexcept { return iemv == cit.iemv; }
-		inline bool operator!=(const citerator& cit) const noexcept { return iemv != cit.iemv; }
-		inline bool operator<(const citerator& cit) const noexcept { return iemv < cit.iemv; }
-	};
-	
-	inline int size(void) const noexcept { return cemv(); }
-	inline iterator begin(void) noexcept { return iterator(this, 0); }
-	inline iterator end(void) noexcept { return iterator(this, size()); }
-	inline citerator begin(void) const noexcept { return citerator(this, 0); }
-	inline citerator end(void) const noexcept { return citerator(this, size()); }
-
-	void push_back_overflow(MV mv)
-	{
-		if (pvemvOverflow == nullptr) {
-			assert(cemvCur == cemvPreMax);
-			pvemvOverflow = new vector<uint64_t>;
-		}
-		pvemvOverflow->push_back(mv);
-		cemvCur++;
-	}
-
-
-	inline void push_back(MV mv)
-	{
-		assert(FValid()); 
-		if (cemvCur < cemvPreMax)
-			aemv[cemvCur++] = mv;
-		else
-			push_back_overflow(mv);
-		assert(FValid());
-	}
-
-
-	inline void push_back(SQ sqFrom, SQ sqTo, PC pcMove)
-	{
-		push_back(MV(sqFrom, sqTo, pcMove));
-	}
-
-	void insert_overflow(int iemv, const EMV& emv) noexcept
-	{
-		if (pvemvOverflow == nullptr)
-			pvemvOverflow = new vector<uint64_t>;
-		if (iemv >= cemvPreMax)
-			pvemvOverflow->insert(pvemvOverflow->begin() + (iemv - cemvPreMax), emv);
-		else {
-			pvemvOverflow->insert(pvemvOverflow->begin(), aemv[cemvPreMax - 1]);
-			memmove(&aemv[iemv+1], &aemv[iemv], sizeof(uint64_t) * (cemvPreMax - iemv - 1));
-		}
-		cemvCur++;
-	}
-
-	inline void insert(int iemv, const EMV& emv) noexcept
-	{
-		assert(FValid());
-		if (cemvCur >= cemvPreMax)
-			insert_overflow(iemv, emv);
-		else {
-			memmove(&aemv[iemv+1], &aemv[iemv], sizeof(uint64_t) * (cemvCur - iemv));
-			aemv[iemv] = emv;
-			cemvCur++;
-		}
-	}
-
-	void resize(int cemvNew)
-	{
-		assert(FValid());
-		if (cemvNew > cemvPreMax) {
-			if (pvemvOverflow == nullptr)
-				pvemvOverflow = new vector<uint64_t>;
-			pvemvOverflow->resize(cemvNew - cemvPreMax);
-		}
-		else {
-			if (pvemvOverflow != nullptr) {
-				delete pvemvOverflow;
-				pvemvOverflow = nullptr;
-			}
-		}
-		cemvCur = cemvNew;
-		assert(FValid());
-	}
-
-
-	void reserve(int cemv)
-	{
-		if (cemv <= cemvPreMax)
-			return;
-		if (pvemvOverflow == nullptr)
-			pvemvOverflow = new vector<uint64_t>;
-		pvemvOverflow->reserve(cemv - cemvPreMax);
-	}
-
-
-	void clear(void) noexcept
-	{
-		if (pvemvOverflow) {
-			delete pvemvOverflow;
-			pvemvOverflow = nullptr;
-		}
-		cemvCur = 0;
-	}
-};
+#include "rule.h"
+#include "pc.h"
+#include "mv.h"
 
 
 /*
@@ -843,20 +208,17 @@ extern GENHABD genhabd;
 
 
 /*
- *
- *	BD class
  * 
- *	The board. Our board is 8 rows (rank) x 16 column (file) representation, with unused
- *	files 8-15. This representation is convenient because it leaves an extra bit worth of 
- *	space for overflowing the legal range, which we use for representing "off board". 
+ *	GG enumeration
  * 
- *	Be careful how you enumerate over the squares of the board, since there are invalid 
- *	squares in the naive loop.
+ *	Move generation options. Pseudo moves does not remove moves that leave
+ *	the king in check. Detecting checks is actually quite time consuming, so 
+ *	we have the option to delay the check detection as long as possible.
  * 
  */
 
 
-enum GG : int {	// GenGmv Option to optionally remove checks
+enum GG : int {	
 	ggLegal,
 	ggPseudo
 };
@@ -864,11 +226,13 @@ enum GG : int {	// GenGmv Option to optionally remove checks
 
 /*
  *
+ *	GPH enumeration
+ * 
  *	Game phase is a rudimentary approximation of how far along we are in the
  *	game progression. It's basically a measure of the non-pawn pieces on the
  *	board. When most pieces are still on the board, we're in the opening, while
  *	if we're down to a few minor pieces, we're in the end game.
- * 
+ *
  */
 
 
@@ -886,7 +250,7 @@ enum GPH : int {	// game phase
 	gphNil = -1
 };
 
-static_assert(gphMax == 2 * gphQueen + 4*gphRook + 8*gphMinor);
+static_assert(gphMax == 2 * gphQueen + 4 * gphRook + 8 * gphMinor);
 
 inline bool FInOpening(GPH gph)
 {
@@ -897,6 +261,17 @@ inline bool FInEndGame(GPH gph)
 {
 	return gph >= gphMidMax;
 }
+
+
+/*
+ *
+ *	BD class
+ * 
+ *	The board. Base board class does not include move history and therefore can not
+ *	detect draw conditions. But it does track en passant and castle legality, along
+ *	with the side that has the move.
+ * 
+ */
 
 
 class BD
@@ -1128,24 +503,17 @@ public:
 	void SkipToNonSpace(const wchar_t*& sz);
 	void SkipToSpace(const wchar_t*& sz);
 
-
-	/*	BD::GphCur
-	 *
-	 *	Returns the current game phase (opening, mid, or end game).
-	 *	Note that this is a continuum and we use cut-offs to specify when
-	 *	the phases transition.
+	/*
+	 *	Game phase
 	 */
-	GPH GphCur(void) const noexcept
-	{
-		return gph;
-	}
 
+	GPH GphCur(void) const noexcept { return gph; }
 	GPH GphCompute(void) const noexcept;
 	void RecomputeGph(void) noexcept;
-
+	inline bool FInOpening(void) const noexcept { return ::FInOpening(gph); }
+	inline bool FInEndGame(void) const noexcept { return ::FInEndGame(gph); }
 	inline void AddApcToGph(APC apc) noexcept;
 	inline void RemoveApcFromGph(APC apc) noexcept;
-
 
 	/*
 	 *	debug and validation
@@ -1222,9 +590,9 @@ class BDG : public BD
 public:
 	GS gs;
 	vector<MV> vmvGame;		/* the game moves that resulted in bd board state */
-	int64_t imvCurLast;		/* position of current last made move, -1 before first move; may be 
+	int imvCurLast;		/* position of current last made move, -1 before first move; may be 
 							   less than vmvGame.size after Undo/Redo */
-	int64_t imvPawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
+	int imvPawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
 							       detection and 3-move repetition draws) */
 
 public:
@@ -1252,7 +620,7 @@ public:
 	 *	game over tests
 	 */
 
-	GS GsTestGameOver(int cmvToMove, const RULE& rule) const noexcept;
+	GS GsTestGameOver(int cmvToMove, int cmvRepeatDraw) const noexcept;
 	void SetGameOver(const VEMV& vemv, const RULE& rule) noexcept;
 	bool FDrawDead(void) const noexcept;
 	bool FDraw3Repeat(int cbdDraw) const noexcept;
@@ -1307,28 +675,6 @@ public:
 	inline CPC CpcMoveFromImv(int imv) const noexcept
 	{
 		return (CPC)(imv & 1);
-	}
-};
-
-
-/*
- *
- *	Little helper class for making/undo-ing a move
- * 
- */
-
-class MAKEMV
-{
-	BDG& bdg;
-public:
-	MAKEMV(BDG& bdg, MV& mv) : bdg(bdg)
-	{
-		bdg.MakeMv(mv);
-	}
-
-	~MAKEMV(void)
-	{
-		bdg.UndoMv();
 	}
 };
 
@@ -1406,7 +752,7 @@ public:
  *	ISTK class
  * 
  *	A generic token input stream class. We'll build this up to be a
- *	general purpose scanner eventually.
+ *	general purpose scanner some day.
  * 
  */
 

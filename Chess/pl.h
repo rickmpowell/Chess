@@ -79,15 +79,17 @@ public:
  *
  */
 
+class PLAI;
 
 class VEMVS : public VEMV
 {
 public:
 	int iemvNext;
 	int cmvLegal;
+	PLAI* pplai;
 
 public:
-	inline VEMVS(BDG& bdg, GG gg) noexcept;
+	inline VEMVS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
@@ -104,11 +106,9 @@ public:
  */
 
 
-class PLAI;
 class VEMVSS : public VEMVS
 {
 	TSC tscCur;	/* the score type we're currently enumerating */
-	PLAI* pplai;
 
 public:
 	VEMVSS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
@@ -133,7 +133,7 @@ private:
 class VEMVSQ : public VEMVS
 {
 public:
-	VEMVSQ(BDG& bdg, GG gg) noexcept;
+	VEMVSQ(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	bool FMakeMvNext(BDG& bdg, EMV*& pemv) noexcept;
 };
 
@@ -317,6 +317,46 @@ inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<int>(ts1) &
 
 /*
  *
+ *	STBF class
+ * 
+ *	Branch factor stats. Probably overkill to make this a class, but it bundles 
+ *	some things up nice.
+ * 
+ */
+
+
+class STBF {
+public:
+	unsigned long long cemvNode;
+	unsigned long long cemvGen;
+public:
+	STBF(unsigned long long cemvNode, unsigned long long cemvGen) noexcept : cemvNode(cemvNode), cemvGen(cemvGen) {}
+	STBF(void) noexcept : cemvNode(0), cemvGen(0) {}
+	inline void Init(void) noexcept { cemvNode = 0; cemvGen = 0; }
+	STBF operator+(const STBF& stbf) const noexcept { return STBF(cemvNode + stbf.cemvNode, cemvGen + stbf.cemvGen); }
+	inline STBF& operator+=(STBF& stbf) noexcept { cemvNode += stbf.cemvNode; cemvGen += stbf.cemvGen; return *this; }
+	inline void AddNode(int cemv) noexcept { cemvNode += cemv; }
+	inline void AddGen(int cemv) noexcept { cemvGen += cemv; }
+	
+	operator wstring() noexcept { 
+		if (cemvGen == 0)
+			return wstring(L"/0");
+		int w100 = (int)round(100.0 * (double)cemvNode / (double)cemvGen);
+		wchar_t sz[12], * pch = sz;
+		int wInt = w100 / 100;
+		pch = PchDecodeInt(wInt, pch);
+		w100 = w100 % 100;
+		*pch++ = L'.';
+		*pch++ = L'0' + w100 / 10;
+		*pch++ = L'0' + w100 % 10;
+		*pch = 0;
+		return wstring(sz);
+	}
+};
+
+
+/*
+ *
  *	PLAI class
  * 
  *	Player using an AI (with alpha-beta pruning and static board evaluiation) 
@@ -327,8 +367,13 @@ inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<int>(ts1) &
 
 class PLAI : public PL
 {
+	friend class VEMVS;
 	friend class VEMVSS;
+	friend class VEMVSQ;
 	friend class LOGEMV;
+	friend class LOGEMVS;
+	friend class LOGEMVQ;
+	friend class LOGITD;
 
 protected:
 	/* piece value tables */
@@ -358,8 +403,10 @@ protected:
 #ifndef NOSTATS
 	/* logging statistics */
 	time_point<high_resolution_clock> tpStart;
-	size_t cemvEval;
-	size_t cemvNode;
+	size_t cemvTotalEval;
+	STBF stbfTotal;
+	STBF stbfMain;
+	STBF stbfQuiescent;
 #endif
 
 public:
@@ -392,7 +439,7 @@ protected:
 	/* time management */
 
 	virtual void InitTimeMan(BDG& bdg) noexcept;
-	virtual bool FStopSearch(int depthLim) noexcept;
+	virtual bool FBeforeDeadline(int depthLim) noexcept;
 	SINT SintTimeMan(void) const noexcept;
 	EV EvMaterialTotal(BDG& bdg) const noexcept;
 	long long DmsecMoveSoFar(void) const noexcept;

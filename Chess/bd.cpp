@@ -556,10 +556,10 @@ void BD::RemoveInCheckMoves(VEMV& vemv, CPC cpcMove) noexcept
 {
  	unsigned imvDest = 0;
 	for (EMV emv : vemv) {
-		MakeMvSq(emv.mv);
+		MakeMvSq(emv);
 		if (!FInCheck(cpcMove))
-			vemv[imvDest++] = emv.mv;
-		UndoMvSq(emv.mv);
+			vemv[imvDest++] = emv;
+		UndoMvSq(emv);
 	}
 	vemv.resize(imvDest);
 }
@@ -883,10 +883,14 @@ void BD::GenVemvPawnMvs(VEMV& vemv, BB bbPawns, CPC cpcMove) const noexcept
  */
 void BD::AddVemvMvPromotions(VEMV& vemv, MV mv) const noexcept
 {
-	vemv.push_back(mv.SetApcPromote(apcQueen));
-	vemv.push_back(mv.SetApcPromote(apcRook));
-	vemv.push_back(mv.SetApcPromote(apcBishop));
-	vemv.push_back(mv.SetApcPromote(apcKnight));
+	mv.SetApcPromote(apcQueen);
+	vemv.push_back(mv);
+	mv.SetApcPromote(apcRook);
+	vemv.push_back(mv);
+	mv.SetApcPromote(apcBishop);
+	vemv.push_back(mv);
+	mv.SetApcPromote(apcKnight);
+	vemv.push_back(mv);
 }
 
 
@@ -1321,7 +1325,7 @@ void BDG::RedoMv(void) noexcept
  *	Tests for the game in an end state. Returns the new state. Takes the legal move
  *	list for the current to-move player and the rule struture.
  */
-GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const noexcept
+GS BDG::GsTestGameOver(int cmvToMove, int cmvRepeatDraw) const noexcept
 {
 	if (cmvToMove == 0) {
 		if (FInCheck(cpcToMove))
@@ -1333,7 +1337,7 @@ GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const noexcept
 		/* check for draw circumstances */
 		if (FDrawDead())
 			return gsDrawDead;
-		if (FDraw3Repeat(rule.CmvRepeatDraw()))
+		if (FDraw3Repeat(cmvRepeatDraw))
 			return gsDraw3Repeat;
 		if (FDraw50Move(50))
 			return gsDraw50Move;
@@ -1344,7 +1348,7 @@ GS BDG::GsTestGameOver(int cmvToMove, const RULE& rule) const noexcept
 
 void BDG::SetGameOver(const VEMV& vemv, const RULE& rule) noexcept
 {
-	SetGs(GsTestGameOver(vemv.cemv(), rule));
+	SetGs(GsTestGameOver(vemv.cemv(), rule.CmvRepeatDraw()));
 }
 
 
@@ -1395,18 +1399,21 @@ bool BDG::FDrawDead(void) const noexcept
  *	for 3 times in a single game, where exact board position means same player to move,
  *	all pieces in the same place, castle state is the same, and en passant possibility
  *	is the same.
+ * 
+ *	cbdDraw = 0 means don't check for repeated position draws, always return false.
  */
 bool BDG::FDraw3Repeat(int cbdDraw) const noexcept
 {
 	if (cbdDraw == 0)
 		return false;
-	if (imvCurLast - imvPawnOrTakeLast < ((int64_t)cbdDraw-1) * 2 * 2)
+	if (imvCurLast - imvPawnOrTakeLast < (cbdDraw-1) * 2 * 2)
 		return false;
 	BD bd = *this;
 	int cbdSame = 1;
+	assert(imvCurLast - 1 >= 0);
 	bd.UndoMvSq(vmvGame[imvCurLast]);
 	bd.UndoMvSq(vmvGame[imvCurLast - 1]);
-	for (int64_t imv = imvCurLast - 2; imv >= imvPawnOrTakeLast + 2; imv -= 2) {
+	for (int imv = imvCurLast - 2; imv >= imvPawnOrTakeLast + 2; imv -= 2) {
 		bd.UndoMvSq(vmvGame[imv]);
 		bd.UndoMvSq(vmvGame[imv - 1]);
 		if (bd == *this) {
@@ -1513,8 +1520,9 @@ wstring SzFromTsc(TSC tsc)
 
 wstring SzFromMvm(MVM mvm)
 {
+	if (mvm.fIsNil())
+		return L"--";
 	wchar_t sz[8], *pch = sz;
-
 	*pch++ = L'a' + mvm.sqFrom().file();
 	*pch++ = L'1' + mvm.sqFrom().rank();
 	*pch++ = L'a' + mvm.sqTo().file();

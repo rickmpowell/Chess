@@ -544,7 +544,7 @@ uint64_t GA::CmvPerft(int depth)
 	bdg.GenVemv(vemv, ggPseudo);
 	uint64_t cmv = 0;
 	for (EMV emv : vemv) {
-		bdg.MakeMv(emv.mv);
+		bdg.MakeMv(emv);
 		if (!bdg.FInCheck(~bdg.cpcToMove))
 			cmv += CmvPerft(depth - 1);
 		bdg.UndoMv();
@@ -560,7 +560,7 @@ uint64_t GA::CmvPerftBulk(int depth)
 		return vemv.cemv();
 	uint64_t cmv = 0;
 	for (EMV emv : vemv) {
-		bdg.MakeMv(emv.mv);
+		bdg.MakeMv(emv);
 		cmv += CmvPerftBulk(depth - 1);
 		bdg.UndoMv();
 	}
@@ -581,12 +581,12 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 	BDG bdgInit = ga.bdg;
 #endif
 	for (EMV emv : vemv) {
-		ga.bdg.MakeMv(emv.mv);
-		LogOpen(TAG(ga.bdg.SzDecodeMvPost(emv.mv), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
+		ga.bdg.MakeMv(emv);
+		LogOpen(TAG(ga.bdg.SzDecodeMvPost(emv), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
 		uint64_t cmvMove = ga.CmvPerft(depthPerft - 1);
 		cmv += cmvMove;
 		ga.bdg.UndoMv();
-		LogClose(ga.bdg.SzDecodeMvPost(emv.mv), to_wstring(cmvMove), lgfNormal);
+		LogClose(ga.bdg.SzDecodeMvPost(emv), to_wstring(cmvMove), lgfNormal);
 		assert(ga.bdg == bdgInit);
 	}
 	return cmv;
