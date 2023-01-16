@@ -33,7 +33,7 @@ protected:
 	wstring szName;
 	int level;
 
-	MV mvNext;
+	MVU mvuNext;
 	SPMV spmvNext;
 	int imvmBreakLast;
 	vector<MVM>* pvmvmBreak;
@@ -46,8 +46,8 @@ public:
 	void SetName(const wstring& szNew) { szName = szNew; }
 
 	virtual void StartGame(void) { }
-	virtual MV MvGetNext(SPMV& spmv) = 0;
-	void ReceiveMv(MV mv, SPMV spmv);
+	virtual MVU MvuGetNext(SPMV& spmv) = 0;
+	void ReceiveMvu(MVU mvu, SPMV spmv);
 
 	virtual bool FHasLevel(void) const noexcept { return false; }
 	virtual int Level(void) const noexcept { return level; }
@@ -91,8 +91,8 @@ public:
 public:
 	inline VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
-	inline bool FMakeMvNext(BDG& bdg, MVE*& pmve) noexcept;
-	inline void UndoMv(BDG& bdg) noexcept;
+	inline bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
+	inline void UndoMve(BDG& bdg) noexcept;
 	bool FOnlyOneMove(MVE& mve) const noexcept;
 };
 
@@ -112,7 +112,7 @@ class VMVESS : public VMVES
 
 public:
 	VMVESS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FMakeMvNext(BDG& bdg, MVE*& pmve) noexcept;
+	bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	void Reset(BDG& bdg) noexcept;
 
 private:
@@ -134,7 +134,7 @@ class VMVESQ : public VMVES
 {
 public:
 	VMVESQ(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FMakeMvNext(BDG& bdg, MVE*& pmve) noexcept;
+	bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
 };
 
 
@@ -423,11 +423,11 @@ public:
 	/* search */
 
 public:
-	virtual MV MvGetNext(SPMV& spmv);
+	virtual MVU MvuGetNext(SPMV& spmv);
 protected:
 	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int depth, int depthLim, TS ts) noexcept;
 	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int depth, TS ts) noexcept; 
-	inline bool FSearchEmvBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
+	inline bool FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
 	inline bool FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& depthLim) const noexcept;
 	inline bool FDeepen(MVE mveBest, AB& ab, int& depth) noexcept;
 	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int depth) const noexcept;
@@ -446,7 +446,7 @@ protected:
 	
 	/* eval */
 
-	virtual EV EvBdgStatic(BDG& bdg, MV mv, bool fFull) noexcept;
+	virtual EV EvBdgStatic(BDG& bdg, MVU mvu, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	virtual void InitWeightTables(void);
@@ -456,7 +456,7 @@ protected:
 	inline void ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[],
 					  const EV mpapcsqev1[apcMax][sqMax], const EV mpapcsqev2[apcMax][sqMax]) const noexcept;
 	inline EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
-	EV EvBdgAttackDefend(BDG& bdg, MV mvPrev) const noexcept;
+	EV EvBdgAttackDefend(BDG& bdg, MVU mvuPrev) const noexcept;
 	EV EvTempo(const BDG& bdg) const noexcept;
 
 	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
@@ -507,7 +507,7 @@ class PLHUMAN : public PL
 public:
 	PLHUMAN(GA& ga, wstring szName);
 
-	virtual MV MvGetNext(SPMV& spmv);
+	virtual MVU MvuGetNext(SPMV& spmv);
 };
 
 

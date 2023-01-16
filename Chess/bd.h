@@ -309,30 +309,30 @@ public:
 
 	/* making moves */
 
-	void MakeMvSq(MV& mv) noexcept;
-	void UndoMvSq(MV mv) noexcept;
-	void MakeMvNullSq(MV& mv) noexcept;
-	void UndoMvNullSq(MV mv) noexcept;
+	void MakeMvuSq(MVU& mvu) noexcept;
+	void UndoMvuSq(MVU mvu) noexcept;
+	void MakeMvuNullSq(MVU& mvu) noexcept;
+	void UndoMvuNullSq(MVU mvu) noexcept;
 
 	/* move generation */
 	
 	void GenVmve(VMVE& vmve, GG gg) noexcept;
 	void GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
 	void GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept;
-	void GenVmvePawnMvs(VMVE& vmve, BB bbPawns, CPC cpcMove) const noexcept;
+	void GenVmvePawnMoves(VMVE& vmve, BB bbPawns, CPC cpcMove) const noexcept;
 	void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
-	void AddVmveMvPromotions(VMVE& vmve, MV mv) const noexcept;
-	void GenVmveBbPawnMvs(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
-	void GenVmveBbMvs(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
-	void GenVmveBbMvs(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
-	void GenVmveBbPromotionMvs(VMVE& vmve, BB bbTo, int dsq) const noexcept;
+	void AddVmveMvuPromotions(VMVE& vmve, MVU mvu) const noexcept;
+	void GenVmveBbPawnMoves(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
+	void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
+	void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
+	void GenVmveBbPromotionMoves(VMVE& vmve, BB bbTo, int dsq) const noexcept;
 	
 	/*
 	 *	checking squares for attack 
 	 */
 
 	void RemoveInCheckMoves(VMVE& vmve, CPC cpc) noexcept;
-	bool FMvIsQuiescent(MV mv) const noexcept;
+	bool FMvuIsQuiescent(MVU mvu) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
 
@@ -364,14 +364,14 @@ public:
 	 *	optimized - beware of bit twiddling tricks!
 	 */
 	
-	inline bool FMvEnPassant(MV mv) const noexcept
+	inline bool FMvuEnPassant(MVU mvu) const noexcept
 	{
-		return mv.sqTo() == sqEnPassant && mv.apcMove() == apcPawn;
+		return mvu.sqTo() == sqEnPassant && mvu.apcMove() == apcPawn;
 	}
 
-	inline bool FMvIsCapture(MV mv) const noexcept
+	inline bool FMvuIsCapture(MVU mvu) const noexcept
 	{
-		return !FIsEmpty(mv.sqTo()) || FMvEnPassant(mv);
+		return !FIsEmpty(mvu.sqTo()) || FMvuEnPassant(mvu);
 	}
 
 	inline void SetEnPassant(SQ sq) noexcept
@@ -524,7 +524,7 @@ public:
 	void ValidateBB(PC pc, SQ sq) const noexcept;
 #else
 	inline void Validate(void) const noexcept { }
-	inline void ValidateBB(PC pck, SQ sq) const noexcept { }
+	inline void ValidateBB(PC pc, SQ sq) const noexcept { }
 #endif
 };
 
@@ -589,10 +589,10 @@ class BDG : public BD
 {
 public:
 	GS gs;
-	vector<MV> vmvGame;		/* the game moves that resulted in bd board state */
-	int imvCurLast;		/* position of current last made move, -1 before first move; may be 
+	vector<MVU> vmvuGame;		/* the game moves that resulted in bd board state */
+	int imvuCurLast;		/* position of current last made move, -1 before first move; may be 
 							   less than vmvGame.size after Undo/Redo */
-	int imvPawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
+	int imvuPawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
 							       detection and 3-move repetition draws) */
 
 public:
@@ -611,10 +611,10 @@ public:
 	 *	making moves 
 	 */
 
-	void MakeMv(MV& mv) noexcept;
-	void UndoMv(void) noexcept;
-	void RedoMv(void) noexcept;
-	void MakeMvNull(void) noexcept;
+	void MakeMvu(MVU& mvu) noexcept;
+	void UndoMvu(void) noexcept;
+	void RedoMvu(void) noexcept;
+	void MakeMvuNull(void) noexcept;
 	
 	/* 
 	 *	game over tests
@@ -631,26 +631,26 @@ public:
 	 *	decoding moves 
 	 */
 
-	wstring SzMoveAndDecode(MV mv);
-	wstring SzDecodeMv(MV mv, bool fPretty);
-	bool FMvApcAmbiguous(const VMVE& vmve, MV mv) const;
-	bool FMvApcRankAmbiguous(const VMVE& vmve, MV mv) const;
-	bool FMvApcFileAmbiguous(const VMVE& vmve, MV mv) const;
-	string SzFlattenMvSz(const wstring& wsz) const;
-	wstring SzDecodeMvPost(MV mv) const;
+	wstring SzMoveAndDecode(MVU mvu);
+	wstring SzDecodeMvu(MVU mvu, bool fPretty);
+	bool FMvuApcAmbiguous(const VMVE& vmve, MVU mvu) const;
+	bool FMvuApcRankAmbiguous(const VMVE& vmve, MVU mvu) const;
+	bool FMvuApcFileAmbiguous(const VMVE& vmve, MVU mvu) const;
+	string SzFlattenMvuSz(const wstring& wsz) const;
+	wstring SzDecodeMvuPost(MVU mvu) const;
 
 	/* 
 	 *	parsing moves 
 	 */
 
-	ERR ParseMv(const char*& pch, MV& mv);
-	ERR ParsePieceMv(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseSquareMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseMvSuffixes(MV& mv, const char*& pch) const;
-	ERR ParseFileMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	ERR ParseRankMv(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MV& mv) const;
-	MV MvMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
-	MV MvMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	ERR ParseMvu(const char*& pch, MVU& mvu);
+	ERR ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MVU& mvu) const;
+	ERR ParseSquareMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const;
+	ERR ParseMvuSuffixes(MVU& mvu, const char*& pch) const;
+	ERR ParseFileMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const;
+	ERR ParseRankMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const;
+	MVU MvuMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	MVU MvuMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 
 	/*

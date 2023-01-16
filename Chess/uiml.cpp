@@ -503,7 +503,7 @@ void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 
 
 UIML::UIML(UIGA& uiga) : UIPS(uiga),  
-		ptxList(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvSel(0),
+		ptxList(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvuSel(0),
 		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack), 
 		uiclockWhite(*this, cpcWhite), uiclockBlack(*this, cpcBlack), uigc(*this)
 {
@@ -685,18 +685,18 @@ void UIML::DrawContent(const RC& rcCont)
 {
 	BDG bdgT(bdgInit);
 	float yCont = RcContent().top;
-	for (int imv = 0; imv < uiga.ga.bdg.vmvGame.size(); imv++) {
-		MV mv = uiga.ga.bdg.vmvGame[imv];
-		if (imv % 2 == 0) {
-			RC rc = RcFromCol(yCont + 4.0f + (imv / 2) * dyList, 0);
-			DrawMoveNumber(rc, imv / 2 + 1);
+	for (int imvu = 0; imvu < uiga.ga.bdg.vmvuGame.size(); imvu++) {
+		MVU mvu = uiga.ga.bdg.vmvuGame[imvu];
+		if (imvu % 2 == 0) {
+			RC rc = RcFromCol(yCont + 4.0f + (imvu / 2) * dyList, 0);
+			DrawMoveNumber(rc, imvu / 2 + 1);
 		}
-		if (mv.fIsNil())
+		if (mvu.fIsNil())
 			continue;
-		RC rc = RcFromImv(imv);
-		if (imv == imvSel)
+		RC rc = RcFromImv(imvu);
+		if (imvu == imvuSel)
 			FillRc(rc, pbrHilite);
-		DrawAndMakeMv(rc, bdgT, mv);
+		DrawAndMakeMvu(rc, bdgT, mvu);
 	}
 }
 
@@ -705,11 +705,11 @@ void UIML::DrawContent(const RC& rcCont)
  *
  *	Sets the selection
  */
-void UIML::SetSel(int64_t imv, SPMV spmv)
+void UIML::SetSel(int64_t imvu, SPMV spmv)
 {
-	imvSel = imv;
+	imvuSel = imvu;
 	if (spmv != spmvHidden)
-		if (!FMakeVis(imvSel))
+		if (!FMakeVis(imvuSel))
 			Redraw();
 }
 
@@ -718,21 +718,21 @@ void UIML::SetSel(int64_t imv, SPMV spmv)
  *
  *	Draws the selection in the move list.
  */
-void UIML::DrawSel(int64_t imv)
+void UIML::DrawSel(int64_t imvu)
 {
 }
 
 
-/*	UIML::DrawAndMakeMv
+/*	UIML::DrawAndMakeMvu
  *
  *	Draws the text of an individual move in the rectangle given, using the
  *	given board bdg and move mv, and makes the move on the board. Note that
  *	the text of the decoded move is dependent on the board to take advantage
  *	of shorter text when there are no ambiguities.
  */
-void UIML::DrawAndMakeMv(const RC& rc, BDG& bdg, MV mv)
+void UIML::DrawAndMakeMvu(const RC& rc, BDG& bdg, MVU mvu)
 {
-	wstring sz = bdg.SzMoveAndDecode(mv);
+	wstring sz = bdg.SzMoveAndDecode(mvu);
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_LEADING);
 	RC rcText = rc;
 	rcText.top += dyCellMarg;
@@ -796,7 +796,7 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dy = (uiga.ga.bdg.vmvGame.size()+1) / 2 * dyList;
+	float dy = (uiga.ga.bdg.vmvuGame.size()+1) / 2 * dyList;
 	if (dy == 0)
 		dy = dyList;
 	UIPS::UpdateContSize(SIZ(RcContent().DxWidth(), 4.0f + dy));
@@ -827,7 +827,7 @@ HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 		imv = (int64_t)li * 2 + 1;
 	if (imv < 0)
 		return htmlEmptyBefore;
-	if (imv >= (int64_t)uiga.ga.bdg.vmvGame.size())
+	if (imv >= (int64_t)uiga.ga.bdg.vmvuGame.size())
 		return htmlEmptyAfter;
 	*pimv = imv;
 	return htmlList;
@@ -857,23 +857,23 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		uiga.MoveToImv(uiga.ga.bdg.imvCurLast - 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast - 1, spmvAnimate);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		uiga.MoveToImv(uiga.ga.bdg.imvCurLast + 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast + 1, spmvAnimate);
 		break;
 	case VK_HOME:
 		uiga.MoveToImv(0, spmvAnimate);
 		break;
 	case VK_END:
-		uiga.MoveToImv((int)uiga.ga.bdg.vmvGame.size() - 1, spmvAnimate);
+		uiga.MoveToImv((int)uiga.ga.bdg.vmvuGame.size() - 1, spmvAnimate);
 		break;
 	case VK_PRIOR:
-		uiga.MoveToImv(uiga.ga.bdg.imvCurLast - 5 * 2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast - 5 * 2, spmvAnimate);
 		break;
 	case VK_NEXT:
-		uiga.MoveToImv(uiga.ga.bdg.imvCurLast + 5*2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast + 5*2, spmvAnimate);
 		break;
 	default:
 		break;

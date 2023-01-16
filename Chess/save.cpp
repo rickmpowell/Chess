@@ -84,15 +84,15 @@ void GA::SerializeMoveList(ostream& os)
 {
 	BDG bdgSav = bdgInit;
 	string szLine;
-	for (unsigned imv = 0; imv < (unsigned)bdg.vmvGame.size(); imv++) {
-		MV mv = bdg.vmvGame[imv];
-		if (mv.fIsNil())
+	for (unsigned imvu = 0; imvu < (unsigned)bdg.vmvuGame.size(); imvu++) {
+		MVU mvu = bdg.vmvuGame[imvu];
+		if (mvu.fIsNil())
 			continue;
-		if (imv % 2 == 0)
-			WriteSzLine80(os, szLine, to_string(imv/2 + 1) + ". ");
-		wstring wsz = bdgSav.SzDecodeMv(mv, false);
-		WriteSzLine80(os, szLine, bdgSav.SzFlattenMvSz(wsz) + " ");
-		bdgSav.MakeMv(mv);
+		if (imvu % 2 == 0)
+			WriteSzLine80(os, szLine, to_string(imvu/2 + 1) + ". ");
+		wstring wsz = bdgSav.SzDecodeMvu(mvu, false);
+		WriteSzLine80(os, szLine, bdgSav.SzFlattenMvuSz(wsz) + " ");
+		bdgSav.MakeMvu(mvu);
 	}
 
 	/* when we're done, write result */
@@ -158,15 +158,15 @@ const wchar_t mpapcchFig[cpcMax][apcMax] =
 	{ chSpace, chBlackPawn, chBlackKnight, chBlackBishop, chBlackRook, chBlackQueen, chBlackKing }
 };
 
-wstring BDG::SzDecodeMv(MV mv, bool fPretty)
+wstring BDG::SzDecodeMvu(MVU mvu, bool fPretty)
 {
 	VMVE vmve;
 	GenVmve(vmve, ggPseudo);
 
 	/* if destination square is unique, just include the destination square */
-	SQ sqFrom = mv.sqFrom();
-	APC apc = mv.apcMove();
-	SQ sqTo = mv.sqTo();
+	SQ sqFrom = mvu.sqFrom();
+	APC apc = mvu.apcMove();
+	SQ sqTo = mvu.sqTo();
 	SQ sqCapture = sqTo;
 
 	wchar_t sz[16];
@@ -213,11 +213,11 @@ FinishCastle:
 	/* for ambiguous moves, we need to add various from square qualifiers depending
 	 * on where the ambiguity is */
 
-	if (FMvApcAmbiguous(vmve, mv)) {
-		if (!FMvApcFileAmbiguous(vmve, mv))
+	if (FMvuApcAmbiguous(vmve, mvu)) {
+		if (!FMvuApcFileAmbiguous(vmve, mvu))
 			*pch++ = L'a' + sqFrom.file();
 		else {
-			if (FMvApcRankAmbiguous(vmve, mv))
+			if (FMvuApcRankAmbiguous(vmve, mvu))
 				*pch++ = L'a' + sqFrom.file();
 			*pch++ = L'1' + sqFrom.rank();
 		}
@@ -242,7 +242,7 @@ FinishCastle:
 	}
 
 	{
-	APC apcPromote = mv.apcPromote();
+	APC apcPromote = mvu.apcPromote();
 	if (apcPromote != apcNull) {
 		*pch++ = chEqual;
 		*pch++ = mpapcch[apcPromote];
@@ -255,49 +255,49 @@ FinishMove:
 }
 
 
-bool BDG::FMvApcAmbiguous(const VMVE& vmve, MV mv) const
+bool BDG::FMvuApcAmbiguous(const VMVE& vmve, MVU mvu) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SQ sqFrom = mvu.sqFrom();
+	SQ sqTo = mvu.sqTo();
 	for (MVE mveOther : vmve) {
 		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (mveOther.apcMove() == mv.apcMove())
+		if (mveOther.apcMove() == mvu.apcMove())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvApcRankAmbiguous(const VMVE& vmve, MV mv) const
+bool BDG::FMvuApcRankAmbiguous(const VMVE& vmve, MVU mvu) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SQ sqFrom = mvu.sqFrom();
+	SQ sqTo = mvu.sqTo();
 	for (MVE mveOther : vmve) {
 		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (mveOther.apcMove() == mv.apcMove() && mveOther.sqFrom().rank() == sqFrom.rank())
+		if (mveOther.apcMove() == mvu.apcMove() && mveOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvApcFileAmbiguous(const VMVE& vmve, MV mv) const
+bool BDG::FMvuApcFileAmbiguous(const VMVE& vmve, MVU mvu) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SQ sqFrom = mvu.sqFrom();
+	SQ sqTo = mvu.sqTo();
 	for (MVE mveOther : vmve) {
 		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (mveOther.apcMove() == mv.apcMove() && mveOther.sqFrom().file() == sqFrom.file())
+		if (mveOther.apcMove() == mvu.apcMove() && mveOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;
 }
 
 
-string BDG::SzFlattenMvSz(const wstring& wsz) const
+string BDG::SzFlattenMvuSz(const wstring& wsz) const
 {
 	string sz;
 	for (int ich = 0; wsz[ich]; ich++) {
@@ -326,20 +326,20 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
  *	for official decoding, because ambiguities are not removed and stuff like promotion
  *	and en passant are not available, but useful for logging and debuggingn
  */
-wstring BDG::SzDecodeMvPost(MV mv) const
+wstring BDG::SzDecodeMvuPost(MVU mvu) const
 {
-	SQ sqFrom = mv.sqFrom();
-	SQ sqTo = mv.sqTo();
+	SQ sqFrom = mvu.sqFrom();
+	SQ sqTo = mvu.sqTo();
 	wstring sz;
 	sz += L'a' + sqFrom.file();
 	sz += to_wstring(sqFrom.rank() + 1);
-	if (mv.fIsCapture())
+	if (mvu.fIsCapture())
 		sz += L'x';
 	sz += L'a' + sqTo.file();
 	sz += to_wstring(sqTo.rank() + 1);
-	if (mv.apcPromote() != apcNull) {
+	if (mvu.apcPromote() != apcNull) {
 		sz += chEqual;
-		sz += mpapcch[mv.apcPromote()];
+		sz += mpapcch[mvu.apcPromote()];
 	}
 	return sz;
 }

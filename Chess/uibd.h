@@ -76,9 +76,9 @@ public:
 	virtual void DiscardRsrc(void);
 
 	void InitGame(void);
-	void MakeMv(MV mv, SPMV spmv);
-	void UndoMv(SPMV spmv);
-	void RedoMv(SPMV spmv);
+	void MakeMvu(MVU mvu, SPMV spmv);
+	void UndoMvu(SPMV spmv);
+	void RedoMvu(SPMV spmv);
 
 	virtual void Layout(void);
 
@@ -87,8 +87,8 @@ public:
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
-	bool FHoverSq(SQ sq, MV& mv);
-	void DrawHoverMv(MV mv);
+	bool FHoverSq(SQ sq, MVU& mvu);
+	void DrawHoverMvu(MVU mvu);
 	void DrawPieceSq(SQ sq);
 	void DrawAnnotations(void);
 	void DrawSquareAnnotation(SQ sq);
@@ -97,7 +97,7 @@ public:
 	void DrawHilites(void);
 	void DrawGameState(void);
 	void DrawPc(const RC& rc, float opacity, CPC cpc, APC apc);
-	void AnimateMv(MV mv, unsigned dframe);
+	void AnimateMvu(MVU mvu, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	void DrawDragPc(const RC& rc);
 	RC RcGetDrag(void);

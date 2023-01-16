@@ -421,14 +421,14 @@ public:
 
 	void UndoFullGame(void)
 	{
-		while (uiga.ga.bdg.imvCurLast >= 0) {
+		while (uiga.ga.bdg.imvuCurLast >= 0) {
 			BDG bdgInit = uiga.ga.bdg;
-			uiga.UndoMv(spmvHidden);
-			uiga.RedoMv(spmvHidden);
+			uiga.UndoMvu(spmvHidden);
+			uiga.RedoMvu(spmvHidden);
 			assert(uiga.ga.bdg == bdgInit);
 			if (uiga.ga.bdg != bdgInit)
 				throw EXFAILTEST();
-			uiga.UndoMv(spmvHidden);
+			uiga.UndoMvu(spmvHidden);
 		}
 	}
 };
@@ -440,15 +440,15 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 }
 
 
-ERR PROCPGNTESTUNDO::ProcessMv(MV mv)
+ERR PROCPGNTESTUNDO::ProcessMvu(MVU mvu)
 {
 	BDG bdgInit = ga.bdg;
-	ga.bdg.MakeMv(mv);
+	ga.bdg.MakeMvu(mvu);
 	BDG bdgNew = ga.bdg;
-	ga.bdg.UndoMv();
+	ga.bdg.UndoMvu();
 	if (bdgInit != ga.bdg)
 		throw EXFAILTEST();
-	ga.bdg.RedoMv();
+	ga.bdg.RedoMvu();
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
 	return errNone;
@@ -525,9 +525,9 @@ ERR PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
 }
 
 
-ERR PROCPGNTEST::ProcessMv(MV mv)
+ERR PROCPGNTEST::ProcessMvu(MVU mvu)
 {
-	return PROCPGNOPEN::ProcessMv(mv);
+	return PROCPGNOPEN::ProcessMvu(mvu);
 }
 
 
@@ -544,10 +544,10 @@ uint64_t GA::CmvPerft(int depth)
 	bdg.GenVmve(vmve, ggPseudo);
 	uint64_t cmv = 0;
 	for (MVE mve : vmve) {
-		bdg.MakeMv(mve);
+		bdg.MakeMvu(mve);
 		if (!bdg.FInCheck(~bdg.cpcToMove))
 			cmv += CmvPerft(depth - 1);
-		bdg.UndoMv();
+		bdg.UndoMvu();
 	}
 	return cmv;
 }
@@ -560,9 +560,9 @@ uint64_t GA::CmvPerftBulk(int depth)
 		return vmve.cmve();
 	uint64_t cmv = 0;
 	for (MVE mve : vmve) {
-		bdg.MakeMv(mve);
+		bdg.MakeMvu(mve);
 		cmv += CmvPerftBulk(depth - 1);
-		bdg.UndoMv();
+		bdg.UndoMvu();
 	}
 	return cmv;
 }
@@ -581,12 +581,12 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 	BDG bdgInit = ga.bdg;
 #endif
 	for (MVE mve : vmve) {
-		ga.bdg.MakeMv(mve);
-		LogOpen(TAG(ga.bdg.SzDecodeMvPost(mve), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
+		ga.bdg.MakeMvu(mve);
+		LogOpen(TAG(ga.bdg.SzDecodeMvuPost(mve), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
 		uint64_t cmvMove = ga.CmvPerft(depthPerft - 1);
 		cmv += cmvMove;
-		ga.bdg.UndoMv();
-		LogClose(ga.bdg.SzDecodeMvPost(mve), to_wstring(cmvMove), lgfNormal);
+		ga.bdg.UndoMvu();
+		LogClose(ga.bdg.SzDecodeMvuPost(mve), to_wstring(cmvMove), lgfNormal);
 		assert(ga.bdg == bdgInit);
 	}
 	return cmv;

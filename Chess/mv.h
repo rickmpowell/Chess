@@ -22,7 +22,7 @@
 
 /*
  *
- *	MV and MVM type
+ *	MVU and MVM type
  *
  *	A move is a from and to square, with a little extra info for
  *	weird moves, along with enough information to undo the move.
@@ -74,7 +74,7 @@ public:
 static_assert(sizeof(MVM) == sizeof(uint16_t));
 
 
-class MV : public MVM {
+class MVU : public MVM {
 private:
 	uint16_t
 		upcMove : 4,	// the piece that is moving
@@ -87,15 +87,15 @@ private:
 public:
 
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(void) noexcept { *(uint32_t*)this = 0; }
+	inline MVU(void) noexcept { *(uint32_t*)this = 0; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(uint32_t u) noexcept { *(uint32_t*)this = u; }
+	inline MVU(uint32_t u) noexcept { *(uint32_t*)this = u; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(MVM mvm) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mvm; }
+	inline MVU(MVM mvm) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mvm; }
 	inline operator uint32_t() const noexcept { return *(uint32_t*)this; }
 	//inline operator MVM() const noexcept { return *(MVM*)this; }
 
-	inline MV(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
+	inline MVU(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
 		assert(pcMove.apc() != apcNull);
 		*(uint32_t*)this = 0;	// initialize everything else to 0
@@ -104,7 +104,7 @@ public:
 		usqTo = sqTo;
 	}
 
-	inline MV& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
+	inline MVU& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
 	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
 	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
 	inline PC pcMove(void) const noexcept { return PC(upcMove); }
@@ -123,17 +123,17 @@ public:
 	inline bool fEpPrev(void) const noexcept { return ufEnPassant; }
 	inline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
 	inline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
-	inline bool operator==(const MV& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
-	inline bool operator!=(const MV& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
+	inline bool operator==(const MVU& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
+	inline bool operator!=(const MVU& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
 	inline bool operator==(const MVM& mvm) const noexcept { return *(uint16_t*)this == (uint16_t)mvm; }
 	inline bool operator!=(const MVM& mvm) const noexcept { return *(uint16_t*)this != (uint16_t)mvm; }
 };
 
-static_assert(sizeof(MV) == sizeof(uint32_t));
+static_assert(sizeof(MVU) == sizeof(uint32_t));
 
-const MV mvNil = MV();
+const MVU mvuNil = MVU();
 const MVM mvmNil = MVM();
-const MV mvAll = MV(sqH8, sqH8, PC(cpcWhite, apcError));
+const MVU mvuAll = MVU(sqH8, sqH8, PC(cpcWhite, apcError));
 const MVM mvmAll = MVM(sqH8, sqH8);
 wstring SzFromMvm(MVM mvm);
 
@@ -225,14 +225,14 @@ wstring SzFromTsc(TSC tsc);
  */
 
 
-class MVE : public MV
+class MVE : public MVU
 {
 public:
 	EV ev;
 	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
-	MVE(MV mv = MV()) noexcept : MV(mv), ev(0), utsc(0) { }
-	MVE(MV mv, EV ev) noexcept : MV(mv), ev(ev), utsc(0) { }
+	MVE(MVU mvu = mvuNil) noexcept : MVU(mvu), ev(0), utsc(0) { }
+	MVE(MVU mvu, EV ev) noexcept : MVU(mvu), ev(ev), utsc(0) { }
 #pragma warning(suppress:26495)	 
 	MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
@@ -246,7 +246,7 @@ public:
 
 	inline void SetTsc(TSC tsc) noexcept { utsc = static_cast<uint16_t>(tsc); }
 	inline TSC tsc() const noexcept { return static_cast<TSC>(utsc); }
-	inline void SetMv(MV mv) noexcept { *(MV*)this = mv; }
+	inline void SetMvu(MVU mvu) noexcept { *(MVU*)this = mvu; }
 };
 
 static_assert(sizeof(MVE) == sizeof(uint64_t));
@@ -465,20 +465,20 @@ public:
 	}
 
 
-	inline void push_back(MV mv)
+	inline void push_back(MVU mvu)
 	{
 		assert(FValid());
 		if (cmveCur < cmvePreMax)
-			amve[cmveCur++] = MVE(mv);
+			amve[cmveCur++] = MVE(mvu);
 		else
-			push_back_overflow(MVE(mv));
+			push_back_overflow(MVE(mvu));
 		assert(FValid());
 	}
 
 
 	inline void push_back(SQ sqFrom, SQ sqTo, PC pcMove)
 	{
-		push_back(MV(sqFrom, sqTo, pcMove));
+		push_back(MVU(sqFrom, sqTo, pcMove));
 	}
 
 	void insert_overflow(int imve, const MVE& mve) noexcept

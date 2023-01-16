@@ -60,7 +60,7 @@ protected:
 public:
 	PROCPGN(GA& ga);
 	virtual ~PROCPGN(void) { }
-	virtual ERR ProcessMv(MV mv) = 0;
+	virtual ERR ProcessMvu(MVU mvu) = 0;
 	virtual ERR ProcessTag(int tkpgn, const string& szVal) = 0;
 };
 
@@ -69,7 +69,7 @@ class PROCPGNOPEN : public PROCPGN
 {
 public:
 	PROCPGNOPEN(GA& ga) : PROCPGN(ga) { }
-	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessMvu(MVU mvu);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -78,7 +78,7 @@ class PROCPGNPASTE : public PROCPGNOPEN
 {
 public:
 	PROCPGNPASTE(GA& ga) : PROCPGNOPEN(ga) { }
-	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessMvu(MVU mvu);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -87,7 +87,7 @@ class PROCPGNTEST : public PROCPGNOPEN
 {
 public:
 	PROCPGNTEST(GA& ga) : PROCPGNOPEN(ga) { }
-	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessMvu(MVU mvu);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -96,7 +96,7 @@ class PROCPGNTESTUNDO : public PROCPGNTEST
 {
 public:
 	PROCPGNTESTUNDO(GA& ga) : PROCPGNTEST(ga) { }
-	virtual ERR ProcessMv(MV mv);
+	virtual ERR ProcessMvu(MVU mvu);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 

@@ -607,7 +607,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->Play(mvNil, spmvAnimate);
+        app.puiga->Play(mvuNil, spmvAnimate);
         return 1;
     }
 };
@@ -629,7 +629,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->UndoMv(spmvAnimate);
+        app.puiga->UndoMvu(spmvAnimate);
         return 1;
     }
 
@@ -656,7 +656,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->RedoMv(spmvAnimate);
+        app.puiga->RedoMvu(spmvAnimate);
         return 1;
     }
 
@@ -955,10 +955,10 @@ public:
 
         for (int imv = 0; imv < 10; imv++) {
             SPMV spmv = spmvFast;
-            MV mv = app.puiga->ga.PplToMove()->MvGetNext(spmv);
-            if (mv.fIsNil())
+            MVU mvu = app.puiga->ga.PplToMove()->MvuGetNext(spmv);
+            if (mvu.fIsNil())
                 break;
-            app.puiga->MakeMv(mv, spmvFast);
+            app.puiga->MakeMvu(mvu, spmvFast);
         }
 
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
@@ -1331,9 +1331,9 @@ ERR PROCPGNPASTE::ProcessTag(int tkpgn, const string& szValue)
     return PROCPGNOPEN::ProcessTag(tkpgn, szValue);
 }
 
-ERR PROCPGNPASTE::ProcessMv(MV mv)
+ERR PROCPGNPASTE::ProcessMvu(MVU mvu)
 {
-    return PROCPGNOPEN::ProcessMv(mv);
+    return PROCPGNOPEN::ProcessMvu(mvu);
 }
 
 

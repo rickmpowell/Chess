@@ -54,7 +54,7 @@ class XEV
 {
 private:
 	uint64_t uhabd;
-	uint32_t umv;
+	uint32_t umvu;
 	uint32_t utev : 2,
 		udepth : 7,
 		uage : 5,
@@ -64,7 +64,7 @@ public:
 
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
 	inline XEV(void) { SetNull(); }
-	inline XEV(HABD habd, MV mv, TEV tev, EV ev, int depth) { Save(habd, ev, tev, depth, mv, 0); }
+	inline XEV(HABD habd, MVU mvu, TEV tev, EV ev, int depth) { Save(habd, ev, tev, depth, mvu, 0); }
 	inline void SetNull(void) noexcept { *(uint64_t*)this = 0; *((uint64_t*)this + 1) = 0; }
 	inline EV ev(void) const noexcept { return static_cast<EV>(uevBiased)-evBias; }
 	inline void SetEv(EV ev) noexcept { assert(ev < evInf && ev > -evInf);  uevBiased = static_cast<uint16_t>(ev+evBias); }
@@ -74,16 +74,16 @@ public:
 	inline void SetDepth(int depth) noexcept { udepth = (unsigned)depth; }
 	inline bool FMatchHabd(HABD habd) const noexcept { return uhabd == habd; }
 	inline void SetHabd(HABD habd) noexcept { uhabd = habd; }
-	inline void SetMv(MV mv) noexcept { this->umv = mv; }
-	inline MV mv(void) const noexcept { return umv; }
+	inline void SetMvu(MVU mvu) noexcept { this->umvu = mvu; }
+	inline MVU mvu(void) const noexcept { return umvu; }
 	inline void SetAge(unsigned age) noexcept { this->uage = age; }
 	inline unsigned age(void) const noexcept { return uage; }
-	inline void Save(HABD habd, EV ev, TEV tev, int depth, MV mv, unsigned age) noexcept {
+	inline void Save(HABD habd, EV ev, TEV tev, int depth, MVU mvu, unsigned age) noexcept {
 		SetHabd(habd);
 		SetEv(ev);
 		SetTev(tev);
 		SetDepth(depth);
-		SetMv(mv);
+		SetMvu(mvu);
 		SetAge(age);
 	}
 

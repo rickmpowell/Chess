@@ -187,24 +187,24 @@ void UIBD::InitGame(void)
 }
 
 
-/*	UIBD::MakeMv
+/*	UIBD::MakeMvu
  *
  *	Makes a move on the board and echoes it on the screen.
  * 
  *	Throws an exception if the move is not valid.
  */
-void UIBD::MakeMv(MV mv, SPMV spmv)
+void UIBD::MakeMvu(MVU mvu, SPMV spmv)
 {
 	for (MVE mveDrag : vmveDrag) {
-		if (mveDrag.sqFrom() == mv.sqFrom() && mveDrag.sqTo() == mv.sqTo())
+		if (mveDrag.sqFrom() == mvu.sqFrom() && mveDrag.sqTo() == mvu.sqTo())
 			goto FoundMove;
 	}
 	throw 1;
 
 FoundMove:
 	if (FSpmvAnimate(spmv))
-		AnimateMv(mv, DframeFromSpmv(spmv));
-	uiga.ga.bdg.MakeMv(mv);
+		AnimateMvu(mvu, DframeFromSpmv(spmv));
+	uiga.ga.bdg.MakeMvu(mvu);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
@@ -212,13 +212,13 @@ FoundMove:
 }
 
 
-void UIBD::UndoMv(SPMV spmv)
+void UIBD::UndoMvu(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCurLast >= 0) {
-		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCurLast];
-		AnimateSqToSq(mv.sqTo(), mv.sqFrom(), DframeFromSpmv(spmv));
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvuCurLast >= 0) {
+		MVU mvu = uiga.ga.bdg.vmvuGame[uiga.ga.bdg.imvuCurLast];
+		AnimateSqToSq(mvu.sqTo(), mvu.sqFrom(), DframeFromSpmv(spmv));
 	}
-	uiga.ga.bdg.UndoMv();
+	uiga.ga.bdg.UndoMvu();
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGs(gsPlaying);
 	if (spmv != spmvHidden)
@@ -226,13 +226,13 @@ void UIBD::UndoMv(SPMV spmv)
 }
 
 
-void UIBD::RedoMv(SPMV spmv)
+void UIBD::RedoMvu(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvCurLast < (int)uiga.ga.bdg.vmvGame.size()) {
-		MV mv = uiga.ga.bdg.vmvGame[uiga.ga.bdg.imvCurLast+1];
-		AnimateMv(mv, DframeFromSpmv(spmv));
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvuCurLast < (int)uiga.ga.bdg.vmvuGame.size()) {
+		MVU mvu = uiga.ga.bdg.vmvuGame[uiga.ga.bdg.imvuCurLast+1];
+		AnimateMvu(mvu, DframeFromSpmv(spmv));
 	}
-	uiga.ga.bdg.RedoMv();
+	uiga.ga.bdg.RedoMvu();
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
@@ -326,9 +326,9 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 			SQ sq(rank, file);
 			if ((rank + file) % 2 == 0)
 				FillRc(RcFromSq(sq), pbrDark);
-			MV mv;
-			if (FHoverSq(sq, mv))
-				DrawHoverMv(mv);
+			MVU mvu;
+			if (FHoverSq(sq, mvu))
+				DrawHoverMvu(mvu);
 			DrawPieceSq(sq);
 		}
 }
@@ -416,13 +416,13 @@ RC UIBD::RcFromSq(SQ sq) const
  *	Returns true if the square is the destination of move that originates in the
  *	tracking square sqHover. Returns the move itself in mv. 
  */
-bool UIBD::FHoverSq(SQ sq, MV& mv)
+bool UIBD::FHoverSq(SQ sq, MVU& mvu)
 {
 	if (sqHover.fIsNil() || uiga.ga.bdg.gs != gsPlaying)
 		return false;
 	for (MVE mveDrag : vmveDrag) {
 		if (mveDrag.sqFrom() == sqHover && mveDrag.sqTo() == sq) {
-			mv = mveDrag;
+			mvu = mveDrag;
 			return true;
 		}
 	}
@@ -430,19 +430,19 @@ bool UIBD::FHoverSq(SQ sq, MV& mv)
 }
 
 
-/*	UIBD::DrawHoverMv
+/*	UIBD::DrawHoverMvu
  *
  *	Draws the move hints over destination squares that we display while the 
  *	user is hovering the mouse over a moveable piece.
  *
  *	We draw a circle over every square you can move to, and an X over captures.
  */
-void UIBD::DrawHoverMv(MV mv)
+void UIBD::DrawHoverMvu(MVU mvu)
 {
 	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
-	RC rc = RcFromSq(mv.sqTo());
-	if (!uiga.ga.bdg.FMvIsCapture(mv)) {
+	RC rc = RcFromSq(mvu.sqTo());
+	if (!uiga.ga.bdg.FMvuIsCapture(mvu)) {
 		/* moving to an empty square - draw a circle */
 		ELL ell(rc.PtCenter(), PT(dxySquare / 5, dxySquare / 5));
 		FillEll(ell, pbrBlack);
@@ -531,9 +531,9 @@ void UIBD::DrawPc(const RC& rcPc, float opacity, CPC cpc, APC apc)
 }
 
 
-void UIBD::AnimateMv(MV mv, unsigned dframe)
+void UIBD::AnimateMvu(MVU mvu, unsigned dframe)
 {
-	AnimateSqToSq(mv.sqFrom(), mv.sqTo(), dframe);
+	AnimateSqToSq(mvu.sqFrom(), mvu.sqTo(), dframe);
 }
 
 
@@ -688,7 +688,7 @@ void UIBD::EndLeftDrag(const PT& pt)
 	if (!sqTo.fIsNil()) {
 		for (MVE mve : vmveDrag) {
 			if (mve.sqFrom() == sqFrom && mve.sqTo() == sqTo) {
-				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(mve, spmvFast);
+				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
 				goto Done;
 			}
 		}

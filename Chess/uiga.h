@@ -112,15 +112,15 @@ public:
 	 *	Modal game loop
 	 */
 
-	void Play(MV mv, SPMV spmv);
+	void Play(MVU mvu, SPMV spmv);
 	void PumpMsg(void);
 
 	void InitGame(const wchar_t* szFEN, RULE* prule);
 	void StartGame(SPMV spmv);
 	void EndGame(SPMV spmv);
-	void MakeMv(MV mv, SPMV spmvMove);
-	void UndoMv(SPMV spmv);
-	void RedoMv(SPMV spmv);
+	void MakeMvu(MVU mvu, SPMV spmvMove);
+	void UndoMvu(SPMV spmv);
+	void RedoMvu(SPMV spmv);
 	void MoveToImv(int64_t imv, SPMV spmv);
 
 	void InitClocks(void);

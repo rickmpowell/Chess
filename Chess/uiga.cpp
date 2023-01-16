@@ -352,7 +352,7 @@ void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 	if (ga.prule->FUntimed())
 		return;
 	mpcpcdmsecClock[cpc] -= msecCur - msecLast;
-	int mvn = (int)ga.bdg.imvCurLast / 2 + 1;
+	int mvn = (int)ga.bdg.imvuCurLast / 2 + 1;
 	mpcpcdmsecClock[cpc] +=
 		ga.prule->DmsecAddMove(cpc, mvn) + ga.prule->DmsecAddInterval(cpc, mvn);
 	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);
@@ -360,29 +360,29 @@ void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 }
 
 
-void UIGA::MakeMv(MV mv, SPMV spmvMove)
+void UIGA::MakeMvu(MVU mvu, SPMV spmvMove)
 {
 	DWORD msec = app.MsecMessage();
 	PauseClock(ga.bdg.cpcToMove, msec);
 	StartClock(~ga.bdg.cpcToMove, msec);
-	uibd.MakeMv(mv, spmvMove);
+	uibd.MakeMvu(mvu, spmvMove);
 	if (ga.bdg.gs != gsPlaying)
 		EndGame(spmvMove);
 	if (spmvMove != spmvHidden) {
 		uiml.UpdateContSize();
-		uiml.SetSel(ga.bdg.imvCurLast, spmvMove);
+		uiml.SetSel(ga.bdg.imvuCurLast, spmvMove);
 	}
 }
 
 
-/*	UIGA::UndoMv
+/*	UIGA::UndoMvu
  *
  *	Moves the current move pointer back one through the move list and undoes
  *	the last move on the game board.
  */
-void UIGA::UndoMv(SPMV spmv)
+void UIGA::UndoMvu(SPMV spmv)
 {
-	MoveToImv(ga.bdg.imvCurLast - 1, spmv);
+	MoveToImv(ga.bdg.imvuCurLast - 1, spmv);
 }
 
 
@@ -391,9 +391,9 @@ void UIGA::UndoMv(SPMV spmv)
  *	Moves the current move pointer forward through the move list and remakes
  *	the next move on the game board.
  */
-void UIGA::RedoMv(SPMV spmv)
+void UIGA::RedoMvu(SPMV spmv)
 {
-	MoveToImv(ga.bdg.imvCurLast + 1, spmv);
+	MoveToImv(ga.bdg.imvuCurLast + 1, spmv);
 }
 
 
@@ -405,19 +405,19 @@ void UIGA::RedoMv(SPMV spmv)
  */
 void UIGA::MoveToImv(int64_t imv, SPMV spmv)
 {
-	imv = clamp(imv, (int64_t)-1, (int64_t)ga.bdg.vmvGame.size() - 1);
-	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvCurLast - imv) > 1) {
+	imv = clamp(imv, (int64_t)-1, (int64_t)ga.bdg.vmvuGame.size() - 1);
+	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvuCurLast - imv) > 1) {
 		spmv = spmvAnimateFast;
-		if (abs(ga.bdg.imvCurLast - imv) > 5)
+		if (abs(ga.bdg.imvuCurLast - imv) > 5)
 			spmv = spmvAnimateVeryFast;
 	}
-	while (ga.bdg.imvCurLast > imv)
-		uibd.UndoMv(spmv);
-	while (ga.bdg.imvCurLast < imv)
-		uibd.RedoMv(spmv);
+	while (ga.bdg.imvuCurLast > imv)
+		uibd.UndoMvu(spmv);
+	while (ga.bdg.imvuCurLast < imv)
+		uibd.RedoMvu(spmv);
 	if (spmv != spmvHidden)
 		uiml.Layout();	// in case game over state changed
-	uiml.SetSel(ga.bdg.imvCurLast, spmv);
+	uiml.SetSel(ga.bdg.imvuCurLast, spmv);
 }
 
 
@@ -427,21 +427,21 @@ void UIGA::MoveToImv(int64_t imv, SPMV spmv)
  *	play is sent in mv, which may be nil. spmv is the speed of the 
  *	animation to use on the board.
  */
-void UIGA::Play(MV mv, SPMV spmv)
+void UIGA::Play(MVU mvu, SPMV spmv)
 {
 	fInPlay = true;
 	InitLog(2);
 	LogOpen(L"Game", L"", lgfBold);
 	StartGame(spmvAnimate);
-	if (!mv.fIsNil())
-		MakeMv(mv, spmv);
+	if (!mvu.fIsNil())
+		MakeMvu(mvu, spmv);
 	do {
 		SPMV spmv = spmvAnimate;
 		try {
-			mv = ga.PplToMove()->MvGetNext(spmv);
-			if (mv.fIsNil())
+			mvu = ga.PplToMove()->MvuGetNext(spmv);
+			if (mvu.fIsNil())
 				break;
-			MakeMv(mv, spmv);
+			MakeMvu(mvu, spmv);
 		}
 		catch (...) {
 			ga.bdg.SetGs(gsCanceled);
