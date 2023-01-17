@@ -46,7 +46,7 @@ public:
 	void SetName(const wstring& szNew) { szName = szNew; }
 
 	virtual void StartGame(void) { }
-	virtual MVU MvuGetNext(SPMV& spmv) = 0;
+	virtual MVU MvuGetNext(SPMV& spmv) noexcept = 0;
 	void ReceiveMvu(MVU mvu, SPMV spmv);
 
 	virtual bool FHasLevel(void) const noexcept { return false; }
@@ -423,7 +423,7 @@ public:
 	/* search */
 
 public:
-	virtual MVU MvuGetNext(SPMV& spmv);
+	virtual MVU MvuGetNext(SPMV& spmv) noexcept;
 protected:
 	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int depth, int depthLim, TS ts) noexcept;
 	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int depth, TS ts) noexcept; 
@@ -507,7 +507,7 @@ class PLHUMAN : public PL
 public:
 	PLHUMAN(GA& ga, wstring szName);
 
-	virtual MVU MvuGetNext(SPMV& spmv);
+	virtual MVU MvuGetNext(SPMV& spmv) noexcept;
 };
 
 

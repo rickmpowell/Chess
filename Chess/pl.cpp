@@ -672,14 +672,15 @@ bool VMVESQ::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
 /*	PLAI::MvuGetNext
  *
  *	Returns the next move for the player. Assumes we've already checked for
- *	mates.
+ *	mates on entry. If the game cancels or times out, returns a cancel move
+ *	and the game state will be changed.
  *
  *	Returns information in spmv for how the board should be display the move,
  *	but this isn't used in AI players. 
  * 
- *	For an AI, this is the root node of the alpha-beta search, 
+ *	For an AI, this is the root node of the alpha-beta search.
  */
-MVU PLAI::MvuGetNext(SPMV& spmv)
+MVU PLAI::MvuGetNext(SPMV& spmv) noexcept
 {
 	spmv = spmvAnimate;
 	cYield = 0; sint = sintNull;
@@ -1650,15 +1651,22 @@ PLHUMAN::PLHUMAN(GA& ga, wstring szName) : PL(ga, szName)
 }
 
 
-MVU PLHUMAN::MvuGetNext(SPMV& spmv)
+MVU PLHUMAN::MvuGetNext(SPMV& spmv) noexcept
 {
 	mvuNext = mvuNil;
-	do
-		ga.puiga->PumpMsg();
-	while (mvuNext.fIsNil());
+	do {
+		try {
+			ga.puiga->PumpMsg();
+		}
+		catch (...) {
+			break;
+		}
+	} while (mvuNext.fIsNil());
+	
 	MVU mvu = mvuNext;
 	spmv = spmvNext;
 	mvuNext = mvuNil;
+	
 	return mvu;
 }
 

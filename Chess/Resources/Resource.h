@@ -78,12 +78,19 @@
 #define cmdAISpeedTest			28
 #define cmdAIBreak				29
 #define cmdLinkUCI				30
-#define cmdClockTournament		31
-#define cmdClockClassical		32
-#define cmdClockRapid			33
-#define cmdClockBlitz			34
-#define cmdClockBullet			35
-#define cmdMax					36
+#define cmdClockTourna_100_50_15	31
+#define cmdClockClassical_30_20	32
+#define cmdClockClassical_30_0	33
+#define cmdClockRapid_15_10		34
+#define cmdClockRapid_10_5		35
+#define cmdClockRapid_10_0		36
+#define cmdClockBlitz_5_3		37
+#define cmdClockBlitz_5_0		38
+#define cmdClockBlitz_3_2		39
+#define cmdClockBullet_3_0		40
+#define cmdClockBullet_2_1		41
+#define cmdClockBullet_1_0		42
+#define cmdMax					43
 
 /*
  *	icons

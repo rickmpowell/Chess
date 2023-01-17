@@ -433,20 +433,16 @@ void UIGA::Play(MVU mvu, SPMV spmv)
 	InitLog(2);
 	LogOpen(L"Game", L"", lgfBold);
 	StartGame(spmvAnimate);
+
 	if (!mvu.fIsNil())
 		MakeMvu(mvu, spmv);
+
 	do {
 		SPMV spmv = spmvAnimate;
-		try {
-			mvu = ga.PplToMove()->MvuGetNext(spmv);
-			if (mvu.fIsNil())
-				break;
-			MakeMvu(mvu, spmv);
-		}
-		catch (...) {
-			ga.bdg.SetGs(gsCanceled);
+		mvu = ga.PplToMove()->MvuGetNext(spmv);
+		if (mvu.fIsNil())
 			break;
-		}
+		MakeMvu(mvu, spmv);
 		ga.SavePGNFile(papp->SzAppDataPath() + L"\\current.pgn");
 	} while (ga.bdg.gs == gsPlaying);
 

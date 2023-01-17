@@ -1637,11 +1637,18 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
     vcmd.Add(new CMDAIBREAK(*this, cmdAIBreak));
     vcmd.Add(new CMDLINKUCI(*this, cmdLinkUCI));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet, 2, 1));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz, 5, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid, 10, 5));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical, 30, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTournament, 100, -1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_1_0, 1, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_2_1, 2, 1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_2_1, 3, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_3_2, 3, 2));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_0, 5, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_3, 5, 3));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_10_0, 10, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_10_5, 10, 5));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_15_10, 15, 10));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_0, 30, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_20, 30,20));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTourna_100_50_15, 100, -1));
 }
 
 
