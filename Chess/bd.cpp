@@ -1549,7 +1549,7 @@ wstring SzFromMv(MV mv)
 RULE::RULE(void) : cmvRepeatDraw(3)
 {
 	//vtmi.push_back(TMI(0, -1, msecMin*30, msecSec*3));	/* 30min and 3sec is TCEC early time control */
-	vtmi.push_back(TMI(0, 40, msecMin * 100, 0));
+	vtmi.push_back(TMI(1, 40, msecMin * 100, 0));
 	vtmi.push_back(TMI(41, 60, msecMin * 50, 0));
 	vtmi.push_back(TMI(61, -1, msecMin * 15, msecSec * 30));
 }
@@ -1562,7 +1562,18 @@ RULE::RULE(void) : cmvRepeatDraw(3)
  */
 RULE::RULE(int dsecGame, int dsecMove, unsigned cmvRepeatDraw) : cmvRepeatDraw(cmvRepeatDraw)
 {
-	vtmi.push_back(TMI(0, -1, msecSec * dsecGame, msecSec * dsecMove));
+	vtmi.push_back(TMI(1, -1, msecSec * dsecGame, msecSec * dsecMove));
+}
+
+
+void RULE::ClearTmi(void)
+{
+	vtmi.clear();
+}
+
+void RULE::AddTmi(int nmvFirst, int nmvLast, int dsecGame, int dsecMove)
+{
+	vtmi.push_back(TMI(nmvFirst, nmvLast, msecSec * dsecGame, msecSec * dsecMove));
 }
 
 
@@ -1576,14 +1587,14 @@ bool RULE::FUntimed(void) const
 }
 
 
-/*	RULE::DmsecAddInterval
+/*	RULE::DmsecAddBlock
  *
  *	If the current board state is at the transition between timing intervals, returns
  *	the amount of time to add to the CPC player's clock after move number mvn is made.
  *	
  *	WARNING! mvn is 1-based.
  */
-DWORD RULE::DmsecAddInterval(CPC cpc, int mvn) const
+DWORD RULE::DmsecAddBlock(CPC cpc, int mvn) const
 {
 	for (const TMI& tmi : vtmi) {
 		if (tmi.mvnFirst == mvn)	

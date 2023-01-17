@@ -1349,33 +1349,6 @@ public:
 };
 
 
-class CMDCLOCKTOGGLE : public CMD
-{
-public:
-    CMDCLOCKTOGGLE(APP& app, int icmd) : CMD(app, icmd) { }
-
-    virtual int Execute(void)
-    {
-        bool fUntimed = app.pga->prule->FUntimed();
-        app.pga->prule->SetGameTime(cpcWhite, fUntimed ? 60 : -1);
-        app.puiga->uiml.ShowClocks(fUntimed);
-        app.puiga->Layout();
-        app.puiga->Redraw();
-        return 1;
-    }
-
-    virtual bool FCustomSzMenu(void) const
-    {
-        return true;
-    }
-
-    virtual int IdsMenu(void) const
-    {
-        return app.pga->prule->FUntimed() ? idsClocksOn : idsClocksOff;
-    }
-};
-
-
 /*
  *
  *  CMDPLAYERLVL
@@ -1558,6 +1531,50 @@ public:
 
 /*
  *
+ *  CMDTIMECONTROL command
+ * 
+ *  Setting the game's time control.
+ * 
+ */
+
+
+class CMDTIMECONTROL : public CMD
+{
+private:
+    int minGame, secInc;
+public:
+    CMDTIMECONTROL(APP& app, int icmd, int minGame, int secInc) : CMD(app, icmd), minGame(minGame), secInc(secInc)
+    {
+    }
+
+    virtual int Execute(void)
+    {
+        RULE* prule = app.pga->prule;
+        prule->ClearTmi();
+        if (minGame == 0) /* untimed game */
+            ;
+        else if (secInc == -1)  /* tournament mode */ {
+            prule->AddTmi(1, 40, 100*secMin, 0);
+            prule->AddTmi(41, 60, 50*secMin, 0);
+            prule->AddTmi(61, -1, 15*secMin, 30);
+        }
+        else
+            prule->AddTmi(1, -1, minGame * secMin, secInc);
+
+        /* force clocks to update */
+        app.puiga->InitClocks();
+        app.puiga->uibd.InitGame();
+        app.puiga->uiml.InitGame();
+        app.puiga->Redraw();
+
+        return 1;
+    }
+};
+
+
+
+/*
+ *
  *  CMDEXIT command
  * 
  *  Exits the app.
@@ -1605,7 +1622,7 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDCOPY(*this, cmdCopy));
     vcmd.Add(new CMDPASTE(*this, cmdPaste));
     vcmd.Add(new CMDSETUPBOARD(*this, cmdSetupBoard));
-    vcmd.Add(new CMDCLOCKTOGGLE(*this, cmdClockOnOff));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockUntimed, -1, -1));
     vcmd.Add(new CMDDEBUGPANEL(*this, cmdDebugPanel));
     vcmd.Add(new CMDLOGDEPTHUP(*this, cmdLogDepthUp));
     vcmd.Add(new CMDLOGDEPTHDOWN(*this, cmdLogDepthDown));
@@ -1620,6 +1637,11 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
     vcmd.Add(new CMDAIBREAK(*this, cmdAIBreak));
     vcmd.Add(new CMDLINKUCI(*this, cmdLinkUCI));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet, 2, 1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz, 5, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid, 10, 5));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical, 30, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTournament, 100, -1));
 }
 
 

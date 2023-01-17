@@ -49,8 +49,10 @@ class RULE
 public:
 	RULE(void);
 	RULE(int dsecGame, int dsecMove, unsigned cmvRepeatDraw);
+	void ClearTmi(void);
+	void AddTmi(int nmvFirst, int nmvLast, int dsecGame, int dsecMove);
 	bool FUntimed(void) const;
-	DWORD DmsecAddInterval(CPC cpc, int mvn) const;
+	DWORD DmsecAddBlock(CPC cpc, int mvn) const;
 	DWORD DmsecAddMove(CPC cpc, int mvn) const;
 	int CmvRepeatDraw(void) const;
 	void SetGameTime(CPC cpc, DWORD dsec);
