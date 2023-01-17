@@ -11,7 +11,7 @@
  *	There's a lot of careful sizing and inlining and assumptions about how
  *	words and bytes line up within the structure. Modify this code with care.
  * 
- *	There are three basic move types: MVM (a mini-move), a MV (contains undo
+ *	There are three basic move types: MV (a mini-move), a MVU (contains undo
  *	information), and an MVE (an evaluated move).
  *	
  */
@@ -22,7 +22,7 @@
 
 /*
  *
- *	MVU and MVM type
+ *	MVU and MV type
  *
  *	A move is a from and to square, with a little extra info for
  *	weird moves, along with enough information to undo the move.
@@ -44,13 +44,13 @@
  *  +--+-----+-----+--------+--+--------+--+--------+
  *   31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16
  *
- *	The first word of the move is the mini-move (MVM), which is the
+ *	The first word of the move is the mini-move (MV), which is the
  *	minimal amount of information needed, along with the board state,
  *	to specify a move. The redundant information could be filled in
  *	from the BD before the move is made.
  */
 
-class MVM {
+class MV {
 protected:
 	uint16_t usqFrom : 6,
 		usqTo : 6,
@@ -58,10 +58,10 @@ protected:
 		unused1 : 1;
 public:
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVM(void) noexcept { *(uint16_t*)this = 0; }
+	inline MV(void) noexcept { *(uint16_t*)this = 0; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVM(uint16_t u) noexcept { *(uint16_t*)this = u; }
-	inline MVM(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
+	inline MV(uint16_t u) noexcept { *(uint16_t*)this = u; }
+	inline MV(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
 	inline operator uint16_t() const noexcept { return *(uint16_t*)this; }
 
 	inline SQ sqFrom(void) const noexcept { return usqFrom; }
@@ -71,10 +71,10 @@ public:
 	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
 };
 
-static_assert(sizeof(MVM) == sizeof(uint16_t));
+static_assert(sizeof(MV) == sizeof(uint16_t));
 
 
-class MVU : public MVM {
+class MVU : public MV {
 private:
 	uint16_t
 		upcMove : 4,	// the piece that is moving
@@ -91,9 +91,8 @@ public:
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	inline MVU(uint32_t u) noexcept { *(uint32_t*)this = u; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVU(MVM mvm) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mvm; }
+	inline MVU(MV mv) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mv; }
 	inline operator uint32_t() const noexcept { return *(uint32_t*)this; }
-	//inline operator MVM() const noexcept { return *(MVM*)this; }
 
 	inline MVU(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
@@ -125,17 +124,17 @@ public:
 	inline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
 	inline bool operator==(const MVU& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
 	inline bool operator!=(const MVU& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
-	inline bool operator==(const MVM& mvm) const noexcept { return *(uint16_t*)this == (uint16_t)mvm; }
-	inline bool operator!=(const MVM& mvm) const noexcept { return *(uint16_t*)this != (uint16_t)mvm; }
+	inline bool operator==(const MV& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
+	inline bool operator!=(const MV& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }
 };
 
 static_assert(sizeof(MVU) == sizeof(uint32_t));
 
 const MVU mvuNil = MVU();
-const MVM mvmNil = MVM();
+const MV mvNil = MV();
 const MVU mvuAll = MVU(sqH8, sqH8, PC(cpcWhite, apcError));
-const MVM mvmAll = MVM(sqH8, sqH8);
-wstring SzFromMvm(MVM mvm);
+const MV mvAll = MV(sqH8, sqH8);
+wstring SzFromMv(MV mv);
 
 
 /*

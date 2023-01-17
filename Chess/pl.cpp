@@ -31,7 +31,7 @@ const uint16_t dcYield = 512;
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
 		mvuNext(mvuNil), spmvNext(spmvAnimate), 
-		pvmvmBreak(nullptr), imvmBreakLast(-1), cBreakRepeat(0)
+		pvmvBreak(nullptr), imvBreakLast(-1), cBreakRepeat(0)
 {
 }
 
@@ -86,21 +86,21 @@ EV PL::EvBaseApc(APC apc) const noexcept
 }
 
 
-void PL::SetAIBreak(const vector<MVM>& vmvm)
+void PL::SetAIBreak(const vector<MV>& vmv)
 {
-	if (pvmvmBreak == nullptr) {
-		delete pvmvmBreak;
-		pvmvmBreak = nullptr;
+	if (pvmvBreak == nullptr) {
+		delete pvmvBreak;
+		pvmvBreak = nullptr;
 	}
-	pvmvmBreak = new vector<MVM>;
-	*pvmvmBreak = vmvm;
+	pvmvBreak = new vector<MV>;
+	*pvmvBreak = vmv;
 }
 
 
 void PL::InitBreak(void)
 {
 	cBreakRepeat = 0;
-	imvmBreakLast = -1;
+	imvBreakLast = -1;
 }
 
 
@@ -112,22 +112,22 @@ public:
 
 	inline AIBREAK(PL& pl, const MVE& mve, int depth) : pl(pl), depth(depth)
 	{
-		if (pl.pvmvmBreak == nullptr || pl.imvmBreakLast < depth - 2)
+		if (pl.pvmvBreak == nullptr || pl.imvBreakLast < depth - 2)
 			return;
 
-		if ((MVM)mve != (*pl.pvmvmBreak)[depth - 1])
+		if ((MV)mve != (*pl.pvmvBreak)[depth - 1])
 			return;
 
-		pl.imvmBreakLast++;
-		if (pl.imvmBreakLast == pl.pvmvmBreak->size()-1)
+		pl.imvBreakLast++;
+		if (pl.imvBreakLast == pl.pvmvBreak->size()-1)
 			DebugBreak();
 	}
 
 	inline ~AIBREAK(void)
 	{
-		if (pl.pvmvmBreak == nullptr || pl.imvmBreakLast < depth - 1)
+		if (pl.pvmvBreak == nullptr || pl.imvBreakLast < depth - 1)
 			return;
-		pl.imvmBreakLast--;
+		pl.imvBreakLast--;
 	}
 };
 
@@ -268,21 +268,21 @@ class LOGMVE : public LOGSEARCH, public AIBREAK
 {
 	const MVE& mvePrev;
 	int depthLogSav;
-	int imvmExpandSav;
+	int imvExpandSav;
 	const MVE& mveBest;
 	const AB& abInit;
 
-	static int imvmExpand;
-	static MVM rgmvm[20];
+	static int imvExpand;
+	static MV rgmv[20];
 
 public:
 	inline LOGMVE(PLAI& pl, const BDG& bdg,
 				  const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int depth, wchar_t chType = L' ') noexcept :
 		LOGSEARCH(pl, bdg), AIBREAK(pl, mvePrev, depth),
-		mvePrev(mvePrev), mveBest(mveBest), abInit(abInit), depthLogSav(0), imvmExpandSav(0)
+		mvePrev(mvePrev), mveBest(mveBest), abInit(abInit), depthLogSav(0), imvExpandSav(0)
 	{
 		depthLogSav = DepthLog();
-		imvmExpandSav = imvmExpand;
+		imvExpandSav = imvExpand;
 		if (FExpandLog(mvePrev))
 			SetDepthLog(depthLogSav + 1);
 		int depthLog;
@@ -303,18 +303,18 @@ public:
 	{
 		LogClose(bdg.SzDecodeMvuPost(mvePrev), wjoin(SzFromEv(mveBest.ev), SzEvt()), LgfEvt());
 		SetDepthLog(depthLogSav);
-		imvmExpand = imvmExpandSav;
+		imvExpand = imvExpandSav;
 	}
 
 	inline bool FExpandLog(const MVE& mve) const noexcept
 	{
-		if (rgmvm[imvmExpand] != mvmAll) {
-			if (mve.sqFrom() != rgmvm[imvmExpand].sqFrom() ||
-					mve.sqTo() != rgmvm[imvmExpand].sqTo() ||
-					mve.apcPromote() != rgmvm[imvmExpand].apcPromote())
+		if (rgmv[imvExpand] != mvAll) {
+			if (mve.sqFrom() != rgmv[imvExpand].sqFrom() ||
+					mve.sqTo() != rgmv[imvExpand].sqTo() ||
+					mve.apcPromote() != rgmv[imvExpand].apcPromote())
 				return false;
 		}
-		imvmExpand++;
+		imvExpand++;
 		return true;
 	}
 
@@ -364,15 +364,15 @@ public:
 
 /* a little debugging aid to trigger a change in log depth after a 
    specific sequence of moves */
-int LOGMVE::imvmExpand = 0;
-MVM LOGMVE::rgmvm[] = { /*
-	   MVM(sqC2, sqC3),
-	   MVM(sqB8, sqC6),
-	   MVM(sqD1, sqB3),
-	   MVM(sqG8, sqF6),
-	   MVM(sqB3, sqB7),
-	   mvmAll,	*/
-	   mvmNil
+int LOGMVE::imvExpand = 0;
+MV LOGMVE::rgmv[] = { /*
+	   MV(sqC2, sqC3),
+	   MV(sqB8, sqC6),
+	   MV(sqD1, sqB3),
+	   MV(sqG8, sqF6),
+	   MV(sqB3, sqB7),
+	   mvAll,	*/
+	   mvNil
 };
 
 

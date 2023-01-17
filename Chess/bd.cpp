@@ -1518,18 +1518,18 @@ wstring SzFromTsc(TSC tsc)
 }
 
 
-wstring SzFromMvm(MVM mvm)
+wstring SzFromMv(MV mv)
 {
-	if (mvm.fIsNil())
+	if (mv.fIsNil())
 		return L"--";
 	wchar_t sz[8], *pch = sz;
-	*pch++ = L'a' + mvm.sqFrom().file();
-	*pch++ = L'1' + mvm.sqFrom().rank();
-	*pch++ = L'a' + mvm.sqTo().file();
-	*pch++ = L'1' + mvm.sqTo().rank();
-	if (mvm.apcPromote() != apcNull) {
+	*pch++ = L'a' + mv.sqFrom().file();
+	*pch++ = L'1' + mv.sqFrom().rank();
+	*pch++ = L'a' + mv.sqTo().file();
+	*pch++ = L'1' + mv.sqTo().rank();
+	if (mv.apcPromote() != apcNull) {
 		*pch++ = L'=';
-		*pch++ = L" PNBRQK"[mvm.apcPromote()];
+		*pch++ = L" PNBRQK"[mv.apcPromote()];
 	}
 	*pch = 0;
 	return wstring(sz);

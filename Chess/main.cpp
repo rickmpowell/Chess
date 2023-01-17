@@ -991,7 +991,7 @@ class DDAIBREAK
 public:
     UIGA* puiga;
     CPC cpc;
-    vector<MVM> vmvm;
+    vector<MV> vmv;
     int cRepeat;
 
     DDAIBREAK() : puiga(nullptr), cpc(cpcWhite), cRepeat(1) {
@@ -999,8 +999,8 @@ public:
 
     wstring SzDecodeMoveList(void) {
         wstring sz;
-        for (MVM mvm : vmvm)
-            sz += SzFromMvm(mvm) + L" ";
+        for (MV mv : vmv)
+            sz += SzFromMv(mv) + L" ";
         return sz;
     }
 
@@ -1016,9 +1016,9 @@ public:
         sq = SQ(rank, file);
     }
 
-    void ParseMvm(wstring sz, int& ich, MVM& mvm)
+    void ParseMv(wstring sz, int& ich, MV& mv)
     {
-        mvm = mvmNil;
+        mv = mvNil;
         /* skip whitespace */
         while (ich < sz.size() && isspace(sz[ich]))
             ich++;
@@ -1027,13 +1027,13 @@ public:
         SQ sqFrom, sqTo;
         ParseSq(sz, ich, sqFrom);
         ParseSq(sz, ich, sqTo);
-        mvm = MVM(sqFrom, sqTo);
+        mv = MV(sqFrom, sqTo);
         if (sz[ich] == L'=') {
             switch (tolower(sz[++ich])) {
-            case 'q': mvm.SetApcPromote(apcQueen); break;
-            case 'r': mvm.SetApcPromote(apcRook); break;
-            case 'b': mvm.SetApcPromote(apcBishop); break;
-            case 'n': mvm.SetApcPromote(apcKnight); break;
+            case 'q': mv.SetApcPromote(apcQueen); break;
+            case 'r': mv.SetApcPromote(apcRook); break;
+            case 'b': mv.SetApcPromote(apcBishop); break;
+            case 'n': mv.SetApcPromote(apcKnight); break;
             default:
                 throw 1;
             }
@@ -1041,17 +1041,17 @@ public:
         }
     }
 
-    vector<MVM> ParseMoveList(wstring sz) 
+    vector<MV> ParseMoveList(wstring sz) 
     {
-        vector<MVM> vmvm;
+        vector<MV> vmv;
         for (int ich = 0;;) {
-            MVM mvm;
-            ParseMvm(sz, ich, mvm);
-            if (mvm.fIsNil())
+            MV mv;
+            ParseMv(sz, ich, mv);
+            if (mv.fIsNil())
                 break;
-            vmvm.push_back(mvm);
+            vmv.push_back(mv);
         }    
-        return vmvm;
+        return vmv;
     }
 };
 
@@ -1086,7 +1086,7 @@ INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam
             HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
             CPC cpc = (CPC)::SendMessage(hwndCombo, CB_GETCURSEL, 0, 0);
             int cRepeat;
-            vector<MVM> vmvm;
+            vector<MV> vmv;
 
             wchar_t sz[256];
             ::GetDlgItemTextW(hdlg, ideAIBreakRepeatCount, sz, CArray(sz));
@@ -1103,7 +1103,7 @@ INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam
             ::GetDlgItemTextW(hdlg, ideAIBreakMoveSequence, sz, CArray(sz));
 
             try {
-                vmvm = pddaibreak->ParseMoveList(sz);
+                vmv = pddaibreak->ParseMoveList(sz);
             }
             catch (...) {
                 ::MessageBoxW(hdlg, L"Invalid move list.", L"Error", MB_OK);
@@ -1112,7 +1112,7 @@ INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam
 
             pddaibreak->cpc = cpc;
             pddaibreak->cRepeat = cRepeat;
-            pddaibreak->vmvm = vmvm;
+            pddaibreak->vmv = vmv;
         }
             [[fallthrough]];
         case IDCANCEL:
@@ -1139,7 +1139,7 @@ public:
         ddaibreak.puiga = app.puiga;
         if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddAIBreak), app.hwnd, AIBreakDlgProc, (LPARAM)&ddaibreak) != IDOK)
             return 1;
-        app.puiga->ga.PplFromCpc(ddaibreak.cpc)->SetAIBreak(ddaibreak.vmvm);
+        app.puiga->ga.PplFromCpc(ddaibreak.cpc)->SetAIBreak(ddaibreak.vmv);
         return 1;
     }
 };

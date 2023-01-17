@@ -35,8 +35,8 @@ protected:
 
 	MVU mvuNext;
 	SPMV spmvNext;
-	int imvmBreakLast;
-	vector<MVM>* pvmvmBreak;
+	int imvBreakLast;
+	vector<MV>* pvmvBreak;
 	int cBreakRepeat;
 
 public:
@@ -61,7 +61,7 @@ public:
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 	int DepthLog(void) const noexcept;
 	void SetDepthLog(int depthNew) noexcept;
-	void SetAIBreak(const vector<MVM>& vmvm);
+	void SetAIBreak(const vector<MV>& vmv);
 	void InitBreak(void);
 };
 
