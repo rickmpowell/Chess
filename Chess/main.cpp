@@ -1639,7 +1639,7 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDLINKUCI(*this, cmdLinkUCI));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_1_0, 1, 0));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_2_1, 2, 1));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_2_1, 3, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_3_0, 3, 0));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_3_2, 3, 2));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_0, 5, 0));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_3, 5, 3));
