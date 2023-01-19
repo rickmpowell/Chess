@@ -411,7 +411,8 @@ float SBAR::DyThumb(void) const
 	float dyThumb = dyThumbMin;
 	if (yBotCont - yTopCont > 0)
 		dyThumb = rcRange.DyHeight() * (yBotView - yTopView) / (yBotCont - yTopCont);
-	dyThumb = clamp(dyThumb, dyThumbMin, rcRange.DyHeight());
+	dyThumb = max(dyThumb, dyThumbMin);
+	dyThumb = min(dyThumb, rcRange.DyHeight());
 	return dyThumb;
 }
 
