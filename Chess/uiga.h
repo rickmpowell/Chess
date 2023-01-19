@@ -41,6 +41,10 @@ class UIGA : public UI
 
 public:
 	static BRS* pbrDesktop;
+#ifndef NDEBUG
+	static BRS* pbrDesktopTx;
+	static TX* ptxDesktop;
+#endif
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
 
