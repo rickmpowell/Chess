@@ -319,13 +319,12 @@ public:
 	void GenVmve(VMVE& vmve, GG gg) noexcept;
 	void GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
 	void GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept;
-	void GenVmvePawnMoves(VMVE& vmve, BB bbPawns, CPC cpcMove) const noexcept;
-	void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
-	void AddVmveMvuPromotions(VMVE& vmve, MVU mvu) const noexcept;
-	void GenVmveBbPawnMoves(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
-	void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
-	void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
-	void GenVmveBbPromotionMoves(VMVE& vmve, BB bbTo, int dsq) const noexcept;
+	inline void GenVmvePawnMoves(VMVE& vmve, BB bbPawns, CPC cpcMove) const noexcept;
+	inline void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
+	inline void AddVmveMvuPromotions(VMVE& vmve, MVU mvu) const noexcept;
+	inline void GenVmveBbPawnMoves(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
+	inline void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
+	inline void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
 	
 	/*
 	 *	checking squares for attack 

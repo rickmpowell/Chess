@@ -103,7 +103,7 @@ public:
 		usqTo = sqTo;
 	}
 
-	inline MVU& SetPcMove(PC pcMove) { upcMove = pcMove; return *this; }
+	inline void SetPcMove(PC pcMove) noexcept { upcMove = pcMove; }
 	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
 	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
 	inline PC pcMove(void) const noexcept { return PC(upcMove); }
@@ -271,10 +271,13 @@ private:
 	vector<uint64_t>* pvmveOverflow;
 
 public:
+
+
 	VMVE() : cmveCur(0), pvmveOverflow(nullptr)
 	{
 		amve[0] = 0;
 	}
+
 
 	~VMVE()
 	{
@@ -282,7 +285,8 @@ public:
 			delete pvmveOverflow;
 	}
 
-	VMVE(const VMVE& vmve) : cmveCur(vmve.cmveCur), pvmveOverflow(nullptr)
+
+	VMVE(const VMVE& vmve) noexcept : cmveCur(vmve.cmveCur), pvmveOverflow(nullptr)
 	{
 		assert(vmve.FValid());
 		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
@@ -325,6 +329,7 @@ public:
 		return *this;
 	}
 
+
 	VMVE& operator=(VMVE&& vmve) noexcept
 	{
 		if (this == &vmve)
@@ -340,6 +345,7 @@ public:
 		return *this;
 	}
 
+
 #ifndef NDEBUG
 	bool FValid(void) const noexcept
 	{
@@ -347,6 +353,7 @@ public:
 			(cmveCur > cmvePreMax && pvmveOverflow != nullptr && pvmveOverflow->size() + cmvePreMax == cmveCur);
 	}
 #endif
+
 
 	inline int cmve(void) const noexcept
 	{
@@ -366,6 +373,7 @@ public:
 			return *(MVE*)&(*pvmveOverflow)[imve - cmvePreMax];
 		}
 	}
+
 
 	inline const MVE& operator[](int imve) const noexcept
 	{
@@ -453,7 +461,8 @@ public:
 	inline citerator begin(void) const noexcept { return citerator(this, 0); }
 	inline citerator end(void) const noexcept { return citerator(this, size()); }
 
-	void push_back_overflow(MVE mve)
+
+	void push_back_overflow(MVE mve) noexcept
 	{
 		if (pvmveOverflow == nullptr) {
 			assert(cmveCur == cmvePreMax);
@@ -464,21 +473,22 @@ public:
 	}
 
 
-	inline void push_back(MVU mvu)
+	inline void push_back(MVU mvu) noexcept
 	{
 		assert(FValid());
 		if (cmveCur < cmvePreMax)
-			amve[cmveCur++] = MVE(mvu);
+			amve[cmveCur++] = (uint32_t)mvu;
 		else
-			push_back_overflow(MVE(mvu));
+			push_back_overflow((uint32_t)mvu);
 		assert(FValid());
 	}
 
 
-	inline void push_back(SQ sqFrom, SQ sqTo, PC pcMove)
+	inline void push_back(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
 		push_back(MVU(sqFrom, sqTo, pcMove));
 	}
+
 
 	void insert_overflow(int imve, const MVE& mve) noexcept
 	{
@@ -493,6 +503,7 @@ public:
 		cmveCur++;
 	}
 
+
 	inline void insert(int imve, const MVE& mve) noexcept
 	{
 		assert(FValid());
@@ -505,7 +516,8 @@ public:
 		}
 	}
 
-	void resize(int cmveNew)
+
+	void resize(int cmveNew) noexcept
 	{
 		assert(FValid());
 		if (cmveNew > cmvePreMax) {
@@ -524,7 +536,7 @@ public:
 	}
 
 
-	void reserve(int cmve)
+	void reserve(int cmve) noexcept
 	{
 		if (cmve <= cmvePreMax)
 			return;

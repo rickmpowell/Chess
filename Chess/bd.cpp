@@ -808,7 +808,7 @@ void BD::GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept
 {
 	for (; bbTo; bbTo.ClearLow()) {
 		SQ sqTo = bbTo.sqLow();
-		vmve.push_back(sqTo + dsq, sqTo, pcMove);
+		vmve.push_back(MVU(sqTo + dsq, sqTo, pcMove));
 	}
 }
 
@@ -821,7 +821,7 @@ void BD::GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept
 void BD::GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept
 {
 	for (; bbTo; bbTo.ClearLow())
-		vmve.push_back(sqFrom, bbTo.sqLow(), pcMove);
+		vmve.push_back(MVU(sqFrom, bbTo.sqLow(), pcMove));
 }
 
 
