@@ -119,6 +119,8 @@ public:
 	bool FMoveablePc(SQ sq) const;
 };
 
+const ColorF coBoardDark = ColorF(0.42f, 0.54f, 0.32f);
+const ColorF coBoardLight = ColorF(1.0f, 1.0f, 0.95f);
 
 /*
  *
@@ -131,9 +133,8 @@ class UIPCP;
 
 class UICPC : public BTN
 {
-	CPC cpc;
 public:
-	UICPC(UI* puiParent, CPC cpc);
+	UICPC(UI* puiParent, int cmd);
 
 	virtual void Draw(const RC& rcUpdate);
 };
@@ -160,6 +161,28 @@ public:
 };
 
 
+class UIFEN : public UI
+{
+	UIPCP& uipcp;
+public:
+	UIFEN(UIPCP& uipcp);
+
+	virtual void Draw(const RC& rcUpdate);
+};
+
+
+class UISETFEN : public BTN
+{
+public:
+	wstring szFen;
+public:
+	UISETFEN(UIPCP& uipcp, int cmd, const wstring& szFen);
+
+	virtual void Draw(const RC& rcUpdate);
+	RC RcFromSq(SQ sq) const;
+};
+
+
 /*
  *
  *	UIPCP screen panel
@@ -174,11 +197,15 @@ class UIPCP : public UIP
 {
 	friend class UIAPC;
 	friend class UICPC;
+	friend class UISETFEN;
+	friend class UIFEN;
 
 	UIBD& uibd;
 	map<CPC, UICPC*> mpcpcpuicpc;
 	map<APC, UIAPC*> mpapcpuiapc;
+	vector<UISETFEN*> vpuisetfen;
 	UIPCDEL uipcdel;
+	UIFEN uifen;
 	CPC cpcShow;
 public:
 	UIPCP(UIGA& uiga);
