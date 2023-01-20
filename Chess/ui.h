@@ -83,7 +83,7 @@ protected:
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
-	GEOM* PgeomCreate(PT rgpt[], int cpt);
+	GEOM* PgeomCreate(const PT rgpt[], int cpt);
 	BMP* PbmpFromPngRes(int idb);
 	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic);
 
@@ -197,6 +197,7 @@ class BTN : public UI
 protected:
 	bool fHilite;
 	bool fTrack;
+public:
 	int cmd;
 
 public:

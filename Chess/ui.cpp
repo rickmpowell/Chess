@@ -71,7 +71,7 @@ void UI::DiscardRsrcClass(void)
  *
  *	Creates a geometry object from the array of points.
  */
-ID2D1PathGeometry* UI::PgeomCreate(PT rgpt[], int cpt)
+ID2D1PathGeometry* UI::PgeomCreate(const PT rgpt[], int cpt)
 {
 	/* capture X, which is created as a cross that is rotated later */
 	ID2D1PathGeometry* pgeom;
