@@ -38,6 +38,7 @@ class UIGA : public UI
 	friend class UIML;
 	friend class UIDB;
 	friend class UIPVT;
+	friend class UIPCP;
 
 public:
 	static BRS* pbrDesktop;
@@ -56,6 +57,7 @@ public:
 	UIDB uidb;
 	UITIP uitip;
 	UIPVT uipvt;
+	UIPCP uipcp;
 
 	UI* puiCapt;	/* mouse capture */
 	UI* puiFocus;	/* keyboard focus */

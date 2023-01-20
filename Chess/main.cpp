@@ -1337,6 +1337,16 @@ ERR PROCPGNPASTE::ProcessMvu(MVU mvu)
 }
 
 
+/*
+ *
+ *  CMDSETUPBOARD command
+ * 
+ *  Toggles the board setup panels. The desktop enters a special mode where we're not
+ *  playing chess, but setting up a game.
+ * 
+ */
+
+
 class CMDSETUPBOARD : public CMD
 {
 public:

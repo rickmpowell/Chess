@@ -139,6 +139,7 @@
     <ClCompile Include="pl.cpp" />
     <ClCompile Include="save.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="uipcp.cpp" />
     <ClCompile Include="uiti.cpp" />
     <ClCompile Include="uci.cpp" />
     <ClCompile Include="ui.cpp" />

@@ -128,6 +128,9 @@
     <ClCompile Include="uiga.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="uipcp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\Chess.rc">

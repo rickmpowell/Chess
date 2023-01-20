@@ -56,7 +56,7 @@ void UIGA::DiscardRsrcClass(void)
 
 
 UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), app(app), ga(ga), 
-		uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uitip(this),
+		uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uitip(this),
 	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
 	spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
 {
@@ -153,19 +153,28 @@ void UIGA::Layout(void)
 
 	/* board panel */
 
-	rc.top = dxyMargin;
-	rc.left = rc.right + dxyMargin;
+	RC rcBoard;
+	rcBoard.top = dxyMargin;
+	rcBoard.left = rc.right + dxyMargin;
 	/* make board a multiple of 8 pixels wide, which makes squares an even number of pixels
 	   in size, so we get consistent un-antialiased square borders */
-	rc.bottom = rcBounds.bottom - 100.0f;
-	rc.bottom = rc.top + max(176.0f, rc.DyHeight());
-	if ((int)rc.DyHeight() & 7)
-		rc.bottom = rc.top + ((int)rc.DyHeight() & ~7);
-	rc.right = rc.left + rc.DyHeight();
-	uibd.SetBounds(rc);
+	rcBoard.bottom = rcBounds.bottom - 120.0f;
+	rcBoard.bottom = rcBoard.top + max(176.0f, rcBoard.DyHeight());
+	if ((int)rcBoard.DyHeight() & 7)
+		rcBoard.bottom = rcBoard.top + ((int)rcBoard.DyHeight() & ~7);
+	rcBoard.right = rcBoard.left + rcBoard.DyHeight();
+	uibd.SetBounds(rcBoard);
+
+	/* piece panel */
+
+	rc = rcBoard;
+	rc.top = rc.bottom + dxyMargin;
+	rc.bottom = rcBounds.bottom - dxyMargin;
+	uipcp.SetBounds(rc);
 
 	/* move list panel */
 
+	rc = rcBoard;
 	rc.left = rc.right + dxyMargin;
 	rc.right = rc.left + uiml.SizLayoutPreferred().width;
 	uiml.SetBounds(rc);

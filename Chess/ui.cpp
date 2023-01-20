@@ -781,10 +781,10 @@ void UI::FillEll(const ELL& ell, ID2D1Brush* pbr) const
  *	Helper function for drawing an ellipse with a brush. Rectangle is in
  *	local UI coordinates
  */
-void UI::DrawEll(const ELL& ell, ID2D1Brush* pbr) const
+void UI::DrawEll(const ELL& ell, ID2D1Brush* pbr, float dxyWidth) const
 {
 	ELL ellGlobal = ell.Offset(PtGlobalFromLocal(PT(0, 0)));
-	App().pdc->DrawEllipse(&ellGlobal, pbr);
+	App().pdc->DrawEllipse(&ellGlobal, pbr, dxyWidth);
 }
 
 

@@ -39,6 +39,7 @@ enum HTBD
 
 class UIBD : public UIP
 {
+	friend class UIPCP;
 public:
 	static BRS* pbrLight;
 	static BRS* pbrDark;
@@ -121,6 +122,46 @@ public:
 
 /*
  *
+ *	Controls for the piece set up panel
+ *
+ */
+
+class UIPCP;
+
+
+class UICPC : public BTN
+{
+	CPC cpc;
+public:
+	UICPC(UI* puiParent, CPC cpc);
+
+	virtual void Draw(const RC& rcUpdate);
+};
+
+
+class UIAPC : public UI
+{
+	APC apc;
+	UIPCP& uipcp;
+public:
+	UIAPC(UIPCP& uipcp, APC apc);
+
+	virtual void Draw(const RC& rcUpdate);
+};
+
+
+class UIPCDEL : public UI
+{
+	UIPCP& uipcp;
+public:
+	UIPCDEL(UIPCP& uipcp);
+
+	virtual void Draw(const RC& rcUpdate);
+};
+
+
+/*
+ *
  *	UIPCP screen panel
  * 
  *	A screen panel that holds a chess piece toolbar for building boards. User drags
@@ -131,9 +172,24 @@ public:
 
 class UIPCP : public UIP
 {
+	friend class UIAPC;
+	friend class UICPC;
+
+	UIBD& uibd;
+	map<CPC, UICPC*> mpcpcpuicpc;
+	map<APC, UIAPC*> mpapcpuiapc;
+	UIPCDEL uipcdel;
+	CPC cpcShow;
 public:
-	UIPCP(GA* pga);
+	UIPCP(UIGA& uiga);
 	~UIPCP(void);
 
+	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
+	virtual void DispatchCmd(int cmd);
+	virtual wstring SzTipFromCmd(int cmd) const;
+
+	RC RcFromApc(APC apc) const;
+	BMP* PbmpPieces(void);
+
 };

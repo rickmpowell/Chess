@@ -173,7 +173,7 @@ public:
 	void FillRr(const RR& rr, BR* pbr) const;
 	void DrawRr(const RR& rr, BR* pbr) const;
 	void FillEll(const ELL& ell, BR* pbr) const;
-	void DrawEll(const ELL& ell, BR* pbr) const;
+	void DrawEll(const ELL& ell, BR* pbr, float dxyWidth=1.0f) const;
 	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
