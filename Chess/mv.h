@@ -235,6 +235,8 @@ public:
 #pragma warning(suppress:26495)	 
 	MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
+	inline operator MVU() const noexcept { return *(uint32_t*)this; }
+
 
 	/* comparison operations work on the eval */
 

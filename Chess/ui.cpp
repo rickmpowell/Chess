@@ -564,6 +564,16 @@ RC UI::RcLocalFromGlobal(const RC& rc) const
 }
 
 
+/*	UI::RcLocalFromUiLocal
+ *
+ *	Converts local coordinates in pui to local coordinates in the current window.
+ */
+RC UI::RcLocalFromUiLocal(UI* pui, const RC& rc) const
+{
+	return rc.Offset(pui->rcBounds.left-rcBounds.left, pui->rcBounds.top-rcBounds.top);
+}
+
+
 /*	UI::PtParentFromLocal
  *
  *	Converts a point from loal coordinates to local coordinates of the
@@ -601,12 +611,13 @@ PT UI::PtLocalFromGlobal(const PT& pt) const
 }
 
 
-/*	UI::Update
+/*	UI::RedrawWithChildren
  *
- *	Updates the UI element and all child elements. rcUpdate is in
- *	global coordinates.
+ *	Updates the UI element and all child elements. rcUpdate is in global coordinates.
+ *	Assumes the DC is already valid and ready to go, so can be done inside a
+ *	BeginPaint and also inside regular redraws.
  */
-void UI::Update(const RC& rcUpdate)
+void UI::RedrawWithChildren(const RC& rcUpdate)
 {
 	if (!fVisible)
 		return;
@@ -618,13 +629,13 @@ void UI::Update(const RC& rcUpdate)
 	Draw(rcDraw);
 	App().pdc->PopAxisAlignedClip();
 	for (UI* pui : vpuiChild)
-		pui->Update(rc);
+		pui->RedrawWithChildren(rc);
 }
 
 
 /*	UI::Redraw
  *
- *	Redraws the UI element and all children
+ *	Does a full redraw of the UI element and all its children.
  */
 void UI::Redraw(void)
 {
@@ -634,16 +645,18 @@ void UI::Redraw(void)
 
 /*	UI::Redraw
  *
- *	Redraws the area of the UI element. rcUpdate is in local coordinates.
+ *	Redraws the area of the UI element, along with children elements. rcUpdate 
+ *	is in local coordinates.
  */
 void UI::Redraw(const RC& rcUpdate)
 {
 	if (!fVisible)
 		return;
 	BeginDraw();
-	Update(RcGlobalFromLocal(rcUpdate));
-	EndDraw();
+	RedrawWithChildren(RcGlobalFromLocal(rcUpdate));
 	RedrawOverlappedSiblings(RcGlobalFromLocal(rcUpdate));
+	RedrawCursor(rcUpdate);
+	EndDraw();
 }
 
 
@@ -671,6 +684,35 @@ void UI::RedrawOverlappedSiblings(const RC& rcUpdate)
 }
 
 
+/*	UI::RedrawCursor
+ *
+ *	Redraws the cursor after screen update has finished. rcUpdate is the area that
+ *	has been redrawn, so we don't need to redraw the cursor if it doesn't intersect
+ *	with that rectangle. rcUpdate is in global coordinates.
+ */
+void UI::RedrawCursor(const RC& rcUpdate)
+{
+	if (puiParent == nullptr)
+		return;
+	puiParent->RedrawCursor(rcUpdate);
+}
+
+
+/*	UI::DrawCursor
+ *
+ *	Draws the cursor, if we've set one. rcUpdate
+ */
+void UI::DrawCursor(UI* puiDraw, const RC& rcUpdate)
+{
+}
+
+
+/*	UI::Draw
+ *
+ *	Virtual function to implement the draw operation for a UI object. This is where
+ *	the UI elmement draws itself. rcDraw is the rectangle that needs to be updated,
+ *	in local coordinates.
+ */
 void UI::Draw(const RC& rcDraw)
 {
 }

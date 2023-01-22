@@ -104,6 +104,7 @@ public:
 	virtual void SetHover(UI* pui);
 	virtual void SetFocus(UI* pui);
 	UI* PuiFocus(void) const;
+	virtual void RedrawCursor(const RC& rcUpdate);
 
 	/*
 	 *	Timers

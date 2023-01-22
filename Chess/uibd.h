@@ -84,6 +84,7 @@ public:
 	virtual void Layout(void);
 
 	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
 	void DrawMargins(const RC& rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
@@ -97,10 +98,9 @@ public:
 
 	void DrawHilites(void);
 	void DrawGameState(void);
-	void DrawPc(const RC& rc, float opacity, CPC cpc, APC apc);
+	void DrawPc(UI* pui, const RC& rc, float opacity, PC pc);
 	void AnimateMvu(MVU mvu, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
-	void DrawDragPc(const RC& rc);
 	RC RcGetDrag(void);
 	void InvalOutsideRc(const RC& rc) const;
 	void HiliteLegalMoves(SQ sq);

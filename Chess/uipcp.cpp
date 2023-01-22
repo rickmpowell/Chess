@@ -40,7 +40,7 @@ void UICPC::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
 	FillRc(rc, pbrText);
-	rc.Inflate(-1.0f, -1.0f);
+	rc.Inflate(-3.0f, -3.0f);
 	FillRc(rc, cmd == cmdSetBoardWhite ? pbrBack : pbrText);
 }
 

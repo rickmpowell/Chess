@@ -283,9 +283,6 @@ void UIBD::Draw(const RC& rcDraw)
 	DrawAnnotations();
 	DrawGameState();
 	}
-
-	if (!sqDragInit.fIsNil())
-		DrawDragPc(rcDragPc);
 }
 
 
@@ -422,7 +419,7 @@ bool UIBD::FHoverSq(SQ sq, MVU& mvu)
 		return false;
 	for (MVE mveDrag : vmveDrag) {
 		if (mveDrag.sqFrom() == sqHover && mveDrag.sqTo() == sq) {
-			mvu = mveDrag;
+			mvu = (MVU)mveDrag;
 			return true;
 		}
 	}
@@ -471,20 +468,7 @@ void UIBD::DrawPieceSq(SQ sq)
 	if (sq.fIsNil())
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-	DrawPc(RcFromSq(sq), opacity, uiga.ga.bdg.CpcFromSq(sq), uiga.ga.bdg.ApcFromSq(sq));
-}
-
-
-/*	UIBD::DrawDragPc
- *
- *	Draws the piece we're currently dragging, as specified by
- *	phtDragInit, on the screen, in the location at rc. rc should
- *	track the mouse location.
- */
-void UIBD::DrawDragPc(const RC& rc)
-{
-	assert(!sqDragInit.fIsNil());
-	DrawPc(rc, 1.0f, uiga.ga.bdg.CpcFromSq(sqDragInit), uiga.ga.bdg.ApcFromSq(sqDragInit));
+	DrawPc(this, RcFromSq(sq), opacity, uiga.ga.bdg.PcFromSq(sq));
 }
 
 
@@ -510,24 +494,24 @@ RC UIBD::RcGetDrag(void)
 
 /*	UIBD::DrawPc
  *
- *	Draws the chess piece on the square at rc.
+ *	Draws the chess piece on the UI element pui at rc.
  */
-void UIBD::DrawPc(const RC& rcPc, float opacity, CPC cpc, APC apc)
+void UIBD::DrawPc(UI* pui, const RC& rcPc, float opacity, PC pc)
 {
-	if (apc == apcNull)
+	if (pc.apc()  == apcNull)
 		return;
 
 	/* the piece png has the 12 different chess pieces oriented like:
 	 *   WK WQ WN WR WB WP
 	 *   BK BQ BN BR BB BP
 	 */
-	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
+	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0 };
 	SIZ siz = pbmpPieces->GetSize();
 	float dxPiece = siz.width / 6.0f;
 	float dyPiece = siz.height / 2.0f;
-	float xPiece = mpapcxBitmap[apc] * dxPiece;
-	float yPiece = (int)cpc * dyPiece;
-	DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
+	float xPiece = mpapcxBitmap[pc.apc()] * dxPiece;
+	float yPiece = (int)pc.cpc() * dyPiece;
+	pui->DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
 }
 
 
@@ -639,8 +623,7 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 
 /*	UIBD::FMoveablePc
  *
- *	Returns true if the square contains a piece that has a
- *	legal move
+ *	Returns true if the square contains a piece that has a legal move
  */
 bool UIBD::FMoveablePc(SQ sq) const
 {
@@ -703,11 +686,10 @@ Done:
 
 /*	UIBD::LeftDrag
  *
- *	Notification while the mouse button is down and dragging around. The
- *	hit test for the captured mouse position is in pht.
+ *	Notification while the mouse button is down and dragging around. The hit test for 
+ *	the captured mouse position is in pht.
  *
- *	We use this for users to drag pieces around while they are trying to
- *	move.
+ *	We use this for users to drag pieces around while they are trying to move.
  */
 void UIBD::LeftDrag(const PT& pt)
 {
@@ -726,10 +708,9 @@ void UIBD::LeftDrag(const PT& pt)
 
 /*	UIBD::MouseHover
  *
- *	Notification that tells us the mouse is hovering over the board.
- *	The mouse button will not be down. the pht is the this test
- *	class for the mouse location. It is guaranteed to be a HTBD
- *	for hit testing over the UIBD.
+ *	Notification that tells us the mouse is hovering over the board. The mouse button 
+ *	will not be down. the pht is the this test class for the mouse location. It is 
+ *	guaranteed to be a HTBD	for hit testing over the UIBD.
  */
 void UIBD::MouseHover(const PT& pt, MHT mht)
 {
@@ -754,9 +735,9 @@ void UIBD::MouseHover(const PT& pt, MHT mht)
 
 /*	UIBD::HiliteLegalMoves
  *
- *	When the mouse is hovering over square sq, causes the screen to
- *	be redrawn with squares that the piece can move to with a
- *	hilight. If sq is sqNil, no hilights are drawn.
+ *	When the mouse is hovering over square sq, causes the screen to be redrawn with 
+ *	squares that the piece can move to with a hilight. If sq is sqNil, no hilights are 
+ *	drawn.
  */
 void UIBD::HiliteLegalMoves(SQ sq)
 {
@@ -769,11 +750,10 @@ void UIBD::HiliteLegalMoves(SQ sq)
 
 /*	UIBD::InvalOutsideRc
  *
- *	While we're tracking piece dragging, it's possible for a piece
- *	to be drawn outside the bounding box of the board. Any drawing
- *	inside the board is taken care of by calling Draw directly, so
- *	we handle these outside parts by just invalidating the area so
- *	they'll get picked off eventually by normal update paints.
+ *	While we're tracking piece dragging, it's possible for a piece to be drawn outside 
+ *	the bounding box of the board. Any drawing inside the board is taken care of by 
+ *	calling Draw directly, so we handle these outside parts by just invalidating the 
+ *	area so they'll get picked off eventually by normal update paints.
  */
 void UIBD::InvalOutsideRc(const RC& rcInval) const
 {
@@ -785,3 +765,10 @@ void UIBD::InvalOutsideRc(const RC& rcInval) const
 }
 
 
+void UIBD::DrawCursor(UI* pui, const RC& rcUpdate)
+{
+	if (sqDragInit.fIsNil())
+		return;
+	PC pc = uiga.ga.bdg.PcFromSq(sqDragInit);
+	DrawPc(pui, pui->RcLocalFromUiLocal(this, rcDragPc), 1.0f, pc);
+}

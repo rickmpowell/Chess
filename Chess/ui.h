@@ -87,7 +87,6 @@ public:
 	BMP* PbmpFromPngRes(int idb);
 	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic);
 
-
 protected:
 	UI* puiParent;
 	vector<UI*> vpuiChild;
@@ -95,9 +94,17 @@ protected:
 	bool fVisible;
 
 public:
+	
+	/* construct and destruct */
+
 	UI(UI* puiParent, bool fVisible=true);
 	UI(UI* puiParent, const RC& rcBounds, bool fVisible=true);
 	virtual ~UI(void);
+	virtual APP& App(void) const;
+	const GA& Ga(void) const;
+	GA& Ga(void);
+
+	/* the UI tree */
 
 	void AddChild(UI* puiChild);
 	void RemoveChild(UI* puiChild);
@@ -105,9 +112,7 @@ public:
 	UI* PuiPrevSib(void) const;
 	UI* PuiNextSib(void) const;
 
-	virtual APP& App(void) const;
-	const GA& Ga(void) const;
-	GA& Ga(void);
+	/* showing, hiding, sizing, moving, and layout */
 
 	RC RcInterior(void) const;	// in local coordinates (top left is always {0,0})
 	RC RcBounds(void) const;	// in parent coordinates
@@ -121,6 +126,8 @@ public:
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 
+	/* mouse interface */
+
 	UI* PuiFromPt(const PT& pt);
 	virtual void SetCapt(UI* pui);
 	virtual void ReleaseCapt(void);	
@@ -130,11 +137,13 @@ public:
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);
 
-	virtual void DispatchCmd(int cmd);
-	
+	/* keyboard interface */
+
 	virtual void SetFocus(UI* pui);
 	virtual void KeyUp(int vk);
 	virtual void KeyDown(int vk);
+
+	/* timers */
 
 	TID StartTimer(DWORD dmsec);
 	void StopTimer(TID tid);
@@ -142,31 +151,45 @@ public:
 	virtual void StopTimer(UI* pui, TID tid);
 	virtual void TickTimer(TID tid, DWORD dmsec);
 
+	/* command dispatch */
+
+	virtual void DispatchCmd(int cmd);
+
+	/* tool tips */
 
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTip(void) const;
 	virtual wstring SzTipFromCmd(int cmd) const;
 
-	RC RcParentFromLocal(const RC& rc) const; // local to parent coordinates
-	RC RcGlobalFromLocal(const RC& rc) const; // local to app global coordinates
+	/* coordinate transforms */
+
+	RC RcParentFromLocal(const RC& rc) const;
+	RC RcGlobalFromLocal(const RC& rc) const;
 	RC RcLocalFromGlobal(const RC& rc) const;
 	RC RcLocalFromParent(const RC& rc) const;
+	RC RcLocalFromUiLocal(UI* pui, const RC& rc) const;
 	PT PtParentFromLocal(const PT& pt) const;
 	PT PtGlobalFromLocal(const PT& pt) const;
 	PT PtLocalFromGlobal(const PT& pt) const;
 
-	void Update(const RC& rcUpdate);
-	void Redraw(const RC& rcUpdate);
+	/* window updating */
+
 	void Redraw(void);
+	void Redraw(const RC& rcUpdate);
+	void RedrawWithChildren(const RC& rcUpdate);
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Draw(const RC& rcDraw);
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
+	virtual void RedrawCursor(const RC& rcUpdate);
+	virtual void DrawCursor(UI* puiDraw, const RC& rcUpdate);
 
 	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
+
+	/* drawing primitives */
 
 	void FillRc(const RC& rc, BR* pbr) const;
 	virtual void FillRcBack(const RC& rc) const;
