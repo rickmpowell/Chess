@@ -452,8 +452,12 @@ void UIPCP::DispatchCmd(int cmd)
 			}
 		break;
 	case cmdSetSquare:
+		uibd.Ga().bdg.SetSq(sqDrop, PC(cpcShow, apcDrop));
+		uiga.Redraw();
 		break;
 	case cmdClearSquare:
+		uibd.Ga().bdg.ClearSq(sqDrop);
+		uiga.Redraw();
 		break;
 	default:
 		break;

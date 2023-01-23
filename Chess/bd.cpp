@@ -935,6 +935,25 @@ EV BD::EvTotalFromCpc(CPC cpc) const noexcept
 	return ev;
 }
 
+void BD::ClearSq(SQ sq) noexcept
+{
+	if (FIsEmpty(sq))
+		return;
+	PC pc = PcFromSq(sq);
+	ClearBB(pc, sq);
+	RemoveApcFromGph(pc.apc());
+	Validate();
+}
+
+
+void BD::SetSq(SQ sq, PC pc) noexcept
+{
+	ClearSq(sq);
+	SetBB(pc, sq);
+	AddApcToGph(pc.apc());
+	Validate();
+}
+
 
 GPH BD::GphCompute(void) const noexcept
 {

@@ -295,9 +295,9 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), 
-			sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd),
-			gph(bd.gph)
+	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove),
+		sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd),
+		gph(bd.gph)
 	{
 		memcpy(mppcbb, bd.mppcbb, sizeof(mppcbb));
 		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
@@ -315,7 +315,7 @@ public:
 	void UndoMvuNullSq(MVU mvu) noexcept;
 
 	/* move generation */
-	
+
 	void GenVmve(VMVE& vmve, GG gg) noexcept;
 	void GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
 	void GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept;
@@ -325,9 +325,9 @@ public:
 	inline void GenVmveBbPawnMoves(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
 	inline void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
 	inline void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
-	
+
 	/*
-	 *	checking squares for attack 
+	 *	checking squares for attack
 	 */
 
 	void RemoveInCheckMoves(VMVE& vmve, CPC cpc) noexcept;
@@ -362,7 +362,7 @@ public:
 	 *	move, square, and piece convenience functions. most of these need to be highly
 	 *	optimized - beware of bit twiddling tricks!
 	 */
-	
+
 	inline bool FMvuEnPassant(MVU mvu) const noexcept
 	{
 		return mvu.sqTo() == sqEnPassant && mvu.apcMove() == apcPawn;
@@ -381,9 +381,9 @@ public:
 		if (!sqEnPassant.fIsNil())
 			genhabd.ToggleEnPassant(habd, sqEnPassant.file());
 	}
-	
+
 	inline CPC CpcFromSq(SQ sq) const noexcept
-	{ 
+	{
 		return mpcpcbb[cpcWhite].fSet(sq) ? cpcWhite : cpcBlack;
 	}
 
@@ -411,9 +411,9 @@ public:
 	{
 		return (csCur & (csSide << (int)cpc)) != 0;
 	}
-	
+
 	inline void SetCastle(CPC cpc, int csSide) noexcept
-	{ 
+	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur |= csSide << (int)cpc;
 		genhabd.ToggleCastle(habd, csCur);
@@ -425,13 +425,16 @@ public:
 		csCur |= cs;
 		genhabd.ToggleCastle(habd, csCur);
 	}
-	
+
 	inline void ClearCastle(CPC cpc, int csSide) noexcept
-	{ 
+	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur &= ~(csSide << (int)cpc);
 		genhabd.ToggleCastle(habd, csCur);
 	}
+
+	void ClearSq(SQ sq) noexcept;
+	void SetSq(SQ sq, PC pc) noexcept;
 
 	/*
 	 *	bitboard manipulation
