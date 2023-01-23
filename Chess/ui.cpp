@@ -568,7 +568,7 @@ RC UI::RcLocalFromGlobal(const RC& rc) const
  *
  *	Converts local coordinates in pui to local coordinates in the current window.
  */
-RC UI::RcLocalFromUiLocal(UI* pui, const RC& rc) const
+RC UI::RcLocalFromUiLocal(const UI* pui, const RC& rc) const
 {
 	return rc.Offset(pui->rcBounds.left-rcBounds.left, pui->rcBounds.top-rcBounds.top);
 }
@@ -614,13 +614,13 @@ PT UI::PtLocalFromGlobal(const PT& pt) const
  *
  *	Converts local coordinates in pui to local coordinates in the current window.
  */
-PT UI::PtLocalFromUiLocal(UI* pui, const PT& pt) const
+PT UI::PtLocalFromUiLocal(const UI* pui, const PT& pt) const
 {
 	return PT(pt.x + pui->rcBounds.left - rcBounds.left, pt.y + pui->rcBounds.top - rcBounds.top);
 }
 
 
-PT UI::PtGlobalFromUiLocal(UI* pui, const PT& pt) const
+PT UI::PtGlobalFromUiLocal(const UI* pui, const PT& pt) const
 {
 	return PT(pt.x + pui->rcBounds.left, pt.y + pui->rcBounds.top);
 }

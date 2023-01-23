@@ -167,12 +167,12 @@ public:
 	RC RcGlobalFromLocal(const RC& rc) const;
 	RC RcLocalFromGlobal(const RC& rc) const;
 	RC RcLocalFromParent(const RC& rc) const;
-	RC RcLocalFromUiLocal(UI* pui, const RC& rc) const;
+	RC RcLocalFromUiLocal(const UI* pui, const RC& rc) const;
 	PT PtParentFromLocal(const PT& pt) const;
 	PT PtGlobalFromLocal(const PT& pt) const;
 	PT PtLocalFromGlobal(const PT& pt) const;
-	PT PtLocalFromUiLocal(UI* pui, const PT& pt) const;
-	PT PtGlobalFromUiLocal(UI* pui, const PT& pt) const;
+	PT PtLocalFromUiLocal(const UI* pui, const PT& pt) const;
+	PT PtGlobalFromUiLocal(const UI* pui, const PT& pt) const;
 
 	/* window updating */
 

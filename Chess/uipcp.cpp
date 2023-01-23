@@ -18,7 +18,9 @@ enum {
 	cmdSetBoardWhite = 0,
 	cmdSetBoardBlack = 1,
 	cmdSetBoardInit = 2,
-	cmdSetBoardEmpty = 3
+	cmdSetBoardEmpty = 3,
+	cmdSetSquare = 4,
+	cmdClearSquare = 5
 };
 
 
@@ -60,7 +62,6 @@ UIDRAGPCP::UIDRAGPCP(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
 }
 
 
-
 void UIDRAGPCP::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
@@ -76,22 +77,25 @@ void UIDRAGPCP::EndLeftDrag(const PT& pt)
 	ReleaseCapt();
 	InvalOutsideRc(RcDrag(ptDragCur));
 	ptDragCur = pt;
+	uipcp.HiliteSq(sqNil);
 	Redraw();
-}
 
-
-RC UIDRAGPCP::RcDrag(const PT& pt) const
-{
-	return RcInterior().Offset(pt.x - ptDragInit.x, pt.y - ptDragInit.y);
+	/* hit test the mouse location */
+	SQ sq = SqHitTest(pt);
+	if (sq.fIsNil())
+		return;
+	Drop(sq);
 }
 
 
 void UIDRAGPCP::LeftDrag(const PT& pt)
 {
+	SQ sq = SqHitTest(pt);
 	InvalOutsideRc(RcDrag(ptDragCur));
 	ptDragCur = pt;
 	InvalOutsideRc(RcDrag(ptDragCur));
 	Redraw();
+	uipcp.HiliteSq(sq);
 }
 
 
@@ -106,10 +110,51 @@ void UIDRAGPCP::Draw(const RC& rcUpdate)
 }
 
 
-void UIDRAGPCP::DrawCursor(UI* pui, const RC& rcUpdate)
+/*	UIDRAGPCP::DrawCursor
+ *
+ *	Draws the dragged sprite/cursor along with the mouse. Draws on the puiDraw element, which
+ *	should be the top-level UI. 
+ * 
+ *	This function just delegates to DrawInterior.
+ */
+void UIDRAGPCP::DrawCursor(UI* puiDraw, const RC& rcUpdate)
 {
-	DrawInterior(pui, pui->RcLocalFromUiLocal(this, RcDrag(ptDragCur)));
+	DrawInterior(puiDraw, puiDraw->RcLocalFromUiLocal(this, RcDrag(ptDragCur)));
 }
+
+
+/*	UIDRAGPCP:RcDrag
+ *
+ *	Given a mouse point in local coordinates, returns the rectangle of the dragged cursor
+ *	in local coordinates.
+ */
+RC UIDRAGPCP::RcDrag(const PT& pt) const
+{
+	return RcInterior().Offset(pt.x - ptDragInit.x, pt.y - ptDragInit.y);
+}
+
+
+SQ UIDRAGPCP::SqHitTest(PT pt) const
+{
+	/* OK, this is a little funky, because we're allowing hit testing on one panel while we've
+	   got capture on a different one. We only allow a limited number of places where we can
+	   drag to, so this isn't that complicated, but it's easy to get confused with coordinate
+	   sywstems. Be careful! */
+	
+	SQ sq;
+	HTBD htbd = uipcp.uibd.HtbdHitTest(uipcp.uibd.PtLocalFromUiLocal(this, pt), &sq);
+	switch (htbd) {
+	case htbdMoveablePc:
+	case htbdOpponentPc:
+	case htbdUnmoveablePc:
+	case htbdEmpty:
+		return sq;
+	default:
+		break;
+	}
+	return sqNil;
+}
+
 
 
 /*
@@ -126,6 +171,10 @@ UIDRAGAPC::UIDRAGAPC(UIPCP& uipcp, APC apc) : UIDRAGPCP(uipcp), apc(apc)
 }
 
 
+/*	UIDRAGAPC::DrawInterior
+ *
+ *	Draws the interior part of the dragging elements in the PCP palette. 
+ */
 void UIDRAGAPC::DrawInterior(UI* pui, const RC& rcDraw)
 {
 	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
@@ -136,6 +185,14 @@ void UIDRAGAPC::DrawInterior(UI* pui, const RC& rcDraw)
 	float xPiece = mpapcxBitmap[apc] * dxPiece;
 	float yPiece = (int)uipcp.cpcShow * dyPiece;
 	pui->DrawBmp(rcDraw, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), 1.0f);
+}
+
+
+void UIDRAGAPC::Drop(SQ sq)
+{
+	uipcp.apcDrop = apc;
+	uipcp.sqDrop = sq;
+	uipcp.DispatchCmd(cmdSetSquare);
 }
 
 
@@ -195,6 +252,13 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
 	pdc->FillGeometry(pgeomCross, pbrText);
 	SafeRelease(&pgeomCross);
+}
+
+
+void UIDRAGDEL::Drop(SQ sq)
+{
+	uipcp.sqDrop = sq;
+	uipcp.DispatchCmd(cmdClearSquare);
 }
 
 
@@ -274,7 +338,7 @@ void UIFEN::Draw(const RC& rcUpdate)
  */
 
 
-UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), uidragdel(*this), uifen(*this), cpcShow(cpcWhite)
+UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), uidragdel(*this), uifen(*this), cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
 		mpcpcpuicpc[cpc] = new UICPC(this, (int)cmdSetBoardWhite+cpc);
@@ -341,7 +405,6 @@ void UIPCP::Layout(void)
 	uidragdel.SetBounds(rc);
 
 	/* castle and en passant state */
-
 	/* player to move */
 
 	/* full board shortcuts */
@@ -388,10 +451,21 @@ void UIPCP::DispatchCmd(int cmd)
 				break;
 			}
 		break;
+	case cmdSetSquare:
+		break;
+	case cmdClearSquare:
+		break;
 	default:
 		break;
 	}
 	Redraw();
+}
+
+
+void UIPCP::HiliteSq(SQ sq)
+{
+	uibd.SetDragHiliteSq(sq);
+	uibd.Redraw();
 }
 
 

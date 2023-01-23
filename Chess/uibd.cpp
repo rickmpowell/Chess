@@ -124,7 +124,7 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		sqDragInit(sqNil), sqHover(sqNil)
+		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil)
 {
 }
 
@@ -408,6 +408,12 @@ RC UIBD::RcFromSq(SQ sq) const
 }
 
 
+void UIBD::SetDragHiliteSq(SQ sq)
+{
+	sqDragHilite = sq;
+}
+
+
 /*	UIBD::FHoverSq
  *
  *	Returns true if the square is the destination of move that originates in the
@@ -539,6 +545,12 @@ void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned framefMax)
 
 void UIBD::DrawHilites(void)
 {
+	if (sqDragHilite.fIsNil())
+		return;
+
+	RC rc = RcFromSq(sqDragHilite);
+	OPACITYBR opacitybr(pbrAnnotation, 0.125f);
+	FillRc(rc, pbrAnnotation);
 }
 
 
@@ -591,7 +603,7 @@ void UIBD::FlipBoard(CPC cpcNew)
  *	structure from here, which means other mouse tracking notifications
  *	can safely cast to a HTBD to get access to board hit testing info.
  *
- *	The point is in global coordinates.
+ *	The point is in local coordinates.
  */
 HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 {

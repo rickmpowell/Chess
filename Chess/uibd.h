@@ -65,6 +65,7 @@ public:
 	SQ sqHover;
 	RC rcDragPc;	// rectangle the dragged piece was last drawn in
 	VMVE vmveDrag;	// legal moves in the UI
+	SQ sqDragHilite;
 
 	vector<ANO> vano;	// annotations
 
@@ -104,6 +105,7 @@ public:
 	RC RcGetDrag(void);
 	void HiliteLegalMoves(SQ sq);
 	RC RcFromSq(SQ sq) const;
+	void SetDragHiliteSq(SQ sq);
 
 	virtual void FillRcBack(const RC& rc) const;
 
@@ -156,7 +158,9 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
 	virtual void DrawInterior(UI* pui, const RC& rc) = 0;
+	virtual void Drop(SQ sq) = 0;
 	RC RcDrag(const PT& pt) const;
+	SQ SqHitTest(PT pt) const;
 };
 
 
@@ -167,6 +171,7 @@ public:
 	UIDRAGAPC(UIPCP& uipcp, APC apc);
 
 	virtual void DrawInterior(UI* pui, const RC& rc);
+	virtual void Drop(SQ sq);
 };
 
 
@@ -176,6 +181,7 @@ public:
 	UIDRAGDEL(UIPCP& uipcp);
 
 	virtual void DrawInterior(UI* pui, const RC& rc);
+	virtual void Drop(SQ sq);
 };
 
 
@@ -234,6 +240,9 @@ class UIPCP : public UIP
 	vector<UISETFEN*> vpuisetfen;
 	UIFEN uifen;
 	CPC cpcShow;
+	SQ sqDrop;
+	APC apcDrop;
+
 public:
 	UIPCP(UIGA& uiga);
 	~UIPCP(void);
@@ -245,5 +254,6 @@ public:
 
 	RC RcFromApc(APC apc) const;
 	BMP* PbmpPieces(void);
+	void HiliteSq(SQ sq);
 
 };
