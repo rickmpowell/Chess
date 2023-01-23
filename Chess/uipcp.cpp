@@ -22,6 +22,7 @@ enum {
 };
 
 
+
 /*
  *
  *	UICPC
@@ -45,23 +46,87 @@ void UICPC::Draw(const RC& rcUpdate)
 }
 
 
+/*
+ *
+ *	UIDRAGPCP
+ *
+ *	Base class for the draggable controls in the piece placement palette
+ *
+ */
+
+
+UIDRAGPCP::UIDRAGPCP(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
+{
+}
+
+
+
+void UIDRAGPCP::StartLeftDrag(const PT& pt)
+{
+	SetCapt(this);
+	ptDragInit = pt;
+	ptDragCur = pt;
+	Redraw();
+	InvalOutsideRc(RcDrag(ptDragCur));
+}
+
+
+void UIDRAGPCP::EndLeftDrag(const PT& pt)
+{
+	ReleaseCapt();
+	InvalOutsideRc(RcDrag(ptDragCur));
+	ptDragCur = pt;
+	Redraw();
+}
+
+
+RC UIDRAGPCP::RcDrag(const PT& pt) const
+{
+	return RcInterior().Offset(pt.x - ptDragInit.x, pt.y - ptDragInit.y);
+}
+
+
+void UIDRAGPCP::LeftDrag(const PT& pt)
+{
+	InvalOutsideRc(RcDrag(ptDragCur));
+	ptDragCur = pt;
+	InvalOutsideRc(RcDrag(ptDragCur));
+	Redraw();
+}
+
+
+void UIDRAGPCP::MouseHover(const PT& pt, MHT mht)
+{
+}
+
+
+void UIDRAGPCP::Draw(const RC& rcUpdate)
+{
+	DrawInterior(this, RcInterior());
+}
+
+
+void UIDRAGPCP::DrawCursor(UI* pui, const RC& rcUpdate)
+{
+	DrawInterior(pui, pui->RcLocalFromUiLocal(this, RcDrag(ptDragCur)));
+}
+
 
 /*
  *
- *	UIAPC
+ *	UIDRAGAPC
  *
  *	The piece drag elements in the piece panel
  *
  */
 
 
-UIAPC::UIAPC(UIPCP& uipcp, APC apc) : UI(&uipcp), uipcp(uipcp), apc(apc)
+UIDRAGAPC::UIDRAGAPC(UIPCP& uipcp, APC apc) : UIDRAGPCP(uipcp), apc(apc)
 {
 }
 
 
-
-void UIAPC::Draw(const RC& rcUpdate)
+void UIDRAGAPC::DrawInterior(UI* pui, const RC& rcDraw)
 {
 	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
 	BMP* pbmpPieces = uipcp.PbmpPieces();
@@ -70,32 +135,36 @@ void UIAPC::Draw(const RC& rcUpdate)
 	float dyPiece = siz.height / 2.0f;
 	float xPiece = mpapcxBitmap[apc] * dxPiece;
 	float yPiece = (int)uipcp.cpcShow * dyPiece;
-	DrawBmp(RcInterior(), pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), 1.0f);
+	pui->DrawBmp(rcDraw, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), 1.0f);
 }
 
 
 /*
  *
- *	THe delete piece control
+ *	UIDRAGDEL
+ * 
+ *	The delete piece control
  * 
  */
 
 
-UIPCDEL::UIPCDEL(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
+UIDRAGDEL::UIDRAGDEL(UIPCP& uipcp) : UIDRAGPCP(uipcp)
 {
 }
 
 
-void UIPCDEL::Draw(const RC& rcUpdate)
+void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 {
-	RC rc = RcInterior();
+	RC rc = rcDraw;
 	rc.Inflate(-6.0f, -6.0f);
 	float dxyLine = 7.0f;
 	ELL ell(rc.PtCenter(), PT(rc.DxWidth()/2.0f-dxyLine, rc.DyHeight()/2.0f-dxyLine));
 	COLORBRS colorbrsSav(pbrText, ColorF(0.65f, 0.15f, 0.25f));
-	DrawEll(ell, pbrText, dxyLine);
+	pui->DrawEll(ell, pbrText, dxyLine);
 
 	/* taking an opponent piece - draw an X */
+
+	/* TODO: can we share this with the cross in UIBD? */
 
 	const float dxyCrossFull = 10.0f;
 	const float dxyCrossCenter = 3.0f;
@@ -116,17 +185,24 @@ void UIPCDEL::Draw(const RC& rcUpdate)
 
 	DC* pdc = App().pdc;
 	rc.Inflate(-2.0f*dxyLine-1.0f, -2.0f*dxyLine-1.0f);
+	PT ptCenter = PtGlobalFromUiLocal(pui, rc.PtCenter());
 	TRANSDC transdc(pdc,
 			Matrix3x2F::Rotation(45.0f, PT(0, 0)) * 
 			Matrix3x2F::Scale(SizeF(rc.DxWidth() / (2*dxyCrossFull), rc.DyHeight()/ (2*dxyCrossFull)), PT(0, 0)) * 
-			Matrix3x2F::Translation(SizeF(rcBounds.left + rc.XCenter(), rcBounds.top + rc.YCenter())));
+			Matrix3x2F::Translation(ptCenter.x, ptCenter.y));
 
 	pbrText->SetColor(ColorF(0, 0, 0));
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
 	pdc->FillGeometry(pgeomCross, pbrText);
 	SafeRelease(&pgeomCross);
-
 }
+
+
+/*
+ *
+ *
+ *
+ */
 
 
 UISETFEN::UISETFEN(UIPCP& uipcp, int cmd, const wstring& szFen) : BTN(&uipcp, cmd), szFen(szFen)
@@ -197,12 +273,13 @@ void UIFEN::Draw(const RC& rcUpdate)
  *
  */
 
-UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), uipcdel(*this), uifen(*this), cpcShow(cpcWhite)
+
+UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), uidragdel(*this), uifen(*this), cpcShow(cpcWhite)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
 		mpcpcpuicpc[cpc] = new UICPC(this, (int)cmdSetBoardWhite+cpc);
 	for (APC apc = apcPawn; apc < apcMax; ++apc)
-		mpapcpuiapc[apc] = new UIAPC(*this, apc);
+		mpapcpuiapc[apc] = new UIDRAGAPC(*this, apc);
 	vpuisetfen.push_back(new UISETFEN(*this, cmdSetBoardInit, BDG::szFENInit));
 	vpuisetfen.push_back(new UISETFEN(*this, cmdSetBoardEmpty, L"8/8/8/8/8/8/8/8 w - - 0 1"));
 }
@@ -214,7 +291,7 @@ UIPCP::~UIPCP(void)
 		delete it->second;
 		mpcpcpuicpc[it->first] = nullptr;
 	}
-	for (map<APC,UIAPC*>::iterator it = mpapcpuiapc.begin(); it != mpapcpuiapc.end(); it++) {
+	for (map<APC,UIDRAGAPC*>::iterator it = mpapcpuiapc.begin(); it != mpapcpuiapc.end(); it++) {
 		delete it->second;
 		mpapcpuiapc[it->first] = nullptr;
 	}
@@ -224,7 +301,6 @@ UIPCP::~UIPCP(void)
 		delete puisetfen;
 	}
 }
-
 
 
 RC UIPCP::RcFromApc(APC apc) const
@@ -262,7 +338,7 @@ void UIPCP::Layout(void)
 
 	rc = RcFromApc(apcKing);
 	rc.Offset(rc.DxWidth() + 8.0f, 0);
-	uipcdel.SetBounds(rc);
+	uidragdel.SetBounds(rc);
 
 	/* castle and en passant state */
 

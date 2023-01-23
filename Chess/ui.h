@@ -171,6 +171,8 @@ public:
 	PT PtParentFromLocal(const PT& pt) const;
 	PT PtGlobalFromLocal(const PT& pt) const;
 	PT PtLocalFromGlobal(const PT& pt) const;
+	PT PtLocalFromUiLocal(UI* pui, const PT& pt) const;
+	PT PtGlobalFromUiLocal(UI* pui, const PT& pt) const;
 
 	/* window updating */
 
@@ -182,6 +184,7 @@ public:
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
 	virtual void RedrawCursor(const RC& rcUpdate);
 	virtual void DrawCursor(UI* puiDraw, const RC& rcUpdate);
+	void InvalOutsideRc(const RC& rc) const;
 
 	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);

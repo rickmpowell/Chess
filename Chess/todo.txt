@@ -61,7 +61,6 @@
   UI: Scale buttons to size of window
   UITI: Layout using font metrics
   UI: Test with alternate fonts
-  UIBD: Dragging pieces outside board clips the dragged piece
   Open: PGN game browser if multiple games in Open...
   UI: Implement labeled icon buttons
   UI for specifying human player names
@@ -90,6 +89,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* UIBD: Dragging pieces outside board clips the dragged piece
 * GA: Break the UI out of the GA
 * Display debug build somewhere on screen
 * AI: take clock time into account

@@ -610,6 +610,21 @@ PT UI::PtLocalFromGlobal(const PT& pt) const
 	return PT(pt.x - rcBounds.left, pt.y - rcBounds.top);
 }
 
+/*	UI::PtLocalFromUiLocal
+ *
+ *	Converts local coordinates in pui to local coordinates in the current window.
+ */
+PT UI::PtLocalFromUiLocal(UI* pui, const PT& pt) const
+{
+	return PT(pt.x + pui->rcBounds.left - rcBounds.left, pt.y + pui->rcBounds.top - rcBounds.top);
+}
+
+
+PT UI::PtGlobalFromUiLocal(UI* pui, const PT& pt) const
+{
+	return PT(pt.x + pui->rcBounds.left, pt.y + pui->rcBounds.top);
+}
+
 
 /*	UI::RedrawWithChildren
  *
@@ -704,6 +719,25 @@ void UI::RedrawCursor(const RC& rcUpdate)
  */
 void UI::DrawCursor(UI* puiDraw, const RC& rcUpdate)
 {
+}
+
+
+/*	UI::InvalOutsideRc
+ *
+ *	While we're tracking piece dragging, it's possible for a piece to be drawn outside
+ *	the bounding box of the board. Any drawing inside the board is taken care of by
+ *	calling Draw directly, so we handle these outside parts by just invalidating the
+ *	area so they'll get picked off eventually by normal update paints.
+ * 
+ *	Rectangle is in local coordinates
+ */
+void UI::InvalOutsideRc(const RC& rcInval) const
+{
+	RC rcInt = RcInterior();
+	InvalRc(RC(rcInval.left, rcInval.top, rcInval.right, rcInt.top), false);	// area above
+	InvalRc(RC(rcInval.left, rcInt.bottom, rcInval.right, rcInval.bottom), false);	// area below
+	InvalRc(RC(rcInval.left, rcInt.top, rcInt.left, rcInt.bottom), false);	// area left
+	InvalRc(RC(rcInt.right, rcInt.top, rcInval.right, rcInt.bottom), false);	// area right
 }
 
 

@@ -96,10 +96,10 @@ void UIGA::Draw(const RC& rcUpdate)
 void UIGA::InvalRc(const RC& rc, bool fErase) const
 {
 	RECT rect;
-	rect.left = (int)(rc.left - rcBounds.left);
-	rect.top = (int)(rc.top - rcBounds.top);
-	rect.right = (int)(rc.right - rcBounds.left);
-	rect.bottom = (int)(rc.bottom - rcBounds.top);
+	rect.left = (int)floor(rc.left - rcBounds.left);
+	rect.top = (int)floor(rc.top - rcBounds.top);
+	rect.right = (int)ceil(rc.right - rcBounds.left);
+	rect.bottom = (int)ceil(rc.bottom - rcBounds.top);
 	::InvalidateRect(app.hwnd, &rect, fErase);
 }
 

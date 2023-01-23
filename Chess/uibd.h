@@ -102,7 +102,6 @@ public:
 	void AnimateMvu(MVU mvu, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	RC RcGetDrag(void);
-	void InvalOutsideRc(const RC& rc) const;
 	void HiliteLegalMoves(SQ sq);
 	RC RcFromSq(SQ sq) const;
 
@@ -140,25 +139,51 @@ public:
 };
 
 
-class UIAPC : public UI
+class UIDRAGPCP : public UI
+{
+protected:
+	UIPCP& uipcp;
+	PT ptDragInit;
+	PT ptDragCur;
+
+public:
+	UIDRAGPCP(UIPCP& uipcp);
+
+	virtual void StartLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt);
+	virtual void LeftDrag(const PT& pt);
+	virtual void MouseHover(const PT& pt, MHT mht);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
+	virtual void DrawInterior(UI* pui, const RC& rc) = 0;
+	RC RcDrag(const PT& pt) const;
+};
+
+
+class UIDRAGAPC : public UIDRAGPCP
 {
 	APC apc;
-	UIPCP& uipcp;
 public:
-	UIAPC(UIPCP& uipcp, APC apc);
+	UIDRAGAPC(UIPCP& uipcp, APC apc);
 
-	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawInterior(UI* pui, const RC& rc);
 };
 
 
-class UIPCDEL : public UI
+class UIDRAGDEL : public UIDRAGPCP
 {
-	UIPCP& uipcp;
 public:
-	UIPCDEL(UIPCP& uipcp);
+	UIDRAGDEL(UIPCP& uipcp);
 
-	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawInterior(UI* pui, const RC& rc);
 };
+
+
+/*
+ *
+ *	UIFEN
+ *
+ */
 
 
 class UIFEN : public UI
@@ -195,16 +220,18 @@ public:
 
 class UIPCP : public UIP
 {
-	friend class UIAPC;
 	friend class UICPC;
+	friend class UIDRAGPCP;
+	friend class UIDRAGAPC;
+	friend class UIDRAGDEL;
 	friend class UISETFEN;
 	friend class UIFEN;
 
 	UIBD& uibd;
 	map<CPC, UICPC*> mpcpcpuicpc;
-	map<APC, UIAPC*> mpapcpuiapc;
+	map<APC, UIDRAGAPC*> mpapcpuiapc;
+	UIDRAGDEL uidragdel;
 	vector<UISETFEN*> vpuisetfen;
-	UIPCDEL uipcdel;
 	UIFEN uifen;
 	CPC cpcShow;
 public:

@@ -448,12 +448,9 @@ void UIBD::DrawHoverMvu(MVU mvu)
 		/* taking an opponent piece - draw an X */
 		DC* pdc = App().pdc;
 		TRANSDC transdc(pdc, 	
-			Matrix3x2F::Rotation(45.0f, PT(0.0f, 0.0f)) *
-			Matrix3x2F::Scale(SizeF(dxySquare / (2.0f * dxyCrossFull),
-				dxySquare / (2.0f * dxyCrossFull)),
-				PT(0.0, 0.0)) *
-			Matrix3x2F::Translation(SizeF(rcBounds.left + (rc.right + rc.left) / 2,
-				rcBounds.top + (rc.top + rc.bottom) / 2)));
+			Matrix3x2F::Rotation(45.0f, PT(0, 0)) *
+			Matrix3x2F::Scale(SizeF(dxySquare / (2*dxyCrossFull), dxySquare / (2*dxyCrossFull)), PT(0, 0)) *
+			Matrix3x2F::Translation(SizeF(rcBounds.left + rc.XCenter(), rcBounds.top + rc.YCenter())));
 		pdc->FillGeometry(pgeomCross, pbrBlack);
 	}
 }
@@ -745,23 +742,6 @@ void UIBD::HiliteLegalMoves(SQ sq)
 		return;
 	sqHover = sq;
 	Redraw();
-}
-
-
-/*	UIBD::InvalOutsideRc
- *
- *	While we're tracking piece dragging, it's possible for a piece to be drawn outside 
- *	the bounding box of the board. Any drawing inside the board is taken care of by 
- *	calling Draw directly, so we handle these outside parts by just invalidating the 
- *	area so they'll get picked off eventually by normal update paints.
- */
-void UIBD::InvalOutsideRc(const RC& rcInval) const
-{
-	RC rcInt = RcInterior();
-	InvalRc(RC(rcInval.left, rcInval.top, rcInval.right, rcInt.top), false);
-	InvalRc(RC(rcInval.left, rcInt.bottom, rcInval.right, rcInval.bottom), false);
-	InvalRc(RC(rcInval.left, rcInval.top, rcInt.left, rcInval.bottom), false);
-	InvalRc(RC(rcInt.right, rcInval.top, rcInval.right, rcInval.bottom), false);
 }
 
 
