@@ -66,6 +66,8 @@ void GA::SetRule(RULE* prule)
 {
 	if (prule == nullptr)
 		prule = new RULE;
+	if (prule == this->prule)
+		return;
 	if (this->prule)
 		delete this->prule;
 	this->prule = prule;
@@ -79,6 +81,18 @@ void GA::InitGame(const wchar_t* szFEN, RULE* prule)
 	bdgInit = bdg;
 }
 
+void GA::InitGame(void)
+{
+	bdg.InitGame();
+	bdgInit = bdg;
+}
+
+
+void GA::StartGame(void)
+{
+	bdg.SetGs(gsPlaying);
+	bdgInit = bdg;
+}
 
 void GA::EndGame(void)
 {

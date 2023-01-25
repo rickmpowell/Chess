@@ -78,6 +78,7 @@ public:
 	virtual void DiscardRsrc(void);
 
 	void InitGame(void);
+	void StartGame(void);
 	void MakeMvu(MVU mvu, SPMV spmv);
 	void UndoMvu(SPMV spmv);
 	void RedoMvu(SPMV spmv);

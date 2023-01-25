@@ -21,6 +21,8 @@
 #define idsTipPlayerLvlDownBlack	16
 #define idsShowPieceValues		17
 #define idsHidePieceValues		18
+#define idsEnterBoardSetup		19
+#define idsExitBoardSetup		20
 
 /*
  *	Dialog definitions

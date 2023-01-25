@@ -132,6 +132,7 @@ const uint8_t sqMax = 64;
 const SQ sqNil;	
 
 const SQ sqA1(rank1, fileA);
+const SQ sqA8(rank8, fileA);
 
 const SQ sqB1(rank1, fileB);
 const SQ sqB2(rank2, fileB);
@@ -160,6 +161,10 @@ const SQ sqD6(rank6, fileD);
 const SQ sqD7(rank7, fileD);
 const SQ sqD8(rank8, fileD);
 
+const SQ sqE1(rank1, fileE);
+const SQ sqE2(rank2, fileE);
+const SQ sqE3(rank3, fileE);
+const SQ sqE4(rank4, fileE);
 const SQ sqE5(rank5, fileE);
 const SQ sqE6(rank6, fileE);
 const SQ sqE7(rank7, fileE);

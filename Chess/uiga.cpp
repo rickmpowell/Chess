@@ -272,6 +272,17 @@ void UIGA::DispatchCmd(int cmd)
 }
 
 
+/*	UIGA::FInBoardSetup
+ *
+ *	Returns true if we're in board setup mode. Game play is blocked while we're in this
+ *	mode.
+ */
+bool UIGA::FInBoardSetup(void) const
+{
+	return uipcp.FVisible();
+}
+
+
 TID UIGA::StartTimer(UI* pui, DWORD dmsec)
 {
 	TID tid = App().StartTimer(dmsec);
@@ -329,6 +340,16 @@ void UIGA::InitGame(const wchar_t* szFEN, RULE* prule)
 }
 
 
+void UIGA::InitGame(void)
+{
+	ga.InitGame();
+	InitClocks();
+	uibd.InitGame();
+	uiml.InitGame();
+	SetFocus(&uiml);
+}
+
+
 /*	UIGA::StartGame
  *
  *	Starts the game going, which includes turning on the clocks
@@ -336,7 +357,8 @@ void UIGA::InitGame(const wchar_t* szFEN, RULE* prule)
 void UIGA::StartGame(SPMV spmv)
 {
 	spmvShow = spmv;
-	ga.bdg.SetGs(gsPlaying);
+	ga.StartGame();
+	uibd.StartGame();
 	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++)
 		ga.mpcpcppl[cpc]->StartGame();
 

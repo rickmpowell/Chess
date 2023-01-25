@@ -1,3 +1,10 @@
+  Add side to move to board edit mode
+  Add castle state to board edit mode
+  Add en passant state to board edit mode
+  Exiting board edit mode needs to check for valid board states and prepare for starting a game
+  Make board edit mode with severely restricted UI
+  Flip Game phase values (GPH) so end game is 0 and higher values mean closer to opening. 
+  UIBD needs mode for unrestrained piece movement during board setup command
   Implement copy FEN command
   Lock out most UI when AI is thinking
   AI: refutation tables
@@ -66,7 +73,6 @@
   UI for specifying human player names
   UITI: Hook up UI elements to real information from the GA
   Limit UI during message pumps in test and AI
-  Feature: Add a UI for setting up a board
   UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
@@ -78,17 +84,18 @@
   ML: Animate the game over panel into position.
   ML: Add undo/redo/play/pause buttons in a panel
   Keyboard entry of moves
-  RULE: game time options
   RULE: Official game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Hilite last made move on board
   UIBD: clips when rotating on flip board
-  UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
   UIBD: Legal move circles disappear when dragging
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Feature: Add a UI for setting up a board
+* UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
+* RULE: game time options
 * UIBD: Dragging pieces outside board clips the dragged piece
 * GA: Break the UI out of the GA
 * Display debug build somewhere on screen

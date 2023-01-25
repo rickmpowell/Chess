@@ -187,6 +187,12 @@ void UIBD::InitGame(void)
 }
 
 
+void UIBD::StartGame(void)
+{
+	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+}
+
+
 /*	UIBD::MakeMvu
  *
  *	Makes a move on the board and echoes it on the screen.
@@ -620,6 +626,14 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 	*psq = SQ(rank, file);
 	if (uiga.ga.bdg.FIsEmpty(*psq))
 		return htbdEmpty;
+	
+	/* in setup mode, all pieces are moveable */
+	
+	if (uiga.FInBoardSetup())
+		return htbdMoveablePc;
+
+	/* otherwise be more specific about the type of piece we're hit testing */
+
 	if (uiga.ga.bdg.CpcFromSq(*psq) != uiga.ga.bdg.cpcToMove)
 		return htbdOpponentPc;
 
@@ -678,10 +692,17 @@ void UIBD::EndLeftDrag(const PT& pt)
 	SQ sqTo;
 	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
-		for (MVE mve : vmveDrag) {
-			if (mve.sqFrom() == sqFrom && mve.sqTo() == sqTo) {
-				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
-				goto Done;
+		if (uiga.FInBoardSetup()) {
+			PC pc = uiga.ga.bdg.PcFromSq(sqFrom);
+			uiga.ga.bdg.ClearSq(sqFrom);
+			uiga.ga.bdg.SetSq(sqTo, pc);
+		}
+		else {
+			for (MVE mve : vmveDrag) {
+				if (mve.sqFrom() == sqFrom && mve.sqTo() == sqTo) {
+					uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
+					goto Done;
+				}
 			}
 		}
 	}

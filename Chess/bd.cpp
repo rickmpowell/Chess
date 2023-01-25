@@ -585,15 +585,21 @@ bool BD::FInCheck(CPC cpc) const noexcept
 
 	/* for sliding pieces, reverse the attack to originate in the king, which is
 	   more efficient becuase we know there is only one king */
+
 	BB bbKing = mppcbb[PC(cpc, apcKing)];
+	assert(bbKing.csq() == 1);
 	BB bbQueen = mppcbb[PC(cpcBy, apcQueen)];
 	if (BbBishop1Attacked(bbKing) & (bbQueen | mppcbb[PC(cpcBy, apcBishop)]))
 		return true;
 	if (BbRook1Attacked(bbKing) & (bbQueen | mppcbb[PC(cpcBy, apcRook)]))
 		return true;
+
+	/* other pieces need regular attack checks */
+	
 	BB bbAttacks = BbKnightAttacked(mppcbb[PC(cpcBy, apcKnight)]) |
 		BbPawnAttacked(mppcbb[PC(cpcBy, apcPawn)], cpcBy) |
 		BbKingAttacked(mppcbb[PC(cpcBy, apcKing)]);
+
 	return bbAttacks & bbKing;
 }
 
@@ -935,6 +941,7 @@ EV BD::EvTotalFromCpc(CPC cpc) const noexcept
 	return ev;
 }
 
+
 void BD::ClearSq(SQ sq) noexcept
 {
 	if (FIsEmpty(sq))
@@ -942,6 +949,7 @@ void BD::ClearSq(SQ sq) noexcept
 	PC pc = PcFromSq(sq);
 	ClearBB(pc, sq);
 	RemoveApcFromGph(pc.apc());
+	GuessEpAndCastle(sq);
 	Validate();
 }
 
@@ -951,7 +959,36 @@ void BD::SetSq(SQ sq, PC pc) noexcept
 	ClearSq(sq);
 	SetBB(pc, sq);
 	AddApcToGph(pc.apc());
+	GuessEpAndCastle(sq);
 	Validate();
+}
+
+
+/*	BD::GuessEpAndCastle
+ *
+ *	Temporary function that tries to guess what the correct castle and en passant states
+ *	should be after changing the board through a user piece placement. This should be
+ *	a temporary hack until we get a UI for setting castle and en passant states, along
+ *	with error checking for illegal states.
+ */
+void BD::GuessEpAndCastle(SQ sq) noexcept
+{
+	GuessCastle(cpcWhite, rank1);
+	GuessCastle(cpcBlack, rank8);
+	SetEnPassant(sqNil);
+}
+
+
+void BD::GuessCastle(CPC cpc, int rank) noexcept
+{
+	ClearCastle(cpc, csKing);
+	ClearCastle(cpc, csQueen);
+	if (PcFromSq(SQ(rank, fileE)) == PC(cpc, apcKing)) {
+		if (PcFromSq(SQ(rank, fileA)) == PC(cpc, apcRook))
+			SetCastle(cpc, csQueen);
+		if (PcFromSq(SQ(rank, fileH)) == PC(cpc, apcRook))
+			SetCastle(cpc, csKing);
+	}
 }
 
 
@@ -1123,23 +1160,26 @@ const wchar_t BDG::szFENInit[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w
 
 void BDG::InitGame(const wchar_t* szFEN)
 {
+	InitGame();
+
 	if (szFEN == nullptr)
 		szFEN = szFENInit;
 	const wchar_t* sz = szFEN;
-
-	vmvuGame.clear();
-	imvuCurLast = -1;
-	imvuPawnOrTakeLast = -1;
-	SetGs(gsNotStarted);
-
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
 	InitFENCastle(sz);
 	InitFENEnPassant(sz);
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
+}
 
 
+void BDG::InitGame(void)
+{
+	vmvuGame.clear();
+	imvuCurLast = -1;
+	imvuPawnOrTakeLast = -1;
+	SetGs(gsNotStarted);
 }
 
 

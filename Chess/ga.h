@@ -152,7 +152,9 @@ public:
 	 */
 
 	void InitGame(const wchar_t* szFEN, RULE* prule);
+	void InitGame(void);
 	void SetRule(RULE* prule);
+	void StartGame(void);
 	void EndGame(void);
 
 	void SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept;

@@ -93,6 +93,7 @@ public:
 	virtual void DispatchCmd(int cmd);
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTipFromCmd(int cmd) const;
+	bool FInBoardSetup(void) const;
 
 	/*
 	 *	Mouse and keyboard interface
@@ -123,6 +124,7 @@ public:
 	void PumpMsg(void);
 
 	void InitGame(const wchar_t* szFEN, RULE* prule);
+	void InitGame(void);
 	void StartGame(SPMV spmv);
 	void EndGame(SPMV spmv);
 	void MakeMvu(MVU mvu, SPMV spmvMove);

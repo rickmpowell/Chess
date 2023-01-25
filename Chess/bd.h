@@ -433,29 +433,36 @@ public:
 		genhabd.ToggleCastle(habd, csCur);
 	}
 
+	inline void ClearCastle(int cs) noexcept
+	{
+		genhabd.ToggleCastle(habd, csCur);
+		csCur &= ~cs;
+		genhabd.ToggleCastle(habd, csCur);
+	}
+
 	void ClearSq(SQ sq) noexcept;
 	void SetSq(SQ sq, PC pc) noexcept;
+	void GuessEpAndCastle(SQ sq) noexcept;
+	void GuessCastle(CPC cpc, int rank) noexcept;
+
 
 	/*
 	 *	bitboard manipulation
 	 */
 
+
 	/*	BD::SetBB
 	 *
 	 *	Sets the bitboard of the piece ipc in the square sq. Keeps all bitboards
-	 *	in sync, including the piece color bitboard and the unoccupied bitboard.
-	 * 
-	 *	Note that the unoccupied bitboard is not necessarily kept in a consistent
-	 *	state by SetBB, if the bitboard in the opposite color happens to be set.
-	 *	This normally doesn't happen, because it would technically be in an illegal 
-	 *	state to have a square set by both colors. When making moves, clear before 
-	 *	you set and you shouldn't get in any trouble.
+	 *	in sync, including the piece color bitboard and the unoccupied bitboard,
+	 *	hash.
 	 */
 	inline void SetBB(PC pc, SQ sq) noexcept
 	{
 		BB bb(sq);
 		mppcbb[pc] += bb;
 		mpcpcbb[(int)pc.cpc()] += bb;
+		assert(!mpcpcbb[(int)~pc.cpc()].fSet(sq));
 		bbUnoccupied -= bb;
 		genhabd.TogglePiece(habd, sq, pc);
 	}
@@ -463,12 +470,8 @@ public:
 
 	/*	BD::ClearBB
 	 *
-	 *	Clears the piece ipc in square sq from the bitboards. Keeps track of piece
-	 *	boards, color boards, and unoccupied boards.
-	 * 
-	 *	Note that we clear the unoccupied bit here, even if the opposite color might
-	 *	theoretically have a piece in that square. It's up to the calling code to
-	 *	make sure this doesn't happen.
+	 *	Clears the piece pc in square sq from the bitboards. Keeps track of piece
+	 *	boards, color boards, and unoccupied boards, and hash.
 	 */
 	inline void ClearBB(PC pc, SQ sq) noexcept
 	{
@@ -608,6 +611,7 @@ public:
 
 	static const wchar_t szFENInit[];
 	void InitGame(const wchar_t* szFEN);
+	void InitGame(void);
 
 	/*
 	 *	making moves 

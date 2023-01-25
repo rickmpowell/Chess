@@ -1355,7 +1355,21 @@ public:
 
     virtual int Execute(void)
     {
+        app.puiga->uipcp.Show(!app.puiga->uipcp.FVisible());
+        if (!app.puiga->uipcp.FVisible())
+            app.puiga->InitGame();
+        app.puiga->Redraw();
         return 1;
+    }
+
+    virtual bool FCustomSzMenu(void) const
+    {
+        return true;
+    }
+
+    virtual int IdsMenu(void) const
+    {
+        return app.puiga->FInBoardSetup() ? idsExitBoardSetup : idsEnterBoardSetup;
     }
 };
 
