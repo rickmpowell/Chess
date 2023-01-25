@@ -240,6 +240,7 @@ class UIPCP : public UIP
 	UIDRAGDEL uidragdel;
 	vector<UISETFEN*> vpuisetfen;
 	UIFEN uifen;
+	UITITLE uititle;
 	CPC cpcShow;
 	SQ sqDrop;
 	APC apcDrop;

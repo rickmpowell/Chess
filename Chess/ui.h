@@ -57,7 +57,6 @@ enum MHT
 };
 
 
-
 /*
  *
  *	UI class
@@ -65,6 +64,7 @@ enum MHT
  *	The base user interface item class.
  * 
  */
+
 
 class UI
 {
@@ -355,6 +355,7 @@ public:
  *	Displays a value that cycles through on mouse clicks
  * 
  */
+
 
 class CYCLE : public BTN
 {

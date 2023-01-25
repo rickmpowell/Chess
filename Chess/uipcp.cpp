@@ -338,7 +338,9 @@ void UIFEN::Draw(const RC& rcUpdate)
  */
 
 
-UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), uidragdel(*this), uifen(*this), cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
+UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), 
+			uititle(this, L"Setup Board: Move Pieces and Drag Onto Board"), 
+			uidragdel(*this), uifen(*this), cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
 		mpcpcpuicpc[cpc] = new UICPC(this, (int)cmdSetBoardWhite+cpc);
@@ -367,61 +369,56 @@ UIPCP::~UIPCP(void)
 }
 
 
-RC UIPCP::RcFromApc(APC apc) const
-{
-	RC rc = RcInterior();
-	rc.Inflate(-4.0f, -4.0f);
-	rc.bottom -= 32.0f;
-	rc.left += rc.DyHeight() / 2.0f + 20.0f;
-	rc.right = rc.left + rc.DyHeight();
-	rc.Offset((rc.DxWidth() + 4.0f) * (apc - apcPawn), 0);
-	return rc;
-}
-
-
 void UIPCP::Layout(void)
 {
-	/* position the color buttons */
+	RC rcUnused = RcInterior();
 
-	RC rc = RcInterior();
-	rc.Inflate(-12.0f, -12.0f);
-	rc.left += 8.0f;
-	rc.bottom -= 32.0f;
+	RC rc = rcUnused;
+	rc.bottom = rc.top + 24.0f;
+	uititle.SetBounds(rc);
+	rcUnused.top = rc.bottom + 16.0f;
+
+	/* get the area where the draggable icons go */
+
+	RC rcDrags = rcUnused;
+	rcDrags.bottom = rcDrags.top + 72.0f;
+
+	/* position the black/white choose buttons */
+
+	rc = rcDrags;
+	rc.left += 24.0f;
 	rc.top = rc.YCenter() + 1.0f;
 	rc.right = rc.left + rc.DyHeight();
 	mpcpcpuicpc[cpcBlack]->SetBounds(rc);
 	rc.Offset(0, -rc.DyHeight()-2.0f);
 	mpcpcpuicpc[cpcWhite]->SetBounds(rc);
 
-	/* position the piece drag sources */
+	/* position the piece drag sources and the delete drag item */
 
-	for (APC apc = apcPawn; apc < apcMax; ++apc)
-		mpapcpuiapc[apc]->SetBounds(RcFromApc(apc));
-
-	/* delete piece */
-
-	rc = RcFromApc(apcKing);
-	rc.Offset(rc.DxWidth() + 8.0f, 0);
+	rc = RC(rc.right, rcDrags.top, rc.right + rcDrags.DyHeight(), rcDrags.bottom);
+	rc.Inflate(-2.0f, -2.0f);
+	rc.Offset(12.0f, 0);
+	for (APC apc = apcPawn; apc < apcMax; ++apc) {
+		mpapcpuiapc[apc]->SetBounds(rc);
+		rc.Offset(rc.DxWidth() + 8.0f, 0);
+	}
 	uidragdel.SetBounds(rc);
-
-	/* castle and en passant state */
-	/* player to move */
 
 	/* full board shortcuts */
 
-	rc = RcInterior();
-	rc.Inflate(-12.0, -4.0f);
-	rc.bottom -= 32.0f;
-	rc.left = rc.right - rc.DyHeight();
+	rc = RC(rc.right + 16.0f, rcDrags.top, rc.right+16.0f+rcDrags.DyHeight(), rcDrags.bottom);
 	for (UISETFEN* puisetfen : vpuisetfen) {
 		puisetfen->SetBounds(rc);
-		rc.Offset(-rc.DxWidth()-8.0f, 0);
+		rc.Offset(rc.DxWidth()+8.0f, 0);
 	}
+
+	rcUnused.top = rcDrags.bottom + 12.0f;
 
 	/* FEN string */
 
-	rc = RcInterior().Inflate(-8.0, -4.0);
-	rc.top = rc.bottom - 26.0f;
+	rc = rcUnused;
+	rc.bottom = rc.top + 30.0f;
+	rc.Inflate(-12.0f, 0);
 	uifen.SetBounds(rc);
 }
 

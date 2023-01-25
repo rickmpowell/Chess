@@ -158,7 +158,7 @@ void UIGA::Layout(void)
 	rcBoard.left = rc.right + dxyMargin;
 	/* make board a multiple of 8 pixels wide, which makes squares an even number of pixels
 	   in size, so we get consistent un-antialiased square borders */
-	rcBoard.bottom = rcBounds.bottom - 130.0f;
+	rcBoard.bottom = rcBounds.bottom - 180.0f;
 	rcBoard.bottom = rcBoard.top + max(176.0f, rcBoard.DyHeight());
 	if ((int)rcBoard.DyHeight() & 7)
 		rcBoard.bottom = rcBoard.top + ((int)rcBoard.DyHeight() & ~7);
@@ -170,6 +170,7 @@ void UIGA::Layout(void)
 	rc = rcBoard;
 	rc.top = rc.bottom + dxyMargin;
 	rc.bottom = rcBounds.bottom - dxyMargin;
+	rc.right += 200.0f;
 	uipcp.SetBounds(rc);
 
 	/* move list panel */

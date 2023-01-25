@@ -682,6 +682,39 @@ void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
 
 /*
  *
+ *	UITITLE class
+ * 
+ *	Title bar sends a cmdClose command to the parent when the close box is clicked. Otherwise it
+ *	just sits there looking pretty.
+ * 
+ */
+
+UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, -1), szTitle(szTitle)
+{
+}
+
+
+void UITITLE::Draw(const RC& rcUpdate)
+{
+	RC rc = RcInterior();
+	COLORBRS colorbrs(pbrText, ColorF(0, 0, 0));
+	FillRc(rc, pbrText);
+	rc.right -= rc.DyHeight();
+	rc.left += 12.0f;
+	rc.top += 2.0f;
+	DrawSz(szTitle, ptxText, rc, pbrBack);
+}
+
+
+void UITITLE::Layout(void)
+{
+	RC rc = RcInterior();
+	rc.left = rc.right - rc.DyHeight();
+	btnClose.SetBounds(rc);
+}
+
+/*
+ *
  *	UITIP class implementation
  *
  *	Tooltip user interface item

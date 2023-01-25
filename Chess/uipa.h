@@ -182,3 +182,23 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	void AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth);
 };
+
+
+/*
+ *
+ *	UITITLE
+ * 
+ *	Titlebar element used on screen panels, which displays a close box and title text
+ * 
+ */
+
+
+class UITITLE : public UI
+{
+	wstring szTitle;
+	BTN btnClose;
+public:
+	UITITLE(UIP* puipParent, const wstring& szTitle);
+	virtual void Layout(void);
+	virtual void Draw(const RC& rcUpdate);
+};
