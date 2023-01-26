@@ -41,10 +41,7 @@ UICPC::UICPC(UI* puiParent, int cmd) : BTN(puiParent, cmd)
 
 void UICPC::Draw(const RC& rcUpdate)
 {
-	RC rc = RcInterior();
-	FillRc(rc, pbrText);
-	rc.Inflate(-3.0f, -3.0f);
-	FillRc(rc, cmd == cmdSetBoardWhite ? pbrBack : pbrText);
+	FillRc(RcInterior().Inflate(-2.5f, -2.5f), cmd == cmdSetBoardWhite ? pbrWhite : pbrBlack);
 }
 
 
@@ -107,6 +104,11 @@ void UIDRAGPCP::MouseHover(const PT& pt, MHT mht)
 void UIDRAGPCP::Draw(const RC& rcUpdate)
 {
 	DrawInterior(this, RcInterior());
+}
+
+
+void UIDRAGPCP::Erase(const RC& rcUpdate)
+{
 }
 
 
@@ -216,8 +218,10 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 	rc.Inflate(-6.0f, -6.0f);
 	float dxyLine = 7.0f;
 	ELL ell(rc.PtCenter(), PT(rc.DxWidth()/2.0f-dxyLine, rc.DyHeight()/2.0f-dxyLine));
+	{
 	COLORBRS colorbrsSav(pbrText, ColorF(0.65f, 0.15f, 0.25f));
 	pui->DrawEll(ell, pbrText, dxyLine);
+	}
 
 	/* taking an opponent piece - draw an X */
 
@@ -248,7 +252,6 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 			Matrix3x2F::Scale(SizeF(rc.DxWidth() / (2*dxyCrossFull), rc.DyHeight()/ (2*dxyCrossFull)), PT(0, 0)) * 
 			Matrix3x2F::Translation(ptCenter.x, ptCenter.y));
 
-	pbrText->SetColor(ColorF(0, 0, 0));
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
 	pdc->FillGeometry(pgeomCross, pbrText);
 	SafeRelease(&pgeomCross);
@@ -291,18 +294,16 @@ void UISETFEN::Draw(const RC& rcUpdate)
 {
 	/* create a little dummy board with the FEN string */
 	BDG bdg(szFen.c_str());
-
 	for (int rank = 0; rank < rankMax; rank++) {
 		for (int file = 0; file < fileMax; file++) {
 			SQ sq(rank, file);
 			RC rc(RcFromSq(sq));
-			COLORBRS colorbrsBack(pbrBack, (rank + file) & 1 ? coBoardLight : coBoardDark);
-			FillRc(rc, pbrBack);
+			if (((rank + file) & 1) == 0)
+				FillRc(rc, pbrText);
 			if (!bdg.FIsEmpty(sq)) {
 				CPC cpc = bdg.CpcFromSq(sq);
-				rc.Inflate(-2, -2);
-				COLORBRS colorbrsFore(pbrText, cpc == cpcWhite ? ColorF(ColorF::White) : ColorF(ColorF::Black));
-				FillRc(rc, pbrText);
+				rc.Inflate(-1.5, -1.5);
+				FillRc(rc, cpc == cpcWhite ? pbrWhite : pbrBlack);
 			}
 		}
 	}
@@ -321,9 +322,8 @@ void UIFEN::Draw(const RC& rcUpdate)
 	RC rcTitle = rc;
 	DrawSz(szTitle, ptxText, rcTitle.Inflate(0, -2));
 	rc.left += SizSz(szTitle, ptxText).width + 4.0f;
-	FillRc(rc, pbrText);
-	FillRc(rc.Inflate(-1, -1), pbrBack);
-
+	FillRc(rc, pbrBlack);
+	FillRc(rc.Inflate(-1, -1), pbrWhite);
 	rc.Inflate(-6, -1);
 	DrawSz(uipcp.uiga.ga.bdg.SzFEN(), ptxText, rc);
 }
@@ -339,7 +339,7 @@ void UIFEN::Draw(const RC& rcUpdate)
 
 
 UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), 
-			uititle(this, L"Setup Board: Move Pieces and Drag Onto Board"), 
+			uititle(this, L"Setup Board: Move Pieces and Drag onto Board. Press 'Done' When Finished."), 
 			uidragdel(*this), uifen(*this), cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
@@ -420,13 +420,6 @@ void UIPCP::Layout(void)
 	rc.bottom = rc.top + 30.0f;
 	rc.Inflate(-12.0f, 0);
 	uifen.SetBounds(rc);
-}
-
-
-void UIPCP::Draw(const RC& rcUpdate)
-{
-	COLORBRS colorbrs(pbrBack, coBoardLight);
-	FillRc(rcUpdate, pbrBack);
 }
 
 

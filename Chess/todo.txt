@@ -1,3 +1,4 @@
+  Add foreground and background properties to UI elements, and set them up automatically in hbrText and hbrBack
   Formalize game states - editing, initialized but not started, playing, post-game
   Change FEN control in board editor to be an edit box
   Separate background colors for content areas and button bars

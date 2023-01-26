@@ -221,6 +221,11 @@ struct PT : public D2D1_POINT_2F
 		return PT(x + pt.x, y + pt.y);
 	}
 
+	inline PT operator-(const PT& pt) const
+	{
+		return PT(x - pt.x, y - pt.y);
+	}
+
 	inline PT operator-(void) const 
 	{
 		return PT(-x, -y);

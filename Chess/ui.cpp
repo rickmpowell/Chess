@@ -13,13 +13,14 @@
  *	UI static drawing objects
  */
 
-wchar_t UI::szFontFamily[] = L"Arial"; // L"Segoe UI Symbol";
+wchar_t UI::szFontFamily[] = L"Arial";
 BRS* UI::pbrBack;
 BRS* UI::pbrAltBack;
 BRS* UI::pbrGridLine;
 BRS* UI::pbrText;
-BRS* UI::pbrTip;
 BRS* UI::pbrHilite;
+BRS* UI::pbrWhite;
+BRS* UI::pbrBlack;
 TX* UI::ptxText;
 TX* UI::ptxList;
 TX* UI::ptxTip;
@@ -33,8 +34,9 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
 	pdc->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
 	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
-	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.85f), &pbrTip);
 	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.5f), &pbrHilite);
+	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 1.0f), &pbrWhite);
+	pdc->CreateSolidColorBrush(ColorF(0.0f, 0.0f, 0.0f), &pbrBlack);
 
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
@@ -50,6 +52,7 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 		&ptxTip);
 
 	BTNCH::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+	BTNTEXT::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 }
 
 
@@ -59,8 +62,9 @@ void UI::DiscardRsrcClass(void)
 	SafeRelease(&pbrAltBack);
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
-	SafeRelease(&pbrTip);
 	SafeRelease(&pbrHilite);
+	SafeRelease(&pbrWhite);
+	SafeRelease(&pbrBlack);
 	SafeRelease(&ptxList);
 	SafeRelease(&ptxText);
 	SafeRelease(&ptxTip);
@@ -146,14 +150,16 @@ TX* UI::PtxCreate(float dyHeight, bool fBold, bool fItalic)
  *	Constructor for the UI elements. Adds the item to the UI tree structure
  *	by connecting it to the parent.
  */
-UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0), fVisible(fVisible)
+UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0), fVisible(fVisible),
+		coFore(ColorF(0.4f,0.4f,0.4f)), coBack(ColorF::White)
 {
 	if (puiParent)
 		puiParent->AddChild(this);
 }
 
 
-UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible)
+UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible),
+		coFore(ColorF(0.4f,0.4f,0.4f)), coBack(ColorF::White)
 {
 	if (puiParent) {
 		puiParent->AddChild(this);
@@ -639,10 +645,15 @@ void UI::RedrawWithChildren(const RC& rcUpdate)
 	RC rc = rcUpdate & rcBounds;
 	if (!rc)
 		return;
-	App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	RC rcDraw = RcLocalFromGlobal(rc);
-	Draw(rcDraw);
-	App().pdc->PopAxisAlignedClip();
+	{
+		App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		RC rcDraw = RcLocalFromGlobal(rc);
+		COLORBRS colorbrsBack(pbrBack, CoBack());
+		COLORBRS colorbrsText(pbrText, CoFore());
+		Erase(rcDraw);
+		Draw(rcDraw);
+		App().pdc->PopAxisAlignedClip();
+	}
 	for (UI* pui : vpuiChild)
 		pui->RedrawWithChildren(rc);
 }
@@ -752,6 +763,12 @@ void UI::Draw(const RC& rcDraw)
 }
 
 
+void UI::Erase(const RC& rcUpdate)
+{
+	FillRcBack(RcInterior());
+}
+
+
 void UI::InvalRc(const RC& rc, bool fErase) const
 {
 	if (rc.top >= rc.bottom || rc.left >= rc.right || puiParent == nullptr)
@@ -801,6 +818,28 @@ void UI::EndDraw(void)
 }
 
 
+void UI::SetCoFore(ColorF co)
+{
+	coFore = co;
+}
+
+void UI::SetCoBack(ColorF co)
+{
+	coBack = co;
+}
+
+ColorF UI::CoFore(void) const
+{
+	return coFore;
+}
+
+
+ColorF UI::CoBack(void) const
+{
+	return coBack;
+}
+
+
 /*	UI::FillRc
  *
  *	Graphics helper for filling a rectangle with a brush. The rectangle is in
@@ -815,10 +854,7 @@ void UI::FillRc(const RC& rc, ID2D1Brush* pbr) const
 
 void UI::FillRcBack(const RC& rc) const
 {
-	if (puiParent == nullptr)
-		FillRc(rc, pbrBack);
-	else
-		puiParent->FillRcBack(RcParentFromLocal(rc));
+	FillRc(rc, pbrBack);
 }
 
 
@@ -1011,11 +1047,6 @@ void BTN::Hilite(bool fHiliteNew)
 }
 
 
-void BTN::Draw(const RC& rcUpdate) 
-{
-}
-
-
 void BTN::StartLeftDrag(const PT& pt)
 {
 	SetCapt(this);
@@ -1085,6 +1116,14 @@ BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
 }
 
 
+ColorF CoBlend(ColorF co1, ColorF co2, float pct)
+{
+	return ColorF(co1.r * (1.0f - pct) + co2.r * pct,
+		co1.g * (1.0f - pct) + co2.g * pct,
+		co1.b * (1.0f - pct) + co2.b * pct);
+}
+
+
 void BTNCH::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
@@ -1093,12 +1132,87 @@ void BTNCH::Draw(const RC& rcUpdate)
 	sz[1] = 0;
 	RC rcChar(PT(0, 0), SizSz(sz, ptxButton));
 	RC rcTo = RcInterior();
-	FillRcBack(rcTo);
-	COLORBRS colorbrsSav(pbrsButton, ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
+	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), ColorF::Red, (float)(fHilite + fTrack) / 2.0f));
 	rcChar += rcTo.PtCenter();
 	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
-	DrawSzCenter(sz, ptxButton, rcTo, pbrsButton);
+	DrawSzCenter(sz, ptxButton, rcChar, pbrsButton);
 }
+
+
+void BTNCH::Erase(const RC& rcUpdate)
+{
+}
+
+
+float BTNCH::DxWidth(void)
+{
+	CreateRsrc();
+	wchar_t szText[2];
+	szText[0] = ch;
+	szText[1] = 0;
+	return SizSz(szText, ptxButton).width;
+}
+
+
+/*
+ *
+ *	BTNTEXT
+ * 
+ *	A button with text as the button face
+ * 
+ */
+
+
+TX* BTNTEXT::ptxButton;
+
+void BTNTEXT::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+{
+	if (ptxButton)
+		return;
+
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptxButton);
+}
+
+
+void BTNTEXT::DiscardRsrcClass(void)
+{
+	SafeRelease(&ptxButton);
+}
+
+
+BTNTEXT::BTNTEXT(UI* puiParent, int cmd, const wstring& sz) : BTNCH(puiParent, cmd, ' '), szText(sz)
+{
+}
+
+
+void BTNTEXT::Draw(const RC& rcUpdate)
+{
+	CreateRsrc();
+	RC rcText(PT(0, 0), SizSz(szText, ptxButton));
+	RC rcTo = RcInterior();
+	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), ColorF::Red, (float)(fHilite + fTrack) / 2.0f));
+	rcText += rcTo.PtCenter() - rcText.PtCenter();
+	DrawSzCenter(szText, ptxButton, rcText, pbrsButton);
+}
+
+
+float BTNTEXT::DxWidth(void)
+{
+	CreateRsrc();
+	return SizSz(szText, ptxButton).width;
+}
+
+
+/*
+ *
+ *	BTNIMG class
+ * 
+ *	Class for drawing a button with an image as the button face
+ * 
+ */
 
 
 BTNIMG::BTNIMG(UI* puiParent, int cmd, int idb) : BTN(puiParent, cmd), idb(idb), pbmp(nullptr)
@@ -1118,7 +1232,6 @@ void BTNIMG::Draw(const RC& rcUpdate)
 	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_ALIASED);
 	RC rcTo = RcInterior();
-	FillRcBack(rcTo);
 	rcTo.Offset(rcBounds.PtTopLeft());
 	rcTo.Inflate(PT(-2.0f, -2.0f));
 	RC rcFrom = RC(PT(0, 0), pbmp->GetSize());
@@ -1207,7 +1320,6 @@ void STATIC::Draw(const RC& rcUpdate)
 	CreateRsrc();
 	RC rcChar(PT(0, 0), SizSz(SzText(), ptxStatic));
 	RC rcTo = RcInterior();
-	FillRcBack(rcTo);
 	rcChar += rcTo.PtCenter();
 	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
 	DrawSzCenter(SzText(), ptxStatic, rcTo, pbrsStatic);
@@ -1236,7 +1348,6 @@ BTNGEOM::~BTNGEOM(void)
 void BTNGEOM::Draw(const RC& rcUpdate)
 {
 	float dxyScale = RcInterior().DxWidth() / 2.0f;
-	FillRc(RcInterior(), pbrBack);
 	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	PT ptCenter = rcBounds.PtCenter();
@@ -1299,5 +1410,5 @@ void SPIN::Draw(const RC& rcUpdate)
 	SIZ siz = SizSz(szValue, ptxSpin);
 	RC rc = RcInterior();
 	rc.Offset(PT(0, (rc.DyHeight() - siz.height) / 2));
-	DrawSzCenter(szValue, ptxSpin, rc, pbrText);
+	DrawSzCenter(szValue, ptxSpin, rc);
 }

@@ -36,8 +36,6 @@ protected:
 public:
 	UIP(UIGA& uiga);
 	virtual ~UIP(void);
-	virtual void Draw(const RC& rcUpdate);
-	void SetShadow(void);
 	void AdjustUIRcBounds(UI& ui, RC& rc, bool fTop);
 };
 
@@ -161,6 +159,7 @@ protected:
 public:
 	UITIP(UI* puiParent);
 	virtual void Draw(const RC& rcUpdate);
+	virtual ColorF CoBack(void) const { return ColorF(1.0f, 1.0f, 0.85f); }
 	void AttachOwner(UI* pui);
 };
 
@@ -179,7 +178,6 @@ public:
 	UIBB(UIPS* puiParent);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
-	virtual void Draw(const RC& rcUpdate);
 	void AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth);
 };
 
@@ -196,9 +194,11 @@ public:
 class UITITLE : public UI
 {
 	wstring szTitle;
-	BTN btnClose;
+	BTNTEXT btnClose;
 public:
 	UITITLE(UIP* puipParent, const wstring& szTitle);
 	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
+	virtual ColorF CoBack(void) const { return ColorF::Black; }
+	virtual ColorF CoFore(void) const { return ColorF::White; }
 };

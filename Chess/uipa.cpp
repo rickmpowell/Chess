@@ -45,37 +45,7 @@ void UIP::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 void UIP::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrTextSel);
-	SafeRelease(&pbrGridLine);
 	SafeRelease(&ptxTextSm);
-}
-
-
-void UIP::SetShadow(void)
-{
-#ifdef LATER
-	ID2D1DeviceContext* pdc;
-	ID2D1Effect* peffShadow;
-	pdc->CreateEffect(CLSID_D2D1Shadow, &peffShadow);
-	peffShadow->SetInput(0, bitmap);
-
-	// Shadow is composited on top of a white surface to show opacity.
-	ID2D1Effect* peffFlood;
-	pdc->CreateEffect(CLSID_D2D1Flood, &peffFlood);
-	peffFlood->SetValue(D2D1_FLOOD_PROP_COLOR, Vector4F(1.0f, 1.0f, 1.0f, 1.0f));
-	ID2D1Effect* peffAffineTrans;
-	pdc->CreateEffect(CLSID_D2D12DAffineTransform, &peffAffineTrans);
-	peffAffineTrans->SetInputEffect(0, peffShadow);
-	D2D1_MATRIX_3X2_F mx = Matrix3x2F::Translation(20, 20));
-	peffAffineTrans->SetValue(D2D1_2DAFFINETRANSFORM_PROP_TRANSFORM_MATRIX, mx);
-	ID2D1Effect* peffComposite;
-	pdc->CreateEffect(CLSID_D2D1Composite, &peffComposite);
-
-	peffComposite->SetInputEffect(0, peffFlood);
-	peffComposite->SetInputEffect(1, peffAffineTrans);
-	peffComposite->SetInput(2, bitmap);
-
-	pdc->DrawImage(peffComposite);
-#endif
 }
 
 
@@ -94,17 +64,6 @@ UIP::UIP(UIGA& uiga) : UI(&uiga), uiga(uiga)
  */
 UIP::~UIP(void)
 {
-}
-
-
-/*	UIP::Draw
- *
- *	Base class for drawing a screen panel. The default implementation
- *	just fills the panel with the background brush.
- */
-void UIP::Draw(const RC& rcUpdate)
-{
-	FillRc(RcInterior(), pbrBack);
 }
 
 
@@ -315,7 +274,7 @@ void UIPS::Draw(const RC& rcUpdate)
 	/* just redraw the entire content area clipped to the view */
 	APP& app = App();
 	app.pdc->PushAxisAlignedClip(RcGlobalFromLocal(rcView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	FillRc(rcView, pbrBack);
+	FillRcBack(rcView);
 	DrawContent(rcCont);
 	app.pdc->PopAxisAlignedClip();
 }
@@ -665,11 +624,6 @@ SIZ UIBB::SizLayoutPreferred(void)
 	return SIZ(-1.0f, 32.0f);
 }
 
-void UIBB::Draw(const RC& rcUpdate)
-{
-	FillRc(rcUpdate, pbrBack);
-}
-
 void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
 {
 	if (pui == nullptr || !pui->FVisible())
@@ -689,27 +643,27 @@ void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
  * 
  */
 
-UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, -1), szTitle(szTitle)
+UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, -1, L"\x2713 Done"), szTitle(szTitle)
 {
+	btnClose.SetCoFore(ColorF::White);
+	btnClose.SetCoBack(ColorF::Black);
 }
 
 
 void UITITLE::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
-	COLORBRS colorbrs(pbrText, ColorF(0, 0, 0));
-	FillRc(rc, pbrText);
-	rc.right -= rc.DyHeight();
+	rc.right = btnClose.RcBounds().left;
 	rc.left += 12.0f;
 	rc.top += 2.0f;
-	DrawSz(szTitle, ptxText, rc, pbrBack);
+	DrawSz(szTitle, ptxText, rc);
 }
 
 
 void UITITLE::Layout(void)
 {
 	RC rc = RcInterior();
-	rc.left = rc.right - rc.DyHeight();
+	rc.left = rc.right - btnClose.DxWidth() - 20.0f;
 	btnClose.SetBounds(rc);
 }
 
@@ -730,13 +684,13 @@ UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(nullptr)
 void UITIP::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
-	FillRc(rc, pbrText);
-	rc.Inflate(PT(-1.0, -1.0));
-	FillRc(rc, pbrTip);
+	FillRc(rc, pbrBlack);
+	rc.Inflate(-1.0, -1.0);
+	FillRcBack(rc);
 	if (puiOwner) {
 		wstring sz = puiOwner->SzTip();
 		if (!sz.empty())
-			DrawSz(sz, ptxTip, rc.Inflate(PT(-5.0f, -3.0f)), pbrText);
+			DrawSz(sz, ptxTip, rc.Inflate(PT(-5.0f, -3.0f)));
 	}
 }
 

@@ -12,25 +12,17 @@
 #include "uiga.h"
 
 
-BRS* UIGA::pbrDesktop;
-#ifndef NDEBUG
 TX* UIGA::ptxDesktop;
-BRS* UIGA::pbrDesktopTx;
-#endif
 
 
 void UIGA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (pbrDesktop)
+	if (ptxDesktop)
 		return;
-	pdc->CreateSolidColorBrush(ColorF(0.5f, 0.5f, 0.5f), &pbrDesktop);
-#ifndef NDEBUG
-	pdc->CreateSolidColorBrush(ColorF(0.6f, 0.6f, 0.6f), &pbrDesktopTx);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		40.0f, L"",
 		&ptxDesktop);
-#endif
 
 	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
 	UIP::CreateRsrcClass(pdc, pfactdwr, pfactwic);
@@ -47,11 +39,7 @@ void UIGA::DiscardRsrcClass(void)
 	UITI::DiscardRsrcClass();
 	UIBD::DiscardRsrcClass();
 	UIML::DiscardRsrcClass();
-	SafeRelease(&pbrDesktop);
-#ifndef NDEBUG
 	SafeRelease(&ptxDesktop);
-	SafeRelease(&pbrDesktopTx);
-#endif
 }
 
 
@@ -77,14 +65,13 @@ UIGA::~UIGA()
  */
 void UIGA::Draw(const RC& rcUpdate)
 {
-	FillRc(rcUpdate, pbrDesktop);
 #ifndef NDEBUG
 	RC rc(0, -15.0f, 0, 0);
 	SIZ siz = SizSz(L"DEBUG", ptxDesktop, rcBounds.DxWidth(), rcBounds.DyHeight());
 	rc.right = rc.left + siz.width + 10.0f;
 	rc.bottom = rc.top + siz.height - 2.0f;
 	while (rc.top < rcBounds.bottom) {
-		DrawSz(L"DEBUG", ptxDesktop, rc, pbrDesktopTx);
+		DrawSz(L"DEBUG", ptxDesktop, rc);
 		rc.Offset(rc.DxWidth(), 0);
 		if (rc.left > rcBounds.right)
 			rc.Offset(-rc.left + 10.0f, rc.DyHeight());

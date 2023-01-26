@@ -73,8 +73,9 @@ protected:
 	static BRS* pbrAltBack;
 	static BRS* pbrGridLine;
 	static BRS* pbrText;
-	static BRS* pbrTip;
 	static BRS* pbrHilite;
+	static BRS* pbrWhite;
+	static BRS* pbrBlack;
 	static TX* ptxText;
 	static TX* ptxList;
 	static TX* ptxTip;
@@ -92,6 +93,7 @@ protected:
 	vector<UI*> vpuiChild;
 	RC rcBounds;	// rectangle is in global coordinates
 	bool fVisible;
+	ColorF coFore, coBack;
 
 public:
 	
@@ -181,6 +183,7 @@ public:
 	void RedrawWithChildren(const RC& rcUpdate);
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Draw(const RC& rcDraw);
+	virtual void Erase(const RC& rcDraw);
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
 	virtual void RedrawCursor(const RC& rcUpdate);
 	virtual void DrawCursor(UI* puiDraw, const RC& rcUpdate);
@@ -194,6 +197,10 @@ public:
 
 	/* drawing primitives */
 
+	void SetCoFore(ColorF co);
+	void SetCoBack(ColorF co);
+	virtual ColorF CoFore(void) const;
+	virtual ColorF CoBack(void) const;
 	void FillRc(const RC& rc, BR* pbr) const;
 	virtual void FillRcBack(const RC& rc) const;
 	void FillRr(const RR& rr, BR* pbr) const;
@@ -229,7 +236,6 @@ public:
 public:
 	BTN(UI* puiParent, int cmd);
 
-	virtual void Draw(const RC& rcUpdate);
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
 
@@ -255,6 +261,26 @@ public:
 public:
 	BTNCH(UI* puiParent, int cmd, wchar_t ch);
 	virtual void Draw(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate);
+	void DrawText(const wstring& sz);
+	virtual float DxWidth(void);
+
+};
+
+
+class BTNTEXT : public BTNCH
+{
+protected:
+	static TX* ptxButton;
+public:
+	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcClass(void);
+public:
+	wstring szText;
+public:
+	BTNTEXT(UI* puiParent, int icmd, const wstring& sz);
+	virtual void Draw(const RC& rcUpdate);
+	virtual float DxWidth(void);
 };
 
 

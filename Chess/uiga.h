@@ -41,11 +41,7 @@ class UIGA : public UI
 	friend class UIPCP;
 
 public:
-	static BRS* pbrDesktop;
-#ifndef NDEBUG
-	static BRS* pbrDesktopTx;
 	static TX* ptxDesktop;
-#endif
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
 
@@ -85,6 +81,8 @@ public:
 	virtual void EndDraw(void);
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Layout(void);
+	virtual ColorF CoBack(void) const { return ColorF(0.5f, 0.5f, 0.5f); }
+	virtual ColorF CoFore(void) const { return ColorF(0.6f, 0.6f, 0.6f); }
 
 	/*
 	 *	Commands

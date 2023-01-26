@@ -11,6 +11,10 @@
 #include "bd.h"
 
 
+const ColorF coBoardDark = ColorF(0.42f, 0.54f, 0.32f);
+const ColorF coBoardLight = ColorF(1.0f, 1.0f, 0.95f);
+
+
 /*
  *
  *	UIBD class
@@ -36,14 +40,10 @@ enum HTBD
 };
 
 
-
 class UIBD : public UIP
 {
 	friend class UIPCP;
 public:
-	static BRS* pbrLight;
-	static BRS* pbrDark;
-	static BRS* pbrBlack;
 	static BRS* pbrAnnotation;
 	static BRS* pbrHilite;
 	BMP* pbmpPieces;
@@ -108,7 +108,8 @@ public:
 	RC RcFromSq(SQ sq) const;
 	void SetDragHiliteSq(SQ sq);
 
-	virtual void FillRcBack(const RC& rc) const;
+	virtual ColorF CoFore(void) const { return coBoardDark; }
+	virtual ColorF CoBack(void) const { return coBoardLight; }
 
 	void FlipBoard(CPC cpcNew);
 
@@ -120,9 +121,6 @@ public:
 
 	bool FMoveablePc(SQ sq) const;
 };
-
-const ColorF coBoardDark = ColorF(0.42f, 0.54f, 0.32f);
-const ColorF coBoardLight = ColorF(1.0f, 1.0f, 0.95f);
 
 /*
  *
@@ -139,6 +137,7 @@ public:
 	UICPC(UI* puiParent, int cmd);
 
 	virtual void Draw(const RC& rcUpdate);
+	virtual ColorF CoBack(void) const { return ColorF::Black; }
 };
 
 
@@ -157,6 +156,7 @@ public:
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void Draw(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate);
 	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
 	virtual void DrawInterior(UI* pui, const RC& rc) = 0;
 	virtual void Drop(SQ sq) = 0;
@@ -212,6 +212,8 @@ public:
 
 	virtual void Draw(const RC& rcUpdate);
 	RC RcFromSq(SQ sq) const;
+	virtual ColorF CoFore(void) const { return coBoardDark; }
+	virtual ColorF CoBack(void) const { return coBoardLight; }
 };
 
 
@@ -250,9 +252,9 @@ public:
 	~UIPCP(void);
 
 	virtual void Layout(void);
-	virtual void Draw(const RC& rcUpdate);
 	virtual void DispatchCmd(int cmd);
 	virtual wstring SzTipFromCmd(int cmd) const;
+	virtual ColorF CoBack(void) const { return coBoardLight; }
 
 	RC RcFromApc(APC apc) const;
 	BMP* PbmpPieces(void);

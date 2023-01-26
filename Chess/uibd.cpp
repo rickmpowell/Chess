@@ -21,9 +21,6 @@
  */
 
 
-BRS* UIBD::pbrLight;
-BRS* UIBD::pbrDark;
-BRS* UIBD::pbrBlack;
 BRS* UIBD::pbrAnnotation;
 BRS* UIBD::pbrHilite;
 
@@ -58,14 +55,11 @@ PT rgptArrowHead[] = {
  */
 void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-	if (pbrLight)
+	if (pbrHilite)
 		return;
 
 	/* brushes */
 
-	pdc->CreateSolidColorBrush(coBoardDark, &pbrDark);
-	pdc->CreateSolidColorBrush(coBoardLight, &pbrLight);
-	pdc->CreateSolidColorBrush(ColorF(ColorF::Black), &pbrBlack);
 	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
 	pdc->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
 }
@@ -77,11 +71,8 @@ void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
  */
 void UIBD::DiscardRsrcClass(void)
 {
-	SafeRelease(&pbrLight);
-	SafeRelease(&pbrDark);
-	SafeRelease(&pbrBlack);
-	SafeRelease(&pbrAnnotation);
 	SafeRelease(&pbrHilite);
+	SafeRelease(&pbrAnnotation);
 }
 
 void UIBD::CreateRsrc(void)
@@ -300,14 +291,14 @@ void UIBD::Draw(const RC& rcDraw)
  */
 void UIBD::DrawMargins(const RC& rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast)
 {
-	FillRc(rcUpdate, pbrLight);
+	FillRcBack(rcUpdate);
 	if (dxyMargin <= 0.0f)
 		return;
 	RC rc = RcInterior();
 	rc.Inflate(PT(-dxyMargin, -dxyMargin));
-	FillRc(rc & rcUpdate, pbrDark);
+	FillRc(rc & rcUpdate, pbrText);
 	rc.Inflate(PT(-dxyOutline, -dxyOutline));
-	FillRc(rc & rcUpdate, pbrLight);
+	FillRcBack(rc & rcUpdate);
 	DrawFileLabels(rankFirst, rankLast);
 	DrawRankLabels(fileFirst, fileLast);
 }
@@ -328,7 +319,7 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 		for (int file = fileFirst; file <= fileLast; file++) {
 			SQ sq(rank, file);
 			if ((rank + file) % 2 == 0)
-				FillRc(RcFromSq(sq), pbrDark);
+				FillRc(RcFromSq(sq), pbrText);
 			MVU mvu;
 			if (FHoverSq(sq, mvu))
 				DrawHoverMvu(mvu);
@@ -351,7 +342,7 @@ void UIBD::DrawFileLabels(int fileFirst, int fileLast)
 	float yBot = yTop + dyLabel;
 	for (int file = 0; file <= fileLast; file++) {
 		RC rc(RcFromSq(SQ(0, file)));
-		DrawSzCenter(wstring(szLabel), ptxLabel, RC(rc.left, yTop, rc.right, yBot), pbrDark);
+		DrawSzCenter(wstring(szLabel), ptxLabel, RC(rc.left, yTop, rc.right, yBot));
 		szLabel[0]++;
 	}
 }
@@ -372,7 +363,7 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 	float dxLeft = dxRight - dxLabel;
 	for (int rank = rankFirst; rank <= rankLast; rank++) {
 		RC rc = RcFromSq(SQ(rank, 0));
-		DrawSzCenter(wstring(szLabel), ptxLabel, RC(dxLeft, (rc.top + rc.bottom - dyLabel) / 2, dxRight, rc.bottom), pbrDark);
+		DrawSzCenter(wstring(szLabel), ptxLabel, RC(dxLeft, (rc.top + rc.bottom - dyLabel) / 2, dxRight, rc.bottom));
 		szLabel[0]++;
 	}
 }
@@ -478,12 +469,6 @@ void UIBD::DrawPieceSq(SQ sq)
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
 	DrawPc(this, RcFromSq(sq), opacity, uiga.ga.bdg.PcFromSq(sq));
-}
-
-
-void UIBD::FillRcBack(const RC& rc) const
-{
-	FillRc(rc, pbrLight);
 }
 
 
