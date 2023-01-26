@@ -23,6 +23,7 @@
 #define idsHidePieceValues		18
 #define idsEnterBoardSetup		19
 #define idsExitBoardSetup		20
+#define idsClosePanel			21
 
 /*
  *	Dialog definitions

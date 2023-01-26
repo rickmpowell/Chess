@@ -59,6 +59,19 @@ enum MHT
 
 /*
  *
+ *	System commands
+ * 
+ *	system command values are all negative
+ */
+
+
+enum {
+	cmdClosePanel = -32
+};
+
+
+/*
+ *
  *	UI class
  * 
  *	The base user interface item class.

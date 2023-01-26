@@ -186,6 +186,26 @@ public:
 };
 
 
+class UICPCMOVE : public UI
+{
+	UIPCP& uipcp;
+public:
+	UICPCMOVE(UIPCP& uipcp);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void Layout(void);
+};
+
+
+class UICASTLESTATE : public UI
+{
+	UIPCP& uipcp;
+public:
+	UICASTLESTATE(UIPCP& uipcp);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void Layout(void);
+};
+
+
 /*
  *
  *	UIFEN
@@ -235,14 +255,18 @@ class UIPCP : public UIP
 	friend class UIDRAGDEL;
 	friend class UISETFEN;
 	friend class UIFEN;
+	friend class UICPCMOVE;
+	friend class UICASTLESTATE;
 
 	UIBD& uibd;
+	UITITLE uititle;
 	map<CPC, UICPC*> mpcpcpuicpc;
 	map<APC, UIDRAGAPC*> mpapcpuiapc;
 	UIDRAGDEL uidragdel;
+	UICPCMOVE uicpcmove;
+	UICASTLESTATE uicastlestate;
 	vector<UISETFEN*> vpuisetfen;
 	UIFEN uifen;
-	UITITLE uititle;
 	CPC cpcShow;
 	SQ sqDrop;
 	APC apcDrop;

@@ -267,6 +267,46 @@ void UIDRAGDEL::Drop(SQ sq)
 
 /*
  *
+ *	UICPCMOVE
+ * 
+ *	Side to move picker
+ * 
+ */
+
+UICPCMOVE::UICPCMOVE(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
+{
+}
+
+void UICPCMOVE::Layout(void)
+{
+}
+
+void UICPCMOVE::Draw(const RC& rcUpdate)
+{
+	FillRc(rcUpdate, pbrGridLine);
+}
+
+
+/*
+ *
+ */
+
+UICASTLESTATE::UICASTLESTATE(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
+{
+}
+
+void UICASTLESTATE::Layout(void)
+{
+
+}
+
+void UICASTLESTATE::Draw(const RC& rcUpdate)
+{
+	FillRc(rcUpdate, pbrGridLine);
+}
+
+/*
+ *
  *
  *
  */
@@ -340,7 +380,8 @@ void UIFEN::Draw(const RC& rcUpdate)
 
 UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), 
 			uititle(this, L"Setup Board: Move Pieces and Drag onto Board. Press 'Done' When Finished."), 
-			uidragdel(*this), uifen(*this), cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
+			uidragdel(*this), uicpcmove(*this), uicastlestate(*this), uifen(*this), cpcShow(cpcWhite), 
+			sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
 		mpcpcpuicpc[cpc] = new UICPC(this, (int)cmdSetBoardWhite+cpc);
@@ -404,6 +445,18 @@ void UIPCP::Layout(void)
 	}
 	uidragdel.SetBounds(rc);
 
+	/* side to move */
+
+	rc.left = rc.right + 12.0f;
+	rc.right += 100.0f;
+	uicpcmove.SetBounds(rc);
+
+	/* castle state */
+
+	rc.left = rc.right + 12.0f;
+	rc.right += 160.0f;
+	uicastlestate.SetBounds(rc);
+
 	/* full board shortcuts */
 
 	rc = RC(rc.right + 16.0f, rcDrags.top, rc.right+16.0f+rcDrags.DyHeight(), rcDrags.bottom);
@@ -426,6 +479,10 @@ void UIPCP::Layout(void)
 void UIPCP::DispatchCmd(int cmd)
 {
 	switch (cmd) {
+	case cmdClosePanel:
+		Show(false);
+		uiga.InitGame();
+		return;
 	case cmdSetBoardBlack:
 		cpcShow = cpcBlack;
 		break;
@@ -437,22 +494,19 @@ void UIPCP::DispatchCmd(int cmd)
 		for (UISETFEN* puisetfen : vpuisetfen)
 			if (puisetfen->cmd == cmd) {
 				uiga.ga.bdg.InitGame(puisetfen->szFen.c_str());
-				uiga.Redraw();
 				break;
 			}
 		break;
 	case cmdSetSquare:
 		uibd.Ga().bdg.SetSq(sqDrop, PC(cpcShow, apcDrop));
-		goto InitGame;
+		break;
 	case cmdClearSquare:
 		uibd.Ga().bdg.ClearSq(sqDrop);
-InitGame:
-		uiga.Redraw();
 		break;
 	default:
 		break;
 	}
-	Redraw();
+	uiga.Redraw();
 }
 
 
@@ -474,6 +528,8 @@ wstring UIPCP::SzTipFromCmd(int cmd) const
 		return L"Make Empty Board";
 	case cmdSetBoardInit:
 		return L"Starting Position";
+	case cmdClosePanel:
+		return L"Exit Board Edit Mode";
 	default:
 		return L"";
 	}

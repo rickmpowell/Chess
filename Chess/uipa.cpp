@@ -643,7 +643,7 @@ void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
  * 
  */
 
-UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, -1, L"\x2713 Done"), szTitle(szTitle)
+UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, cmdClosePanel, L"\x2713 Done"), szTitle(szTitle)
 {
 	btnClose.SetCoFore(ColorF::White);
 	btnClose.SetCoBack(ColorF::Black);
@@ -666,6 +666,8 @@ void UITITLE::Layout(void)
 	rc.left = rc.right - btnClose.DxWidth() - 20.0f;
 	btnClose.SetBounds(rc);
 }
+
+
 
 /*
  *

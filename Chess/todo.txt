@@ -1,9 +1,6 @@
-  Add foreground and background properties to UI elements, and set them up automatically in hbrText and hbrBack
   Formalize game states - editing, initialized but not started, playing, post-game
   Change FEN control in board editor to be an edit box
   Separate background colors for content areas and button bars
-  Add close boxes to titled panels
-  Add titled panels
   Add side to move to board edit mode
   Add castle state to board edit mode
   Add en passant state to board edit mode
@@ -98,6 +95,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Add close boxes to titled panels
+* Add titled panels
+* Add foreground and background properties to UI elements, and set them up automatically in hbrText and hbrBack
 * UIBD needs mode for unrestrained piece movement during board setup command
 * Feature: Add a UI for setting up a board
 * UIBD: Dragging pieces outside the board rectangle doesn't redraw the piece right
