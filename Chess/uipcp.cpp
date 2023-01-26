@@ -5,7 +5,7 @@
  *	Piece palette user interface panel for setting up a board. Includes drag-droppable
  *	pieces that are dragged to the board, and various other controls for initializing
  *	a game state.
- * 
+ *
  *	Works closely with the uibd, including leveraging graphical elements.
  *
  */
@@ -20,9 +20,37 @@ enum {
 	cmdSetBoardInit = 2,
 	cmdSetBoardEmpty = 3,
 	cmdSetSquare = 4,
-	cmdClearSquare = 5
+	cmdClearSquare = 5,
+	cmdToggleToMove = 6,
+	cmdToggleCsBase = 7,
+	cmdToggleCsWhiteKing = cmdToggleCsBase + csWhiteKing,
+	cmdToggleCsWhiteQueen = cmdToggleCsBase + csWhiteQueen,
+	cmdToggleCsBlackKing = cmdToggleCsBase + csBlackKing,
+	cmdToggleCsBlackQueen = cmdToggleCsBase + csBlackQueen,
+	cmdNextUnused = 16
 };
 
+
+CHKCS::CHKCS(UI* puiParent, UIPCP& uipcp, int cmd) : BTN(puiParent, cmd), uipcp(uipcp)
+{
+}
+
+
+void CHKCS::Draw(const RC& rcUpdate)
+{
+	RC rc = RcInterior();
+	rc.Inflate(-2, -2);
+	FillRc(rc, pbrBlack);
+	rc.Inflate(-1, -1);
+	FillRc(rc, pbrWhite);
+
+	if (uipcp.uiga.ga.bdg.csCur & (cmd - cmdToggleCsBase))
+		DrawSzCenter(L"\x2713", ptxList, RcInterior(), pbrBlack);
+}
+
+void CHKCS::Erase(const RC& rcUpdate)
+{
+}
 
 
 /*
@@ -253,7 +281,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 			Matrix3x2F::Translation(ptCenter.x, ptCenter.y));
 
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
-	pdc->FillGeometry(pgeomCross, pbrText);
+	pdc->FillGeometry(pgeomCross, pbrBlack);
 	SafeRelease(&pgeomCross);
 }
 
@@ -267,23 +295,39 @@ void UIDRAGDEL::Drop(SQ sq)
 
 /*
  *
- *	UICPCMOVE
+ *	UICPCTOMOVE
  * 
  *	Side to move picker
  * 
  */
 
-UICPCMOVE::UICPCMOVE(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
+UICPCTOMOVE::UICPCTOMOVE(UIPCP& uipcp) : BTN(&uipcp, cmdToggleToMove), uipcp(uipcp)
 {
 }
 
-void UICPCMOVE::Layout(void)
+void UICPCTOMOVE::Draw(const RC& rcUpdate)
 {
+	CPC cpc = uipcp.uiga.ga.bdg.cpcToMove;
+	RC rc = RcInterior();
+	rc.top += 8.0f;
+	rc.bottom = rc.top + 32.0f;
+	rc.Inflate(-12.0f, 0);
+	FillRc(rc, pbrBlack);
+	rc.Inflate(-2.5f, -2.5f);
+	FillRc(rc, cpc == cpcWhite ? pbrWhite : pbrBlack);
+	rc.top += 4.0f;
+	if (cpc == cpcWhite)
+		DrawSzCenter(L"White", ptxText, rc, pbrBlack);
+	else
+		DrawSzCenter(L"Black", ptxText, rc, pbrWhite);
+	rc.Offset(0, rc.DyHeight() + 8.0f);
+	rc.Inflate(12.0f, 0);
+	DrawSzCenter(L"To Move", ptxText, rc, pbrText);
 }
 
-void UICPCMOVE::Draw(const RC& rcUpdate)
+
+void UICPCTOMOVE::Erase(const RC& rcUpdate)
 {
-	FillRc(rcUpdate, pbrGridLine);
 }
 
 
@@ -293,17 +337,48 @@ void UICPCMOVE::Draw(const RC& rcUpdate)
 
 UICASTLESTATE::UICASTLESTATE(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
 {
+	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsWhiteKing));
+	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsWhiteQueen));
+	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsBlackKing));
+	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsBlackQueen));
 }
 
 void UICASTLESTATE::Layout(void)
 {
-
+	RC rcInt = RcInterior();
+	RC rc(0, 0, 17.0f, 17.0f);
+	vpchkcs[0]->SetBounds(rc + PT(8.0f, 32.0f));
+	vpchkcs[1]->SetBounds(rc + PT(8.0f, 50.0f));
+	vpchkcs[2]->SetBounds(rc + PT(rcInt.right - rc.DxWidth() - 6.0f, 32.0f));
+	vpchkcs[3]->SetBounds(rc + PT(rcInt.right - rc.DxWidth() - 6.0f, 50.0f));
 }
 
 void UICASTLESTATE::Draw(const RC& rcUpdate)
 {
-	FillRc(rcUpdate, pbrGridLine);
+	RC rc = RcInterior();
+	DrawSzCenter(L"Castle State", ptxList, rc);
+	rc.top += 16.0f;
+	RC rcWhite = rc, rcBlack = rc;
+	rcWhite.right = rc.XCenter();
+	rcBlack.left = rc.XCenter();
+	DrawSz(L"White", ptxList, rcWhite);
+	{
+	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);
+	DrawSz(L"Black", ptxList, rcBlack);
+	}
+
+
+	rc.top = rc.top + 18.0f;
+	rc.bottom = rc.top + 16.0f;
+	DrawSzCenter(L"O-O", ptxList, rc);
+	rc.Offset(0, 18.0f);
+	DrawSzCenter(L"O-O-O", ptxList, rc);
 }
+
+void UICASTLESTATE::Erase(const RC& rcUpdate)
+{
+}
+
 
 /*
  *
@@ -380,7 +455,7 @@ void UIFEN::Draw(const RC& rcUpdate)
 
 UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), 
 			uititle(this, L"Setup Board: Move Pieces and Drag onto Board. Press 'Done' When Finished."), 
-			uidragdel(*this), uicpcmove(*this), uicastlestate(*this), uifen(*this), cpcShow(cpcWhite), 
+			uidragdel(*this), uicpctomove(*this), uicastlestate(*this), uifen(*this), cpcShow(cpcWhite), 
 			sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
@@ -447,22 +522,22 @@ void UIPCP::Layout(void)
 
 	/* side to move */
 
-	rc.left = rc.right + 12.0f;
-	rc.right += 100.0f;
-	uicpcmove.SetBounds(rc);
+	rc.left = rc.right + 32.0f;
+	rc.right = rc.left + 100.0f;
+	uicpctomove.SetBounds(rc);
 
 	/* castle state */
 
-	rc.left = rc.right + 12.0f;
-	rc.right += 160.0f;
+	rc.left = rc.right + 32.0f;
+	rc.right += 140.0f;
 	uicastlestate.SetBounds(rc);
 
 	/* full board shortcuts */
 
-	rc = RC(rc.right + 16.0f, rcDrags.top, rc.right+16.0f+rcDrags.DyHeight(), rcDrags.bottom);
+	rc = RC(rc.right + 32.0f, rcDrags.top, rc.right+28.0f+rcDrags.DyHeight(), rcDrags.bottom);
 	for (UISETFEN* puisetfen : vpuisetfen) {
 		puisetfen->SetBounds(rc);
-		rc.Offset(rc.DxWidth()+8.0f, 0);
+		rc.Offset(rc.DxWidth()+12.0f, 0);
 	}
 
 	rcUnused.top = rcDrags.bottom + 12.0f;
@@ -503,6 +578,15 @@ void UIPCP::DispatchCmd(int cmd)
 	case cmdClearSquare:
 		uibd.Ga().bdg.ClearSq(sqDrop);
 		break;
+	case cmdToggleToMove:
+		uibd.Ga().bdg.ToggleToMove();
+		break;
+	case cmdToggleCsWhiteQueen:
+	case cmdToggleCsWhiteKing:
+	case cmdToggleCsBlackQueen:
+	case cmdToggleCsBlackKing:
+		uibd.Ga().bdg.AssignCastle(uibd.Ga().bdg.csCur ^ (cmd - cmdToggleCsBase));
+		break;
 	default:
 		break;
 	}
@@ -530,6 +614,16 @@ wstring UIPCP::SzTipFromCmd(int cmd) const
 		return L"Starting Position";
 	case cmdClosePanel:
 		return L"Exit Board Edit Mode";
+	case cmdToggleToMove:
+		return L"Switch Player to Move";
+	case cmdToggleCsBlackKing:
+		return L"Black King-Side Castle";
+	case cmdToggleCsBlackQueen:
+		return L"Black Queen-Side Castle";
+	case cmdToggleCsWhiteKing:
+		return L"White King-Side Castle";
+	case cmdToggleCsWhiteQueen:
+		return L"White Queen-Side Castle";
 	default:
 		return L"";
 	}

@@ -282,6 +282,15 @@ void UIBD::Draw(const RC& rcDraw)
 	}
 }
 
+ColorF UIBD::CoFore(void) const
+{
+	return uiga.FInBoardSetup() ? ColorF(0.4f, 0.4f, 0.4f) : coBoardDark; 
+}
+
+ColorF UIBD::CoBack(void) const
+{
+	return uiga.FInBoardSetup() ? ColorF(0.9f, 0.9f, 0.9f) : coBoardLight; 
+}
 
 /*	UIBD::DrawMargins
  *

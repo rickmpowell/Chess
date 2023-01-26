@@ -108,8 +108,8 @@ public:
 	RC RcFromSq(SQ sq) const;
 	void SetDragHiliteSq(SQ sq);
 
-	virtual ColorF CoFore(void) const { return coBoardDark; }
-	virtual ColorF CoBack(void) const { return coBoardLight; }
+	virtual ColorF CoFore(void) const; 
+	virtual ColorF CoBack(void) const; 
 
 	void FlipBoard(CPC cpcNew);
 
@@ -186,22 +186,34 @@ public:
 };
 
 
-class UICPCMOVE : public UI
+class UICPCTOMOVE : public BTN
 {
 	UIPCP& uipcp;
 public:
-	UICPCMOVE(UIPCP& uipcp);
+	UICPCTOMOVE(UIPCP& uipcp);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Layout(void);
+	virtual void Erase(const RC& rcUpdate);
+};
+
+
+class CHKCS : public BTN
+{
+	UIPCP& uipcp;
+public:
+	CHKCS(UI* puiParent, UIPCP& uipcp, int cmd);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate);
 };
 
 
 class UICASTLESTATE : public UI
 {
 	UIPCP& uipcp;
+	vector<CHKCS*> vpchkcs;
 public:
 	UICASTLESTATE(UIPCP& uipcp);
 	virtual void Draw(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate);
 	virtual void Layout(void);
 };
 
@@ -255,15 +267,16 @@ class UIPCP : public UIP
 	friend class UIDRAGDEL;
 	friend class UISETFEN;
 	friend class UIFEN;
-	friend class UICPCMOVE;
+	friend class UICPCTOMOVE;
 	friend class UICASTLESTATE;
+	friend class CHKCS;
 
 	UIBD& uibd;
 	UITITLE uititle;
 	map<CPC, UICPC*> mpcpcpuicpc;
 	map<APC, UIDRAGAPC*> mpapcpuiapc;
 	UIDRAGDEL uidragdel;
-	UICPCMOVE uicpcmove;
+	UICPCTOMOVE uicpctomove;
 	UICASTLESTATE uicastlestate;
 	vector<UISETFEN*> vpuisetfen;
 	UIFEN uifen;

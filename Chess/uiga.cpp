@@ -152,12 +152,12 @@ void UIGA::Layout(void)
 	rcBoard.right = rcBoard.left + rcBoard.DyHeight();
 	uibd.SetBounds(rcBoard);
 
-	/* piece panel */
+	/* board edit piece placement panel */
 
 	rc = rcBoard;
 	rc.top = rc.bottom + dxyMargin;
 	rc.bottom = rcBounds.bottom - dxyMargin;
-	rc.right += 250.0f;
+	rc.right = rc.left + 1080.0f;
 	uipcp.SetBounds(rc);
 
 	/* move list panel */
