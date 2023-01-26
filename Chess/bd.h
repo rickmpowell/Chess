@@ -412,35 +412,35 @@ public:
 		return (csCur & (csSide << (int)cpc)) != 0;
 	}
 
-	inline void AssignCastle(int cs) noexcept
+	inline void ToggleCsCur(int cs) noexcept
 	{
 		genhabd.ToggleCastle(habd, csCur);
-		csCur = cs;
+		csCur ^= cs;
 		genhabd.ToggleCastle(habd, csCur);
 	}
 
-	inline void SetCastle(CPC cpc, int csSide) noexcept
+	inline void SetCsCur(CPC cpc, int csSide) noexcept
 	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur |= csSide << (int)cpc;
 		genhabd.ToggleCastle(habd, csCur);
 	}
 
-	inline void SetCastle(int cs) noexcept
+	inline void SetCsCur(int cs) noexcept
 	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur |= cs;
 		genhabd.ToggleCastle(habd, csCur);
 	}
 
-	inline void ClearCastle(CPC cpc, int csSide) noexcept
+	inline void ClearCsCur(CPC cpc, int csSide) noexcept
 	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur &= ~(csSide << (int)cpc);
 		genhabd.ToggleCastle(habd, csCur);
 	}
 
-	inline void ClearCastle(int cs) noexcept
+	inline void ClearCsCur(int cs) noexcept
 	{
 		genhabd.ToggleCastle(habd, csCur);
 		csCur &= ~cs;

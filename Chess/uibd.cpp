@@ -156,7 +156,7 @@ void UIBD::Layout(void)
 	}
 	
 	CreateRsrc();
-	dyLabel = SizSz(L"8", ptxLabel).height;
+	dyLabel = SizFromSz(L"8", ptxLabel).height;
 
 	/* position the rotation button */
 
@@ -367,7 +367,7 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 	wchar_t szLabel[2];
 	szLabel[0] = L'1' + rankFirst;
 	szLabel[1] = 0;
-	float dxLabel = SizSz(L"8", ptxLabel).width;
+	float dxLabel = SizFromSz(L"8", ptxLabel).width;
 	float dxRight = rcSquares.left - (dxyBorder + dxyOutline + dxyBorder) - dxLabel/2.0f;
 	float dxLeft = dxRight - dxLabel;
 	for (int rank = rankFirst; rank <= rankLast; rank++) {

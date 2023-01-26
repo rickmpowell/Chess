@@ -298,14 +298,14 @@ void BD::SkipToNonSpace(const wchar_t*& sz)
 void BD::InitFENCastle(const wchar_t*& sz)
 {
 	SkipToNonSpace(sz);
-	ClearCastle(cpcWhite, csKing | csQueen);
-	ClearCastle(cpcBlack, csKing | csQueen);
+	ClearCsCur(cpcWhite, csKing | csQueen);
+	ClearCsCur(cpcBlack, csKing | csQueen);
 	for (; *sz && *sz != L' '; sz++) {
 		switch (*sz) {
-		case 'K': SetCastle(cpcWhite, csKing); break;
-		case 'Q': SetCastle(cpcWhite, csQueen); break;
-		case 'k': SetCastle(cpcBlack, csKing); break;
-		case 'q': SetCastle(cpcBlack, csQueen); break;
+		case 'K': SetCsCur(cpcWhite, csKing); break;
+		case 'Q': SetCsCur(cpcWhite, csQueen); break;
+		case 'k': SetCsCur(cpcBlack, csKing); break;
+		case 'q': SetCsCur(cpcBlack, csQueen); break;
 		case '-': break;
 		default: goto Done;
 		}
@@ -363,9 +363,9 @@ void BD::MakeMvuSq(MVU& mvu) noexcept
 		RemoveApcFromGph(apcTake);
 		if (apcTake == apcRook) {
 			if (sqTake == SQ(RankBackFromCpc(~cpcFrom), fileKingRook))
-				ClearCastle(~cpcFrom, csKing);
+				ClearCsCur(~cpcFrom, csKing);
 			else if (sqTake == SQ(RankBackFromCpc(~cpcFrom), fileQueenRook))
-				ClearCastle(~cpcFrom, csQueen);
+				ClearCsCur(~cpcFrom, csQueen);
 		}
 	}
 
@@ -391,7 +391,7 @@ void BD::MakeMvuSq(MVU& mvu) noexcept
 		break;
 
 	case apcKing:
-		ClearCastle(cpcFrom, csKing|csQueen);
+		ClearCsCur(cpcFrom, csKing|csQueen);
 		if (sqTo.file() - sqFrom.file() > 1) { // king side
 			ClearBB(PC(cpcFrom, apcRook), sqTo + 1);
 			SetBB(PC(cpcFrom, apcRook), sqTo - 1);
@@ -404,9 +404,9 @@ void BD::MakeMvuSq(MVU& mvu) noexcept
 
 	case apcRook:
 		if (sqFrom == SQ(RankBackFromCpc(cpcFrom), fileQueenRook))
-			ClearCastle(cpcFrom, csQueen);
+			ClearCsCur(cpcFrom, csQueen);
 		else if (sqFrom == SQ(RankBackFromCpc(cpcFrom), fileKingRook))
-			ClearCastle(cpcFrom, csKing);
+			ClearCsCur(cpcFrom, csKing);
 		break;
 
 	default:
@@ -436,7 +436,7 @@ void BD::UndoMvuSq(MVU mvu) noexcept
 
 	/* restore castle and en passant state. */
 
-	SetCastle(mvu.csPrev());
+	SetCsCur(mvu.csPrev());
 	if (mvu.fEpPrev())
 		SetEnPassant(SQ(RankToEpFromCpc(cpcMove), mvu.fileEpPrev()));
 	else
@@ -981,13 +981,13 @@ void BD::GuessEpAndCastle(SQ sq) noexcept
 
 void BD::GuessCastle(CPC cpc, int rank) noexcept
 {
-	ClearCastle(cpc, csKing);
-	ClearCastle(cpc, csQueen);
+	ClearCsCur(cpc, csKing);
+	ClearCsCur(cpc, csQueen);
 	if (PcFromSq(SQ(rank, fileE)) == PC(cpc, apcKing)) {
 		if (PcFromSq(SQ(rank, fileA)) == PC(cpc, apcRook))
-			SetCastle(cpc, csQueen);
+			SetCsCur(cpc, csQueen);
 		if (PcFromSq(SQ(rank, fileH)) == PC(cpc, apcRook))
-			SetCastle(cpc, csKing);
+			SetCsCur(cpc, csKing);
 	}
 }
 

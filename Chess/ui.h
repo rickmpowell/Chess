@@ -90,7 +90,9 @@ protected:
 	static BRS* pbrWhite;
 	static BRS* pbrBlack;
 	static TX* ptxText;
+	static TX* ptxTextBold;
 	static TX* ptxList;
+	static TX* ptxListBold;
 	static TX* ptxTip;
 	static wchar_t szFontFamily[];
 
@@ -223,7 +225,7 @@ public:
 	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
-	SIZ SizSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
+	SIZ SizFromSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
 	void DrawSzFit(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity = 1.0f) const;
 };

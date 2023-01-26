@@ -59,7 +59,7 @@ UIPL::UIPL(UI& uiParent, UIGA& uiga, CPC cpc) : UI(&uiParent), uiga(uiga), cpc(c
 void UIPL::CreateRsrc(void)
 {
 	UI::CreateRsrc();
-	dyLine = SizSz(L"Ag", ptxText).height + 2 * 6.0f;
+	dyLine = SizFromSz(L"Ag", ptxText).height + 2 * 6.0f;
 }
 
 
@@ -110,7 +110,7 @@ void UIPL::Draw(const RC& rcUpdate)
 
 		RC rc = RcInterior();
 		rc.left += 12.0f;
-		SIZ siz = SizSz(L"Ag", ptxText);
+		SIZ siz = SizFromSz(L"Ag", ptxText);
 		float dxyRadius = siz.height / 2.0f;
 		ELL ell(PT(rc.left + dxyRadius, rc.top + 6.0f + dxyRadius), PT(dxyRadius, dxyRadius));
 
@@ -125,7 +125,7 @@ void UIPL::Draw(const RC& rcUpdate)
 		if (ppl) {
 			wstring szName = ppl->SzName();
 			rc.left += 3 * dxyRadius;
-			siz = SizSz(ppl->SzName(), ptxText);
+			siz = SizFromSz(ppl->SzName(), ptxText);
 			rc.top += 6.0f;
 			if (spinlvl.FVisible())
 				rc.right = spinlvl.RcBounds().left - 1.0f;
@@ -254,7 +254,7 @@ void UIGC::Layout(void)
 
 SIZ UIGC::SizLayoutPreferred(void)
 {
-	SIZ siz = SizSz(L"0", ptxText);
+	SIZ siz = SizFromSz(L"0", ptxText);
 	siz.width = -1.0f;
 	if (uiga.ga.bdg.gs == gsPlaying)
 		siz.height *= 1.5;
@@ -274,7 +274,7 @@ void UIGC::Draw(const RC& rcUpdate)
 	if (uiga.ga.bdg.gs == gsNotStarted)
 		return;
 
-	float dyLine = SizSz(L"A", ptxText).height + 3.0f;
+	float dyLine = SizFromSz(L"A", ptxText).height + 3.0f;
 
 	RC rc = RcInterior();
 
@@ -401,7 +401,7 @@ void UICLOCK::DiscardRsrc(void)
 
 SIZ UICLOCK::SizLayoutPreferred(void)
 {
-	SIZ siz = SizSz(L"0", ptxClock);
+	SIZ siz = SizFromSz(L"0", ptxClock);
 	return SIZ(-1.0, siz.height * 4.0f / 3.0f);
 }
 
@@ -444,8 +444,8 @@ void UICLOCK::Draw(const RC& rcUpdate)
 	/* print out the text piece at a time */
 
 	TATX tatx(ptxClock, DWRITE_TEXT_ALIGNMENT_LEADING);
-	SIZ sizDigit = SizSz(L"0", ptxClock);
-	SIZ sizPunc = SizSz(L":", ptxClock);
+	SIZ sizDigit = SizFromSz(L"0", ptxClock);
+	SIZ sizPunc = SizFromSz(L":", ptxClock);
 	rc.bottom = rc.top + sizDigit.height;
 	rc.Offset(0, RcInterior().YCenter() - rc.YCenter());
 	if (hr > 0) {
@@ -487,7 +487,7 @@ bool UICLOCK::FTimeOutWarning(DWORD dmsec) const
 void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 {
 	OPACITYBR opacitybr(pbrText, (frac < 500 && cpc == uiga.ga.bdg.cpcToMove) ? 0.33f : 1.0f);
-	SIZ sizPunc = SizSz(L":", ptxClock);
+	SIZ sizPunc = SizFromSz(L":", ptxClock);
 	DrawSz(L":", ptxClock, rc, pbrText);
 	rc.left += sizPunc.width;
 }
@@ -632,10 +632,10 @@ void UIML::Layout(void)
 SIZ UIML::SizLayoutPreferred(void)
 {
 	/* I think this is the longest possible move text */
-	SIZ siz = SizSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
+	SIZ siz = SizFromSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
 	dyList = siz.height + 2*dyCellMarg;
 
-	mpcoldx[0] = dxCellMarg+SizSz(L"100.", ptxList).width;
+	mpcoldx[0] = dxCellMarg+SizFromSz(L"100.", ptxList).width;
 	mpcoldx[1] = mpcoldx[2] = dxCellMarg + siz.width;
 	mpcoldx[3] = dxyScrollBarWidth;
 

@@ -317,12 +317,12 @@ void UICPCTOMOVE::Draw(const RC& rcUpdate)
 	FillRc(rc, cpc == cpcWhite ? pbrWhite : pbrBlack);
 	rc.top += 4.0f;
 	if (cpc == cpcWhite)
-		DrawSzCenter(L"White", ptxText, rc, pbrBlack);
+		DrawSzCenter(L"White", ptxTextBold, rc, pbrBlack);
 	else
-		DrawSzCenter(L"Black", ptxText, rc, pbrWhite);
+		DrawSzCenter(L"Black", ptxTextBold, rc, pbrWhite);
 	rc.Offset(0, rc.DyHeight() + 8.0f);
 	rc.Inflate(12.0f, 0);
-	DrawSzCenter(L"To Move", ptxText, rc, pbrText);
+	DrawSzCenter(L"To Move", ptxTextBold, rc, pbrText);
 }
 
 
@@ -356,7 +356,7 @@ void UICASTLESTATE::Layout(void)
 void UICASTLESTATE::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
-	DrawSzCenter(L"Castle State", ptxList, rc);
+	DrawSzCenter(L"Castle State", ptxListBold, rc);
 	rc.top += 16.0f;
 	RC rcWhite = rc, rcBlack = rc;
 	rcWhite.right = rc.XCenter();
@@ -435,12 +435,16 @@ void UIFEN::Draw(const RC& rcUpdate)
 	RC rc = RcInterior().Inflate(-2, -2);
 	const wchar_t szTitle[] = L"FEN:";
 	RC rcTitle = rc;
-	DrawSz(szTitle, ptxText, rcTitle.Inflate(0, -2));
-	rc.left += SizSz(szTitle, ptxText).width + 4.0f;
+	DrawSz(szTitle, ptxTextBold, rcTitle.Inflate(0, -3));
+	rc.left += SizFromSz(szTitle, ptxTextBold).width + 4.0f;
 	FillRc(rc, pbrBlack);
 	FillRc(rc.Inflate(-1, -1), pbrWhite);
-	rc.Inflate(-6, -1);
-	DrawSz(uipcp.uiga.ga.bdg.SzFEN(), ptxText, rc);
+	rc.Inflate(-6, -3);
+	DrawSz(uipcp.uiga.ga.bdg.SzFEN(), ptxTextBold, rc);
+}
+
+void UIFEN::Erase(const RC& rcUpdate)
+{
 }
 
 
@@ -585,7 +589,7 @@ void UIPCP::DispatchCmd(int cmd)
 	case cmdToggleCsWhiteKing:
 	case cmdToggleCsBlackQueen:
 	case cmdToggleCsBlackKing:
-		uibd.Ga().bdg.AssignCastle(uibd.Ga().bdg.csCur ^ (cmd - cmdToggleCsBase));
+		uibd.Ga().bdg.ToggleCsCur(cmd - cmdToggleCsBase);
 		break;
 	default:
 		break;

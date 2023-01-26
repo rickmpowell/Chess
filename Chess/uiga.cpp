@@ -67,7 +67,7 @@ void UIGA::Draw(const RC& rcUpdate)
 {
 #ifndef NDEBUG
 	RC rc(0, -15.0f, 0, 0);
-	SIZ siz = SizSz(L"DEBUG", ptxDesktop, rcBounds.DxWidth(), rcBounds.DyHeight());
+	SIZ siz = SizFromSz(L"DEBUG", ptxDesktop, rcBounds.DxWidth(), rcBounds.DyHeight());
 	rc.right = rc.left + siz.width + 10.0f;
 	rc.bottom = rc.top + siz.height - 2.0f;
 	while (rc.top < rcBounds.bottom) {

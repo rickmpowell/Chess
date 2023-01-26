@@ -1,5 +1,5 @@
-  Make a few bold fonts for use in UI elements
-  In board edit mode, chagnes in the UIBD need to redraw the UIPCP
+  BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
+  In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, result should be draw if "winning" side has insufficient material
   Formalize game states - editing, initialized but not started, playing, post-game
   Change FEN control in board editor to be an edit box
@@ -96,7 +96,8 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-  Add castle state to board edit mode
+* Add castle state to board edit mode
+* Make a few bold fonts for use in UI elements
 * Add side to move to board edit mode
 * Add close boxes to titled panels
 * Add titled panels

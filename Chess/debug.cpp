@@ -114,7 +114,7 @@ void UIDB::CreateRsrc(void)
 	ptxLogBold = PtxCreate(12.0f, true, false);
 	ptxLogItalic = PtxCreate(12.0f, false, true);
 	ptxLogBoldItalic = PtxCreate(12.0f, true, true);
-	dyLine = SizSz(L"0", ptxLog).height;
+	dyLine = SizFromSz(L"0", ptxLog).height;
 	UI::CreateRsrc();
 }
 

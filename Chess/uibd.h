@@ -232,6 +232,7 @@ public:
 	UIFEN(UIPCP& uipcp);
 
 	virtual void Draw(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate);
 };
 
 
@@ -244,8 +245,8 @@ public:
 
 	virtual void Draw(const RC& rcUpdate);
 	RC RcFromSq(SQ sq) const;
-	virtual ColorF CoFore(void) const { return coBoardDark; }
-	virtual ColorF CoBack(void) const { return coBoardLight; }
+	virtual ColorF CoFore(void) const { return ColorF(0.4f, 0.4f, 0.4f); }
+	virtual ColorF CoBack(void) const { return ColorF(0.9f, 0.9f, 0.9f); }
 };
 
 
@@ -291,7 +292,7 @@ public:
 	virtual void Layout(void);
 	virtual void DispatchCmd(int cmd);
 	virtual wstring SzTipFromCmd(int cmd) const;
-	virtual ColorF CoBack(void) const { return coBoardLight; }
+	virtual ColorF CoBack(void) const { return ColorF(0.9f,0.9f,0.9f); }
 
 	RC RcFromApc(APC apc) const;
 	BMP* PbmpPieces(void);

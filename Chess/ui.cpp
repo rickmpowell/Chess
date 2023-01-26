@@ -22,7 +22,9 @@ BRS* UI::pbrHilite;
 BRS* UI::pbrWhite;
 BRS* UI::pbrBlack;
 TX* UI::ptxText;
+TX* UI::ptxTextBold;
 TX* UI::ptxList;
+TX* UI::ptxListBold;
 TX* UI::ptxTip;
 
 
@@ -43,9 +45,17 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 		16.0f, L"",
 		&ptxText);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		16.0f, L"",
+		&ptxTextBold);
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxList);
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+		12.0f, L"",
+		&ptxListBold);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		13.0f, L"",
@@ -66,7 +76,9 @@ void UI::DiscardRsrcClass(void)
 	SafeRelease(&pbrWhite);
 	SafeRelease(&pbrBlack);
 	SafeRelease(&ptxList);
+	SafeRelease(&ptxListBold);
 	SafeRelease(&ptxText);
+	SafeRelease(&ptxTextBold);
 	SafeRelease(&ptxTip);
 }
 
@@ -919,7 +931,7 @@ void UI::DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, ID2D1Brush* pbr)
 }
 
 
-SIZ UI::SizSz(const wstring& sz, TX* ptx, float dx, float dy) const
+SIZ UI::SizFromSz(const wstring& sz, TX* ptx, float dx, float dy) const
 {
 	IDWriteTextLayout* ptxl;
 	App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, dx, dy, &ptxl);
@@ -1130,7 +1142,7 @@ void BTNCH::Draw(const RC& rcUpdate)
 	wchar_t sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
-	RC rcChar(PT(0, 0), SizSz(sz, ptxButton));
+	RC rcChar(PT(0, 0), SizFromSz(sz, ptxButton));
 	RC rcTo = RcInterior();
 	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), ColorF::Red, (float)(fHilite + fTrack) / 2.0f));
 	rcChar += rcTo.PtCenter();
@@ -1150,7 +1162,7 @@ float BTNCH::DxWidth(void)
 	wchar_t szText[2];
 	szText[0] = ch;
 	szText[1] = 0;
-	return SizSz(szText, ptxButton).width;
+	return SizFromSz(szText, ptxButton).width;
 }
 
 
@@ -1191,7 +1203,7 @@ BTNTEXT::BTNTEXT(UI* puiParent, int cmd, const wstring& sz) : BTNCH(puiParent, c
 void BTNTEXT::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
-	RC rcText(PT(0, 0), SizSz(szText, ptxButton));
+	RC rcText(PT(0, 0), SizFromSz(szText, ptxButton));
 	RC rcTo = RcInterior();
 	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), ColorF::Red, (float)(fHilite + fTrack) / 2.0f));
 	rcText += rcTo.PtCenter() - rcText.PtCenter();
@@ -1202,7 +1214,7 @@ void BTNTEXT::Draw(const RC& rcUpdate)
 float BTNTEXT::DxWidth(void)
 {
 	CreateRsrc();
-	return SizSz(szText, ptxButton).width;
+	return SizFromSz(szText, ptxButton).width;
 }
 
 
@@ -1318,7 +1330,7 @@ wstring STATIC::SzText(void) const
 void STATIC::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
-	RC rcChar(PT(0, 0), SizSz(SzText(), ptxStatic));
+	RC rcChar(PT(0, 0), SizFromSz(SzText(), ptxStatic));
 	RC rcTo = RcInterior();
 	rcChar += rcTo.PtCenter();
 	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
@@ -1407,7 +1419,7 @@ void SPIN::Layout(void)
 void SPIN::Draw(const RC& rcUpdate)
 {
 	wstring szValue = SzValue();
-	SIZ siz = SizSz(szValue, ptxSpin);
+	SIZ siz = SizFromSz(szValue, ptxSpin);
 	RC rc = RcInterior();
 	rc.Offset(PT(0, (rc.DyHeight() - siz.height) / 2));
 	DrawSzCenter(szValue, ptxSpin, rc);
