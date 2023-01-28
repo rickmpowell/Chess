@@ -84,6 +84,7 @@ class UICLOCK : public UI
 protected:
 	UIGA& uiga;
 	CPC cpc;
+	bool fFlag;
 	static TX* ptxClock;
 	static TX* ptxClockNote;
 	static TX* ptxClockNoteBold;
@@ -95,15 +96,22 @@ public:
 
 public:
 	UICLOCK(UIML& uiml, CPC cpc);
+
+
 	virtual SIZ SizLayoutPreferred(void);
+	
 	virtual void Draw(const RC& rcUpdate);
 	virtual ColorF CoFore(void) const;
 	virtual ColorF CoBack(void) const;
-	void DrawColon(RC& rc, unsigned frac) const;
+
+	void Flag(bool fFlag);
+
 	RC DrawTimeControls(int nmvSel) const;
 	void DrawTmi(const TMI& tmi, RC rc, int nmvSel) const;
-	wchar_t* PchDecodeDmsec(DWORD dmsec, wchar_t* pch) const;
+	void DrawColon(RC& rc, unsigned frac) const;
+	void DrawFlag(void) const;
 
+	wchar_t* PchDecodeDmsec(DWORD dmsec, wchar_t* pch) const;
 	bool FTimeOutWarning(DWORD tm) const;
 };
 

@@ -210,8 +210,8 @@ void UIDRAGAPC::DrawInterior(UI* pui, const RC& rcDraw)
 	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
 	BMP* pbmpPieces = uipcp.PbmpPieces();
 	SIZ siz = pbmpPieces->GetSize();
-	float dxPiece = siz.width / 6.0f;
-	float dyPiece = siz.height / 2.0f;
+	float dxPiece = siz.width / 6;
+	float dyPiece = siz.height / 2;
 	float xPiece = mpapcxBitmap[apc] * dxPiece;
 	float yPiece = (int)uipcp.cpcShow * dyPiece;
 	pui->DrawBmp(rcDraw, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), 1.0f);
@@ -243,17 +243,12 @@ UIDRAGDEL::UIDRAGDEL(UIPCP& uipcp) : UIDRAGPCP(uipcp)
 void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 {
 	RC rc = rcDraw;
-	rc.Inflate(-6.0f, -6.0f);
-	float dxyLine = 7.0f;
-	ELL ell(rc.PtCenter(), PT(rc.DxWidth()/2.0f-dxyLine, rc.DyHeight()/2.0f-dxyLine));
-	{
-	COLORBRS colorbrsSav(pbrText, ColorF(0.65f, 0.15f, 0.25f));
-	pui->DrawEll(ell, pbrText, dxyLine);
-	}
+	rc.Inflate(-6, -6);
+	float dxyLine = 7;
+	ELL ell(rc.PtCenter(), PT(rc.DxWidth()/2-dxyLine, rc.DyHeight()/2-dxyLine));
+	pui->DrawEll(ell, ColorF(0.65f, 0.15f, 0.25f), dxyLine);
 
 	/* taking an opponent piece - draw an X */
-
-	/* TODO: can we share this with the cross in UIBD? */
 
 	const float dxyCrossFull = 10.0f;
 	const float dxyCrossCenter = 3.0f;
@@ -272,16 +267,9 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 		{-dxyCrossCenter, -dxyCrossCenter},
 		{-dxyCrossCenter, -dxyCrossFull} };
 
-	DC* pdc = App().pdc;
-	rc.Inflate(-2.0f*dxyLine-1.0f, -2.0f*dxyLine-1.0f);
-	PT ptCenter = PtGlobalFromUiLocal(pui, rc.PtCenter());
-	TRANSDC transdc(pdc,
-			Matrix3x2F::Rotation(45.0f, PT(0, 0)) * 
-			Matrix3x2F::Scale(SizeF(rc.DxWidth() / (2*dxyCrossFull), rc.DyHeight()/ (2*dxyCrossFull)), PT(0, 0)) * 
-			Matrix3x2F::Translation(ptCenter.x, ptCenter.y));
-
+	rc.Inflate(-2*dxyLine-1, -2*dxyLine-1);
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
-	pdc->FillGeometry(pgeomCross, pbrBlack);
+	FillRotateGeom(pgeomCross, rc.PtCenter(), rc.DxWidth() / (2*dxyCrossFull), 45, pbrBlack);
 	SafeRelease(&pgeomCross);
 }
 

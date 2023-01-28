@@ -458,12 +458,7 @@ void UIBD::DrawHoverMvu(MVU mvu)
 	}
 	else {
 		/* taking an opponent piece - draw an X */
-		DC* pdc = App().pdc;
-		TRANSDC transdc(pdc, 	
-			Matrix3x2F::Rotation(45.0f, PT(0, 0)) *
-			Matrix3x2F::Scale(SizeF(dxySquare / (2*dxyCrossFull), dxySquare / (2*dxyCrossFull)), PT(0, 0)) *
-			Matrix3x2F::Translation(SizeF(rcBounds.left + rc.XCenter(), rcBounds.top + rc.YCenter())));
-		pdc->FillGeometry(pgeomCross, pbrBlack);
+		FillRotateGeom(pgeomCross, rc.PtCenter(), dxySquare/(2*dxyCrossFull), 45, pbrBlack);
 	}
 }
 

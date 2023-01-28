@@ -303,6 +303,7 @@ void UIGA::TickTimer(TID tid, DWORD msecCur)
 	if (dmsec > mpcpcdmsecClock[cpcToMove]) {
 		dmsec = mpcpcdmsecClock[cpcToMove];
 		ga.bdg.SetGs(cpcToMove == cpcWhite ? gsWhiteTimedOut : gsBlackTimedOut);
+		uiml.UiclockFromCpc(cpcToMove).Flag(true);
 		EndGame(spmvAnimate);
 	}
 	mpcpcdmsecClock[cpcToMove] -= dmsec;
@@ -377,10 +378,11 @@ void UIGA::EndGame(SPMV spmv)
  */
 void UIGA::InitClocks(void)
 {
-	mpcpcdmsecClock[cpcWhite] = ga.prule->DmsecAddBlock(cpcWhite, 1);
-	mpcpcdmsecClock[cpcBlack] = ga.prule->DmsecAddBlock(cpcBlack, 1);
-	ga.SetTimeRemaining(cpcWhite, mpcpcdmsecClock[cpcWhite]);
-	ga.SetTimeRemaining(cpcBlack, mpcpcdmsecClock[cpcBlack]);
+	for (CPC cpc = cpcWhite; cpc <= cpcBlack; ++cpc) {
+		mpcpcdmsecClock[cpc] = ga.prule->DmsecAddBlock(cpc, 1);
+		ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);
+		uiml.UiclockFromCpc(cpc).Flag(false);
+	}
 }
 
 
@@ -410,9 +412,9 @@ void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 	if (ga.prule->FUntimed())
 		return;
 	mpcpcdmsecClock[cpc] -= msecCur - msecLast;
-	int nmvLast = ga.NmvFromImv(ga.bdg.imvuCurLast+1);
+	int nmvThis = ga.NmvFromImv(ga.bdg.imvuCurLast+1);
 	mpcpcdmsecClock[cpc] +=
-		ga.prule->DmsecAddMove(cpc, nmvLast) + ga.prule->DmsecAddBlock(cpc, nmvLast+1);
+		ga.prule->DmsecAddMove(cpc, nmvThis) + ga.prule->DmsecAddBlock(cpc, nmvThis+1);
 	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);
 	uiml.UiclockFromCpc(cpc).Redraw();
 }

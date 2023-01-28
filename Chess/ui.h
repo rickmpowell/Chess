@@ -99,7 +99,7 @@ protected:
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
-	GEOM* PgeomCreate(const PT rgpt[], int cpt);
+	GEOM* PgeomCreate(const PT rgpt[], int cpt) const;
 	BMP* PbmpFromPngRes(int idb);
 	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic);
 
@@ -217,17 +217,25 @@ public:
 	virtual ColorF CoFore(void) const;
 	virtual ColorF CoBack(void) const;
 	void FillRc(const RC& rc, BR* pbr) const;
+	void FillRc(const RC& rc, ColorF co) const;
 	virtual void FillRcBack(const RC& rc) const;
 	void FillRr(const RR& rr, BR* pbr) const;
 	void DrawRr(const RR& rr, BR* pbr) const;
 	void FillEll(const ELL& ell, BR* pbr) const;
 	void DrawEll(const ELL& ell, BR* pbr, float dxyWidth=1.0f) const;
+	void DrawEll(const ELL& ell, ColorF co, float dxyWidth = 1.0f) const;
 	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	SIZ SizFromSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
 	void DrawSzFit(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity = 1.0f) const;
+	void FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, BR* pbr = nullptr) const;
+	void FillGeom(GEOM* pgeom, PT ptOffset, float dxyScale, BR* pbr = nullptr) const;
+	void FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, ColorF coFill) const;
+	void FillGeom(GEOM* pgeom, PT ptOffset, float dxyScale, ColorF coFill) const;
+	void FillRotateGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, float angle, BR* pbr = nullptr) const;
+	void FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, BR* pbr = nullptr) const;
 };
 
 

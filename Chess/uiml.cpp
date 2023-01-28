@@ -100,8 +100,6 @@ SIZ UIPL::SizLayoutPreferred(void)
  */
 void UIPL::Draw(const RC& rcUpdate)
 {
-	FillRc(rcUpdate, pbrBack);
-
 	if (fChooser)
 		DrawChooser(rcUpdate);
 	else {
@@ -267,8 +265,6 @@ SIZ UIGC::SizLayoutPreferred(void)
 
 void UIGC::Draw(const RC& rcUpdate)
 {
-	FillRc(rcUpdate, pbrBack);
-	
 	if (uiga.ga.bdg.gs == gsPlaying)
 		return;
 	if (uiga.ga.bdg.gs == gsNotStarted)
@@ -363,12 +359,13 @@ TX* UICLOCK::ptxClockNoteBold;
 
 const ColorF coClockText = ColorF(0.5f, 0.9f, 1.0f);
 const ColorF coClockBack = ColorF(0.2f, 0.2f, 0.2f);
-const ColorF coClockWarningText = ColorF(0.8f, 0.2f, 0.2f);
+const ColorF coClockWarningText = ColorF(0.9f, 0.2f, 0.2f);
 const ColorF coClockWarningBack = coClockBack;
 const ColorF coClockTCText = coClockText;
 const ColorF coClockTCBack = coClockBack;
 const ColorF coClockTCCurText = ColorF::White;
 const ColorF coClockTCCurBack = coClockBack;
+const ColorF coClockFlag = coClockWarningText;
 /*
 const ColorF coClockText = ColorF(0.0f, 0.25f, 0.45f);
 const ColorF coClockBack = ColorF(0.86f, 0.90f, 0.86f);
@@ -378,6 +375,7 @@ const ColorF coClockTCText = coClockText;
 const ColorF coClockTCBack = coClockBack;
 const ColorF coClockTCCurText = coClockText;
 const ColorF coClockTCCurBack = coClockWarningBack;
+const ColorF coClockFlag = ColorF(1.0f, 0.0f, 0.0f);
 */
 
 void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
@@ -407,7 +405,7 @@ void UICLOCK::DiscardRsrcClass(void)
 }
 
 
-UICLOCK::UICLOCK(UIML& uiml, CPC cpc) : UI(&uiml), uiga(uiml.uiga), cpc(cpc)
+UICLOCK::UICLOCK(UIML& uiml, CPC cpc) : UI(&uiml), uiga(uiml.uiga), cpc(cpc), fFlag(false)
 {
 }
 
@@ -432,6 +430,12 @@ SIZ UICLOCK::SizLayoutPreferred(void)
 	if (uiga.ga.prule->CtmiTotal() >= 2)
 		siz.height += 14.0f;;
 	return siz;
+}
+
+
+void UICLOCK::Flag(bool fFlagNew)
+{
+	fFlag = fFlagNew;
 }
 
 
@@ -515,6 +519,9 @@ void UICLOCK::Draw(const RC& rcUpdate)
 	}
 
 	/* draw current increment */
+
+	if (fFlag)
+		DrawFlag();
 }
 
 
@@ -600,6 +607,15 @@ void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 	rc.left += sizPunc.width;
 }
 
+
+void UICLOCK::DrawFlag(void) const
+{
+	RC rc = RcInterior();
+	PT rgpt[] = { {0, 0}, {15, 0}, {15, 30}, {0, 15}, {0, 0} };
+	GEOM* pgeom = PgeomCreate(rgpt, CArray(rgpt));
+	FillGeom(pgeom, PT(rc.DxWidth() - 35.0f, 0), 1, coClockFlag);
+	SafeRelease(&pgeom);
+}
 
 /*
  *

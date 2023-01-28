@@ -87,9 +87,8 @@ void UI::DiscardRsrcClass(void)
  *
  *	Creates a geometry object from the array of points.
  */
-ID2D1PathGeometry* UI::PgeomCreate(const PT rgpt[], int cpt)
+ID2D1PathGeometry* UI::PgeomCreate(const PT rgpt[], int cpt) const
 {
-	/* capture X, which is created as a cross that is rotated later */
 	ID2D1PathGeometry* pgeom;
 	App().pfactd2->CreatePathGeometry(&pgeom);
 	ID2D1GeometrySink* psink;
@@ -857,10 +856,18 @@ ColorF UI::CoBack(void) const
  *	Graphics helper for filling a rectangle with a brush. The rectangle is in
  *	local UI coordinates
  */
-void UI::FillRc(const RC& rc, ID2D1Brush* pbr) const
+void UI::FillRc(const RC& rc, BR* pbr) const
 {
 	RC rcGlobal = RcGlobalFromLocal(rc);
 	App().pdc->FillRectangle(&rcGlobal, pbr);
+}
+
+
+void UI::FillRc(const RC& rc, ColorF co) const
+{
+	RC rcGlobal = RcGlobalFromLocal(rc);
+	COLORBRS colorbrs(pbrBack, co);
+	App().pdc->FillRectangle(&rcGlobal, pbrBack);
 }
 
 
@@ -893,7 +900,7 @@ void UI::FillRr(const RR& rr, BR* pbr) const
  *	Helper function for filling an ellipse with a brush. Rectangle is in
  *	local UI coordinates
  */
-void UI::FillEll(const ELL& ell, ID2D1Brush* pbr) const
+void UI::FillEll(const ELL& ell, BR* pbr) const
 {
 	ELL ellGlobal = ell.Offset(PtGlobalFromLocal(PT(0, 0)));
 	App().pdc->FillEllipse(&ellGlobal, pbr);
@@ -909,6 +916,13 @@ void UI::DrawEll(const ELL& ell, ID2D1Brush* pbr, float dxyWidth) const
 {
 	ELL ellGlobal = ell.Offset(PtGlobalFromLocal(PT(0, 0)));
 	App().pdc->DrawEllipse(&ellGlobal, pbr, dxyWidth);
+}
+
+
+void UI::DrawEll(const ELL& ell, ColorF co, float dxyWidth) const
+{
+	COLORBRS colorbrs(pbrText, co);
+	DrawEll(ell, pbrText, dxyWidth);
 }
 
 
@@ -1028,6 +1042,64 @@ void UI::DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity) con
 {
 	App().pdc->DrawBitmap(pbmp, rcTo.Offset(rcBounds.PtTopLeft()), 
 			opacity, D2D1_INTERPOLATION_MODE_MULTI_SAMPLE_LINEAR, rcFrom);
+}
+
+
+/*	UI::FillGeom
+ *
+ *	Fills the geometry with the given color. Offsets the geometry to the point
+ *	and scales it by the size.
+ */
+void UI::FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, BR* pbrFill) const
+{
+	if (pbrFill == nullptr)
+		pbrFill = pbrText;
+
+	DC* pdc = App().pdc;
+	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	PT ptOrigin = rcBounds.PtTopLeft();
+	TRANSDC transdc(pdc,
+		Matrix3x2F::Scale(SizeF(sizScale.width, sizScale.height), PT(0, 0)) *
+		Matrix3x2F::Translation(SizeF(ptOrigin.x + ptOffset.x, ptOrigin.y + ptOffset.y)));
+	pdc->FillGeometry(pgeom, pbrFill);
+}
+
+void UI::FillGeom(GEOM* pgeom, PT ptOffset, float dxyScale, BR* pbrFill) const
+{
+	return FillGeom(pgeom, ptOffset, SIZ(dxyScale, dxyScale), pbrFill);
+}
+
+
+void UI::FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, ColorF coFill) const
+{
+	COLORBRS colorbrs(pbrText, coFill);
+	FillGeom(pgeom, ptOffset, sizScale, pbrText);
+}
+
+void UI::FillGeom(GEOM* pgeom, PT ptOffset, float dxyScale, ColorF coFill) const
+{
+	return FillGeom(pgeom, ptOffset, SIZ(dxyScale, dxyScale), coFill);
+}
+
+
+void UI::FillRotateGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, float angle, BR* pbrFill) const
+{
+	if (pbrFill == nullptr)
+		pbrFill = pbrText;
+
+	DC* pdc = App().pdc;
+	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	PT ptOrigin = rcBounds.PtTopLeft();
+	TRANSDC transdc(pdc,
+		Matrix3x2F::Rotation(angle, PT(0, 0)) *
+		Matrix3x2F::Scale(SizeF(sizScale.width, sizScale.height), PT(0, 0)) *
+		Matrix3x2F::Translation(SizeF(ptOrigin.x + ptOffset.x, ptOrigin.y + ptOffset.y)));
+	pdc->FillGeometry(pgeom, pbrFill);
+}
+
+void UI::FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, BR* pbrFill) const
+{
+	FillRotateGeom(pgeom, ptOffset, SIZ(dxyScale, dxyScale), angle, pbrFill);
 }
 
 
@@ -1360,14 +1432,8 @@ BTNGEOM::~BTNGEOM(void)
 void BTNGEOM::Draw(const RC& rcUpdate)
 {
 	float dxyScale = RcInterior().DxWidth() / 2.0f;
-	DC* pdc = App().pdc;
-	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	PT ptCenter = rcBounds.PtCenter();
-	TRANSDC transdc(pdc,
-		Matrix3x2F::Scale(SizeF(dxyScale, dxyScale), PT(0, 0)) *
-		Matrix3x2F::Translation(SizeF(ptCenter.x, ptCenter.y)));
-	COLORBRS colorbrsSav(pbrText, ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));
-	pdc->FillGeometry(pgeom, pbrText);
+	FillGeom(pgeom, RcInterior().PtCenter(), dxyScale,
+		ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));	/* ranges from black to dark red */
 }
 
 
