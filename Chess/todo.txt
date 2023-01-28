@@ -1,9 +1,7 @@
-  Write a FillRc with a solid color instead of a brush
+  When AIs are playing moves aren't animated
   PGN files that start in standard position shouldn't save FEN
   Escaping out of an AI game needs to stop the clocks
   In board edit mode, dragging pieces around should display hilite when over drop squares
-  Display a flag in UICLOCK when time expires
-  Display time control information in clocks if there are increments or multiple phases
   BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
   In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, result should be draw if "winning" side has insufficient material
@@ -19,10 +17,7 @@
   Game over panel sometimes doesn't get reset on new game
   Clocks don't get reset right on new game
   Clocks should run as soon as game loop starts
-  Save real date in PGN files
-  Save real player names in PGN files
   How to deal with 3-repeat draws in transposition table?
-  Pre-compiled headers?
   Can we incrementally keep whether someone is in check in the BD and make them noisy moves?
   UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
   Test: option to stop or continue on errors 
@@ -46,7 +41,6 @@
   AI: Play through until no checks (quiescence) before evaluation
   Eval: Add square control factor to evaluation function
   Choosing the player picker while the AI is running crashes
-  When AIs are playing each other, making human moves should be allowed until we start the game
   Can we make things like Undo work while AI is thinking?
   Move gen: Use magic bitboards for move generation
   Move gen: Use magic bitboards for attack squares
@@ -100,6 +94,11 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Display time control information in clocks if there are increments or multiple phases
+* Save real date in PGN files
+* Save real player names in PGN files
+* Display a flag in UICLOCK when time expires
+* Write a FillRc with a solid color instead of a brush
 * UITI: Hook up UI elements to real information from the GA
 * Unstarted games saved as a PGN file show the game as tied
 * PGN files need to save starting position FEN if we're starting from non-standard board

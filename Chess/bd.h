@@ -333,6 +333,7 @@ public:
 	void RemoveInCheckMoves(VMVE& vmve, CPC cpc) noexcept;
 	bool FMvuIsQuiescent(MVU mvu) const noexcept;
 	bool FInCheck(CPC cpc) const noexcept;
+	bool FIsCheckMate(CPC cpc) noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
 
 	inline BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;

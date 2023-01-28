@@ -617,6 +617,7 @@ void UICLOCK::DrawFlag(void) const
 	SafeRelease(&pgeom);
 }
 
+
 /*
  *
  *	UIML class implementation

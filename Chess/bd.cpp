@@ -604,6 +604,19 @@ bool BD::FInCheck(CPC cpc) const noexcept
 }
 
 
+/*	BD::FIsCheckMate
+ *
+ *	If cpc is in check, checks if we have a checkmate. This is a very slow operation,
+ *	don't use it in time critical code.
+ */
+bool BD::FIsCheckMate(CPC cpc) noexcept
+{
+	VMVE vmve;
+	GenVmve(vmve, cpcToMove, ggLegal);
+	return vmve.cmve() == 0;
+}
+
+
 /*	BD::BbPawnAttacked
  *
  *	Returns bitboard of all squares all pawns attack.
@@ -1333,10 +1346,8 @@ wstring BDG::SzMoveAndDecode(MVU mvu)
 	wstring sz = SzDecodeMvu(mvu, true);
 	CPC cpc = CpcFromSq(mvu.sqFrom());
 	MakeMvu(mvu);
-	if (FInCheck(~cpc)) {
-		/* TODO: check for mates */
-		sz += L'+';
-	}
+	if (FInCheck(~cpc))
+		sz += FIsCheckMate(~cpc) ? '#' : '+';
 	return sz;
 }
 
