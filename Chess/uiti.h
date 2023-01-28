@@ -30,24 +30,27 @@ public:
 
 class UILOCALE : public UI
 {
+	UIGA& uiga;
 public:
-	UILOCALE(UI* puiParent);
+	UILOCALE(UI* puiParent, UIGA& uiga);
 	virtual void Draw(const RC& rcUpdate);
 };
 
 
 class UIGT : public UI
 {
+	UIGA& uiga;
 public:
-	UIGT(UI* puiParent);
+	UIGT(UI* puiParent, UIGA& uiga);
 	virtual void Draw(const RC& rcUpdate);
 };
 
 
 class UIGTM : public UI
 {
+	UIGA& uiga;
 public:
-	UIGTM(UI* puiParent);
+	UIGTM(UI* puiParent, UIGA& uiga);
 	virtual void Draw(const RC& rcUpdate);
 };
 
@@ -74,7 +77,6 @@ class UITI : public UIP
 public:
 	UITI(UIGA& uiga);
 	virtual void Layout(void);
-	virtual void Draw(const RC& rcUpdate);
 };
 
 

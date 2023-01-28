@@ -1,4 +1,6 @@
-  When black is first to play after editing a board, move list starts on white instead of black
+  Unstarted games saved as a PGN file show the game as tied
+  Escaping out of an AI game needs to stop the clocks
+  PGN files need to save starting position FEN if we're starting from non-standard board
   In board edit mode, dragging pieces around should display hilite when over drop squares
   Display a flag in UICLOCK when time expires
   Display time control information in clocks if there are increments or multiple phases
@@ -99,6 +101,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* When black is first to play after editing a board, move list starts on white instead of black
 * Make board edit mode with severely restricted UI
 * Make UICLOCK use background colors
 * Add castle state to board edit mode  

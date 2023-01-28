@@ -585,6 +585,7 @@ void UICLOCK::DrawTmi(const TMI& tmi, RC rc, int nmvSel) const
 	DrawSzCenter(sz, fCur ? ptxClockNoteBold : ptxClockNote, rc, pbrText);
 }
 
+
 bool UICLOCK::FTimeOutWarning(DWORD dmsec) const
 {
 	return dmsec < 1000 * 20;
@@ -756,7 +757,6 @@ float UIML::DyLine(void) const
 }
 
 
-
 /*	UIML::Draw
  *
  *	Draws the move list screen panel, which includes a top header box and
@@ -769,17 +769,17 @@ void UIML::Draw(const RC& rcUpdate)
 }
 
 
-/*	SPSARGMV::RcFromImv
+/*	UIML::RcFromImv
  *
  *	Returns the rectangle of the imv move in the move list. Coordinates
  *	are relative to the content rectangle, which is in turn relative to
  *	the panel.
  */
-RC UIML::RcFromImv(int64_t imv) const
+RC UIML::RcFromImv(int imv) const
 {
-	int rw = (int)(imv / 2);
-	float y = RcContent().top + 4.0f + rw * dyList;
-	return RcFromCol(y, 1 + (imv % 2));
+	int nmv = Ga().NmvFromImv(imv);
+	float y = RcContent().top + 4.0f + (nmv-1)*dyList;
+	return RcFromCol(y, 1 + !Ga().FImvIsWhite(imv));
 }
 
 
@@ -791,12 +791,15 @@ RC UIML::RcFromImv(int64_t imv) const
 void UIML::DrawContent(const RC& rcCont)
 {
 	BDG bdgT(bdgInit);
-	float yCont = RcContent().top;
-	for (int imvu = 0; imvu < uiga.ga.bdg.vmvuGame.size(); imvu++) {
+	float yCont = RcContent().top + 4.0f;
+	if (Ga().FImvFirstIsBlack())
+		DrawMoveNumber(RcFromCol(yCont, 0), 1);
+	for (int imvu = 0; imvu < Ga().bdg.vmvuGame.size(); imvu++) {
 		MVU mvu = uiga.ga.bdg.vmvuGame[imvu];
-		if (imvu % 2 == 0) {
-			RC rc = RcFromCol(yCont + 4.0f + (imvu / 2) * dyList, 0);
-			DrawMoveNumber(rc, imvu / 2 + 1);
+		if (Ga().FImvIsWhite(imvu)) {
+			int nmv = Ga().NmvFromImv(imvu);
+			RC rc = RcFromCol(yCont + (nmv-1) * dyList, 0);
+			DrawMoveNumber(rc, nmv);
 		}
 		if (mvu.fIsNil())
 			continue;
@@ -932,6 +935,8 @@ HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 		imv = (int64_t)li * 2;
 	else if (pt.x < mpcoldx[0] + mpcoldx[1] + mpcoldx[2])
 		imv = (int64_t)li * 2 + 1;
+	if (Ga().FImvFirstIsBlack())
+		imv--;
 	if (imv < 0)
 		return htmlEmptyBefore;
 	if (imv >= (int64_t)uiga.ga.bdg.vmvuGame.size())

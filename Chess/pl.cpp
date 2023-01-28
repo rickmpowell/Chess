@@ -1100,7 +1100,7 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 	case ttmSmart:
 		if (!ga.prule->FUntimed()) {
 			dmsecFlag = ga.DmsecRemaining(bdg.cpcToMove);
-			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, ((int)bdg.imvuCurLast+1)/2+1);
+			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, ga.NmvFromImv(bdg.imvuCurLast));
 			/* number of moves left in the game based on total material on the board;
 			   yeah, I know I know, really lame */
 			int cmvDen = WInterpolate(EvMaterialTotal(bdg), 200, 7800, 10, 50);

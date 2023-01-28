@@ -176,7 +176,7 @@ class UIML : public UIPS
 	float XFromCol(int col) const;
 	float DxFromCol(int col) const;
 	RC RcFromCol(float y, int col) const;
-	RC RcFromImv(int64_t imv) const;
+	RC RcFromImv(int imv) const;
 
 	BDG bdgInit;	// initial board at the start of the game list
 	int64_t imvuSel;

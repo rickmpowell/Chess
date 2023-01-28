@@ -679,16 +679,6 @@ public:
 
 	wstring SzFEN(void) const;
 	operator wstring() const { return SzFEN(); }
-
-
-	/*	BDG::CpcMoveFromImv
-	 *
-	 *	Returns the color of the side that moved move imv
-	 */
-	inline CPC CpcMoveFromImv(int imv) const noexcept
-	{
-		return (CPC)(imv & 1);
-	}
 };
 
 

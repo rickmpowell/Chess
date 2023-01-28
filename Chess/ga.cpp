@@ -20,8 +20,10 @@
  */
 
 
-GA::GA() : prule(nullptr), pprocpgn(nullptr), puiga(nullptr)
+GA::GA() : prule(nullptr), pprocpgn(nullptr), puiga(nullptr),
+		szEvent(L"Casual Game"), szSite(L"Local Machine"), szRound(L"")
 {
+	tpStart = system_clock::now();
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = nullptr;
 	mpcpcdmsec[cpcWhite] = mpcpcdmsec[cpcBlack] = 0;
 }
@@ -79,12 +81,14 @@ void GA::InitGame(const wchar_t* szFEN, RULE* prule)
 	SetRule(prule);
 	bdg.InitGame(szFEN);
 	bdgInit = bdg;
+	tpStart = system_clock::now();
 }
 
 void GA::InitGame(void)
 {
 	bdg.InitGame();
 	bdgInit = bdg;
+	tpStart = system_clock::now();
 }
 
 
@@ -92,6 +96,7 @@ void GA::StartGame(void)
 {
 	bdg.SetGs(gsPlaying);
 	bdgInit = bdg;
+	tpStart = system_clock::now();
 }
 
 void GA::EndGame(void)
@@ -101,12 +106,24 @@ void GA::EndGame(void)
 
 int GA::NmvNextFromCpc(CPC cpc) const
 {
-	int imv = (int)bdg.vmvuGame.size();
-	if (cpc == cpcWhite)
-		return (imv+1) / 2 + 1;
-	else
-		return imv / 2 + 1;
+	return NmvFromImv((int)bdg.vmvuGame.size() + (bdg.cpcToMove != cpc));
 }
+
+bool GA::FImvIsWhite(int imv) const
+{
+	return ((imv + FImvFirstIsBlack()) & 1) == 0;
+}
+
+bool GA::FImvFirstIsBlack(void) const
+{
+	return bdgInit.cpcToMove == cpcBlack;
+}
+
+int GA::NmvFromImv(int imv) const
+{
+	return 1 + (imv + FImvFirstIsBlack()) / 2;
+}
+
 
 
 void GA::SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept

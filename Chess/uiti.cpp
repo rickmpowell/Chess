@@ -58,14 +58,14 @@ SIZ UIICON::Siz(void) const
  */
 
 
-UIGT::UIGT(UI* puiParent) : UI(puiParent)
+UIGT::UIGT(UI* puiParent, UIGA& uiga) : UI(puiParent), uiga(uiga)
 {
 }
 
 
 void UIGT::Draw(const RC& rcUpdate)
 {
-	DrawSz(L"Casual", ptxList, RcInterior());
+	DrawSz(uiga.ga.szEvent, ptxList, RcInterior());
 }
 
 
@@ -77,13 +77,13 @@ void UIGT::Draw(const RC& rcUpdate)
  * 
  */
 
-UILOCALE::UILOCALE(UI* puiParent) : UI(puiParent)
+UILOCALE::UILOCALE(UI* puiParent, UIGA& uiga) : UI(puiParent), uiga(uiga)
 {
 }
 
 void UILOCALE::Draw(const RC& rcUpdate)
 {
-	DrawSz(L"Local Machine", ptxList, RcInterior());
+	DrawSz(uiga.ga.szSite, ptxList, RcInterior());
 }
 
 
@@ -91,11 +91,11 @@ void UILOCALE::Draw(const RC& rcUpdate)
  *
  *	UIGTM
  * 
- *	Game time type widgit in the title block
+ *	Game time control type widgit in the title block
  * 
  */
 
-UIGTM::UIGTM(UI* puiParent) : UI(puiParent)
+UIGTM::UIGTM(UI* puiParent, UIGA& uiga) : UI(puiParent), uiga(uiga)
 {
 }
 
@@ -114,7 +114,7 @@ void UIGTM::Draw(const RC& rcUpdate)
  */
 
 
-UITI::UITI(UIGA& uiga) : UIP(uiga), uiicon(this, idbSqChessLogo), uilocale(this), uigt(this), uigtm(this),
+UITI::UITI(UIGA& uiga) : UIP(uiga), uiicon(this, idbSqChessLogo), uilocale(this, uiga), uigt(this, uiga), uigtm(this, uiga),
 		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack)
 {
 }
@@ -130,11 +130,11 @@ void UITI::Layout(void)
 	rc.left = rc.right + 20.0f;
 	rc.right = RcInterior().right;
 	rc.bottom = rc.top + 16.0f;
-	uilocale.SetBounds(rc);
+	uigt.SetBounds(rc);
 
 	rc.top = rc.bottom;
 	rc.bottom = rc.top + 16.0f;
-	uigt.SetBounds(rc);
+	uilocale.SetBounds(rc);
 
 	rc.top = rc.bottom;
 	rc.bottom = rc.top + 16.0f;
@@ -148,12 +148,6 @@ void UITI::Layout(void)
 	rc.top = rc.bottom;
 	rc.bottom = rc.top + 28.0f;
 	uiplBlack.SetBounds(rc);
-}
-
-
-void UITI::Draw(const RC& rcUpdate)
-{
-	FillRc(rcUpdate, pbrBack);
 }
 
 

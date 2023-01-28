@@ -122,6 +122,10 @@ public:
 	DWORD mpcpcdmsec[cpcMax];	// time remaining on the players' clocks at start of move
 	RULE* prule;
 	PROCPGN* pprocpgn;	/* process pgn file handler */
+	time_point<system_clock> tpStart;
+	wstring szEvent;
+	wstring szSite;
+	wstring szRound;
 
 	UIGA* puiga;	/* TODO: turn this into an interface */
 
@@ -156,10 +160,19 @@ public:
 	void SetRule(RULE* prule);
 	void StartGame(void);
 	void EndGame(void);
-	int NmvNextFromCpc(CPC cpc) const;
 
 	void SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept;
 	DWORD DmsecRemaining(CPC cpc) const noexcept;
+
+	/*
+	 *	Helpers for dealing with move numbers given a move index, which is complicated
+	 *	by board positions that are set up with black to move
+	 */
+
+	int NmvNextFromCpc(CPC cpc) const;
+	bool FImvIsWhite(int imv) const;
+	bool FImvFirstIsBlack(void) const;
+	int NmvFromImv(int imv) const;
 
 	/*
 	 *	Deserializing 
@@ -177,6 +190,8 @@ public:
 	ERR ProcessTag(const string& szTag, const string& szVal);
 	ERR ParseAndProcessMove(const string& szMove);
 	bool FIsPgnData(const char* pch) const;
+	bool FResultSz(GS gs, wstring& sz) const;
+	void SerializeMove(ostream& os, string& szLine, BDG& bdg, MVU mvu);
 
 	/*
 	 *	Serialization
@@ -185,10 +200,10 @@ public:
 	void SavePGNFile(const wstring& szFile);
 	void Serialize(ostream& os);
 	void SerializeHeaders(ostream& os);
-	void SerializeHeader(ostream& os, const string& szTag, const string& szVal);
+	void SerializeHeader(ostream& os, const string& szTag, const wstring& szVal);
 	void SerializeMoveList(ostream& os);
 	void WriteSzLine80(ostream& os, string& szLine, const string& szAdd);
-
+	wstring SzPgnDate(time_point<system_clock> tp) const;
 	uint64_t CmvPerft(int depth);
 	uint64_t CmvPerftBulk(int depth);
 };

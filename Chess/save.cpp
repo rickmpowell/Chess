@@ -41,85 +41,119 @@ void GA::Serialize(ostream& os)
 
 void GA::SerializeHeaders(ostream& os)
 {
-	SerializeHeader(os, "Event", "Casual Game");
-	SerializeHeader(os, "Site", "Local Computer");
-	SerializeHeader(os, "Round", "1");
+	SerializeHeader(os, "Event", szEvent);
+	SerializeHeader(os, "Site", szSite);
+	SerializeHeader(os, "Round", szRound);
 
-	/* TODO: real date */
-	SerializeHeader(os, "Date", "2021.??.??");
+	SerializeHeader(os, "Date", SzPgnDate(tpStart));
+	SerializeHeader(os, "White", mpcpcppl[cpcWhite]->SzName());
+	SerializeHeader(os, "Black", mpcpcppl[cpcBlack]->SzName());
 
-	/* TODO: real player names */
-	SerializeHeader(os, "White", "White");
-	SerializeHeader(os, "Black", "Black");
+	/* FEN initial state */
+	/* TODO only save this if it's not the default starting position */
+	SerializeHeader(os, "FEN", bdgInit.SzFEN());
 
-	switch (bdg.gs) {
+	wstring szResult;
+	if (FResultSz(bdg.gs, szResult))
+		SerializeHeader(os, "Result", szResult);
+}
+
+
+bool GA::FResultSz(GS gs, wstring& sz) const
+{
+	switch (gs) {
 	case gsBlackCheckMated:
 	case gsBlackResigned:
 	case gsBlackTimedOut:
-		SerializeHeader(os, "Result", "1-0");
+		sz = L"1-0";
 		break;
 	case gsWhiteCheckMated:
 	case gsWhiteResigned:
 	case gsWhiteTimedOut:
-		SerializeHeader(os, "Result", "0-1");
+		sz = L"0-1";
 		break;
 	case gsPlaying:
+	case gsCanceled:
+	case gsNotStarted:
+	case gsPaused:
+		return false;
+	case gsStaleMate:
+	case gsDrawDead:
+	case gsDrawAgree:
+	case gsDraw3Repeat:
+	case gsDraw50Move:
+		sz = L"1/2-1/2";
 		break;
 	default:
-		SerializeHeader(os, "Result", "1/2-1/2");
+		assert(false);
 		break;
 	}
+	return true;
 }
 
 
-void GA::SerializeHeader(ostream& os, const string& szTag, const string& szVal)
+wstring GA::SzPgnDate(time_point<system_clock> tp) const
+{
+	time_t tt = system_clock::to_time_t(tp);
+	struct tm tm;
+	localtime_s(&tm, &tt);
+	wchar_t sz[80], *pch;
+	pch = PchDecodeInt(tm.tm_year + 1900, sz);
+	*pch++ = '.';
+	pch = PchDecodeInt(tm.tm_mon + 1, pch);
+	*pch++ = '.';
+	pch = PchDecodeInt(tm.tm_mday, pch);
+	*pch = 0;
+	return sz;
+}
+
+
+void GA::SerializeHeader(ostream& os, const string& szTag, const wstring& szVal)
 {
 	/* TODO: escape quote marks? */
-	os << string("[") + szTag + " \"" + szVal + "\"]";
+	os << string("[") + szTag + " \"" + SzFlattenWsz(szVal) + "\"]";
 	os << endl;
 }
 
 
 void GA::SerializeMoveList(ostream& os)
 {
-	BDG bdgSav = bdgInit;
 	string szLine;
-	for (unsigned imvu = 0; imvu < (unsigned)bdg.vmvuGame.size(); imvu++) {
-		MVU mvu = bdg.vmvuGame[imvu];
-		if (mvu.fIsNil())
-			continue;
-		if (imvu % 2 == 0)
-			WriteSzLine80(os, szLine, to_string(imvu/2 + 1) + ". ");
-		wstring wsz = bdgSav.SzDecodeMvu(mvu, false);
-		WriteSzLine80(os, szLine, bdgSav.SzFlattenMvuSz(wsz) + " ");
-		bdgSav.MakeMvu(mvu);
+
+	BDG bdgSav = bdgInit;
+
+	if (bdg.vmvuGame.size() > 0) {
+		/* first move needs some special handling to put leading "..." on move lists
+		   when black was the first to move */
+		WriteSzLine80(os, szLine, FImvFirstIsBlack()  ? "1... " : "1. ");
+		SerializeMove(os, szLine, bdgSav, bdg.vmvuGame[0]);
+		for (int imvu = 1; imvu < bdg.vmvuGame.size(); imvu++) {
+			MVU mvu = bdg.vmvuGame[imvu];
+			if (mvu.fIsNil())
+				continue;
+			if (FImvIsWhite(imvu))
+				WriteSzLine80(os, szLine, to_string(NmvFromImv(imvu)) + ". ");
+			SerializeMove(os, szLine, bdgSav, mvu);
+		}
 	}
 
-	/* when we're done, write result */
+	/* at the end of the move list, write result */
 
-	switch (bdgSav.gs) {
-	case gsBlackCheckMated:
-	case gsBlackResigned:
-	case gsBlackTimedOut:
-		WriteSzLine80(os, szLine, "0-1");
-		break;
-	case gsWhiteCheckMated:
-	case gsWhiteResigned:
-	case gsWhiteTimedOut:
-		WriteSzLine80(os, szLine, "1-0");
-		break;
-	case gsPlaying:
-		break;
-	default:
-		WriteSzLine80(os, szLine, "1/2-1/2");
-		break;
-	}
+	wstring sz;
+	if (FResultSz(bdgSav.gs, sz))
+		WriteSzLine80(os, szLine, SzFlattenWsz(sz));
 
 	assert(szLine.size() > 0);
 	os << szLine;
 	os << endl;
 }
 
+void GA::SerializeMove(ostream& os, string& szLine, BDG& bdg, MVU mvu)
+{
+	wstring wsz = bdg.SzDecodeMvu(mvu, false);
+	WriteSzLine80(os, szLine, bdg.SzFlattenMvuSz(wsz) + " ");
+	bdg.MakeMvu(mvu);
+}
 
 /*	GA::WriteSzLine80
  *
