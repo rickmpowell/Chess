@@ -1,3 +1,4 @@
+  When games end, the game over panel overwrites part of white's clock
   When AIs are playing moves aren't animated
   PGN files that start in standard position shouldn't save FEN
   Escaping out of an AI game needs to stop the clocks
@@ -77,8 +78,6 @@
   UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
   UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
-  ML: The wins (1-0 0-1 and 1/2-1/2) are not included in the move list at end of game (should it?)
-  ML: Checkmates should have a # instead of a +
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
   ML: Add a UI for offering draws
@@ -94,6 +93,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* ML: Checkmates should have a # instead of a +
 * Display time control information in clocks if there are increments or multiple phases
 * Save real date in PGN files
 * Save real player names in PGN files
