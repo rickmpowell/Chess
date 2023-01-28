@@ -400,14 +400,17 @@ void UIGA::StartClock(CPC cpc, DWORD msecCur)
 /*	UIGA::PauseClock
  *
  *	Pauses the given player's clock at the end of his turn. msecCur is
- *	used to adjust time remaining until we flag.
+ *	used to adjust time remaining until we flag. Adjusts the clocks
+ *	in preparation for the move about to be made.
+ * 
+ *	The move has not yet happened when this is called. 
  */
 void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 {
 	if (ga.prule->FUntimed())
 		return;
 	mpcpcdmsecClock[cpc] -= msecCur - msecLast;
-	int nmvLast = (int)ga.bdg.imvuCurLast / 2 + 1;
+	int nmvLast = ga.NmvFromImv(ga.bdg.imvuCurLast+1);
 	mpcpcdmsecClock[cpc] +=
 		ga.prule->DmsecAddMove(cpc, nmvLast) + ga.prule->DmsecAddBlock(cpc, nmvLast+1);
 	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);

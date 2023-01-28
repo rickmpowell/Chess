@@ -1690,7 +1690,7 @@ DWORD RULE::DmsecAddBlock(CPC cpc, int nmv) const
 DWORD RULE::DmsecAddMove(CPC cpc, int nmv) const
 {
 	for (const TMI& tmi : vtmi) {
-		if (tmi.nmvLast == -1 || nmv <= tmi.nmvLast)
+		if (tmi.FContainsNmv(nmv))
 			return tmi.dmsecMove;
 	}
 	return 0;

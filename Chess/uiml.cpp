@@ -578,7 +578,7 @@ void UICLOCK::DrawTmi(const TMI& tmi, RC rc, int nmvSel) const
 		pch = PchDecodeInt(tmi.nmvLast - tmi.nmvFirst + 1, pch);
 	}
 	*pch++ = 0;
-	bool fCur = nmvSel >= tmi.nmvFirst && (tmi.nmvLast == -1 || nmvSel <= tmi.nmvLast);
+	bool fCur = tmi.FContainsNmv(nmvSel);
 	COLORBRS colorbrsBack(pbrText, fCur ? coClockTCCurText : coClockTCText);
 	COLORBRS colorbrsText(pbrBack, fCur ? coClockTCCurBack : coClockTCBack);
 	FillRcBack(rc);

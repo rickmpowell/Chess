@@ -30,6 +30,11 @@ struct TMI
 		dmsec(dmsec), dmsecMove(dmsecMove)
 	{
 	}
+
+	bool FContainsNmv(int nmv) const
+	{
+		return nmv >= nmvFirst && (nmvLast == -1 || nmv <= nmvLast);
+	}
 };
 
 
