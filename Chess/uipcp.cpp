@@ -382,7 +382,9 @@ void UICASTLESTATE::Erase(const RC& rcUpdate)
 
 /*
  *
- *
+ *	UISETFEN
+ * 
+ *	The editor for displaying/setting the FEN string of the board being edited.
  *
  */
 
@@ -408,6 +410,7 @@ RC UISETFEN::RcFromSq(SQ sq) const
 void UISETFEN::Draw(const RC& rcUpdate)
 {
 	/* create a little dummy board with the FEN string */
+
 	BDG bdg(szFen.c_str());
 	for (int rank = 0; rank < rankMax; rank++) {
 		for (int file = 0; file < fileMax; file++) {
@@ -442,6 +445,7 @@ void UIFEN::Draw(const RC& rcUpdate)
 	rc.Inflate(-6, -3);
 	DrawSz(uipcp.uiga.ga.bdg.SzFEN(), ptxTextBold, rc);
 }
+
 
 void UIFEN::Erase(const RC& rcUpdate)
 {

@@ -1579,9 +1579,16 @@ public:
         if (minGame == 0) /* untimed game */
             ;
         else if (secInc == -1)  /* tournament mode */ {
-            prule->AddTmi(1, 40, 100*secMin, 0);
-            prule->AddTmi(41, 60, 50*secMin, 0);
-            prule->AddTmi(61, -1, 15*secMin, 30);
+            if (minGame == 100) {
+                prule->AddTmi(1, 40, 100 * secMin, 0);
+                prule->AddTmi(41, 60, 50 * secMin, 0);
+                prule->AddTmi(61, -1, 15 * secMin, 30);
+            }
+            else if (minGame == 60) {
+                prule->AddTmi(1, 40, 60, 0);
+                prule->AddTmi(41, 60, 30, 0);
+                prule->AddTmi(61, -1, 15, 1);
+            }
         }
         else
             prule->AddTmi(1, -1, minGame * secMin, secInc);
@@ -1674,6 +1681,8 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_0, 30, 0));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_20, 30,20));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTourna_100_50_15, 100, -1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_60_30_15, 60, -1));
+    
 }
 
 

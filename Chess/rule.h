@@ -20,13 +20,13 @@
 
 struct TMI
 {
-	int mvnFirst;	/* 1-based move number when interval starts */
-	int mvnLast;	/* 1-based move number when interval ends. -1 for no end. */
+	int nmvFirst;	/* 1-based move number when interval starts */
+	int nmvLast;	/* 1-based move number when interval ends. -1 for no end. */
 	DWORD dmsec;	/* Amount of time to add to the timer at the start of the interval */
 	DWORD dmsecMove;	/* Amount of time to add after each move */
 
-	TMI(int mvnFirst, int mvnLast, DWORD dmsec, DWORD dmsecMove) :
-		mvnFirst(mvnFirst), mvnLast(mvnLast),
+	TMI(int mvnFirst, int nmvLast, DWORD dmsec, DWORD dmsecMove) :
+		nmvFirst(mvnFirst), nmvLast(nmvLast),
 		dmsec(dmsec), dmsecMove(dmsecMove)
 	{
 	}
@@ -52,10 +52,13 @@ public:
 	void ClearTmi(void);
 	void AddTmi(int nmvFirst, int nmvLast, int dsecGame, int dsecMove);
 	bool FUntimed(void) const;
-	DWORD DmsecAddBlock(CPC cpc, int mvn) const;
-	DWORD DmsecAddMove(CPC cpc, int mvn) const;
+	DWORD DmsecAddBlock(CPC cpc, int nmv) const;
+	DWORD DmsecAddMove(CPC cpc, int nmv) const;
 	int CmvRepeatDraw(void) const;
 	void SetGameTime(CPC cpc, DWORD dsec);
+	int CtmiTotal(void) const;
+	int ItmiFromNmv(int nmv) const;
+	TMI TmiFromItmi(int itmi) const;
 };
 
 

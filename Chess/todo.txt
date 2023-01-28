@@ -1,3 +1,7 @@
+  When black is first to play after editing a board, move list starts on white instead of black
+  In board edit mode, dragging pieces around should display hilite when over drop squares
+  Display a flag in UICLOCK when time expires
+  Display time control information in clocks if there are increments or multiple phases
   BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
   In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, result should be draw if "winning" side has insufficient material
@@ -6,7 +10,6 @@
   Separate background colors for content areas and button bars
   Add en passant state to board edit mode
   Exiting board edit mode needs to check for valid board states and prepare for starting a game
-  Make board edit mode with severely restricted UI
   Flip Game phase values (GPH) so end game is 0 and higher values mean closer to opening. 
   Implement copy FEN command
   Lock out most UI when AI is thinking
@@ -66,7 +69,7 @@
   UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
   ML: Scrollbar thumb isn't resizing when move list gets long enough to have a thumb
-  ML: Size icons in move list slightly larger than text
+  ML: Reize icons in move list slightly larger than text
   ML: If text in move list gets too small, replace icons with letters
   UI: Scale buttons to size of window
   UITI: Layout using font metrics
@@ -96,7 +99,9 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
-* Add castle state to board edit mode
+* Make board edit mode with severely restricted UI
+* Make UICLOCK use background colors
+* Add castle state to board edit mode  
 * Make a few bold fonts for use in UI elements
 * Add side to move to board edit mode
 * Add close boxes to titled panels

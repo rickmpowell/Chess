@@ -156,6 +156,7 @@ public:
 	void SetRule(RULE* prule);
 	void StartGame(void);
 	void EndGame(void);
+	int NmvNextFromCpc(CPC cpc) const;
 
 	void SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept;
 	DWORD DmsecRemaining(CPC cpc) const noexcept;

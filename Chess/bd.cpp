@@ -1635,6 +1635,24 @@ void RULE::AddTmi(int nmvFirst, int nmvLast, int dsecGame, int dsecMove)
 	vtmi.push_back(TMI(nmvFirst, nmvLast, msecSec * dsecGame, msecSec * dsecMove));
 }
 
+int RULE::CtmiTotal(void) const
+{
+	return (int)vtmi.size();
+}
+
+int RULE::ItmiFromNmv(int nmv) const
+{
+	for (int itmi = 0; itmi < vtmi.size(); itmi++) {
+		if (nmv >= vtmi[itmi].nmvFirst && nmv <= vtmi[itmi].nmvLast)
+			return itmi;
+	}
+	return (int)vtmi.size();
+}
+
+TMI RULE::TmiFromItmi(int itmi) const
+{
+	return vtmi[itmi];
+}
 
 /*	RULE::FUntimed
  *
@@ -1649,14 +1667,14 @@ bool RULE::FUntimed(void) const
 /*	RULE::DmsecAddBlock
  *
  *	If the current board state is at the transition between timing intervals, returns
- *	the amount of time to add to the CPC player's clock after move number mvn is made.
+ *	the amount of time to add to the CPC player's clock after move number nmv is made.
  *	
- *	WARNING! mvn is 1-based.
+ *	WARNING! nmv is 1-based.
  */
-DWORD RULE::DmsecAddBlock(CPC cpc, int mvn) const
+DWORD RULE::DmsecAddBlock(CPC cpc, int nmv) const
 {
 	for (const TMI& tmi : vtmi) {
-		if (tmi.mvnFirst == mvn)	
+		if (tmi.nmvFirst == nmv)	
 			return tmi.dmsec;
 	}
 
@@ -1669,10 +1687,10 @@ DWORD RULE::DmsecAddBlock(CPC cpc, int mvn) const
  *	After a player moves, returns the amount of time to modify the player's clock
  *	based on move bonus.
  */
-DWORD RULE::DmsecAddMove(CPC cpc, int mvn) const
+DWORD RULE::DmsecAddMove(CPC cpc, int nmv) const
 {
 	for (const TMI& tmi : vtmi) {
-		if (tmi.mvnLast == -1 || mvn <= tmi.mvnLast)
+		if (tmi.nmvLast == -1 || nmv <= tmi.nmvLast)
 			return tmi.dmsecMove;
 	}
 	return 0;

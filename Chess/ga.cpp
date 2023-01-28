@@ -99,6 +99,16 @@ void GA::EndGame(void)
 }
 
 
+int GA::NmvNextFromCpc(CPC cpc) const
+{
+	int imv = (int)bdg.vmvuGame.size();
+	if (cpc == cpcWhite)
+		return (imv+1) / 2 + 1;
+	else
+		return imv / 2 + 1;
+}
+
+
 void GA::SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept
 {
 	mpcpcdmsec[cpc] = dmsec;

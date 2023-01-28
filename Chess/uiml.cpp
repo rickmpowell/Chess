@@ -357,21 +357,45 @@ void UIGC::Draw(const RC& rcUpdate)
  */
 
 
-IDWriteTextFormat* UICLOCK::ptxClock;
-IDWriteTextFormat* UICLOCK::ptxClockNote;
+TX* UICLOCK::ptxClock;
+TX* UICLOCK::ptxClockNote;
+TX* UICLOCK::ptxClockNoteBold;
+
+const ColorF coClockText = ColorF(0.5f, 0.9f, 1.0f);
+const ColorF coClockBack = ColorF(0.2f, 0.2f, 0.2f);
+const ColorF coClockWarningText = ColorF(0.8f, 0.2f, 0.2f);
+const ColorF coClockWarningBack = coClockBack;
+const ColorF coClockTCText = coClockText;
+const ColorF coClockTCBack = coClockBack;
+const ColorF coClockTCCurText = ColorF::White;
+const ColorF coClockTCCurBack = coClockBack;
+/*
+const ColorF coClockText = ColorF(0.0f, 0.25f, 0.45f);
+const ColorF coClockBack = ColorF(0.86f, 0.90f, 0.86f);
+const ColorF coClockWarningText = coClockText;
+const ColorF coClockWarningBack = ColorF(0.95f, 0.80f, 0.20f);
+const ColorF coClockTCText = coClockText;
+const ColorF coClockTCBack = coClockBack;
+const ColorF coClockTCCurText = coClockText;
+const ColorF coClockTCCurBack = coClockWarningBack;
+*/
 
 void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxClock)
 		return;
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-							   DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 
+							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 
 							   40.0f, L"",
 							   &ptxClock);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 							   DWRITE_FONT_WEIGHT_MEDIUM, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 
-							   8.0f, L"",
+							   12.0f, L"",
 							   &ptxClockNote);
+	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   12.0f, L"",
+							   &ptxClockNoteBold);
 }
 
 
@@ -379,6 +403,7 @@ void UICLOCK::DiscardRsrcClass(void)
 {
 	SafeRelease(&ptxClock);
 	SafeRelease(&ptxClockNote);
+	SafeRelease(&ptxClockNoteBold);
 }
 
 
@@ -402,22 +427,34 @@ void UICLOCK::DiscardRsrc(void)
 SIZ UICLOCK::SizLayoutPreferred(void)
 {
 	SIZ siz = SizFromSz(L"0", ptxClock);
-	return SIZ(-1.0, siz.height * 4.0f / 3.0f);
+	siz.width = -1;
+	siz.height *= 4.0f / 3.0f;
+	if (uiga.ga.prule->CtmiTotal() >= 2)
+		siz.height += 14.0f;;
+	return siz;
+}
+
+
+ColorF UICLOCK::CoBack(void) const
+{
+	DWORD dmsec = uiga.mpcpcdmsecClock[cpc];
+	return FTimeOutWarning(dmsec) ? coClockWarningBack : coClockBack;
+}
+
+ColorF UICLOCK::CoFore(void) const
+{
+	DWORD dmsec = uiga.mpcpcdmsecClock[cpc];
+	return FTimeOutWarning(dmsec) ? coClockWarningText : coClockText;
 }
 
 
 void UICLOCK::Draw(const RC& rcUpdate)
 {
-	DWORD dmsec = uiga.mpcpcdmsecClock[cpc];
-
-	/* fill background */
-
-	RC rc = RcInterior();
-	COLORBRS colorbrs(pbrAltBack, FTimeOutWarning(dmsec) ? ColorF(1.0f, 0.9f, 0.9f) : pbrAltBack->GetColor());
-	FillRc(rc, pbrAltBack);
+	RC rcTime = DrawTimeControls(Ga().NmvNextFromCpc(cpc));
 
 	/* break down time into parts */
 
+	DWORD dmsec = uiga.mpcpcdmsecClock[cpc];
 	unsigned hr = dmsec / (1000 * 60 * 60);
 	dmsec = dmsec % (1000 * 60 * 60);
 	unsigned min = dmsec / (1000 * 60);
@@ -446,8 +483,9 @@ void UICLOCK::Draw(const RC& rcUpdate)
 	TATX tatx(ptxClock, DWRITE_TEXT_ALIGNMENT_LEADING);
 	SIZ sizDigit = SizFromSz(L"0", ptxClock);
 	SIZ sizPunc = SizFromSz(L":", ptxClock);
+	RC rc = rcTime;
 	rc.bottom = rc.top + sizDigit.height;
-	rc.Offset(0, RcInterior().YCenter() - rc.YCenter());
+	rc.Offset(0, rcTime.YCenter() - rc.YCenter());
 	if (hr > 0) {
 		float dxClock = sizDigit.width + sizPunc.width + 2*sizDigit.width + sizPunc.width + 2*sizDigit.width;
 		rc.left = rc.XCenter() - dxClock/2;
@@ -475,8 +513,77 @@ void UICLOCK::Draw(const RC& rcUpdate)
 		DrawColon(rc, frac);
 		DrawRgch(sz + 5, 4, ptxClock, rc);	// seconds and tenths
 	}
+
+	/* draw current increment */
 }
 
+
+RC UICLOCK::DrawTimeControls(int nmvSel) const
+{
+	RC rcInt = RcInterior();
+
+	RULE* prule = uiga.ga.prule;
+	if (prule->CtmiTotal() < 2)
+		return rcInt;
+
+	RC rcControls = rcInt;
+	rcControls.top = rcControls.bottom - 16.0f;
+
+	float dxTmi = rcInt.DxWidth() / prule->CtmiTotal();
+	RC rcTmi = RC(rcControls.left, rcControls.top+1.0f, rcControls.left + dxTmi, rcControls.bottom);
+	DrawTmi(prule->TmiFromItmi(0), rcTmi, nmvSel);
+	for (int itmi = 1; itmi < prule->CtmiTotal(); itmi++) {
+		rcTmi.Offset(dxTmi, 0);
+		DrawTmi(prule->TmiFromItmi(itmi), rcTmi, nmvSel);
+	}
+
+	rcInt.bottom = rcControls.top;
+	return rcInt;
+}
+
+
+wchar_t* UICLOCK::PchDecodeDmsec(DWORD dmsec, wchar_t* pch) const
+{
+	DWORD sec = dmsec / 1000;
+	if (sec < 60) {
+		pch = PchDecodeInt(sec, pch);
+		*pch++ = 's';
+		return pch;
+	}
+	DWORD min = sec / 60;
+	sec %= 60;
+	pch = PchDecodeInt(min, pch);
+	if (sec == 0) {
+		*pch++ = 'm';
+		return pch;
+	}
+
+	*pch++ = ':';
+	pch = PchDecodeInt(sec, pch);
+	return pch;
+}
+
+
+void UICLOCK::DrawTmi(const TMI& tmi, RC rc, int nmvSel) const
+{
+	wchar_t sz[32], * pch = sz;
+
+	pch = PchDecodeDmsec(tmi.dmsec, pch);
+	if (tmi.dmsecMove) {
+		*pch++ = L'+';
+		pch = PchDecodeDmsec(tmi.dmsecMove, pch);
+	}
+	if (tmi.nmvLast != -1) {
+		*pch++ = L'/';
+		pch = PchDecodeInt(tmi.nmvLast - tmi.nmvFirst + 1, pch);
+	}
+	*pch++ = 0;
+	bool fCur = nmvSel >= tmi.nmvFirst && (tmi.nmvLast == -1 || nmvSel <= tmi.nmvLast);
+	COLORBRS colorbrsBack(pbrText, fCur ? coClockTCCurText : coClockTCText);
+	COLORBRS colorbrsText(pbrBack, fCur ? coClockTCCurBack : coClockTCBack);
+	FillRcBack(rc);
+	DrawSzCenter(sz, fCur ? ptxClockNoteBold : ptxClockNote, rc, pbrText);
+}
 
 bool UICLOCK::FTimeOutWarning(DWORD dmsec) const
 {
