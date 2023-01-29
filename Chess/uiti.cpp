@@ -101,7 +101,13 @@ UIGTM::UIGTM(UI* puiParent, UIGA& uiga) : UI(puiParent), uiga(uiga)
 
 void UIGTM::Draw(const RC& rcUpdate)
 {
-	DrawSz(L"Rapid \x2022 10+0", ptxList, RcInterior());
+	wstring sz;
+	RULE* prule = Ga().prule;
+	if (prule->FUntimed())
+		sz = L"Untimed Game";
+	else 
+		sz = prule->SzTimeControlTitle() + L" \x2022 " + prule->SzTimeControlSummary();
+	DrawSz(sz, ptxList, RcInterior());
 }
 
 
@@ -129,15 +135,15 @@ void UITI::Layout(void)
 
 	rc.left = rc.right + 20.0f;
 	rc.right = RcInterior().right;
-	rc.bottom = rc.top + 16.0f;
+	rc.bottom = rc.top + 20.0f;
 	uigt.SetBounds(rc);
 
 	rc.top = rc.bottom;
-	rc.bottom = rc.top + 16.0f;
+	rc.bottom = rc.top + 20.0f;
 	uilocale.SetBounds(rc);
 
 	rc.top = rc.bottom;
-	rc.bottom = rc.top + 16.0f;
+	rc.bottom = rc.top + 32.0f;
 	uigtm.SetBounds(rc);
 
 	rc.top = 100.0f;

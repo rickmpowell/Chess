@@ -405,7 +405,10 @@ bool APP::OnMouseMove(UINT mk, int x, int y)
         return true;
 
     if (puiga->puiCapt) {
-        pui->LeftDrag(pt);
+        if (mk & MK_LBUTTON)
+            pui->LeftDrag(pt);
+        else if (mk & MK_RBUTTON)
+            pui->RightDrag(pt);
         return true;
     }
 
@@ -449,6 +452,29 @@ bool APP::OnLeftUp(int x, int y)
     UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui)
         pui->EndLeftDrag(pt);
+    return true;
+}
+
+bool APP::OnRightDown(int x, int y)
+{
+    PT pt;
+    UI* pui = puiga->PuiHitTest(&pt, x, y);
+    if (pui)
+        pui->StartRightDrag(pt);
+    return true;
+}
+
+
+/*  APP::OnRightUp
+ *
+ *  Right mouse button up handler
+ */
+bool APP::OnRightUp(int x, int y)
+{
+    PT pt;
+    UI* pui = puiga->PuiHitTest(&pt, x, y);
+    if (pui)
+        pui->EndRightDrag(pt);
     return true;
 }
 
@@ -1756,6 +1782,16 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
 
     case WM_LBUTTONUP:
         if (!papp->OnLeftUp(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
+            break;
+        return 0;
+
+    case WM_RBUTTONDOWN:
+        if (!papp->OnRightDown(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
+            break;
+        return 0;
+
+    case WM_RBUTTONUP:
+        if (!papp->OnRightUp(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
             break;
         return 0;
 

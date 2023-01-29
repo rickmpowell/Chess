@@ -734,6 +734,24 @@ void UIBD::LeftDrag(const PT& pt)
 }
 
 
+void UIBD::StartRightDrag(const PT& pt)
+{
+	SetCapt(this);
+}
+
+
+void UIBD::EndRightDrag(const PT& pt)
+{
+	::MessageBeep(0);
+	ReleaseCapt();
+}
+
+
+void UIBD::RightDrag(const PT& pt)
+{
+}
+
+
 /*	UIBD::FInVmveDrag
  *
  *	Returns true if the source and destination squares line up with a legal move

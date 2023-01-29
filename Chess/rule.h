@@ -64,6 +64,10 @@ public:
 	int CtmiTotal(void) const;
 	int ItmiFromNmv(int nmv) const;
 	TMI TmiFromItmi(int itmi) const;
+
+	wstring SzTimeControlTitle(void) const;
+	wstring SzTimeControlSummary(void) const;
+	wstring SzSummaryFromTmi(const TMI& tmi) const;
 };
 
 

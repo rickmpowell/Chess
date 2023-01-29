@@ -1,4 +1,5 @@
-  UITI: display time controls based on actual time controls
+  Should we support move numbers that don't start at 1? For PGN and FEN reads?
+  Test reading PGN files that don't have white to start
   Save thinking time with each move
   Allow each player to use different time controls
   When AIs are playing moves aren't animated
@@ -89,6 +90,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* UITI: display time controls based on actual time controls
 * When clicking on unmoveable piece and dragging, we're picking up hovering behavior
 * UIBD: Legal move circles disappear when dragging
 * In board edit mode, dragging pieces around should display hilite when over drop squares

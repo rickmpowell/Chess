@@ -228,6 +228,8 @@ private:
 	bool OnMouseMove(UINT mk, int x, int y);
 	bool OnLeftDown(int x, int y);
 	bool OnLeftUp(int x, int y);
+	bool OnRightDown(int x, int y);
+	bool OnRightUp(int x, int y);
 	bool OnMouseWheel(int x, int y, int dwheel);
 	bool OnTimer(UINT tid);
 	bool OnInitMenu(void);

@@ -151,6 +151,9 @@ public:
 	virtual void StartLeftDrag(const PT& pt);
 	virtual void EndLeftDrag(const PT& pt);
 	virtual void LeftDrag(const PT& pt);
+	virtual void StartRightDrag(const PT& pt);
+	virtual void EndRightDrag(const PT& pt);
+	virtual void RightDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);
 

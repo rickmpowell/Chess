@@ -1732,3 +1732,50 @@ void RULE::SetGameTime(CPC cpc, DWORD dsec)
 	if (dsec != -1)
 		vtmi.push_back(TMI(1, -1, msecSec*dsec, 0));
 }
+
+
+wstring RULE::SzTimeControlTitle(void) const
+{
+	DWORD dmsecTotal = 0;
+	for (const TMI& tmi : vtmi)
+		dmsecTotal += tmi.dmsec + (tmi.nmvLast == -1 ? 40 : tmi.nmvLast - tmi.nmvFirst + 1) * tmi.dmsecMove;
+
+	if (dmsecTotal <= 3 * 60 * 1000)
+		return L"Bullet";
+	if (dmsecTotal < 8 * 60 * 1000)
+		return L"Blitz";
+	if (dmsecTotal < 30 * 60 * 1000)
+		return L"Rapid";
+	if (dmsecTotal < 60 * 60 * 1000)
+		return L"Classical";
+	return L"Tournament";
+}
+
+wstring RULE::SzTimeControlSummary(void) const
+{
+	wstring sz = SzSummaryFromTmi(vtmi[0]);
+	for (int itmi = 1; itmi < vtmi.size(); itmi++)
+		sz += L", " + SzSummaryFromTmi(vtmi[itmi]);
+	return sz;
+}
+
+wstring RULE::SzSummaryFromTmi(const TMI& tmi) const
+{
+	wstring sz;
+	if (tmi.nmvLast != -1) {
+		sz += to_wstring(tmi.nmvLast - tmi.nmvFirst + 1);
+		sz += L"/";
+	}
+	if (tmi.dmsec >= 60 * 1000)
+		sz += to_wstring(tmi.dmsec / 1000 / 60) + L"m";
+	else
+		sz += to_wstring(tmi.dmsec / 1000) + L"s";
+	if (tmi.dmsecMove > 0) {
+		sz += L"+";
+		if (tmi.dmsecMove > 60 * 1000)
+			sz += to_wstring(tmi.dmsecMove / 1000 / 60) + L"m";
+		else
+			sz += to_wstring(tmi.dmsecMove / 1000);
+	}
+	return sz;
+}

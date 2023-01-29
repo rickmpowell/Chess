@@ -418,22 +418,32 @@ void UI::StartLeftDrag(const PT& pt)
 	SetCapt(this);
 }
 
-
 void UI::EndLeftDrag(const PT& pt)
 {
 	ReleaseCapt();
 }
 
-
 void UI::LeftDrag(const PT& pt)
 {
 }
 
+void UI::StartRightDrag(const PT& pt)
+{
+	SetCapt(this);
+}
+
+void UI::EndRightDrag(const PT& pt)
+{
+	ReleaseCapt();
+}
+
+void UI::RightDrag(const PT& pt)
+{
+}
 
 void UI::MouseHover(const PT& pt, MHT mht)
 {
 }
-
 
 void UI::ScrollWheel(const PT& pt, int dwheel)
 {
