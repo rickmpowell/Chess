@@ -1,11 +1,10 @@
-  Legal moves are displayed in board edit mode when hovering
+  When clicking on unmoveable piece and dragging, we're picking up hovering behavior
   UITI: display time controls based on actual time controls
   Save thinking time with each move
   Allow each player to use different time controls
   When AIs are playing moves aren't animated
   PGN files that start in standard position shouldn't save FEN
   Escaping out of an AI game needs to stop the clocks
-  In board edit mode, dragging pieces around should display hilite when over drop squares
   BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
   In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, result should be draw if "winning" side has insufficient material
@@ -87,11 +86,13 @@
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Hilite last made move on board
   UIBD: clips when rotating on flip board
-  UIBD: Legal move circles disappear when dragging
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* UIBD: Legal move circles disappear when dragging
+* In board edit mode, dragging pieces around should display hilite when over drop squares
+* Legal moves are displayed in board edit mode when hovering
 * Game over panel sometimes doesn't get reset on new game
 * Clocks don't get reset right on new game
 * Clocks should run as soon as game loop starts

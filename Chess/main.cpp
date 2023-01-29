@@ -397,7 +397,7 @@ void APP::OnPaint(void)
 }
 
 
-bool APP::OnMouseMove(int x, int y)
+bool APP::OnMouseMove(UINT mk, int x, int y)
 {
     PT pt;
     UI* pui = puiga->PuiHitTest(&pt, x, y);
@@ -409,18 +409,22 @@ bool APP::OnMouseMove(int x, int y)
         return true;
     }
 
-    if (puiga->puiHover == pui) {
-        pui->MouseHover(pt, mhtMove);
+    /* hovering enter move and exit, hovering only happens if no buttons are down */
+
+    if (mk & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))
         return true;
+
+    if (puiga->puiHover == pui)
+        pui->MouseHover(pt, mhtMove);
+    else {
+        if (puiga->puiHover) {
+            PT ptExit = puiga->puiHover->PtLocalFromGlobal(PT((float)x, (float)y));
+            puiga->puiHover->MouseHover(ptExit, mhtExit);
+        }
+        pui->MouseHover(pt, mhtEnter);
+        puiga->SetHover(pui);
     }
 
-    if (puiga->puiHover) {
-        PT ptExit = puiga->puiHover->PtLocalFromGlobal(PT((float)x, (float)y));
-        puiga->puiHover->MouseHover(ptExit, mhtExit);
-    }
-    pui->MouseHover(pt, mhtEnter);
-    puiga->SetHover(pui);
-    
     return true;
 }
 
@@ -1741,7 +1745,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
         return 0;
 
     case WM_MOUSEMOVE:
-        if (!papp->OnMouseMove(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
+        if (!papp->OnMouseMove((UINT)wparam, GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)))
             break;
         return 0;
 

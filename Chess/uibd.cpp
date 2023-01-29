@@ -192,13 +192,9 @@ void UIBD::StartGame(void)
  */
 void UIBD::MakeMvu(MVU mvu, SPMV spmv)
 {
-	for (MVE mveDrag : vmveDrag) {
-		if (mveDrag.sqFrom() == mvu.sqFrom() && mveDrag.sqTo() == mvu.sqTo())
-			goto FoundMove;
-	}
-	throw 1;
+	if (!FInVmveDrag(mvu.sqFrom(), mvu.sqTo(), mvu))
+		throw 1;
 
-FoundMove:
 	if (FSpmvAnimate(spmv))
 		AnimateMvu(mvu, DframeFromSpmv(spmv));
 	uiga.ga.bdg.MakeMvu(mvu);
@@ -330,7 +326,7 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 			if ((rank + file) % 2 == 0)
 				FillRc(RcFromSq(sq), pbrText);
 			MVU mvu;
-			if (FHoverSq(sq, mvu))
+			if (FHoverSq(sqDragInit.fIsNil() ? sqHover : sqDragInit, sq, mvu))
 				DrawHoverMvu(mvu);
 			DrawPieceSq(sq);
 		}
@@ -451,17 +447,11 @@ void UIBD::SetDragHiliteSq(SQ sq)
  *	Returns true if the square is the destination of move that originates in the
  *	tracking square sqHover. Returns the move itself in mv. 
  */
-bool UIBD::FHoverSq(SQ sq, MVU& mvu)
+bool UIBD::FHoverSq(SQ sqFrom, SQ sq, MVU& mvu)
 {
-	if (sqHover.fIsNil() || !(uiga.ga.bdg.FGsPlaying() || uiga.ga.bdg.FGsNotStarted()))
+	if (sqFrom.fIsNil() || !(uiga.ga.bdg.FGsPlaying() || uiga.ga.bdg.FGsNotStarted()))
 		return false;
-	for (MVE mveDrag : vmveDrag) {
-		if (mveDrag.sqFrom() == sqHover && mveDrag.sqTo() == sq) {
-			mvu = (MVU)mveDrag;
-			return true;
-		}
-	}
-	return false;
+	return FInVmveDrag(sqFrom, sq, mvu);
 }
 
 
@@ -666,10 +656,8 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(uiga.ga.bdg.CpcFromSq(sq) == uiga.ga.bdg.cpcToMove);
-	for (MVE mveDrag : vmveDrag)
-		if (mveDrag.sqFrom() == sq)
-			return true;
-	return false;
+	MVU mvu;
+	return FInVmveDrag(sq, sqNil, mvu);
 }
 
 
@@ -704,6 +692,7 @@ void UIBD::EndLeftDrag(const PT& pt)
 		return;
 	SQ sqFrom = sqDragInit;
 	sqDragInit = sqNil;
+	SetDragHiliteSq(sqNil);
 	SQ sqTo;
 	HtbdHitTest(pt, &sqTo);
 	if (!sqTo.fIsNil()) {
@@ -713,28 +702,19 @@ void UIBD::EndLeftDrag(const PT& pt)
 			uiga.ga.bdg.SetSq(sqTo, pc);
 		}
 		else {
-			for (MVE mve : vmveDrag) {
-				if (mve.sqFrom() == sqFrom && mve.sqTo() == sqTo) {
-					uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
-					goto Done;
-				}
-			}
+			MVE mve;
+			if (FInVmveDrag(sqFrom, sqTo, mve))
+				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
 		}
 	}
-	/* need to force redraw if it wasn't a legal  move to remove vestiges of the
-	   screen dragging */
 	Redraw();
-Done:
 	InvalOutsideRc(rcDragPc);
 }
 
 
 /*	UIBD::LeftDrag
  *
- *	Notification while the mouse button is down and dragging around. The hit test for 
- *	the captured mouse position is in pht.
- *
- *	We use this for users to drag pieces around while they are trying to move.
+ *	Notification while the mouse button is down and dragging around. Th
  */
 void UIBD::LeftDrag(const PT& pt)
 {
@@ -744,10 +724,31 @@ void UIBD::LeftDrag(const PT& pt)
 		EndLeftDrag(pt);
 		return;
 	}
+	MVU mvu;
+	SetDragHiliteSq(uiga.FInBoardSetup() ||
+			FInVmveDrag(sqDragInit, sq, mvu) ? sq : sqNil);
 	ptDragCur = pt;
 	InvalOutsideRc(rcDragPc);
 	rcDragPc = RcGetDrag();
 	Redraw();
+}
+
+
+/*	UIBD::FInVmveDrag
+ *
+ *	Returns true if the source and destination squares line up with a legal move
+ *	in the drag move list. if sqDest is sqNil, searches for first move that 
+ *	matches just the source square.
+ */
+bool UIBD::FInVmveDrag(SQ sqFrom, SQ sqTo, MVU& mvu) const
+{
+	for (const MVE& mve : vmveDrag) {
+		if ((sqFrom.fIsNil() || mve.sqFrom() == sqFrom) && (sqTo.fIsNil() || mve.sqTo() == sqTo)) {
+			mvu = (MVU)mve;
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -761,7 +762,8 @@ void UIBD::MouseHover(const PT& pt, MHT mht)
 {
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
-	HiliteLegalMoves(htbd == htbdMoveablePc ? sq : sqNil);
+	if (!uiga.FInBoardSetup())
+		HiliteLegalMoves(htbd == htbdMoveablePc ? sq : sqNil);
 	switch (htbd) {
 	case htbdMoveablePc:
 		::SetCursor(uiga.app.hcurHand);

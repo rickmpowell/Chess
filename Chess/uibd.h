@@ -89,9 +89,10 @@ public:
 	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
 	void DrawMargins(const RC& rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
+	void DrawHovers(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
-	bool FHoverSq(SQ sq, MVU& mvu);
+	bool FHoverSq(SQ sqFrom, SQ sq, MVU& mvu);
 	void DrawHoverMvu(MVU mvu);
 	void DrawPieceSq(SQ sq);
 	void DrawAnnotations(void);
@@ -119,6 +120,7 @@ public:
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 
+	bool FInVmveDrag(SQ sqSrc, SQ sqDest, MVU& mvuFound) const;
 	bool FMoveablePc(SQ sq) const;
 };
 

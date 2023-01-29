@@ -225,7 +225,7 @@ private:
 	void OnPaint(void);
 	void OnSize(UINT dx, UINT dy);
 	bool OnCommand(int idm);
-	bool OnMouseMove(int x, int y);
+	bool OnMouseMove(UINT mk, int x, int y);
 	bool OnLeftDown(int x, int y);
 	bool OnLeftUp(int x, int y);
 	bool OnMouseWheel(int x, int y, int dwheel);
