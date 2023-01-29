@@ -641,6 +641,16 @@ public:
 	bool FDraw50Move(int64_t cmvDraw) const noexcept;
 	void SetGs(GS gs) noexcept; 
 
+	/* once the game over state is set, these will test it */
+	bool FGsPlaying(void) const { return gs == gsPlaying; };
+	bool FGsWhiteWon(void) const { return gs == gsBlackCheckMated || gs == gsBlackResigned || gs == gsBlackTimedOut; }
+	bool FGsBlackWon(void) const { return gs == gsWhiteCheckMated || gs == gsWhiteResigned || gs == gsWhiteTimedOut; }
+	bool FGsDraw(void) const { return gs == gsDraw3Repeat || gs == gsDraw50Move || gs == gsDrawDead || gs == gsDrawAgree; }
+	bool FGsGameOver(void) const { return FGsWhiteWon() || FGsBlackWon() || FGsDraw(); }
+	bool FGsNotStarted(void) const { return gs == gsNotStarted; }
+	bool FGsPaused(void) const { return gs == gsPaused; }
+	bool FGsCanceled(void) const { return gs == gsCanceled; }
+
 	/*
 	 *	decoding moves 
 	 */

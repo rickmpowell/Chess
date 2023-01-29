@@ -1,4 +1,5 @@
-  When games end, the game over panel overwrites part of white's clock
+  Save thinking time with each move
+  Allow each player to use different time controls
   When AIs are playing moves aren't animated
   PGN files that start in standard position shouldn't save FEN
   Escaping out of an AI game needs to stop the clocks
@@ -93,6 +94,8 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* When changing time controls from multi-block to single-block, clocks don't immediately resize
+* BUG: Play a human-human bullet game, one move, let black's clock flag, then New Game, and can't move
 * ML: Checkmates should have a # instead of a +
 * Display time control information in clocks if there are increments or multiple phases
 * Save real date in PGN files

@@ -1186,7 +1186,7 @@ SINT PLAI::SintTimeMan(void) const noexcept
 {
 	/* if someone flagged, stop the search */
 
-	if (ga.bdg.gs != gsPlaying)
+	if (!ga.bdg.FGsPlaying())
 		return sintCanceled;
 
 	/* if we're doing constant depth search, we do no time management; we also must
@@ -1661,7 +1661,7 @@ MVU PLHUMAN::MvuGetNext(SPMV& spmv) noexcept
 		catch (...) {
 			break;
 		}
-	} while (mvuNext.fIsNil());
+	} while (mvuNext.fIsNil() && ga.bdg.FGsPlaying());
 	
 	MVU mvu = mvuNext;
 	spmv = spmvNext;

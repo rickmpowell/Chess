@@ -384,17 +384,43 @@ void UIBD::DrawRankLabels(int rankFirst, int rankLast)
  */
 void UIBD::DrawGameState(void)
 {
-	if (uiga.ga.bdg.gs == gsPlaying)
-		return;
+#ifdef UNUSED
+	RC rc = RcInterior();
+	rc.bottom = rc.top + 12;
 	switch (uiga.ga.bdg.gs) {
-		/* TODO: show checkmate */
-	case gsWhiteCheckMated: break;
-	case gsBlackCheckMated: break;
-	case gsWhiteTimedOut: break;
-	case gsBlackTimedOut: break;
-	case gsStaleMate: break;
-	default: break;
+	case gsNotStarted:
+		DrawSz(L"Move piece to start game", ptxList, rc);
+		break;
+	case gsPlaying:
+		break;
+	case gsWhiteCheckMated: 
+	case gsWhiteTimedOut:
+	case gsWhiteResigned:
+		DrawSz(L"Black has won", ptxList, rc);
+		break;
+	case gsBlackCheckMated:
+	case gsBlackTimedOut:
+	case gsBlackResigned:
+		DrawSz(L"White has won", ptxList, rc);
+		break;
+	case gsStaleMate: 
+	case gsDrawDead:
+	case gsDrawAgree:
+	case gsDraw3Repeat:
+	case gsDraw50Move:
+		DrawSz(L"Game ended in a draw", ptxList, rc);
+		break;
+	case gsCanceled:
+		DrawSz(L"Game canceled", ptxList, rc);
+		break;
+	case gsPaused:
+		DrawSz(L"Game Paused", ptxList, rc);
+		break;
+	default: 
+		assert(false);
+		break;
 	}
+#endif
 }
 
 
@@ -427,7 +453,7 @@ void UIBD::SetDragHiliteSq(SQ sq)
  */
 bool UIBD::FHoverSq(SQ sq, MVU& mvu)
 {
-	if (sqHover.fIsNil() || uiga.ga.bdg.gs != gsPlaying)
+	if (sqHover.fIsNil() || !(uiga.ga.bdg.FGsPlaying() || uiga.ga.bdg.FGsNotStarted()))
 		return false;
 	for (MVE mveDrag : vmveDrag) {
 		if (mveDrag.sqFrom() == sqHover && mveDrag.sqTo() == sq) {
@@ -551,7 +577,7 @@ void UIBD::DrawHilites(void)
 
 void UIBD::DrawAnnotations(void)
 {
-	OPACITYBR oopacitybr(pbrAnnotation, 0.5f);
+	OPACITYBR opacitybr(pbrAnnotation, 0.5f);
 	for (ANO& ano : vano) {
 		if (ano.sqTo.fIsNil())
 			DrawSquareAnnotation(ano.sqFrom);

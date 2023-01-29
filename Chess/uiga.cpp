@@ -426,7 +426,7 @@ void UIGA::MakeMvu(MVU mvu, SPMV spmvMove)
 	PauseClock(ga.bdg.cpcToMove, msec);
 	StartClock(~ga.bdg.cpcToMove, msec);
 	uibd.MakeMvu(mvu, spmvMove);
-	if (ga.bdg.gs != gsPlaying)
+	if (!ga.bdg.FGsPlaying())
 		EndGame(spmvMove);
 	if (spmvMove != spmvHidden) {
 		uiml.UpdateContSize();
@@ -504,9 +504,9 @@ void UIGA::Play(MVU mvu, SPMV spmv)
 			break;
 		MakeMvu(mvu, spmv);
 		ga.SavePGNFile(papp->SzAppDataPath() + L"\\current.pgn");
-	} while (ga.bdg.gs == gsPlaying);
+	} while (ga.bdg.FGsPlaying());
 
-	if (ga.bdg.gs == gsCanceled) {
+	if (ga.bdg.FGsCanceled()) {
 		papp->Error(L"Game has been canceled.", MB_OK);
 		LogClose(L"Game", L"canceled", lgfItalic);
 	}
