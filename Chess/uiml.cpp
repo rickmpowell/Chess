@@ -232,7 +232,7 @@ void UIGC::DiscardRsrc(void)
 
 void UIGC::Layout(void)
 {
-	if (uiga.ga.bdg.gs == gsPlaying) {
+	if (uiga.ga.bdg.FGsPlaying()) {
 		RC rc = RcInterior().Inflate(PT(0, -1.0f));
 		rc.left += 48.0f;
 		SIZ siz = btnResign.SizImg();
@@ -245,8 +245,8 @@ void UIGC::Layout(void)
 		rc.left = rc.right - (rc.DyHeight() * siz.width / siz.height);
 		btnOfferDraw.SetBounds(rc);
 	}
-	btnResign.Show(uiga.ga.bdg.gs == gsPlaying);
-	btnOfferDraw.Show(uiga.ga.bdg.gs == gsPlaying);
+	btnResign.Show(uiga.ga.bdg.FGsPlaying());
+	btnOfferDraw.Show(uiga.ga.bdg.FGsPlaying());
 }
 
 
@@ -254,20 +254,18 @@ SIZ UIGC::SizLayoutPreferred(void)
 {
 	SIZ siz = SizFromSz(L"0", ptxText);
 	siz.width = -1.0f;
-	if (uiga.ga.bdg.gs == gsPlaying)
+	if (uiga.ga.bdg.FGsPlaying())
 		siz.height *= 1.5;
-	else if (uiga.ga.bdg.gs == gsNotStarted)
-		siz.height *= 1.5;
-	else
+	else if (uiga.ga.bdg.FGsGameOver())
 		siz.height *= 5.0f;
+	else
+		siz.height *= 1.5;
 	return siz;
 }
 
 void UIGC::Draw(const RC& rcUpdate)
 {
-	if (uiga.ga.bdg.gs == gsPlaying)
-		return;
-	if (uiga.ga.bdg.gs == gsNotStarted)
+	if (!uiga.ga.bdg.FGsGameOver())
 		return;
 
 	float dyLine = SizFromSz(L"A", ptxText).height + 3.0f;
@@ -428,7 +426,7 @@ SIZ UICLOCK::SizLayoutPreferred(void)
 	siz.width = -1;
 	siz.height *= 4.0f / 3.0f;
 	if (uiga.ga.prule->CtmiTotal() >= 2)
-		siz.height += 14.0f;;
+		siz.height += SizFromSz(L"0", ptxList).height + 4.0f;
 	return siz;
 }
 
@@ -518,7 +516,6 @@ void UICLOCK::Draw(const RC& rcUpdate)
 		DrawRgch(sz + 5, 4, ptxClock, rc);	// seconds and tenths
 	}
 
-	/* draw current increment */
 
 	if (fFlag)
 		DrawFlag();
@@ -530,8 +527,17 @@ RC UICLOCK::DrawTimeControls(int nmvSel) const
 	RC rcInt = RcInterior();
 
 	RULE* prule = uiga.ga.prule;
-	if (prule->CtmiTotal() < 2)
+	if (prule->CtmiTotal() < 2) {
+		DWORD dmsec = prule->TmiFromItmi(0).dmsecMove;
+		if (dmsec > 0) {
+			wstring sz = L"+" + to_wstring(dmsec / 1000) + L" sec";
+			SIZ siz = SizFromSz(sz, ptxList);
+			RC rc(rcInt.right - siz.width - 8, rcInt.bottom - siz.height - 1, rcInt.right, rcInt.bottom);
+			DrawSz(sz, ptxList, rc);
+			//rcInt.bottom = rc.top + 3*siz.height/4;
+		}
 		return rcInt;
+	}
 
 	RC rcControls = rcInt;
 	rcControls.top = rcControls.bottom - 16.0f;
@@ -611,9 +617,9 @@ void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 void UICLOCK::DrawFlag(void) const
 {
 	RC rc = RcInterior();
-	PT rgpt[] = { {0, 0}, {15, 0}, {15, 30}, {0, 15}, {0, 0} };
+	PT rgpt[] = { {0, 0}, {12, 0}, {12, 30}, {0, 12}, {0, 0} };
 	GEOM* pgeom = PgeomCreate(rgpt, CArray(rgpt));
-	FillGeom(pgeom, PT(rc.DxWidth() - 35.0f, 0), 1, coClockFlag);
+	FillGeom(pgeom, PT(24.0f, 0), 1, coClockFlag);
 	SafeRelease(&pgeom);
 }
 
