@@ -1,4 +1,3 @@
-  When clicking on unmoveable piece and dragging, we're picking up hovering behavior
   UITI: display time controls based on actual time controls
   Save thinking time with each move
   Allow each player to use different time controls
@@ -90,6 +89,7 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* When clicking on unmoveable piece and dragging, we're picking up hovering behavior
 * UIBD: Legal move circles disappear when dragging
 * In board edit mode, dragging pieces around should display hilite when over drop squares
 * Legal moves are displayed in board edit mode when hovering
