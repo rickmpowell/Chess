@@ -94,7 +94,8 @@
 #define cmdClockBullet_2_1		41
 #define cmdClockBullet_1_0		42
 #define cmdClockTest_60_30_15	43
-#define cmdMax					44
+#define cmdClockTest_20			44
+#define cmdMax					45
 
 /*
  *	icons
