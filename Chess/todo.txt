@@ -1,3 +1,5 @@
+  Legal moves are displayed in board edit mode when hovering
+  UITI: display time controls based on actual time controls
   Save thinking time with each move
   Allow each player to use different time controls
   When AIs are playing moves aren't animated
@@ -7,7 +9,6 @@
   BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
   In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, result should be draw if "winning" side has insufficient material
-  Formalize game states - editing, initialized but not started, playing, post-game
   Change FEN control in board editor to be an edit box
   Separate background colors for content areas and button bars
   Add en passant state to board edit mode
@@ -16,9 +17,6 @@
   Implement copy FEN command
   Lock out most UI when AI is thinking
   AI: refutation tables
-  Game over panel sometimes doesn't get reset on new game
-  Clocks don't get reset right on new game
-  Clocks should run as soon as game loop starts
   How to deal with 3-repeat draws in transposition table?
   Can we incrementally keep whether someone is in check in the BD and make them noisy moves?
   UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
@@ -94,6 +92,10 @@
   UIBD: Implement click-from/click-to mouse move interface
   UIBD: Implement circle annotations on mouse right click
   UIBD: Implement arrow annotations on mouse right click/drag
+* Game over panel sometimes doesn't get reset on new game
+* Clocks don't get reset right on new game
+* Clocks should run as soon as game loop starts
+* Formalize game states - editing, initialized but not started, playing, post-game
 * When changing time controls from multi-block to single-block, clocks don't immediately resize
 * BUG: Play a human-human bullet game, one move, let black's clock flag, then New Game, and can't move
 * ML: Checkmates should have a # instead of a +

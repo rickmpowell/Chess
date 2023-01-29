@@ -534,7 +534,6 @@ RC UICLOCK::DrawTimeControls(int nmvSel) const
 			SIZ siz = SizFromSz(sz, ptxList);
 			RC rc(rcInt.right - siz.width - 8, rcInt.bottom - siz.height - 1, rcInt.right, rcInt.bottom);
 			DrawSz(sz, ptxList, rc);
-			//rcInt.bottom = rc.top + 3*siz.height/4;
 		}
 		return rcInt;
 	}
