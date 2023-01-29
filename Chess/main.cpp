@@ -119,6 +119,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     pga->SetUiga(puiga);
     puiga->InitGame(nullptr, nullptr);
     puiga->uipvt.Show(false);
+    puiga->uipcp.Show(false);
 
     ::ShowWindow(hwnd, sw);
 
@@ -1566,9 +1567,9 @@ public:
 class CMDTIMECONTROL : public CMD
 {
 private:
-    int minGame, secInc;
+    int secGame, secInc;
 public:
-    CMDTIMECONTROL(APP& app, int icmd, int minGame, int secInc) : CMD(app, icmd), minGame(minGame), secInc(secInc)
+    CMDTIMECONTROL(APP& app, int icmd, int secGame, int secInc) : CMD(app, icmd), secGame(secGame), secInc(secInc)
     {
     }
 
@@ -1576,26 +1577,27 @@ public:
     {
         RULE* prule = app.pga->prule;
         prule->ClearTmi();
-        if (minGame == 0) /* untimed game */
+        if (secGame == 0) /* untimed game */
             ;
         else if (secInc == -1)  /* tournament mode */ {
-            if (minGame == 100) {
+            if (secGame == 100*60) {
                 prule->AddTmi(1, 40, 100 * secMin, 0);
                 prule->AddTmi(41, 60, 50 * secMin, 0);
                 prule->AddTmi(61, -1, 15 * secMin, 30);
             }
-            else if (minGame == 60) {
+            else if (secGame == 60) {
                 prule->AddTmi(1, 40, 60, 0);
                 prule->AddTmi(41, 60, 30, 0);
                 prule->AddTmi(61, -1, 15, 1);
             }
         }
         else
-            prule->AddTmi(1, -1, minGame * secMin, secInc);
+            prule->AddTmi(1, -1, secGame, secInc);
 
         /* force clocks to update */
         app.puiga->InitClocks();
         app.puiga->uibd.InitGame();
+        app.puiga->uiml.Layout();
         app.puiga->uiml.InitGame();
         app.puiga->Redraw();
 
@@ -1669,19 +1671,20 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDAISPEEDTEST(*this, cmdAISpeedTest));
     vcmd.Add(new CMDAIBREAK(*this, cmdAIBreak));
     vcmd.Add(new CMDLINKUCI(*this, cmdLinkUCI));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_1_0, 1, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_2_1, 2, 1));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_3_0, 3, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_3_2, 3, 2));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_0, 5, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_3, 5, 3));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_10_0, 10, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_10_5, 10, 5));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_15_10, 15, 10));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_0, 30, 0));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_20, 30,20));
-    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTourna_100_50_15, 100, -1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_1_0, 1*60, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_2_1, 2*60, 1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBullet_3_0, 3*60, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_3_2, 3*60, 2));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_0, 5*60, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockBlitz_5_3, 5*60, 3));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_10_0, 10*60, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_10_5, 10*60, 5));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockRapid_15_10, 15*60, 10));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_0, 30*60, 0));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockClassical_30_20, 30*60,20));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTourna_100_50_15, 100*60, -1));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_60_30_15, 60, -1));
+    vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_20, 20, 0));
     
 }
 
