@@ -90,6 +90,8 @@
   UIBD: clips when rotating on flip board
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
+* If multiple annotations point at the same square, back off center a little so arrows don't overlap
+* Annotation graphics should scale to size of board
 * Trying to add an annotation that already exists should delete the annotation
 * Right-clicking on non-square areas should cancel all annotations
 * UIBD: Implement circle annotations on mouse right click

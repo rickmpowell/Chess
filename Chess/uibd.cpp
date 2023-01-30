@@ -582,9 +582,10 @@ const float opacityAnnotation = 0.75f;
 void UIBD::DrawSquareAnnotation(SQ sq)
 {
 	RC rc = RcFromSq(sq);
-	ELL ell(rc.PtCenter(), rc.DxWidth() / 2 - 8);
+	float dxy = rc.DxWidth() / 20;
+	ELL ell(rc.PtCenter(), rc.DxWidth() / 2 - dxy);
 	OPACITYBR opacitybr(pbrText, opacityAnnotation);
-	DrawEll(ell, coAnnotation, 6);
+	DrawEll(ell, coAnnotation, dxy);
 }
 
 
@@ -600,10 +601,23 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 
 	float dx = ptTo.x - ptFrom.x, dy = ptTo.y - ptFrom.y;
 	float dxy = sqrt(dx*dx + dy*dy);
+	float dxArrow = rcFrom.DxWidth() / 3;
+	float dyArrow = rcFrom.DyHeight() / 3;
+	float dyShaft = dxArrow / 3;
 
-	float dxArrow = 30.0f;
-	float dyArrow = 30.0f;
-	float dyShaft = 10.0f;
+	/* if multiple annotations point at the same square, back the arrows off a tiny
+	   amount so the arrow heads don't overlap so much */
+
+	int cano = 0;
+	for (const ANO& ano : vano)
+		cano += ano.sqTo == sqTo;
+	if (cano > 1)
+		dxy -= dyShaft;
+	if (cano > 4) {
+		dxy -= dyShaft/2;
+		dxArrow -= dyShaft / 2;
+		dyArrow -= dyShaft / 2;
+	}
 
 	PT rgptArrow[8] = {  {0,             dyShaft/2},
 						 {dxy - dxArrow, dyShaft/2},
