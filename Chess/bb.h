@@ -381,14 +381,15 @@ inline BB BbSouthTwo(const BB& bb) noexcept { return bb >> 16; }
 
 /*
  *
- *	We create attack vectors for every square in every direction (rank, file, and diagonal).
- *	I could compute these and hard code them into the app, but it's very quick to calculate
- *	once at boot time.
+ *	We create attack vectors for every square in every direction (rank, file, 
+ *	and diagonal). I could compute these and hard code them into the app, but 
+ *	it's very quick to calculate once at boot time.
  * 
  */
 
 
 enum DIR {
+	dirMin = 0,
 	dirSouthWest = 0,	/* reverse directions */
 	dirSouth = 1,
 	dirSouthEast = 2,
@@ -400,6 +401,18 @@ enum DIR {
 	dirMax = 8
 };
 
+inline DIR& operator++(DIR& dir)
+{
+	dir = static_cast<DIR>(dir + 1);
+	return dir;
+}
+
+inline DIR operator++(DIR& dir, int)
+{
+	DIR dirT = dir;
+	dir = static_cast<DIR>(dir + 1);
+	return dirT;
+}
 
 /*	DirFromDrankDfile
  *	

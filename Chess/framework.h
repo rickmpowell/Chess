@@ -413,6 +413,11 @@ public:
 		return PT(left, top);
 	}
 
+	inline PT PtBotRight(void) const
+	{
+		return PT(right, bottom);
+	}
+
 	inline RC& SetSize(const SIZ& siz) 
 	{
 		right = left + siz.width;

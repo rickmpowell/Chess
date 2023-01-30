@@ -576,7 +576,7 @@ void UIBD::DrawAnnotations(void)
 	}
 }
 
-const ColorF coAnnotation = ColorF(0.00f, 0.30f, 0.10f);
+const ColorF coAnnotation = ColorF(0.00f, 0.20f, 0.10f);
 const float opacityAnnotation = 0.75f;
 
 void UIBD::DrawSquareAnnotation(SQ sq)
@@ -589,6 +589,13 @@ void UIBD::DrawSquareAnnotation(SQ sq)
 }
 
 
+float DxyDistance(PT ptFrom, PT ptTo)
+{
+	float dx = ptTo.x - ptFrom.x;
+	float dy = ptTo.y - ptFrom.y;
+	return sqrt(dx * dx + dy * dy);
+}
+
 
 void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 {
@@ -599,14 +606,15 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 	PT ptFrom = rcFrom.PtCenter();
 	PT ptTo = rcTo.PtCenter();
 
-	float dx = ptTo.x - ptFrom.x, dy = ptTo.y - ptFrom.y;
-	float dxy = sqrt(dx*dx + dy*dy);
+	/* create the arrow geometry pointing directly to the right */
+
+	float dxy = DxyDistance(ptFrom, ptTo);
 	float dxArrow = rcFrom.DxWidth() / 3;
 	float dyArrow = rcFrom.DyHeight() / 3;
 	float dyShaft = dxArrow / 3;
 
 	/* if multiple annotations point at the same square, back the arrows off a tiny
-	   amount so the arrow heads don't overlap so much */
+	   amount so the arrow heads don't overlap too much */
 
 	int cano = 0;
 	for (const ANO& ano : vano)
@@ -628,22 +636,34 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 						 {0,			 -dyShaft/2},
 						 {0,             dyShaft/2} };
 	GEOM* pgeom = PgeomCreate(rgptArrow, 8);
-	float angle = 90.0f - atan(dx / dy) * 180.0f / (float)M_PI;
-	if (dy < 0)	
-		angle += 180.0f;
+
+	/* figure out the angle to rotate the arrow by */
+
+	float angleArrow;
+	float dx = ptTo.x - ptFrom.x, dy = ptTo.y - ptFrom.y;
+	if (dy == 0)
+		angleArrow = dx < 0 ? 180.0f : 0.0f;
+	else {
+		angleArrow = 90.0f - atan(dx/dy)*180.0f/(float)M_PI;
+		if (dy < 0)	
+			angleArrow += 180.0f;
+	}
+
+	/* and draw */
 
 	OPACITYBR opacitybr(pbrText, opacityAnnotation);
 	COLORBRS colorbr(pbrText, coAnnotation);
-	FillRotateGeom(pgeom, ptFrom, 1, angle, pbrText);
+	FillRotateGeom(pgeom, ptFrom, 1, angleArrow, pbrText);
 	SafeRelease(&pgeom);
 }
 
 
 void UIBD::FlipBoard(CPC cpcNew)
 {
-	/* assumes all children are visible */
-	for (UI* pui : vpuiChild)
+	for (UI* pui : vpuiChild) {
+		assert(pui->FVisible());
 		pui->Show(false);
+	}
 
 	for (angle = 0.0f; angle > -180.0f; angle -= 4.0f)
 		uiga.Redraw();
@@ -816,7 +836,7 @@ void UIBD::EndRightDrag(const PT& pt)
 
 	if (panoDrag) {
 		if (!sqHit.fIsNil()) {
-			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, sqHit);
+			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, pt);
 			/* if annotation already exists, this is a delete operation, so
 			   delete both the old one and the new one */
 			for (vector<ANO>::iterator iano = vano.begin(); iano < vano.end()-1; iano++) {
@@ -843,7 +863,7 @@ void UIBD::RightDrag(const PT& pt)
 	/* modify the end point of the dragged annotation */
 	if (panoDrag) {
 		if (!sqHit.fIsNil())
-			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, sqHit);
+			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, pt);
 		else
 			panoDrag->sqTo = panoDrag->sqFrom;
 	}
@@ -851,15 +871,37 @@ void UIBD::RightDrag(const PT& pt)
 }
 
 
-/*	UIBD::SqNearestMove
+/*	UIBD::SqToNearestMove
  *
  *	Returns the square that is the nearest to sqHit that is a square that a piece
  *	could conceivably move to. Basically removes squares that are not on a line
  *	(row or column), diagonal, or knight-like L.
  */
-SQ UIBD::SqToNearestMove(SQ sqFrom, SQ sqHit) const
+SQ UIBD::SqToNearestMove(SQ sqFrom, PT ptHit) const
 {
-	return sqHit;
+	/* this is brute force algorithm and could probably be more efficient, but it's
+	   probably not too bad. Use bitboards to generate all possible destination
+	   squares */
+	
+	BB bbHit = BB(sqFrom);
+	BB bb = Ga().bdg.BbKnightAttacked(bbHit);
+	for (DIR dir = dirMin; dir < dirMax; ++dir)
+		bb |= mpbb.BbSlideTo(sqFrom, dir);
+
+	/* go through each potential destination square and find the one that's closest
+	   to the hit square */
+
+	SQ sqBest = sqNil;
+	float dxyBest = DxyDistance(PT(0, 0), RcInterior().PtBotRight());
+	for (; bb; bb.ClearLow()) {
+		SQ sq = bb.sqLow();
+		float dxy = DxyDistance(ptHit, RcFromSq(sq).PtCenter());
+		if (dxy < dxyBest) {
+			dxyBest = dxy;
+			sqBest = sq;
+		}
+	}
+	return sqBest;
 }
 
 

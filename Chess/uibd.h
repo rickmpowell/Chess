@@ -99,7 +99,7 @@ public:
 	void DrawAnnotations(void);
 	void DrawSquareAnnotation(SQ sq);
 	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);
-	SQ SqToNearestMove(SQ sqFrom, SQ sqHit) const;
+	SQ SqToNearestMove(SQ sqFrom, PT ptHit) const;
 
 	void DrawHilites(void);
 	void DrawGameState(void);

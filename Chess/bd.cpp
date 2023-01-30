@@ -521,7 +521,7 @@ void BD::UndoMvuNullSq(MVU mvu) noexcept
 }
 
 
-/*	BDG::GenVmve
+/*	BD::GenVmve
  *
  *	Generates the legal moves for the current player who has the move.
  *	Optionally doesn't bother to remove moves that would leave the

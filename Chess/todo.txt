@@ -1,5 +1,4 @@
   Can we use a different mixing mode than using opacity for annotations?
-  Limit annotation arrows to legal move possibilities
   Should we support move numbers that don't start at 1? For PGN and FEN reads?
   Test reading PGN files that don't have white to start
   Save thinking time with each move
@@ -90,6 +89,7 @@
   UIBD: clips when rotating on flip board
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
+* Limit annotation arrows to legal move possibilities
 * If multiple annotations point at the same square, back off center a little so arrows don't overlap
 * Annotation graphics should scale to size of board
 * Trying to add an annotation that already exists should delete the annotation
