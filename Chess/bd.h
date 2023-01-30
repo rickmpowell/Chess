@@ -713,6 +713,8 @@ public:
 	~ANO(void) { }
 	ANO(SQ sq) : sqFrom(sq), sqTo(sq) { }
 	ANO(SQ sqFrom, SQ sqTo) : sqFrom(sqFrom), sqTo(sqTo) { }
+
+	bool operator==(const ANO& ano) const { return sqFrom == ano.sqFrom && sqTo == ano.sqTo; }
 };
 
 

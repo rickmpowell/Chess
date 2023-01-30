@@ -781,13 +781,12 @@ void UIBD::StartRightDrag(const PT& pt)
 	SQ sqHit;
 	HTBD htbd = HtbdHitTest(pt, &sqHit);
 	
-	/* we don't track annotations if we don't start with a click on a valid square */
-
-	if (sqHit.fIsNil())		
-		return;
-	
-	vano.push_back(ANO(sqHit));
-	panoDrag = &vano[vano.size()-1];
+	if (sqHit.fIsNil())
+		vano.clear();
+	else {
+		vano.push_back(ANO(sqHit));
+		panoDrag = &vano[vano.size() - 1];
+	}
 	Redraw();
 }
 
@@ -802,8 +801,18 @@ void UIBD::EndRightDrag(const PT& pt)
 	   the annotation */
 
 	if (panoDrag) {
-		if (!sqHit.fIsNil())
-			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, sqHit); 
+		if (!sqHit.fIsNil()) {
+			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, sqHit);
+			/* if annotation already exists, this is a delete operation, so
+			   delete both the old one and the new one */
+			for (vector<ANO>::iterator iano = vano.begin(); iano < vano.end()-1; iano++) {
+				if (*iano == *panoDrag) {
+					vano.erase(iano);
+					vano.pop_back();
+					break;
+				}
+			}
+		}
 		else
 			vano.pop_back();
 		panoDrag = nullptr;

@@ -1,3 +1,4 @@
+  Trying to add an annotation that already exists should delete the annotation
   Right-clicking on non-square areas should cancel all annotations
   Can we use a different mixing mode than using opacity for annotations?
   Limit annotation arrows to legal move possibilities
