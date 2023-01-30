@@ -1,0 +1,391 @@
+
+
+STYLE GUIDE for SQ Chess
+by Rick Powell
+
+
+This is a generic style guide that documents a standard coding style I use 
+through almost all my code. There are some minor differences that are are 
+specific to the chess program, mostly due to the way the chess program has to 
+interact with the Windows operating system, but there are some other changes 
+that are simply an evolution of my style as I gain experience.
+
+In general, I consider style considerations completely arbitrary, and any 
+style is equivalent to any other. We only create a style guide for consistency 
+across the code base.
+
+I strongly prefer a type-based naming convention, which reduces errors by 
+creating a type calculus. Many errors can be immediately spotted because the 
+type calculus shows a type mismatch. Code formatting conventions are used to 
+avoid excess white space and allow for look-at-a-glance reading of decent 
+sized blocks of code.
+
+
+CODE FORMATTING
+
+
+	SOURCE FILES
+
+		The name of the source file is typically the same as the name of the 
+		dominant class that is implemented in the file. Very large classes may 
+		be broken up into several files, in which case the name of the file is 
+		simply a concise description of what the file accomplishes, and 
+		includes any copyright text that may be required by the code base.
+
+		A standard file header goes on each .cpp and .h file which gives a 
+		brief explanation of the contents. Comment blocks have a line of 
+		asterisks lined up in column 2 of each line, and all the text is one 
+		tabstop away from the line of asterisks. 
+
+		/*
+		 *
+		 *	blah.cpp
+		 *
+		 *	This file implements the blah blah blah blah of the blah blah blah 
+		 *	blah applciation, and includes the blah-diddy-blah-blah of the 
+		 *	blobs. Blahs are critical to the overall speed of the application, 
+		 *	so many of these types are heavily tuned and optimized.
+		 *
+		 *	Also defines the base bobo types.
+		 *
+		 *	Copyright (c) 2023 by Richard Powell
+		 *
+		 */
+
+		All header files should #include any other headers they need in order to 
+		compile. There should, in almost all cases, be include guards using
+		#pragma once immediately after the file header comment. 
+
+		The explanation should be very general and high-level. Specifics of the 
+		types and interfaces should go later, with the types themselves.
+
+	INDENTATION
+
+		We use 4 space tab setting.
+
+		We use the standard indentation rules for code where blocks are 
+		indented one level from the statmement that introduces the block. 
+
+			for (int i = 0; i < 10; i++) {
+				sub_block_code();
+				if (i & 2)
+					odd_index_handler(i);
+			}
+
+		Switch statements have case labels lined up with the switch keyword.
+
+			switch (dog) {
+			case dogPureBred:
+				print("got an expensive dog");
+				break;
+			case dogMutt:
+				print("got a cheap dog");
+				break;
+			default:
+				break;
+			}
+  
+	SPACING IN EXPRESSIONS
+
+		Spaces following the C++ language keyword flow control and before
+		the open paren of the statement's expression.
+
+			if (expression)
+
+			while (expression)
+
+			for (start; test; inc)
+
+		Spacing within expressions is, by default, to use a space around 
+		each binary operator. In complicated expressions, you can remove
+		spaces to emphasize precedence.
+
+			if (x + ccol*dxColWidth > xRight)
+
+		Always space around && and ||. 
+
+	LINE LENGTH
+
+		We don't worry too much about line length, but I kinda eyeball code to 
+		break somewhere around 80-90 characters, just because lines that get too 
+		long start to get hard to read.
+
+		Long lines should be broken at logical places within the line. If there
+		are multiple logical operations, for example, it makes sense to break
+		after each logcal operator:
+
+			if (x + 3*dx + dxError > xRight &&
+			    y + 3*dy + dyError < yLeft &&
+				FAllowOutOfBounds())
+
+		The second and subsequent lines should be indented to line up with the
+		expression part that they match with.
+		
+		Function calls with a lot of arguments can also be broken up at the
+		comma argument separator.
+
+			DoSomething(ComputationOfX(), ComputationOfY(), ComputationOfZ(),
+						opacityFull - opacityOptional/2, 
+						dsNoBuffer);
+
+
+	BRACKETING
+
+		Sub-blocks are bracketed if they are longer than one line. Single line 
+		sub-blocks do not need to be bracketed, unless bracketing somehow makes 
+		the code clearer. 
+
+		The closing bracket is on a line by itself and lines up with the 
+		statement that opens the block. The opening bracket is at the end of 
+		the line that opens the block:
+
+			if (x < y) {
+				print("x is less than y");
+				handle_smaller(x);
+			}
+
+		Functions have left-flush opening and closing brackets at the beginning
+		and end of the function
+
+			int do_something(void) 
+			{
+				...body of function...
+				return 1;
+			}
+
+		...do-while loops
+	
+			do {
+				DoStuff1();
+				DoMoreStuff();
+			} while (FNotDone());
+
+		...sub-blocks defined to create variable context
+
+		In particular, be sure to bracket nested if/else statements where it
+		can get confusing to match up the else clauses. The classic example
+		of a bug caused by missing brackets:
+
+			if (expression)
+				if (ex2) 
+					DoStuff();
+			else
+				ElseStuff();
+		
+
+	COMMENTS
+
+		As much as possible, comments should be right next to the code that 
+		they document. Don't document obvious code, and do not restate the what 
+		the line-by-line code is doing in English. You can assume all 
+		programmers know all the weird little idiosyncracies of C++, and you 
+		don't need to call them out unless they cause some unobvious side 
+		effect. If you're not sure whether some code should be commented, it's 
+		probably safer to not comment it.
+
+		We don't actually care much about the actual format of comments within 
+		the code - /* */ multi-line comments or // single line comments. We
+		tend to use // for short comments, but it's not strictly enforced.
+
+		Comments can be used to organize blocks of implementation, or to provide 
+		high level explanations of what the code is doing. Or summarize what 
+		some especially weird code is doing.
+
+		Public APIs are documented with the implementation of the API. We 
+		don't enforce a strict format for these at this point because we don't
+		really have any real "public API". But we may define this and enforce
+		it in the future, and we'll use a tool to extract the comments to 
+		create official documentation.
+
+	ASSERTS
+
+		We encourage the heavy use of asserts, which serves to document 
+		assumptions and trigger a run-time notice if the assumptions prove to be
+		incorrect.
+
+	LABELS AND GOTO
+
+		Gotos are permitted, and must be used for early exits out of nested loops 
+		and switch statements. Do not use special flags to force loops to exit when 
+		a goto will work just as well.
+
+		Gotos are also OK for error handling, where a goto to cleanup and exit code 
+		is preferred over indentation that obscures the most common path through 
+		the code.
+
+		Labels are left flush.
+
+		With C++, it is preferrable to write classes with constructors/destructors, 
+		where the destructor does the necessary cleanup. Good use of this technique 
+		may reduce  the number of situations where error handling gotos are 
+		necessary.
+
+	MACROS
+
+		In general, macros are to be avoided as much a spossible. The C++ enums and 
+		templates should provide equivalent functionality in almost all cases, and 
+		they are less prone to theerrors that macros cause.
+
+
+NAMING CONVENTIONS
+
+
+	We use Hungarian naming conventions, where all variables have a type prefix 
+	that matches the type of the variable. Note that 'type' in this context is 
+	*not* the same as the C++ variable types, although in many cases they are the 
+	same. 
+
+	The format of a name in Hungarian is
+
+		<prefix><base type><qualifier>
+
+	STANDARD BASE TYPES
+  
+		Base types should be short. While this will make the code terse and 
+		difficult for new programmers, once the application's core types are 
+		understood, the meneumonic value of the brevity will be useful. We tend to 
+		avoid actual English names as type names, and we usually end up using 
+		abbreviated versions of the "logical name".
+
+		Document the actual type where the type where is defined, either with the 
+		struct, class, or enum.
+
+		We define some standard base types that are extremely common in all code 
+		and should be the same for all applications. Some of these are based on system 
+		types that do not use our Hungarian naming convention, so there are often 
+		conflicts in our type system when we have to interact with some of these types.
+
+		Type	Example		Description
+
+		f		fEmpty		A boolean value, true or false
+		ch		chRead		A character. In most of our code, it's used as a 
+							unicode character, or wchar_t but in some contexts, 
+							especially when handling external data formats, it may 
+							be used for a 8-bit ASCII character. 
+		wch		wchDelim	A Unicode character. In contexts where we need to 
+							distinguish between 8-bit and Unicode characters, 
+							we'll use wch for Unicode and ch for ASCII characters. 
+							This should be rare and will only occur during type 
+							conversions.
+		sz		szLine		A null-terminated string, or a C++ string/wstring. In 
+							general, we use it for Unicode character buffers or 
+							wstring variables.
+		x		xHit		x coordinate. in this code, most x are Direct2D floats
+		y		yHit		y coordinate
+		pt		ptTopLeft	a point (x, y). Also based on Direct2D floats
+		rc		rcBounds	a Direct2D-compatible rectangle (left, top, right, bottom)
+		siz		sizText		a Direct2D-compatible 2-dimensional size (width, height)
+		co		coBack		a Direct2D-compatible ColorF. 
+	
+	STANDARD PREFIXES
+
+		Prefix	Example		Description
+
+		p		pa			pointer to an item of type 'a'
+		a		ab			an array of items of type b. (note that classic 
+							Hungarian uses rg for this)
+		v		vb			a vector of items of type b
+		i		ib			an index into a vector or array of type b. b = ab[ib];
+		c		cbar		count of items of type bar
+		d		dfoo		the difference between two items of type foo
+		mp		mprs		a mapping, indexed by type r, with values type s. 
+							s = mprs[r]. Note that an array is simply a special 
+							case of a mapping, where the index type is an index 
+							prefix. b = ab[ib] is the same as b = mpibb[ib];
+
+	STANDARD QUALIFIERS
+
+		Qualifiers are optional and are used to add further description for how 
+		the variable is used. They can usually be omitted when their use is 
+		obvious. Suffixes follow the base type and use the camel case convention, 
+		where the first letter of the suffix is capitalized and subsequent 
+		letters are lower case.
+
+		Suffix	Example		Description
+
+		First	ichFirst	The first item in a range of character indexes
+		Last	ichLast		The last item in a range. 
+		Lim		ichLim		The upper limit in a range, which is one beyond the 
+							last used value. 
+		Min		colMin		The minimum legal value a type can take. This is a 
+							compile-time constant. 
+		Max		colMax		The maximum legal upper limit a type can take. This is 
+							a compile-time constant.
+		Mac		colMac		The largest current legal value that the type can take. 
+							Often used in allocations, like a stack, that can grow 
+							at runtime. 
+		T		wT			A temporary item of type w
+		Sav		envSav		The saved version of an item of type env
+		Nil		sqNil		A special invalid value, to distinguish it from legal 
+							values. Often -1
+							or 0, but other values are not uncommon
+		Null	gsNull		A nil value that happens to have the value 0, can be 
+							tested for in boolean expressions
+		From	pchFrom		In source/destination copy or move code, the source 
+							location
+		To		pchTo		In source/destination copy or move code, the destination 
+							location
+
+		The range qualifiers are especially useful in avoiding off-by-one errors when 
+		dealing with ranges because they have explicit definitions about what exactly 
+		they refer to. A Last is the last used value, while a Lim is just beyond the 
+		end of the range. So correct loops would look like:
+
+			for (col = colFirst; col <= colLast; col++)
+
+			for (col = colFirst; col < colLim col++)
+
+		If you see a Last with a < or a Lim with a <=, then you have a bug. Note that 
+		we have two different types of end-points for a range (Last and Lim), but 
+		only a single type of starting point (First). This mayseems like an 
+		inconsistency, and it is, but the need for the'Lim'-type starting point 
+		almost never comes up in practice. So whatever that qualifier was hasnow 
+		atrophied into non-existence.
+
+		An example of using Max to test for out space.
+
+			FH afh[ifhMax];
+			int ifhCur = 0;
+			...
+			if (ifhCur >= ifhMax)
+				error("out of space for file handles")
+			else
+				afh[ifhCur++] = fh;
+
+		A more complex example would be a stack that can grow if we run out of space. 
+		In that case, you'd use a Mac instead of a Max, because the maximum value 
+		changes at runtime.
+
+			ifhMac = 10;
+			afh = AfhAlloc(ifhMac);
+			if (ifhCur >= ifhMac) {
+				if (ifhMac+10 >= ifhMax)
+					error("stack grew too big");
+				afh = AfhRealloc(ifhMac+10);
+				afh[ifhCur++] = fh;
+			}
+
+		Multiple qualifiers on a name are OK. If combining a descriptive name with a 
+		standard qualfier,put the descriptive name first and the standard qualifier 
+		last.
+
+			for (int ich = ichEditFirst; ich < ichEditLim; ich++)
+	  
+
+	FUNCTION NAMES
+
+		Function names always begin with a capital letter.
+
+		On rare occasions, usually with an inline access function in a class that 
+		does nothing more than a type coercion, we'll use a class function that 
+		begins with a lower case letter. This is to emphasize that this is 
+		semantically identical to accessing a member variable, and you can treat 
+		it as being very fast.
+
+	USER-DEFINED TYPES
+  
+	CLASS NAMES
+
+		Class names are all upper case, and, like all type names, should be very 
+		concise. In fact, we go to the extreme on class names, because of the way 
+		inheritance.
