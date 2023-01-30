@@ -1112,6 +1112,11 @@ void UI::FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, B
 	FillRotateGeom(pgeom, ptOffset, SIZ(dxyScale, dxyScale), angle, pbrFill);
 }
 
+void UI::FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, ColorF coFill) const
+{
+	COLORBRS colorbrs(pbrText, coFill);
+	FillRotateGeom(pgeom, ptOffset, dxyScale, angle, pbrText);
+}
 
 /*
  *

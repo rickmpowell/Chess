@@ -239,6 +239,7 @@ public:
 	void FillGeom(GEOM* pgeom, PT ptOffset, float dxyScale, ColorF coFill) const;
 	void FillRotateGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, float angle, BR* pbr = nullptr) const;
 	void FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, BR* pbr = nullptr) const;
+	void FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, ColorF coFill) const;
 };
 
 

@@ -1746,7 +1746,7 @@ wstring RULE::SzTimeControlTitle(void) const
 		return L"Blitz";
 	if (dmsecTotal < 30 * 60 * 1000)
 		return L"Rapid";
-	if (dmsecTotal < 60 * 60 * 1000)
+	if (dmsecTotal <= 60 * 60 * 1000)
 		return L"Classical";
 	return L"Tournament";
 }

@@ -245,7 +245,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 	RC rc = rcDraw;
 	rc.Inflate(-6, -6);
 	float dxyLine = 7;
-	ELL ell(rc.PtCenter(), PT(rc.DxWidth()/2-dxyLine, rc.DyHeight()/2-dxyLine));
+	ELL ell(rc.PtCenter(), rc.DxWidth()/2-dxyLine);
 	pui->DrawEll(ell, ColorF(0.65f, 0.15f, 0.25f), dxyLine);
 
 	/* taking an opponent piece - draw an X */

@@ -115,7 +115,7 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil)
+		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr)
 {
 }
 
@@ -469,7 +469,7 @@ void UIBD::DrawHoverMvu(MVU mvu)
 	RC rc = RcFromSq(mvu.sqTo());
 	if (!uiga.ga.bdg.FMvuIsCapture(mvu)) {
 		/* moving to an empty square - draw a circle */
-		ELL ell(rc.PtCenter(), PT(dxySquare / 5, dxySquare / 5));
+		ELL ell(rc.PtCenter(), dxySquare / 5);
 		FillEll(ell, pbrBlack);
 	}
 	else {
@@ -569,21 +569,59 @@ void UIBD::DrawAnnotations(void)
 {
 	OPACITYBR opacitybr(pbrAnnotation, 0.5f);
 	for (ANO& ano : vano) {
-		if (ano.sqTo.fIsNil())
+		if (ano.sqFrom == ano.sqTo)
 			DrawSquareAnnotation(ano.sqFrom);
 		else
 			DrawArrowAnnotation(ano.sqFrom, ano.sqTo);
 	}
 }
 
+const ColorF coAnnotation = ColorF(0.00f, 0.30f, 0.10f);
+const float opacityAnnotation = 0.75f;
 
 void UIBD::DrawSquareAnnotation(SQ sq)
 {
+	RC rc = RcFromSq(sq);
+	ELL ell(rc.PtCenter(), rc.DxWidth() / 2 - 8);
+	OPACITYBR opacitybr(pbrText, opacityAnnotation);
+	DrawEll(ell, coAnnotation, 6);
 }
+
 
 
 void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 {
+	/* create an unrotated arrow geometry using the distance between squares */
+
+	RC rcFrom = RcFromSq(sqFrom);
+	RC rcTo = RcFromSq(sqTo);
+	PT ptFrom = rcFrom.PtCenter();
+	PT ptTo = rcTo.PtCenter();
+
+	float dx = ptTo.x - ptFrom.x, dy = ptTo.y - ptFrom.y;
+	float dxy = sqrt(dx*dx + dy*dy);
+
+	float dxArrow = 30.0f;
+	float dyArrow = 30.0f;
+	float dyShaft = 10.0f;
+
+	PT rgptArrow[8] = {  {0,             dyShaft/2},
+						 {dxy - dxArrow, dyShaft/2},
+						 {dxy - dxArrow, dyArrow/2},
+						 {dxy,           0.0f},
+						 {dxy - dxArrow, -dyArrow/2},
+						 {dxy - dxArrow, -dyShaft/2},
+						 {0,			 -dyShaft/2},
+						 {0,             dyShaft/2} };
+	GEOM* pgeom = PgeomCreate(rgptArrow, 8);
+	float angle = 90.0f - atan(dx / dy) * 180.0f / (float)M_PI;
+	if (dy < 0)	
+		angle += 180.0f;
+
+	OPACITYBR opacitybr(pbrText, opacityAnnotation);
+	COLORBRS colorbr(pbrText, coAnnotation);
+	FillRotateGeom(pgeom, ptFrom, 1, angle, pbrText);
+	SafeRelease(&pgeom);
 }
 
 
@@ -667,21 +705,23 @@ bool UIBD::FMoveablePc(SQ sq) const
  */
 void UIBD::StartLeftDrag(const PT& pt)
 {
+	SetCapt(this);
+
+	vano.clear();
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
 	sqHover = sqNil;
-	SetCapt(this);
 
 	if (htbd == htbdMoveablePc) {
 		ptDragInit = pt;
 		sqDragInit = sq;
 		ptDragCur = pt;
 		rcDragPc = RcGetDrag();
-		Redraw();
 	}
 	else {
-		MessageBeep(0);
+		::MessageBeep(0);
 	}
+	Redraw();
 }
 
 
@@ -737,18 +777,66 @@ void UIBD::LeftDrag(const PT& pt)
 void UIBD::StartRightDrag(const PT& pt)
 {
 	SetCapt(this);
+
+	SQ sqHit;
+	HTBD htbd = HtbdHitTest(pt, &sqHit);
+	
+	/* we don't track annotations if we don't start with a click on a valid square */
+
+	if (sqHit.fIsNil())		
+		return;
+	
+	vano.push_back(ANO(sqHit));
+	panoDrag = &vano[vano.size()-1];
+	Redraw();
 }
 
 
 void UIBD::EndRightDrag(const PT& pt)
 {
-	::MessageBeep(0);
 	ReleaseCapt();
+	SQ sqHit;
+	HTBD htbd = HtbdHitTest(pt, &sqHit);
+	
+	/* set the end point of the last annotation, or if dragged off, just delete
+	   the annotation */
+
+	if (panoDrag) {
+		if (!sqHit.fIsNil())
+			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, sqHit); 
+		else
+			vano.pop_back();
+		panoDrag = nullptr;
+	}
+	Redraw();
 }
 
 
 void UIBD::RightDrag(const PT& pt)
 {
+	SQ sqHit;
+	HTBD htbd = HtbdHitTest(pt, &sqHit);
+	
+	/* modify the end point of the dragged annotation */
+	if (panoDrag) {
+		if (!sqHit.fIsNil())
+			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, sqHit);
+		else
+			panoDrag->sqTo = panoDrag->sqFrom;
+	}
+	Redraw();
+}
+
+
+/*	UIBD::SqNearestMove
+ *
+ *	Returns the square that is the nearest to sqHit that is a square that a piece
+ *	could conceivably move to. Basically removes squares that are not on a line
+ *	(row or column), diagonal, or knight-like L.
+ */
+SQ UIBD::SqToNearestMove(SQ sqFrom, SQ sqHit) const
+{
+	return sqHit;
 }
 
 

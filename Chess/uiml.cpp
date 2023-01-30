@@ -110,7 +110,7 @@ void UIPL::Draw(const RC& rcUpdate)
 		rc.left += 12.0f;
 		SIZ siz = SizFromSz(L"Ag", ptxText);
 		float dxyRadius = siz.height / 2.0f;
-		ELL ell(PT(rc.left + dxyRadius, rc.top + 6.0f + dxyRadius), PT(dxyRadius, dxyRadius));
+		ELL ell(PT(rc.left + dxyRadius, rc.top + 6.0f + dxyRadius), dxyRadius);
 
 		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 		DrawEll(ell, pbrText);

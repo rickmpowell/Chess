@@ -709,9 +709,9 @@ class ANO
 	friend class UIBD;
 	SQ sqFrom, sqTo;
 public:
-	ANO(void) { }
+	ANO(void) : sqFrom(sqNil), sqTo(sqNil) { }
 	~ANO(void) { }
-	ANO(SQ sq) : sqFrom(sq), sqTo(sqNil) { }
+	ANO(SQ sq) : sqFrom(sq), sqTo(sq) { }
 	ANO(SQ sqFrom, SQ sqTo) : sqFrom(sqFrom), sqTo(sqTo) { }
 };
 

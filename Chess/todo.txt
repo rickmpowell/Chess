@@ -1,3 +1,6 @@
+  Right-clicking on non-square areas should cancel all annotations
+  Can we use a different mixing mode than using opacity for annotations?
+  Limit annotation arrows to legal move possibilities
   Should we support move numbers that don't start at 1? For PGN and FEN reads?
   Test reading PGN files that don't have white to start
   Save thinking time with each move
@@ -88,8 +91,8 @@
   UIBD: clips when rotating on flip board
   UIBD: Implement queued move-ahead 
   UIBD: Implement click-from/click-to mouse move interface
-  UIBD: Implement circle annotations on mouse right click
-  UIBD: Implement arrow annotations on mouse right click/drag
+* UIBD: Implement circle annotations on mouse right click
+* UIBD: Implement arrow annotations on mouse right click/drag
 * UITI: display time controls based on actual time controls
 * When clicking on unmoveable piece and dragging, we're picking up hovering behavior
 * UIBD: Legal move circles disappear when dragging

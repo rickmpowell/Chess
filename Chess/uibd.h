@@ -68,6 +68,7 @@ public:
 	SQ sqDragHilite;
 
 	vector<ANO> vano;	// annotations
+	ANO* panoDrag;		// during right mouse dragging, drags out this annotation, points into vano
 
 public:
 	UIBD(UIGA& uiga);
@@ -98,6 +99,7 @@ public:
 	void DrawAnnotations(void);
 	void DrawSquareAnnotation(SQ sq);
 	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);
+	SQ SqToNearestMove(SQ sqFrom, SQ sqHit) const;
 
 	void DrawHilites(void);
 	void DrawGameState(void);

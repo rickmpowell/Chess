@@ -514,12 +514,20 @@ public:
 	{ 
 	}
 
-	ELL(const PT& ptCenter, const PT& ptRadius)
+	ELL(const PT& ptCenter, const SIZ& sizRadius)
 	{
 		point.x = ptCenter.x;
 		point.y = ptCenter.y;
-		radiusX = ptRadius.x;
-		radiusY = ptRadius.y;
+		radiusX = sizRadius.width;
+		radiusY = sizRadius.height;
+	}
+
+	ELL(const PT& ptCenter, float dxyRadius)
+	{
+		point.x = ptCenter.x;
+		point.y = ptCenter.y;
+		radiusX = dxyRadius;
+		radiusY = dxyRadius;
 	}
 
 	ELL& Offset(float dx, float dy)
