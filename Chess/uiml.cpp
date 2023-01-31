@@ -178,7 +178,7 @@ void UIPL::StartLeftDrag(const PT& pt)
 }
 
 
-void UIPL::EndLeftDrag(const PT& pt)
+void UIPL::EndLeftDrag(const PT& pt, bool fClick)
 {
 	SetFocus(nullptr);
 	if (fChooser) {
@@ -977,7 +977,7 @@ void UIML::StartLeftDrag(const PT& pt)
 	uiga.MoveToImv(imv, spmvAnimate);
 }
 
-void UIML::EndLeftDrag(const PT& pt)
+void UIML::EndLeftDrag(const PT& pt, bool fClick)
 {
 }
 

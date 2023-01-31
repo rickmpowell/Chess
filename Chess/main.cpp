@@ -404,11 +404,15 @@ bool APP::OnMouseMove(UINT mk, int x, int y)
     if (pui == nullptr)
         return true;
 
-    if (puiga->puiCapt) {
-        if (mk & MK_LBUTTON)
-            pui->LeftDrag(pt);
-        else if (mk & MK_RBUTTON)
-            pui->RightDrag(pt);
+    if (puiga->puiDrag) {
+        if (!(mk & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON))) 
+            pui->NoButtonDrag(pt);
+        else {
+            if (mk & MK_LBUTTON)
+                pui->LeftDrag(pt);
+            if (mk & MK_RBUTTON)
+                pui->RightDrag(pt);
+        }
         return true;
     }
 
@@ -434,10 +438,11 @@ bool APP::OnMouseMove(UINT mk, int x, int y)
 
 bool APP::OnLeftDown(int x, int y)
 {
-    PT pt;
-    UI* pui = puiga->PuiHitTest(&pt, x, y);
-    if (pui)
-        pui->StartLeftDrag(pt);
+    UI* pui = puiga->PuiHitTest(&mciLeftDown.pt, x, y);
+    if (pui) {
+        mciLeftDown.tm = ::GetMessageTime();
+        pui->StartLeftDrag(mciLeftDown.pt);
+    }
     return true;
 }
 
@@ -451,16 +456,17 @@ bool APP::OnLeftUp(int x, int y)
     PT pt;
     UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui)
-        pui->EndLeftDrag(pt);
+        pui->EndLeftDrag(pt, MCI(pt, ::GetMessageTime()).FIsSingleClick(mciLeftDown));
     return true;
 }
 
 bool APP::OnRightDown(int x, int y)
 {
-    PT pt;
-    UI* pui = puiga->PuiHitTest(&pt, x, y);
-    if (pui)
-        pui->StartRightDrag(pt);
+    UI* pui = puiga->PuiHitTest(&mciRightDown.pt, x, y);
+    if (pui) {
+        mciRightDown.tm = ::GetMessageTime();
+        pui->StartRightDrag(mciRightDown.pt);
+    }
     return true;
 }
 
@@ -474,7 +480,7 @@ bool APP::OnRightUp(int x, int y)
     PT pt;
     UI* pui = puiga->PuiHitTest(&pt, x, y);
     if (pui)
-        pui->EndRightDrag(pt);
+        pui->EndRightDrag(pt, MCI(pt, ::GetMessageTime()).FIsSingleClick(mciRightDown));
     return true;
 }
 

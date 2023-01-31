@@ -55,7 +55,7 @@ public:
 	UIPVT uipvt;
 	UIPCP uipcp;
 
-	UI* puiCapt;	/* mouse capture */
+	UI* puiDrag;	/* mouse drag capture */
 	UI* puiFocus;	/* keyboard focus */
 	UI* puiHover;	/* current hover UI */
 	map<TID, UI*> mptidpui;	/* windows timer id to UI mapping */
@@ -98,8 +98,8 @@ public:
 	 */
 
 	UI* PuiHitTest(PT* ppt, int x, int y);
-	virtual void SetCapt(UI* pui);
-	virtual void ReleaseCapt(void);
+	virtual void SetDrag(UI* pui);
+	virtual void ReleaseDrag(void);
 	virtual void SetHover(UI* pui);
 	virtual void SetFocus(UI* pui);
 	UI* PuiFocus(void) const;

@@ -89,7 +89,7 @@ UIDRAGPCP::UIDRAGPCP(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
 
 void UIDRAGPCP::StartLeftDrag(const PT& pt)
 {
-	SetCapt(this);
+	SetDrag(this);
 	ptDragInit = pt;
 	ptDragCur = pt;
 	Redraw();
@@ -97,9 +97,9 @@ void UIDRAGPCP::StartLeftDrag(const PT& pt)
 }
 
 
-void UIDRAGPCP::EndLeftDrag(const PT& pt)
+void UIDRAGPCP::EndLeftDrag(const PT& pt, bool fClick)
 {
-	ReleaseCapt();
+	ReleaseDrag();
 	InvalOutsideRc(RcDrag(ptDragCur));
 	ptDragCur = pt;
 	uipcp.HiliteSq(sqNil);

@@ -61,7 +61,7 @@ public:
 
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 };
 
@@ -220,7 +220,7 @@ public:
 
 	HTML HtmlHitTest(const PT& pt, int64_t* pimv);
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 
 	virtual void KeyDown(int vk);

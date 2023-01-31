@@ -446,7 +446,7 @@ HTSBAR SBAR::HitTest(const PT& pt)
  */
 void SBAR::StartLeftDrag(const PT& pt)
 {
-	SetCapt(this);
+	SetDrag(this);
 
 	switch (htsbarTrack = HitTest(ptMouseInit = pt)) {
 
@@ -474,7 +474,7 @@ void SBAR::StartLeftDrag(const PT& pt)
 
 	default:
 		htsbarTrack = htsbarNone;
-		ReleaseCapt();
+		ReleaseDrag();
 		break;
 	}
 }
@@ -486,13 +486,13 @@ void SBAR::StartLeftDrag(const PT& pt)
  *	scrolling, this just stops the scroll timer. For thumbing, it finishes
  *	up the thumb scroll.
  */
-void SBAR::EndLeftDrag(const PT& pt)
+void SBAR::EndLeftDrag(const PT& pt, bool fClick)
 {
 	EndScrollRepeat();
 	if (htsbarTrack == htsbarThumb)	// one last thumb positioning when thumbing
 		LeftDrag(pt);
 	htsbarTrack = htsbarNone;
-	ReleaseCapt();
+	ReleaseDrag();
 }
 
 

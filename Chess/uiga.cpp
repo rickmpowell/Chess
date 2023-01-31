@@ -45,7 +45,7 @@ void UIGA::DiscardRsrcClass(void)
 
 UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), app(app), ga(ga), 
 		uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uitip(this),
-	puiCapt(nullptr), puiFocus(nullptr), puiHover(nullptr),
+	puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
 	spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
@@ -192,8 +192,8 @@ UI* UIGA::PuiHitTest(PT* ppt, int x, int y)
 {
 	PT pt((float)x, (float)y);
 	UI* pui;
-	if (puiCapt)
-		pui = puiCapt;
+	if (puiDrag)
+		pui = puiDrag;
 	else
 		pui = PuiFromPt(pt);
 	if (pui)
@@ -203,20 +203,20 @@ UI* UIGA::PuiHitTest(PT* ppt, int x, int y)
 }
 
 
-void UIGA::SetCapt(UI* pui)
+void UIGA::SetDrag(UI* pui)
 {
 	if (pui) {
 		::SetCapture(app.hwnd);
-		puiCapt = pui;
+		puiDrag = pui;
 	}
 }
 
 
-void UIGA::ReleaseCapt(void)
+void UIGA::ReleaseDrag(void)
 {
-	if (puiCapt == nullptr)
+	if (puiDrag == nullptr)
 		return;
-	puiCapt = nullptr;
+	puiDrag = nullptr;
 	::ReleaseCapture();
 }
 
@@ -231,9 +231,9 @@ void UIGA::SetHover(UI* pui)
 
 void UIGA::RedrawCursor(const RC& rcUpdate)
 {
-	if (!puiCapt)
+	if (!puiDrag)
 		return;
-	puiCapt->DrawCursor(this, rcUpdate);
+	puiDrag->DrawCursor(this, rcUpdate);
 }
 
 

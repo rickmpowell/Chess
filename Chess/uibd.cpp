@@ -114,8 +114,9 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
 		pbmpPieces(nullptr), pgeomCross(nullptr), pgeomArrowHead(nullptr), ptxLabel(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
-		rcSquares(0, 0, 640.0f, 640.0f), dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr)
+		rcSquares(0, 0, 640.0f, 640.0f), 
+	    dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
+		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr), fClickClick(false)
 {
 }
 
@@ -736,15 +737,22 @@ bool UIBD::FMoveablePc(SQ sq) const
 /*	UIBD::StartLeftDrag
  *
  *	Starts the mouse left button down drag operation on the board panel.
+ *	Left dragging is used for piece moving; in board edit mode, it's used
+ *	to place pieces on the board.
  */
 void UIBD::StartLeftDrag(const PT& pt)
 {
-	SetCapt(this);
-
 	vano.clear();
 	SQ sq;
 	HTBD htbd = HtbdHitTest(pt, &sq);
 	sqHover = sqNil;
+
+	if (fClickClick) {
+		fClickClick = false;
+		EndLeftDrag(pt, false);
+		return;
+	}
+	SetDrag(this);
 
 	if (htbd == htbdMoveablePc) {
 		ptDragInit = pt;
@@ -759,9 +767,15 @@ void UIBD::StartLeftDrag(const PT& pt)
 }
 
 
-void UIBD::EndLeftDrag(const PT& pt)
+/*	UIBD::EndLeftDrag
+ *
+ *	Stops the left mouse button dragging. If we're over a legal square, 
+ *	initiates the move. In board setup mode, this is used to place the piece
+ *	on the board.
+ */
+void UIBD::EndLeftDrag(const PT& pt, bool fClick)
 {
-	ReleaseCapt();
+	ReleaseDrag();
 	if (sqDragInit.fIsNil())
 		return;
 	SQ sqFrom = sqDragInit;
@@ -777,8 +791,19 @@ void UIBD::EndLeftDrag(const PT& pt)
 		}
 		else {
 			MVE mve;
-			if (FInVmveDrag(sqFrom, sqTo, mve))
-				uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
+			if (fClick && sqFrom == sqTo) {
+				if (FInVmveDrag(sqFrom, sqNil, mve)) {
+					SetDrag(this);
+					fClickClick = true;
+					sqDragInit = sqFrom;
+					ptDragInit = ptDragCur = pt;
+					rcDragPc = RcGetDrag();
+				}
+			}
+			else {
+				if (FInVmveDrag(sqFrom, sqTo, mve))
+					uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
+			}
 		}
 	}
 	Redraw();
@@ -795,7 +820,7 @@ void UIBD::LeftDrag(const PT& pt)
 	SQ sq;
 	HtbdHitTest(pt, &sq);
 	if (sqDragInit.fIsNil()) {
-		EndLeftDrag(pt);
+		EndLeftDrag(pt, false);
 		return;
 	}
 	MVU mvu;
@@ -808,9 +833,15 @@ void UIBD::LeftDrag(const PT& pt)
 }
 
 
+void UIBD::NoButtonDrag(const PT& pt)
+{
+	if (fClickClick)
+		LeftDrag(pt);
+}
+
 void UIBD::StartRightDrag(const PT& pt)
 {
-	SetCapt(this);
+	SetDrag(this);
 
 	SQ sqHit;
 	HTBD htbd = HtbdHitTest(pt, &sqHit);
@@ -819,15 +850,15 @@ void UIBD::StartRightDrag(const PT& pt)
 		vano.clear();
 	else {
 		vano.push_back(ANO(sqHit));
-		panoDrag = &vano[vano.size() - 1];
+		panoDrag = &vano.back();
 	}
 	Redraw();
 }
 
 
-void UIBD::EndRightDrag(const PT& pt)
+void UIBD::EndRightDrag(const PT& pt, bool fClick)
 {
-	ReleaseCapt();
+	ReleaseDrag();
 	SQ sqHit;
 	HTBD htbd = HtbdHitTest(pt, &sqHit);
 	
@@ -837,6 +868,7 @@ void UIBD::EndRightDrag(const PT& pt)
 	if (panoDrag) {
 		if (!sqHit.fIsNil()) {
 			panoDrag->sqTo = SqToNearestMove(panoDrag->sqFrom, pt);
+			assert(panoDrag == &vano.back());
 			/* if annotation already exists, this is a delete operation, so
 			   delete both the old one and the new one */
 			for (vector<ANO>::iterator iano = vano.begin(); iano < vano.end()-1; iano++) {
@@ -908,8 +940,9 @@ SQ UIBD::SqToNearestMove(SQ sqFrom, PT ptHit) const
 /*	UIBD::FInVmveDrag
  *
  *	Returns true if the source and destination squares line up with a legal move
- *	in the drag move list. if sqDest is sqNil, searches for first move that 
- *	matches just the source square.
+ *	in the drag move list. if sqTo is sqNil, searches for the first move that 
+ *	matches just the source square; if sqFrom is true searches for first move
+ *	that matches the destination square.
  */
 bool UIBD::FInVmveDrag(SQ sqFrom, SQ sqTo, MVU& mvu) const
 {

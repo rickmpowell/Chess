@@ -83,7 +83,7 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 
 	RC RcThumb(void) const;

@@ -157,6 +157,32 @@ struct TAG
 
 /*
  *
+ *	Mouse click information
+ * 
+ */
+
+
+struct MCI
+{
+	PT pt;
+	DWORD tm;
+	MCI(void) : pt(0,0), tm(0) { }
+	MCI(PT pt, DWORD tm) : pt(pt), tm(tm) { }
+
+	/*	FIsSingleClick
+	 *
+	 *	Returns true if this mouse up information is the trigger for single click. Must
+	 *	be quick and more-or-less in the same location
+	 */
+	bool FIsSingleClick(const MCI& mciDown) const 
+	{
+		return abs(pt.x - mciDown.pt.x) < 2 && abs(pt.y - mciDown.pt.y) < 2;
+	}
+};
+
+
+/*
+ *
  *	APP class
  *
  *	Base application class, which simply initiaizes the app and creates the top-level
@@ -173,9 +199,14 @@ class APP : public D2
 	friend class UIGA;
 
 public:
+
+	/* crap we need for Windows */
+
 	HINSTANCE hinst;
 	HWND hwnd;
 	HACCEL haccel;
+
+	/* crap we need to draw on Direct2D contexts */
 
 	ID3D11Device1* pdevd3;
 	ID3D11DeviceContext1* pdcd3;
@@ -184,6 +215,8 @@ public:
 	ID2D1Bitmap1* pbmpBackBuf;
 	DC* pdc;
 
+	/* useful cursors */
+
 	HCURSOR hcurArrow;
 	HCURSOR hcurMove;
 	HCURSOR hcurNo;
@@ -191,6 +224,8 @@ public:
 	HCURSOR hcurHand;
 	HCURSOR hcurCrossHair;
 	HCURSOR hcurUp;
+
+	MCI mciLeftDown, mciRightDown;
 	
 	GA* pga;
 	UIGA* puiga;

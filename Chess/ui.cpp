@@ -415,12 +415,12 @@ UI* UI::PuiFromPt(const PT& pt)
 
 void UI::StartLeftDrag(const PT& pt)
 {
-	SetCapt(this);
+	SetDrag(this);
 }
 
-void UI::EndLeftDrag(const PT& pt)
+void UI::EndLeftDrag(const PT& pt, bool fClick)
 {
-	ReleaseCapt();
+	ReleaseDrag();
 }
 
 void UI::LeftDrag(const PT& pt)
@@ -429,15 +429,19 @@ void UI::LeftDrag(const PT& pt)
 
 void UI::StartRightDrag(const PT& pt)
 {
-	SetCapt(this);
+	SetDrag(this);
 }
 
-void UI::EndRightDrag(const PT& pt)
+void UI::EndRightDrag(const PT& pt, bool fClick)
 {
-	ReleaseCapt();
+	ReleaseDrag();
 }
 
 void UI::RightDrag(const PT& pt)
+{
+}
+
+void UI::NoButtonDrag(const PT& pt)
 {
 }
 
@@ -450,32 +454,32 @@ void UI::ScrollWheel(const PT& pt, int dwheel)
 }
 
 
-/*	UI::SetCapture
+/*	UI::SetDrag
  *
- *	Sets the mouse capture UI element. Note that capture is a global state, and is
- *	not really an attribute tracked by individual UI element. By convention we keep
- *	track of these types of global elements in the root UI element. These child UI
- *	elements just propagate the capture towards the root of the tree, and it is 
- *	the root elements responsibility to actually keep track of capture and do something
- *	with it. 
+ *	Sets the mouse captured drag UI element. Note that capture is a global state, 
+ *	and is not really an attribute tracked by individual UI element. By convention 
+ *	we keep track of these types of global elements in the root UI element. These 
+ *	child UI elements just propagate the capture towards the root of the tree, and 
+ *	it is  the root elements responsibility to actually keep track of drag capture
+ *	and do something with it. 
  */
-void UI::SetCapt(UI* pui)
+void UI::SetDrag(UI* pui)
 {
 	if (puiParent)
-		puiParent->SetCapt(pui);
+		puiParent->SetDrag(pui);
 }
 
 
-/*	UI::ReleaseCapt
+/*	UI::ReleaseDrag
  *
- *	Releases capture, i.e., sets is to zero. Note that capture is not a nestable
- *	attribute - release always completely clears the global capture state, it does
- *	not restore it.
+ *	Releases drag capture, i.e., sets is to zero. Note that capture is not a 
+ *	nestable attribute - release always completely clears the global capture 
+ *	state, it does not restore it.
  */
-void UI::ReleaseCapt(void)
+void UI::ReleaseDrag(void)
 {
 	if (puiParent)
-		puiParent->ReleaseCapt();
+		puiParent->ReleaseDrag();
 }
 
 
@@ -1148,14 +1152,14 @@ void BTN::Hilite(bool fHiliteNew)
 
 void BTN::StartLeftDrag(const PT& pt)
 {
-	SetCapt(this);
+	SetDrag(this);
 	Track(true);
 }
 
 
-void BTN::EndLeftDrag(const PT& pt)
+void BTN::EndLeftDrag(const PT& pt, bool fClick)
 {
-	ReleaseCapt();
+	ReleaseDrag();
 	Track(false);
 	if (RcInterior().FContainsPt(pt))
 		DispatchCmd(cmd);

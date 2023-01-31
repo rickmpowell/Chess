@@ -146,14 +146,15 @@ public:
 	/* mouse interface */
 
 	UI* PuiFromPt(const PT& pt);
-	virtual void SetCapt(UI* pui);
-	virtual void ReleaseCapt(void);	
+	virtual void SetDrag(UI* pui);
+	virtual void ReleaseDrag(void);	
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 	virtual void StartRightDrag(const PT& pt);
-	virtual void EndRightDrag(const PT& pt);
+	virtual void EndRightDrag(const PT& pt, bool fClick);
 	virtual void RightDrag(const PT& pt);
+	virtual void NoButtonDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);
 
@@ -267,7 +268,7 @@ public:
 	void Hilite(bool fHiliteNew);
 
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	

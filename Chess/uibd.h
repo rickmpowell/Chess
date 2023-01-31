@@ -59,16 +59,18 @@ public:
 	float dyLabel;
 	float angle;	// angle for rotation animation
 
-	SQ sqDragInit;
-	PT ptDragInit;
-	PT ptDragCur;
-	SQ sqHover;
-	RC rcDragPc;	// rectangle the dragged piece was last drawn in
 	VMVE vmveDrag;	// legal moves in the UI
-	SQ sqDragHilite;
+	vector<ANO> vano;	// annotations shown on the board
 
-	vector<ANO> vano;	// annotations
-	ANO* panoDrag;		// during right mouse dragging, drags out this annotation, points into vano
+	PT ptDragInit;	// mouse point we initially hit when drag moving
+	SQ sqDragInit;	// square of ptDragInit
+	PT ptDragCur;	// current mouse position when dragging
+	RC rcDragPc;	// rectangle the dragged piece was last drawn in
+	SQ sqDragHilite;
+	bool fClickClick;	// true after click-click move selection mode started
+	SQ sqHover;
+
+	ANO* panoDrag;		// during right mouse drag, we drag out this annotation; points into vano
 
 public:
 	UIBD(UIGA& uiga);
@@ -118,10 +120,11 @@ public:
 
 	HTBD HtbdHitTest(const PT& pt, SQ* psq) const;
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
+	virtual void NoButtonDrag(const PT& pt);
 	virtual void StartRightDrag(const PT& pt);
-	virtual void EndRightDrag(const PT& pt);
+	virtual void EndRightDrag(const PT& pt, bool fClick);
 	virtual void RightDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 
@@ -159,7 +162,7 @@ public:
 	UIDRAGPCP(UIPCP& uipcp);
 
 	virtual void StartLeftDrag(const PT& pt);
-	virtual void EndLeftDrag(const PT& pt);
+	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void Draw(const RC& rcUpdate);
