@@ -5,10 +5,10 @@ by Rick Powell
 
 
 This is a generic style guide that documents a standard coding style I use 
-through almost all my code. There are some minor differences that are are 
-specific to the chess program, mostly due to the way the chess program has to 
+in most of my code. There are some minor differences that are are specific 
+to the chess program, mostly due to the way the chess program has to 
 interact with the Windows operating system, but there are some other changes 
-that are simply an evolution of my style as I gain experience.
+that are an evolution of my style as I've gain experience.
 
 In general, I consider style considerations completely arbitrary, and any 
 style is equivalent to any other. We only create a style guide for consistency 
@@ -29,13 +29,13 @@ CODE FORMATTING
 		The name of the source file is typically the same as the name of the 
 		dominant class that is implemented in the file. Very large classes may 
 		be broken up into several files, in which case the name of the file is 
-		simply a concise description of what the file accomplishes, and 
-		includes any copyright text that may be required by the code base.
+		simply a concise description of what the file accomplishes.
 
 		A standard file header goes on each .cpp and .h file which gives a 
 		brief explanation of the contents. Comment blocks have a line of 
 		asterisks lined up in column 2 of each line, and all the text is one 
-		tabstop away from the line of asterisks. 
+		tabstop away from the line of asterisks. Any copyright notice goes
+		in the file header comment.
 
 		/*
 		 *
@@ -52,16 +52,17 @@ CODE FORMATTING
 		 *
 		 */
 
-		All header files should #include any other headers they need in order to 
-		compile. There should, in almost all cases, be include guards using
-		#pragma once immediately after the file header comment. 
+		All header files should #include all other headers they need in order 
+		to compile. There should include guards using #pragma once immediately 
+		after the file header.
 
-		The explanation should be very general and high-level. Specifics of the 
-		types and interfaces should go later, with the types themselves.
+		The file header description should be very general and high-level. 
+		Specifics of the types and interfaces should go later, with the actual 
+		definitions and implementations.
 
 	INDENTATION
 
-		We use 4 space tab setting.
+		We use a 4 space tab setting.
 
 		We use the standard indentation rules for code where blocks are 
 		indented one level from the statmement that introduces the block. 
@@ -84,8 +85,14 @@ CODE FORMATTING
 			default:
 				break;
 			}
+
+		In a loop with an empty body, the statement semicolon goes on a 
+		second line and is indented.
+
+			for (ichNull = 0; sz[ichNull]; ichNull++)
+				;
   
-	SPACING IN EXPRESSIONS
+	SPACING WITHIN EXPRESSIONS
 
 		Spaces following the C++ language keyword flow control and before
 		the open paren of the statement's expression.
@@ -96,9 +103,9 @@ CODE FORMATTING
 
 			for (start; test; inc)
 
-		Spacing within expressions is, by default, to use a space around 
-		each binary operator. In complicated expressions, you can remove
-		spaces to emphasize precedence.
+		By default, spacing within expressions uses a space around every
+		binary operator, but no space with a unary operator. In complicated 
+		expressions, you can remove spaces to emphasize precedence.
 
 			if (x + ccol*dxColWidth > xRight)
 
@@ -106,23 +113,42 @@ CODE FORMATTING
 
 	LINE LENGTH
 
-		We don't worry too much about line length, but I kinda eyeball code to 
-		break somewhere around 80-90 characters, just because lines that get too 
-		long start to get hard to read.
+		We don't worry too much about line length, but I eyeball code to break
+		somewhere around 80-90 characters.
 
 		Long lines should be broken at logical places within the line. If there
-		are multiple logical operations, for example, it makes sense to break
-		after each logcal operator:
+		are multiple logical operations, it makes sense to break after each 
+		logcal operator:
 
 			if (x + 3*dx + dxError > xRight &&
 			    y + 3*dy + dyError < yLeft &&
 				FAllowOutOfBounds())
 
-		The second and subsequent lines should be indented to line up with the
-		expression part that they match with.
+		Note that the operator the appears at the line break is on the line
+		before the break, not after the break. Second and subsequent lines 
+		should be indented to line up with the expression part that they match 
+		with. A long complicated expression may need to be broken at different
+		levels:
+
+			if (x > xFirst &&
+			    x < xLast + 
+				    mpcoldx[ColFromPt(ptLastMouseClick)] + 
+				    min(cbtn * dxBtn, dxBtnMax) + 
+					dxSlop)))
+
+		There is no need to try to break lines near the 80-column mark. Once
+		a line is long enough to need a break, break it where it makes logical 
+		sense, not because it's near the page width. The only exception is in 
+		very long sequences of dull terms within an expression, or very long 
+		argument lists; then it makes sense to just list them all out and do a 
+		line break when the list gets too long.
+
+			FOO(void) : FO(true), fVisible(false), rcBounds(rcEmpty), 
+			            ITEM(this), ITEM2(this), ITEM3(this), ITEM4(this),
+						ITEM5(this), fDebug(true)
 		
-		Function calls with a lot of arguments can also be broken up at the
-		comma argument separator.
+		Function calls with many arguments can also be broken up at the comma 
+		argument separator.
 
 			DoSomething(ComputationOfX(), ComputationOfY(), ComputationOfZ(),
 						opacityFull - opacityOptional/2, 
@@ -145,7 +171,7 @@ CODE FORMATTING
 			}
 
 		Functions have left-flush opening and closing brackets at the beginning
-		and end of the function
+		and end of the function.
 
 			int do_something(void) 
 			{
@@ -153,18 +179,27 @@ CODE FORMATTING
 				return 1;
 			}
 
-		...do-while loops
+		do-while loops put the open bracket on the line with the 'do' and the
+		close bracket before the while keyword.
 	
 			do {
 				DoStuff1();
 				DoMoreStuff();
 			} while (FNotDone());
 
-		...sub-blocks defined to create variable context
+		When sub-blocks are used to create a variable scope, the brackets
+		and code should be indented the same as the surrounding code.
 
-		In particular, be sure to bracket nested if/else statements where it
-		can get confusing to match up the else clauses. The classic example
-		of a bug caused by missing brackets:
+			DoStuff();
+			{
+			SAVBRCO savbrco(pbr, coRed);
+			DrawBox(rc, pbr);
+			}
+			DoMoreStuff();
+
+		Be sure to bracket nested if/else statements where it can get 
+		confusing to match up the else clauses. The classic example of a 
+		bug caused by missing brackets:
 
 			if (expression)
 				if (ex2) 
@@ -175,27 +210,45 @@ CODE FORMATTING
 
 	COMMENTS
 
-		As much as possible, comments should be right next to the code that 
-		they document. Don't document obvious code, and do not restate the what 
-		the line-by-line code is doing in English. You can assume all 
-		programmers know all the weird little idiosyncracies of C++, and you 
-		don't need to call them out unless they cause some unobvious side 
-		effect. If you're not sure whether some code should be commented, it's 
-		probably safer to not comment it.
+		Comments should be immediately adjacent to the code they document. 
+		Don't document obvious code, and do not simply type out a line-by-line 
+		English translation of what the code is doing. You can assume all 
+		programmers know the weird little idiosyncracies of C++, and you don't 
+		need to call them out unless they cause some unobvious side effect. If 
+		you're not sure whether some code should be commented, it's probably 
+		better to not comment it.
 
-		We don't actually care much about the actual format of comments within 
-		the code - /* */ multi-line comments or // single line comments. We
-		tend to use // for short comments, but it's not strictly enforced.
+		We don't care about the format of comments within the code. /* */ 
+		multi-line comments or // single line comments are fine. We tend to use 
+		// for short comments, but it's not strictly enforced.
 
-		Comments can be used to organize blocks of implementation, or to provide 
-		high level explanations of what the code is doing. Or summarize what 
-		some especially weird code is doing.
+		Comments can be used to label and organize long implementations or 
+		lists of definitions into logical sections. But mostly they provide 
+		high level explanations of what the code is doing. Or they summarize 
+		what some especially weird code is doing. Warnings about particularly 
+		fragile code are also reasonable.
 
-		Public APIs are documented with the implementation of the API. We 
-		don't enforce a strict format for these at this point because we don't
-		really have any real "public API". But we may define this and enforce
-		it in the future, and we'll use a tool to extract the comments to 
-		create official documentation.
+		Public APIs are documented with the implementation of the API in the
+		function header. We don't enforce a strict format for these at this point 
+		because we don't really have any real "public API". But we may define 
+		this and enforce it in the future, and we'll use a tool to extract the 
+		comments to create official documentation.
+
+		Our semi-official function header:
+
+			/*	FOO::FunctionName
+			 *
+			 *	Description of what the function does, in reasonable detail.
+			 *
+			 *	Explanation of parameters and return values.
+			 */
+			void FOO::FunctionName(int parameters)
+			{
+				...
+			}
+
+		We document the interface of most functions, which is a good place for
+		high-level description.
 
 	ASSERTS
 
@@ -205,7 +258,7 @@ CODE FORMATTING
 
 	LABELS AND GOTO
 
-		Gotos are permitted, and must be used for early exits out of nested loops 
+		Gotos are permitted, and are encouraged for early exits out of nested loops 
 		and switch statements. Do not use special flags to force loops to exit when 
 		a goto will work just as well.
 
@@ -220,11 +273,16 @@ CODE FORMATTING
 		may reduce  the number of situations where error handling gotos are 
 		necessary.
 
+		A good rule of thumb: a goto should always jump forward in the code. A
+		backward goto is a sign you've mis-identified the "loopi-ness" of the
+		code, and a do, while, or for should be used instead.
+
+
 	MACROS
 
-		In general, macros are to be avoided as much a spossible. The C++ enums and 
-		templates should provide equivalent functionality in almost all cases, and 
-		they are less prone to theerrors that macros cause.
+		Macros are to be avoided as much a spossible. The C++ enums and templates 
+		should provide equivalent functionality in almost all cases, and they are 
+		less prone to the text expansion errors that macros cause.
 
 
 NAMING CONVENTIONS
@@ -239,21 +297,22 @@ NAMING CONVENTIONS
 
 		<prefix><base type><qualifier>
 
+
 	STANDARD BASE TYPES
   
 		Base types should be short. While this will make the code terse and 
 		difficult for new programmers, once the application's core types are 
 		understood, the meneumonic value of the brevity will be useful. We tend to 
-		avoid actual English names as type names, and we usually end up using 
+		avoid actual English words as type names, and we usually end up using 
 		abbreviated versions of the "logical name".
 
 		Document the actual type where the type where is defined, either with the 
 		struct, class, or enum.
 
-		We define some standard base types that are extremely common in all code 
-		and should be the same for all applications. Some of these are based on system 
-		types that do not use our Hungarian naming convention, so there are often 
-		conflicts in our type system when we have to interact with some of these types.
+		Some standard base types that are extremely common in all code and should be 
+		the same for all applications. Some of these are based on system types that 
+		do not use our Hungarian naming convention, so there are often conflicts in 
+		our type system when we have to interact with some of these types.
 
 		Type	Example		Description
 
@@ -281,11 +340,11 @@ NAMING CONVENTIONS
 
 		Prefix	Example		Description
 
-		p		pa			pointer to an item of type 'a'
-		a		ab			an array of items of type b. (note that classic 
-							Hungarian uses rg for this)
-		v		vb			a vector of items of type b
-		i		ib			an index into a vector or array of type b. b = ab[ib];
+		p		pty			pointer to an item of type 'ty'
+		a		abg			an array of items of type bg. (note that classic 
+							Hungarian uses rg for arrays)
+		v		vbg			a vector of items of type bg
+		i		ibg			an index into a vector or array of type bg. bg = abg[ibg];
 		c		cbar		count of items of type bar
 		d		dfoo		the difference between two items of type foo
 		mp		mprs		a mapping, indexed by type r, with values type s. 
@@ -296,12 +355,13 @@ NAMING CONVENTIONS
 	STANDARD QUALIFIERS
 
 		Qualifiers are optional and are used to add further description for how 
-		the variable is used. They can usually be omitted when their use is 
-		obvious. Suffixes follow the base type and use the camel case convention, 
-		where the first letter of the suffix is capitalized and subsequent 
-		letters are lower case.
+		the variable is used. A qualifier can be anything that further describes
+		what the item is. Qualifiers can often be omitted when the use is obvious
+		from context. Suffixes follow the base type and use the camel case 
+		capitalization convention, where the first letter of each word of the 
+		suffix is capitalized and subsequent letters are lower case.
 
-		Suffix	Example		Description
+		Qualifier Example		Description
 
 		First	ichFirst	The first item in a range of character indexes
 		Last	ichLast		The last item in a range. 
@@ -314,22 +374,26 @@ NAMING CONVENTIONS
 		Mac		colMac		The largest current legal value that the type can take. 
 							Often used in allocations, like a stack, that can grow 
 							at runtime. 
+
+		Cur		gsCur		The current value. 
 		T		wT			A temporary item of type w
 		Sav		envSav		The saved version of an item of type env
+
 		Nil		sqNil		A special invalid value, to distinguish it from legal 
 							values. Often -1
 							or 0, but other values are not uncommon
 		Null	gsNull		A nil value that happens to have the value 0, can be 
 							tested for in boolean expressions
+
 		From	pchFrom		In source/destination copy or move code, the source 
 							location
 		To		pchTo		In source/destination copy or move code, the destination 
 							location
 
 		The range qualifiers are especially useful in avoiding off-by-one errors when 
-		dealing with ranges because they have explicit definitions about what exactly 
-		they refer to. A Last is the last used value, while a Lim is just beyond the 
-		end of the range. So correct loops would look like:
+		dealing with ranges because they have explicit, robust definitions. A 'Last' is 
+		the last used value, while a Lim is just beyond the end of the range. So 
+		correct loops would look like:
 
 			for (col = colFirst; col <= colLast; col++)
 
@@ -337,10 +401,10 @@ NAMING CONVENTIONS
 
 		If you see a Last with a < or a Lim with a <=, then you have a bug. Note that 
 		we have two different types of end-points for a range (Last and Lim), but 
-		only a single type of starting point (First). This mayseems like an 
+		only a single type of starting point (First). This seems like an 
 		inconsistency, and it is, but the need for the'Lim'-type starting point 
-		almost never comes up in practice. So whatever that qualifier was hasnow 
-		atrophied into non-existence.
+		almost never comes up in practice. So whatever that qualifier was has 
+		atrophied into non-existence and no one remembers what it was.
 
 		An example of using Max to test for out space.
 
@@ -379,13 +443,61 @@ NAMING CONVENTIONS
 		On rare occasions, usually with an inline access function in a class that 
 		does nothing more than a type coercion, we'll use a class function that 
 		begins with a lower case letter. This is to emphasize that this is 
-		semantically identical to accessing a member variable, and you can treat 
-		it as being very fast.
+		semantically identical to accessing a member variable, and you can assume 
+		it is very fast.
+
+			void DoSomething(FOO* pfooBase)
+
+		One common function idiom is code that computes a value based on some
+		other item. 
+
+			float DxFromCol(int col)
 
 	USER-DEFINED TYPES
+
+		Defining a C struct or C++ class automatically creates a new type. Types
+		are all upper case, and the type name defines the base type used in
+		variables and function names.
+
+			struct FOO {
+			...structure definition...
+			};
+
+			const int ifooMax = 32;
+			FOO* pfoo;
+			FOO afoo[ifooMax]
+			int ifooFirst;
+
   
 	CLASS NAMES
 
-		Class names are all upper case, and, like all type names, should be very 
-		concise. In fact, we go to the extreme on class names, because of the way 
-		inheritance.
+		Like structs typenames, class names are all upper case, and, should be 
+		very concise. When derived classes (or subclasses) are defined, the 
+		derived class name starts with the base class name, and an additional
+		abbreviation is appended to that name.
+
+			class UI {...};					// base UI element
+			class UIPA : public UI {...}	// a UI screen panel
+
+		With deep class inheritance, the length of the types can sometimes get
+		very long. If this happens in a class that is used a lot, this can 
+		become unweildly. So we'll sometimes waive the requirement that every 
+		intermediate class name be included in the name. For example, we might 
+		drop the DB subclass in this chain of class inheritance, especially 
+		since "LOG" often implies a debug-like functionality.
+
+			class UI { ... }
+			class UIP : public UI { ... }
+			class UIPDB : public UIP {...}
+			class UIPLOG : public UIPDB { ...}
+
+		For subclasses that are only used in very limited contexts, it's 
+		preferrable to just use the long name. 
+
+		For very common classes where everyone on the team will likely know
+		exactly what the base classes are, we will sometimes skip the whole 
+		derived class naming chain.
+
+			class UI { ... }					// base UI element
+			class UICTL : public UI { ... }		// dialog controls
+			class BTN : public UICTL { ... }	// dialog buttons

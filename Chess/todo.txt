@@ -1,4 +1,3 @@
-  Add a bool cast to sq and mv and use them to test for nil; convert all current usages of fIsNil
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
     hit testing, but the APP does the mouse dispatching. Either the UIGA or APP should do both.
   Can we use a different mixing mode than using opacity for annotations?
@@ -89,7 +88,6 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Hilite last made move on board
-  UIBD: clips when rotating on flip board
   UIBD: Implement queued move-ahead 
 * UIBD: Implement click-from/click-to mouse move interface
 * Don't use the term "capture" for mouse capture, use "drag".

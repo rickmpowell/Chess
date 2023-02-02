@@ -138,9 +138,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Resources\small.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="Resources\Chess.ico">
       <Filter>Resource Files</Filter>
     </Image>
