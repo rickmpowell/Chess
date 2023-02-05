@@ -1,3 +1,5 @@
+  Background of UIPL doesn't match in the title box
+  Cross isn't dragging in board setup in piece delete
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
     hit testing, but the APP does the mouse dispatching. Either the UIGA or APP should do both.
   Can we use a different mixing mode than using opacity for annotations?
@@ -12,7 +14,6 @@
   In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, game result should be a draw if "winning" side has insufficient material
   Change FEN control in board editor to be an edit box
-  Separate background colors for content areas and button bars
   Add en passant state to board edit mode
   Exiting board edit mode needs to check for valid board states and prepare for starting a game
   Flip Game phase values (GPH) so end game is 0 and higher values mean closer to opening. 
@@ -56,7 +57,6 @@
   UI: Need a visual indication of where focus is
   UIPL: on hover, change background color when we can change the player
   When player picker is up, clicking outside the picker should make it cancel.
-  Ticking clock overwrites popup tips
   Help: Help box icon looks like shit
   UIPL: Move level control into the chooser
   Move all localizable strings into resources
@@ -89,6 +89,8 @@
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Hilite last made move on board
   UIBD: Implement queued move-ahead 
+* Ticking clock overwrites popup tips
+* Separate background colors for content areas and button bars
 * UIBD: Implement click-from/click-to mouse move interface
 * Don't use the term "capture" for mouse capture, use "drag".
 * In UI, add support for "dragging" when capture is taken but no button is down

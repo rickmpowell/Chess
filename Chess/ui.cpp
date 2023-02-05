@@ -738,10 +738,8 @@ void UI::RedrawOverlappedSiblings(const RC& rcUpdate)
 		return;
 	bool fFoundUs = false;
 	for (UI* pui : puiParent->vpuiChild) {
-		if (fFoundUs) {
-			if (pui->rcBounds & rcUpdate)
-				pui->Redraw(RcLocalFromGlobal(pui->rcBounds & rcUpdate), false);
-		}
+		if (fFoundUs)
+			pui->RedrawWithChildren(pui->rcBounds & rcUpdate, false);
 		else if (pui == this)
 			fFoundUs = true;
 	}
