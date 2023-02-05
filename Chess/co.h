@@ -21,15 +21,21 @@ const ColorF coGreen(0.1f, 0.9f, 0.2f);
 
 const ColorF coStdBack(1, 1, 1);
 const ColorF coStdText(0.4f, 0.4f, 0.4f);
+const ColorF coHiliteBack(1, 1, 0.4f);
+
 const ColorF coGameBack(0.5f, 0.5f, 0.5f);
 const ColorF coGameText(0.6f, 0.6f, 0.6f);
+
 const ColorF coGridLine(0.75f, 0.75f, 0.75f);
-const ColorF coHiliteBack(1, 1, 0.5f);
+
 const ColorF coScrollBack(.93f, .93f, .93f);
+
 const ColorF coTipBack(1.0f, 1.0f, 0.85f);
+
 const ColorF coButtonBarBack(0.92f, 0.91f, 0.85f);
 const ColorF coBtnText(0, 0, 0);
 const ColorF coBtnHilite(1, 0, 0);
+
 const ColorF coStaticText(0, 0, 0);
 
 /*  board colors */

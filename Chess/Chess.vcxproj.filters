@@ -159,7 +159,7 @@
     <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="style.txt" />
-    <Text Include="keyboard.txt" />
+    <Text Include="doc\style.txt" />
+    <Text Include="doc\keyboard.txt" />
   </ItemGroup>
 </Project>

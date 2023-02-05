@@ -164,8 +164,8 @@
     <Natvis Include="NatvisFile.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="keyboard.txt" />
-    <Text Include="style.txt" />
+    <Text Include="doc\keyboard.txt" />
+    <Text Include="doc\style.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
