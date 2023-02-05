@@ -98,7 +98,8 @@ private:
 	ColorF CoFromApcSq(APC apc, SQ sq) const;
 public:
 	UIPVTPL(UI* puiParent, UIGA& uiga, CPC cpc, GPH gph);
-	void Draw(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
+	virtual void Draw(const RC& rcUpdate);
 	void SetGph(GPH gph);
 };
 
@@ -123,5 +124,5 @@ private:
 public:
 	UIPVT(UIGA& uiga, CPC cpc);
 	virtual void Layout(void);
-	virtual void Draw(const RC& rcUpdate);
+	virtual ColorF CoBack(void) const;
 };

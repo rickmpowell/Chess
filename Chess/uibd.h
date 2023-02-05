@@ -11,8 +11,6 @@
 #include "bd.h"
 
 
-const ColorF coBoardDark = ColorF(0.42f, 0.54f, 0.32f);
-const ColorF coBoardLight = ColorF(1.0f, 1.0f, 0.95f);
 
 
 /*
@@ -44,8 +42,7 @@ class UIBD : public UIP
 {
 	friend class UIPCP;
 public:
-	static BRS* pbrAnnotation;
-	static BRS* pbrHilite;
+	BRS* pbrAnnotation;
 	BMP* pbmpPieces;
 	GEOM* pgeomCross;
 	GEOM* pgeomArrowHead;
@@ -75,8 +72,6 @@ public:
 public:
 	UIBD(UIGA& uiga);
 	~UIBD(void);
-	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
@@ -147,7 +142,7 @@ public:
 	UICPC(UI* puiParent, int cmd);
 
 	virtual void Draw(const RC& rcUpdate);
-	virtual ColorF CoBack(void) const { return ColorF::Black; }
+	virtual ColorF CoBack(void) const { return coBlack; }
 };
 
 
@@ -166,7 +161,7 @@ public:
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Erase(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
 	virtual void DrawInterior(UI* pui, const RC& rc) = 0;
 	virtual void Drop(SQ sq) = 0;
@@ -202,7 +197,7 @@ class UICPCTOMOVE : public BTN
 public:
 	UICPCTOMOVE(UIPCP& uipcp);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Erase(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 };
 
 
@@ -212,7 +207,7 @@ class CHKCS : public BTN
 public:
 	CHKCS(UI* puiParent, UIPCP& uipcp, int cmd);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Erase(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 };
 
 
@@ -223,7 +218,7 @@ class UICASTLESTATE : public UI
 public:
 	UICASTLESTATE(UIPCP& uipcp);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Erase(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Layout(void);
 };
 
@@ -242,7 +237,7 @@ public:
 	UIFEN(UIPCP& uipcp);
 
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Erase(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 };
 
 
@@ -255,8 +250,8 @@ public:
 
 	virtual void Draw(const RC& rcUpdate);
 	RC RcFromSq(SQ sq) const;
-	virtual ColorF CoFore(void) const { return ColorF(0.4f, 0.4f, 0.4f); }
-	virtual ColorF CoBack(void) const { return ColorF(0.9f, 0.9f, 0.9f); }
+	virtual ColorF CoFore(void) const { return coBoardBWDark; }
+	virtual ColorF CoBack(void) const { return coBoardBWLight; }
 };
 
 
@@ -302,7 +297,7 @@ public:
 	virtual void Layout(void);
 	virtual void DispatchCmd(int cmd);
 	virtual wstring SzTipFromCmd(int cmd) const;
-	virtual ColorF CoBack(void) const { return ColorF(0.9f,0.9f,0.9f); }
+	virtual ColorF CoBack(void) const { return coBoardBWLight; }
 
 	RC RcFromApc(APC apc) const;
 	BMP* PbmpPieces(void);

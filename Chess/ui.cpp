@@ -15,7 +15,7 @@
 
 wchar_t UI::szFontFamily[] = L"Arial";
 BRS* UI::pbrBack;
-BRS* UI::pbrAltBack;
+BRS* UI::pbrScrollBack;
 BRS* UI::pbrGridLine;
 BRS* UI::pbrText;
 BRS* UI::pbrHilite;
@@ -32,13 +32,13 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 {
 	if (pbrBack)
 		return;
-	pdc->CreateSolidColorBrush(ColorF(ColorF::White), &pbrBack);
-	pdc->CreateSolidColorBrush(ColorF(.95f, .95f, .95f), &pbrAltBack);
-	pdc->CreateSolidColorBrush(ColorF(.8f, .8f, .8f), &pbrGridLine);
-	pdc->CreateSolidColorBrush(ColorF(0.4f, 0.4f, 0.4f), &pbrText);
-	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 0.5f), &pbrHilite);
-	pdc->CreateSolidColorBrush(ColorF(1.0f, 1.0f, 1.0f), &pbrWhite);
-	pdc->CreateSolidColorBrush(ColorF(0.0f, 0.0f, 0.0f), &pbrBlack);
+	pdc->CreateSolidColorBrush(coStdBack, &pbrBack);
+	pdc->CreateSolidColorBrush(coScrollBack, &pbrScrollBack);
+	pdc->CreateSolidColorBrush(coGridLine, &pbrGridLine);
+	pdc->CreateSolidColorBrush(coStdText, &pbrText);
+	pdc->CreateSolidColorBrush(coHiliteBack, &pbrHilite);
+	pdc->CreateSolidColorBrush(coWhite, &pbrWhite);
+	pdc->CreateSolidColorBrush(coBlack, &pbrBlack);
 
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
@@ -69,7 +69,7 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 void UI::DiscardRsrcClass(void)
 {
 	SafeRelease(&pbrBack);
-	SafeRelease(&pbrAltBack);
+	SafeRelease(&pbrScrollBack);
 	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
 	SafeRelease(&pbrHilite);
@@ -162,7 +162,7 @@ TX* UI::PtxCreate(float dyHeight, bool fBold, bool fItalic)
  *	by connecting it to the parent.
  */
 UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0), fVisible(fVisible),
-		coFore(ColorF(0.4f,0.4f,0.4f)), coBack(ColorF::White)
+		coFore(coStdText), coBack(coStdBack)
 {
 	if (puiParent)
 		puiParent->AddChild(this);
@@ -170,7 +170,7 @@ UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0
 
 
 UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible),
-		coFore(ColorF(0.4f,0.4f,0.4f)), coBack(ColorF::White)
+		coFore(coStdText), coBack(coStdBack)
 {
 	if (puiParent) {
 		puiParent->AddChild(this);
@@ -663,24 +663,34 @@ PT UI::PtGlobalFromUiLocal(const UI* pui, const PT& pt) const
  *	Assumes the DC is already valid and ready to go, so can be done inside a
  *	BeginPaint and also inside regular redraws.
  */
-void UI::RedrawWithChildren(const RC& rcUpdate)
+void UI::RedrawWithChildren(const RC& rcUpdate, bool fParentDrawn)
 {
 	if (!fVisible)
 		return;
 	RC rc = rcUpdate & rcBounds;
 	if (!rc)
 		return;
-	{
-		App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		RC rcDraw = RcLocalFromGlobal(rc);
-		COLORBRS colorbrsBack(pbrBack, CoBack());
-		COLORBRS colorbrsText(pbrText, CoFore());
-		Erase(rcDraw);
-		Draw(rcDraw);
-		App().pdc->PopAxisAlignedClip();
-	}
+	RedrawNoChildren(rc, fParentDrawn);
 	for (UI* pui : vpuiChild)
-		pui->RedrawWithChildren(rc);
+		pui->RedrawWithChildren(rc, true);
+}
+
+
+
+/*	UI::RedrawNoChildren
+ *
+ *	Redraws the UI element without drawing child UI elements. Rectangle is in
+ *	global coordinates.
+ */
+void UI::RedrawNoChildren(const RC& rc, bool fParentDrawn)
+{
+	App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	RC rcDraw = RcLocalFromGlobal(rc);
+	COLORBRS colorbrsBack(pbrBack, CoBack());
+	COLORBRS colorbrsText(pbrText, CoFore());
+	Erase(rcDraw, fParentDrawn);
+	Draw(rcDraw);
+	App().pdc->PopAxisAlignedClip();
 }
 
 
@@ -690,7 +700,7 @@ void UI::RedrawWithChildren(const RC& rcUpdate)
  */
 void UI::Redraw(void)
 {
-	Redraw(RcInterior());
+	Redraw(RcInterior(), false);
 }
 
 
@@ -698,14 +708,18 @@ void UI::Redraw(void)
  *
  *	Redraws the area of the UI element, along with children elements. rcUpdate 
  *	is in local coordinates.
+ * 
+ *	fParentDrawn is true if the parent window has been drawn, which needs to be
+ *	known for windows that have transparent backgrounds.
  */
-void UI::Redraw(const RC& rcUpdate)
+void UI::Redraw(const RC& rcUpdate, bool fParentDrawn)
 {
 	if (!fVisible)
 		return;
+	RC rcGlobal = RcGlobalFromLocal(rcUpdate);
 	BeginDraw();
-	RedrawWithChildren(RcGlobalFromLocal(rcUpdate));
-	RedrawOverlappedSiblings(RcGlobalFromLocal(rcUpdate));
+	RedrawWithChildren(rcGlobal, fParentDrawn);
+	RedrawOverlappedSiblings(rcGlobal);
 	RedrawCursor(rcUpdate);
 	EndDraw();
 }
@@ -726,7 +740,7 @@ void UI::RedrawOverlappedSiblings(const RC& rcUpdate)
 	for (UI* pui : puiParent->vpuiChild) {
 		if (fFoundUs) {
 			if (pui->rcBounds & rcUpdate)
-				pui->Redraw(RcLocalFromGlobal(pui->rcBounds & rcUpdate));
+				pui->Redraw(RcLocalFromGlobal(pui->rcBounds & rcUpdate), false);
 		}
 		else if (pui == this)
 			fFoundUs = true;
@@ -788,9 +802,27 @@ void UI::Draw(const RC& rcDraw)
 }
 
 
-void UI::Erase(const RC& rcUpdate)
+void UI::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
 	FillRcBack(RcInterior());
+}
+
+
+/*	UI::TransparentErase
+ *
+ *	Call this helper function in the erase handler of UI elements that have transparent 
+ *	backgrounds. It makes sure parent items have been redrawn so that the Draw operation
+ *	has an up-to-date and consistent canvas to drawn on.
+ * 
+ *	rcUpdate is in local coordinates. if fParentDrawn is true, then we know the background
+ *	has already been drawn so we don't actually have to do any work.
+ */
+void UI::TransparentErase(const RC& rcUpdate, bool fParentDrawn)
+{
+	if (fParentDrawn)
+		return;
+	if (puiParent)
+		puiParent->RedrawNoChildren(RcGlobalFromLocal(rcUpdate), false);
 }
 
 
@@ -1136,6 +1168,11 @@ BTN::BTN(UI* puiParent, int cmd) : UI(puiParent), cmd(cmd)
 }
 
 
+void BTN::Erase(const RC& rcUpdate, bool fParentDrawn)
+{
+	TransparentErase(rcUpdate, fParentDrawn);
+}
+
 void BTN::Track(bool fTrackNew) 
 {
 	fTrack = fTrackNew;
@@ -1199,7 +1236,7 @@ void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 	if (ptxButton)
 		return;
 
-	pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsButton);
+	pdc->CreateSolidColorBrush(coBtnText, &pbrsButton);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		20.0f, L"",
@@ -1235,15 +1272,16 @@ void BTNCH::Draw(const RC& rcUpdate)
 	sz[1] = 0;
 	RC rcChar(PT(0, 0), SizFromSz(sz, ptxButton));
 	RC rcTo = RcInterior();
-	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), ColorF::Red, (float)(fHilite + fTrack) / 2.0f));
+	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), coBtnHilite, (float)(fHilite + fTrack) / 2.0f));
 	rcChar += rcTo.PtCenter();
 	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
 	DrawSzCenter(sz, ptxButton, rcChar, pbrsButton);
 }
 
 
-void BTNCH::Erase(const RC& rcUpdate)
+void BTNCH::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
+	TransparentErase(rcUpdate, fParentDrawn);
 }
 
 
@@ -1296,7 +1334,7 @@ void BTNTEXT::Draw(const RC& rcUpdate)
 	CreateRsrc();
 	RC rcText(PT(0, 0), SizFromSz(szText, ptxButton));
 	RC rcTo = RcInterior();
-	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), ColorF::Red, (float)(fHilite + fTrack) / 2.0f));
+	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), coBtnHilite, (float)(fHilite + fTrack) / 2.0f));
 	rcText += rcTo.PtCenter() - rcText.PtCenter();
 	DrawSzCenter(szText, ptxButton, rcText, pbrsButton);
 }
@@ -1329,6 +1367,11 @@ BTNIMG::~BTNIMG(void)
 }
 
 
+void BTNIMG::Erase(const RC& rcUpdate, bool fParentDrawn)
+{
+	TransparentErase(rcUpdate, fParentDrawn);
+}
+
 void BTNIMG::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
@@ -1346,7 +1389,7 @@ void BTNIMG::Draw(const RC& rcUpdate)
 		float dxy = (rcTo.DyHeight() - rcFrom.DyHeight()) / 2.0f;
 		rcTo.Inflate(-dxy, -dxy);
 	}
-	COLORBRS colorbrsSav(pbrText, ColorF((fHilite + fTrack) * 0.5f, 0.0f, 0.0f));
+	COLORBRS colorbrsSav(pbrText, CoBlend(CoFore(), coBtnHilite, (float)(fHilite + fTrack) * 0.5f));
 	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcTo, rcFrom);
 }
 
@@ -1391,7 +1434,7 @@ void STATIC::CreateRsrc(void)
 	if (ptxStatic)
 		return;
 
-	App().pdc->CreateSolidColorBrush(ColorF(0.0, 0.0, 0.0), &pbrsStatic);
+	App().pdc->CreateSolidColorBrush(coStaticText, &pbrsStatic);
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		20.0f, L"",
@@ -1452,7 +1495,7 @@ void BTNGEOM::Draw(const RC& rcUpdate)
 {
 	float dxyScale = RcInterior().DxWidth() / 2.0f;
 	FillGeom(pgeom, RcInterior().PtCenter(), dxyScale,
-		ColorF((fHilite + fTrack) * 0.5f, 0.0, 0.0));	/* ranges from black to dark red */
+			 CoBlend(CoFore(), coBtnHilite, (fHilite + fTrack) * 0.5f));
 }
 
 
@@ -1488,6 +1531,13 @@ void SPIN::DiscardRsrc(void)
 {
 	SafeRelease(&ptxSpin);
 }
+
+
+void SPIN::Erase(const RC& rcUpdate, bool fParentDrawn)
+{
+	TransparentErase(rcUpdate, fParentDrawn);
+}
+
 
 void SPIN::Layout(void)
 {

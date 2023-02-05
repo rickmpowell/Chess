@@ -12,6 +12,7 @@
 #include "uiga.h"
 
 
+/* TODO: move this into the UIGA */
 TX* UIGA::ptxDesktop;
 
 
@@ -20,25 +21,16 @@ void UIGA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 	if (ptxDesktop)
 		return;
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		40.0f, L"",
-		&ptxDesktop);
-
+							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   40.0f, L"",
+							   &ptxDesktop);
 	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	UIP::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	UITI::CreateRsrcClass(pdc, pfactdwr, pfactwic);
-	UIBD::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	UIML::CreateRsrcClass(pdc, pfactdwr, pfactwic);
 }
 
 
 void UIGA::DiscardRsrcClass(void)
 {
 	UI::DiscardRsrcClass();
-	UIP::DiscardRsrcClass();
-	UITI::DiscardRsrcClass();
-	UIBD::DiscardRsrcClass();
-	UIML::DiscardRsrcClass();
 	SafeRelease(&ptxDesktop);
 }
 
@@ -49,7 +41,6 @@ UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), app(app), ga(ga),
 	spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
-
 }
 
 

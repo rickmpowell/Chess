@@ -78,6 +78,9 @@
     <ClInclude Include="pc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="co.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ga.cpp">
@@ -157,5 +160,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="style.txt" />
+    <Text Include="keyboard.txt" />
   </ItemGroup>
 </Project>

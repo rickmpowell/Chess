@@ -21,9 +21,6 @@
  */
 
 
-BRS* UIBD::pbrAnnotation;
-BRS* UIBD::pbrHilite;
-
 const float dxyCrossFull = 20.0f;
 const float dxyCrossCenter = 4.0f;
 PT rgptCross[] = {
@@ -39,70 +36,31 @@ PT rgptCross[] = {
 	{-dxyCrossFull, dxyCrossCenter},
 	{-dxyCrossFull, -dxyCrossCenter},
 	{-dxyCrossCenter, -dxyCrossCenter},
-	{-dxyCrossCenter, -dxyCrossFull} };
-
-PT rgptArrowHead[] = {
-	{0, 0},
-	{dxyCrossFull * 0.5f, dxyCrossFull * 0.86f},
-	{-dxyCrossFull * 0.5f, dxyCrossFull * 0.86f},
-	{0, 0}
+	{-dxyCrossCenter, -dxyCrossFull} 
 };
 
 
-/*	UIBD::CreateRsrcClass
- *
- *	Creates the drawing resources necessary to draw the board.
- */
-void UIBD::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (pbrHilite)
-		return;
-
-	/* brushes */
-
-	pdc->CreateSolidColorBrush(ColorF(ColorF::Red), &pbrHilite);
-	pdc->CreateSolidColorBrush(ColorF(1.f, 0.15f, 0.0f), &pbrAnnotation);
-}
-
-
-/*	UIBD::DiscardRsrcClass
- *
- *	Cleans up the resources created by CreateRsrcClass
- */
-void UIBD::DiscardRsrcClass(void)
-{
-	SafeRelease(&pbrHilite);
-	SafeRelease(&pbrAnnotation);
-}
 
 void UIBD::CreateRsrc(void)
 {
 	if (ptxLabel)
 		return;
 
+	App().pdc->CreateSolidColorBrush(coAnnotation, &pbrAnnotation);
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		dxySquare/4.0f, L"",
 		&ptxLabel);
-
-	/* bitmaps */
-
 	pbmpPieces = PbmpFromPngRes(idbPieces);
-
-	/* geometries */
-
-	/* capture X, which is created as a cross that is rotated later */
 	pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
-	/* arrow head */
-	pgeomArrowHead = PgeomCreate(rgptArrowHead, CArray(rgptArrowHead));
 }
 
 void UIBD::DiscardRsrc(void)
 {
+	SafeRelease(&pbrAnnotation);
 	SafeRelease(&ptxLabel);
 	SafeRelease(&pbmpPieces);
 	SafeRelease(&pgeomCross);
-	SafeRelease(&pgeomArrowHead);
 }
 
 
@@ -111,7 +69,7 @@ void UIBD::DiscardRsrc(void)
  *	Constructor for the board screen panel.
  */
 UIBD::UIBD(UIGA& uiga) : UIP(uiga), 
-		pbmpPieces(nullptr), pgeomCross(nullptr), pgeomArrowHead(nullptr), ptxLabel(nullptr),
+		pbmpPieces(nullptr), pgeomCross(nullptr), ptxLabel(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), 
@@ -281,12 +239,12 @@ void UIBD::Draw(const RC& rcDraw)
 
 ColorF UIBD::CoFore(void) const
 {
-	return uiga.FInBoardSetup() ? ColorF(0.4f, 0.4f, 0.4f) : coBoardDark; 
+	return uiga.FInBoardSetup() ? coBoardBWDark : coBoardDark; 
 }
 
 ColorF UIBD::CoBack(void) const
 {
-	return uiga.FInBoardSetup() ? ColorF(0.9f, 0.9f, 0.9f) : coBoardLight; 
+	return uiga.FInBoardSetup() ? coBoardBWLight : coBoardLight; 
 }
 
 /*	UIBD::DrawMargins
@@ -548,7 +506,7 @@ void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned framefMax)
 		unsigned framefRem = framefMax - framef;
 		rcDragPc.Move(PT((rcFrom.left*(float)framefRem + rcTo.left*(float)framef) / (float)framefMax,
 						 (rcFrom.top*(float)framefRem + rcTo.top*(float)framef) / (float)framefMax));
-		Redraw(rcFrame|rcDragPc);
+		Redraw(rcFrame|rcDragPc, false);
 		rcFrame = rcDragPc;
 	}
 	sqDragInit = sqNil;
@@ -577,8 +535,6 @@ void UIBD::DrawAnnotations(void)
 	}
 }
 
-const ColorF coAnnotation = ColorF(0.00f, 0.20f, 0.10f);
-const float opacityAnnotation = 0.75f;
 
 void UIBD::DrawSquareAnnotation(SQ sq)
 {

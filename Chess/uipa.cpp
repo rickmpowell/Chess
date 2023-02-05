@@ -21,32 +21,7 @@
  */
 
 
-BRS* UIP::pbrTextSel;
-TX* UIP::ptxTextSm;
 
-
-/*	UIP::CreateRsrcClass
- *
- *	Static routine for creating the drawing objects necessary to draw the various
- *	screen panels.
- */
-void UIP::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (pbrTextSel)
-		return;
-	pdc->CreateSolidColorBrush(ColorF(0.8f, 0.0, 0.0), &pbrTextSel);
-	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxTextSm);
-}
-
-
-void UIP::DiscardRsrcClass(void)
-{
-	SafeRelease(&pbrTextSel);
-	SafeRelease(&ptxTextSm);
-}
 
 
 /*	UIP::UIP
@@ -387,10 +362,10 @@ void SBAR::Draw(const RC& rcUpdate)
 
 	/* and draw the scrollbar */
 
-	FillRc(rcInt, pbrAltBack);
+	FillRc(rcInt, pbrScrollBack);
 	RR rrThumb(rcThumb);
 	rrThumb.radiusX = rrThumb.radiusY = rcThumb.DxWidth() / 2.0f;
-	COLORBRS colorbrs(pbrGridLine, ColorF(0.75f, 0.75f, 0.75f));
+	COLORBRS colorbrs(pbrGridLine, coGridLine);
 	FillRr(rrThumb, pbrGridLine);
 }
 
@@ -633,6 +608,11 @@ void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
 	pui->SetBounds(rc);
 }
 
+ColorF UIBB::CoBack(void) const
+{
+	return coButtonBarBack;
+}
+
 
 /*
  *
@@ -645,8 +625,8 @@ void UIBB::AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth)
 
 UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, cmdClosePanel, L"\x2713 Done"), szTitle(szTitle)
 {
-	btnClose.SetCoFore(ColorF::White);
-	btnClose.SetCoBack(ColorF::Black);
+	btnClose.SetCoFore(coWhite);
+	btnClose.SetCoBack(coBlack);
 }
 
 

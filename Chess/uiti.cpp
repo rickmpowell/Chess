@@ -172,6 +172,7 @@ UIPVTPL::UIPVTPL(UI* puiParent, UIGA& uiga, CPC cpc, GPH gph) : UI(puiParent),
 }
 
 
+/* TODO: this code is the same as somewhere else */
 ColorF CoGradient(ColorF co1, ColorF co2, float pct)
 {
 	if (pct <= 0.0f)
@@ -189,11 +190,16 @@ ColorF UIPVTPL::CoFromApcSq(APC apc, SQ sq) const
 	PL* ppl = uiga.ga.PplFromCpc(cpc);
 	EV dev = ppl->EvFromGphApcSq(gph, apc, sq) - ppl->EvBaseApc(apc);
 	if (dev < 0)
-		return ColorF(CoGradient(ColorF::White, ColorF::Red, -(float)dev/100.0f));
+		return ColorF(CoGradient(coWhite, coRed, -(float)dev/100.0f));
 	else
-		return ColorF(CoGradient(ColorF::White, ColorF::Green, (float)dev/100.0f));
+		return ColorF(CoGradient(coWhite, coGreen, (float)dev/100.0f));
 }
 
+
+void UIPVTPL::Erase(const RC& rcUpdate, bool fParentDrawn)
+{
+	TransparentErase(rcUpdate, fParentDrawn);
+}
 
 void UIPVTPL::Draw(const RC& rcUpdate)
 {
@@ -207,23 +213,18 @@ void UIPVTPL::Draw(const RC& rcUpdate)
 	rc.top = dxyGutter;
 	rc.bottom = rc.top + dxyPiece;
 
-	BRS* pbrVal = nullptr;
-	App().pdc->CreateSolidColorBrush(ColorF(ColorF::Blue), &pbrVal);
-
 	float dxySq = rc.DxWidth() / 8;
 	for (APC apc = apcPawn; apc <= apcKing; ++apc) {
 		RC rcSq(rc.left, rc.top, rc.left + dxySq, rc.top + dxySq);
 		for (int rank = rankMax-1; rank >= 0; rank--) {
 			for (int file = 0; file < fileMax; file++) {
-				pbrVal->SetColor(CoFromApcSq(apc, SQ(rank, file).sqFlip()));
-				FillRc(rcSq, pbrVal);
+				FillRc(rcSq, CoFromApcSq(apc, SQ(rank, file).sqFlip()));
 				rcSq.Offset(dxySq, 0);
 			}
 			rcSq.Offset(-8*dxySq, dxySq);
 		}
 		rc.Offset(0, dxyPiece + dxyGutter);
 	}
-	SafeRelease(&pbrVal);
 }
 
 
@@ -231,6 +232,7 @@ void UIPVTPL::SetGph(GPH gph)
 {
 	this->gph = gph;
 }
+
 
 /*
  *	UIPVT
@@ -263,7 +265,7 @@ void UIPVT::Layout(void)
 }
 
 
-void UIPVT::Draw(const RC& rcUpdate)
+ColorF UIPVT::CoBack(void) const
 {
-	FillRc(rcUpdate, pbrGridLine);
+	return coGridLine;
 }

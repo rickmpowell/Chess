@@ -48,8 +48,9 @@ void CHKCS::Draw(const RC& rcUpdate)
 		DrawSzCenter(L"\x2713", ptxList, RcInterior(), pbrBlack);
 }
 
-void CHKCS::Erase(const RC& rcUpdate)
+void CHKCS::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
+	TransparentErase(rcUpdate, fParentDrawn);
 }
 
 
@@ -69,7 +70,8 @@ UICPC::UICPC(UI* puiParent, int cmd) : BTN(puiParent, cmd)
 
 void UICPC::Draw(const RC& rcUpdate)
 {
-	FillRc(RcInterior().Inflate(-2.5f, -2.5f), cmd == cmdSetBoardWhite ? pbrWhite : pbrBlack);
+	FillRc(RcInterior(), coBlack);
+	FillRc(RcInterior().Inflate(-2.5f, -2.5f), cmd == cmdSetBoardWhite ? coWhite : coBlack);
 }
 
 
@@ -135,8 +137,9 @@ void UIDRAGPCP::Draw(const RC& rcUpdate)
 }
 
 
-void UIDRAGPCP::Erase(const RC& rcUpdate)
+void UIDRAGPCP::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
+	TransparentErase(rcUpdate, fParentDrawn);
 }
 
 
@@ -246,7 +249,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 	rc.Inflate(-6, -6);
 	float dxyLine = 7;
 	ELL ell(rc.PtCenter(), rc.DxWidth()/2-dxyLine);
-	pui->DrawEll(ell, ColorF(0.65f, 0.15f, 0.25f), dxyLine);
+	pui->DrawEll(ell, coDragDelCircle, dxyLine);
 
 	/* taking an opponent piece - draw an X */
 
@@ -269,7 +272,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 
 	rc.Inflate(-2*dxyLine-1, -2*dxyLine-1);
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
-	FillRotateGeom(pgeomCross, rc.PtCenter(), rc.DxWidth() / (2*dxyCrossFull), 45, pbrBlack);
+	FillRotateGeom(pgeomCross, rc.PtCenter(), rc.DxWidth() / (2*dxyCrossFull), 45, coDragDelCross);
 	SafeRelease(&pgeomCross);
 }
 
@@ -314,8 +317,9 @@ void UICPCTOMOVE::Draw(const RC& rcUpdate)
 }
 
 
-void UICPCTOMOVE::Erase(const RC& rcUpdate)
+void UICPCTOMOVE::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
+	TransparentErase(rcUpdate, fParentDrawn);
 }
 
 
@@ -363,8 +367,9 @@ void UICASTLESTATE::Draw(const RC& rcUpdate)
 	DrawSzCenter(L"O-O-O", ptxList, rc);
 }
 
-void UICASTLESTATE::Erase(const RC& rcUpdate)
+void UICASTLESTATE::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
+	TransparentErase(rcUpdate, fParentDrawn);
 }
 
 
@@ -435,8 +440,9 @@ void UIFEN::Draw(const RC& rcUpdate)
 }
 
 
-void UIFEN::Erase(const RC& rcUpdate)
+void UIFEN::Erase(const RC& rcUpdate, bool fParentErase)
 {
+	TransparentErase(rcUpdate, fParentErase);
 }
 
 

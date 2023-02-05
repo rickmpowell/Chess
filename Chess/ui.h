@@ -83,7 +83,7 @@ class UI
 {
 protected:
 	static BRS* pbrBack;
-	static BRS* pbrAltBack;
+	static BRS* pbrScrollBack;
 	static BRS* pbrGridLine;
 	static BRS* pbrText;
 	static BRS* pbrHilite;
@@ -198,11 +198,13 @@ public:
 	/* window updating */
 
 	void Redraw(void);
-	void Redraw(const RC& rcUpdate);
-	void RedrawWithChildren(const RC& rcUpdate);
+	void Redraw(const RC& rcUpdate, bool fParentDrawn);
+	void RedrawWithChildren(const RC& rcUpdate, bool fParentDrawn);
+	void RedrawNoChildren(const RC& rc, bool fParentDrawn);
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Draw(const RC& rcDraw);
-	virtual void Erase(const RC& rcDraw);
+	virtual void Erase(const RC& rcDraw, bool fParentDrawn);
+	void TransparentErase(const RC& rcUpdate, bool fParentDrawn);
 	void RedrawOverlappedSiblings(const RC& rcUpdate);
 	virtual void RedrawCursor(const RC& rcUpdate);
 	virtual void DrawCursor(UI* puiDraw, const RC& rcUpdate);
@@ -263,6 +265,7 @@ public:
 
 public:
 	BTN(UI* puiParent, int cmd);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
@@ -289,7 +292,7 @@ public:
 public:
 	BTNCH(UI* puiParent, int cmd, wchar_t ch);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void Erase(const RC& rcUpdate);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	void DrawText(const wstring& sz);
 	virtual float DxWidth(void);
 
@@ -319,6 +322,7 @@ class BTNIMG : public BTN
 public:
 	BTNIMG(UI* puiParent, int cmd, int idb);
 	~BTNIMG(void);
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
@@ -397,6 +401,7 @@ public:
 	virtual void DiscardRsrc(void);
 	virtual void Layout(void);
 
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
 	virtual wstring SzValue(void) const = 0;
 };

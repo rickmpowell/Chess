@@ -81,8 +81,8 @@ public:
 	virtual void EndDraw(void);
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Layout(void);
-	virtual ColorF CoBack(void) const { return ColorF(0.5f, 0.5f, 0.5f); }
-	virtual ColorF CoFore(void) const { return ColorF(0.6f, 0.6f, 0.6f); }
+	virtual ColorF CoBack(void) const { return coGameBack; }
+	virtual ColorF CoFore(void) const { return coGameText; }
 
 	/*
 	 *	Commands

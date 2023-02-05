@@ -1,0 +1,72 @@
+
+ `  1  2  3  4  5  6  7  8  9  0  -  =  bs
+     q  w  e  r  t  y  u  i  o  p  [  ]  \
+      a  s  d  f  g  h  j  k  l  ;  '  cr
+       z  x  c  v  b  n  m  ,  .  /
+                space
+
+
+Right hand with Ctrl key - cursor movement
+
+6
+7 - expand to surrounding block
+8 - previous method
+9 - next method
+0 - 
+-
+=
+bs
+
+Y - REDO
+U - word left
+I - line up
+O - word right
+P - start of file
+[ - goto declaration
+] - goto definition
+\
+
+H - start of line (toggles between start of line and first indent)
+J - character left
+K - line down
+L - character right
+; - end of line 
+' - goto
+cr
+
+N - matching brace
+M
+,  
+.
+/ - end of file
+
+
+Left hand with Ctrl key - editing
+
+`
+1
+2
+3
+4
+5
+
+Tab 
+Q
+W
+E
+R
+T
+
+A   select all
+S   JOIN LINES
+D   DUPLICATE LINE 
+F   find
+G   FIND-REPLACE
+
+Z   UNDO
+X   CUT
+C   COPY
+V   PASTE
+B   BUILD
+
+

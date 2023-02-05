@@ -54,7 +54,7 @@ public:
 
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
-	
+	ColorF CoBack(void) const;
 	virtual void Draw(const RC& rcUpdate);
 	void DrawChooser(const RC& rcUpdate);
 	void DrawChooserItem(const INFOPL& infopl, RC& rc);
@@ -143,6 +143,7 @@ public:
 	UIGC(UIML& uiml);
 	virtual void Draw(const RC& rcUpdate);
 	virtual void Layout(void);
+	virtual ColorF CoBack(void) const;
 	virtual SIZ SizLayoutPreferred(void);
 };
 

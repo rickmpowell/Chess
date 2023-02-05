@@ -24,12 +24,6 @@ class GA;
 
 class UIP : public UI
 {
-public:
-	static BRS* pbrTextSel;
-	static TX* ptxTextSm;
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
-
 protected:
 	UIGA& uiga;
 
@@ -114,7 +108,7 @@ private:
 	SBAR sbarVert;
 
 protected:
-	const float dxyScrollBarWidth = 12.0f;
+	const float dxyScrollBarWidth = 14.0f;
 
 public:
 	UIPS(UIGA& uiga);
@@ -159,7 +153,7 @@ protected:
 public:
 	UITIP(UI* puiParent);
 	virtual void Draw(const RC& rcUpdate);
-	virtual ColorF CoBack(void) const { return ColorF(1.0f, 1.0f, 0.85f); }
+	virtual ColorF CoBack(void) const { return coTipBack; }
 	void AttachOwner(UI* pui);
 };
 
@@ -178,8 +172,10 @@ public:
 	UIBB(UIPS* puiParent);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
+	virtual ColorF CoBack(void) const;
 	void AdjustBtnRcBounds(UI* pui, RC& rc, float dxWidth);
 };
+
 
 
 /*
@@ -199,6 +195,6 @@ public:
 	UITITLE(UIP* puipParent, const wstring& szTitle);
 	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
-	virtual ColorF CoBack(void) const { return ColorF::Black; }
-	virtual ColorF CoFore(void) const { return ColorF::White; }
+	virtual ColorF CoBack(void) const { return coBlack; }
+	virtual ColorF CoFore(void) const { return coWhite; }
 };

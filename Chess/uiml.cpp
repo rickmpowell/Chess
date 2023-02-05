@@ -93,6 +93,12 @@ SIZ UIPL::SizLayoutPreferred(void)
 }
 
 
+ColorF UIPL::CoBack(void) const
+{
+	return coButtonBarBack;
+}
+
+
 /*	UIPL::Draw
  *
  *	Draws the player UI element, which is just a circle to indicate the
@@ -113,9 +119,8 @@ void UIPL::Draw(const RC& rcUpdate)
 		ELL ell(PT(rc.left + dxyRadius, rc.top + 6.0f + dxyRadius), dxyRadius);
 
 		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+		FillEll(ell, cpc == cpcBlack ? pbrBlack: pbrWhite);
 		DrawEll(ell, pbrText);
-		if (cpc == cpcBlack)
-			FillEll(ell, pbrText);
 
 		/* and the player name */
 
@@ -263,6 +268,12 @@ SIZ UIGC::SizLayoutPreferred(void)
 	return siz;
 }
 
+ColorF UIGC::CoBack(void) const
+{
+	return coButtonBarBack;
+}
+
+
 void UIGC::Draw(const RC& rcUpdate)
 {
 	if (!uiga.ga.bdg.FGsGameOver())
@@ -355,26 +366,6 @@ TX* UICLOCK::ptxClock;
 TX* UICLOCK::ptxClockNote;
 TX* UICLOCK::ptxClockNoteBold;
 
-const ColorF coClockText = ColorF(0.5f, 0.9f, 1.0f);
-const ColorF coClockBack = ColorF(0.2f, 0.2f, 0.2f);
-const ColorF coClockWarningText = ColorF(0.9f, 0.2f, 0.2f);
-const ColorF coClockWarningBack = coClockBack;
-const ColorF coClockTCText = coClockText;
-const ColorF coClockTCBack = coClockBack;
-const ColorF coClockTCCurText = ColorF::White;
-const ColorF coClockTCCurBack = coClockBack;
-const ColorF coClockFlag = coClockWarningText;
-/*
-const ColorF coClockText = ColorF(0.0f, 0.25f, 0.45f);
-const ColorF coClockBack = ColorF(0.86f, 0.90f, 0.86f);
-const ColorF coClockWarningText = coClockText;
-const ColorF coClockWarningBack = ColorF(0.95f, 0.80f, 0.20f);
-const ColorF coClockTCText = coClockText;
-const ColorF coClockTCBack = coClockBack;
-const ColorF coClockTCCurText = coClockText;
-const ColorF coClockTCCurBack = coClockWarningBack;
-const ColorF coClockFlag = ColorF(1.0f, 0.0f, 0.0f);
-*/
 
 void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {

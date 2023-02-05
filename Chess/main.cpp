@@ -388,7 +388,7 @@ void APP::OnPaint(void)
         puiga->BeginDraw();
         RC rc((float)ps.rcPaint.left, (float)ps.rcPaint.top,
             (float)ps.rcPaint.right, (float)ps.rcPaint.bottom);
-        puiga->RedrawWithChildren(rc);
+        puiga->RedrawWithChildren(rc, true);
         puiga->RedrawCursor(rc);
         puiga->EndDraw();
     }
