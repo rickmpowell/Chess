@@ -137,3 +137,28 @@ public:
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const noexcept;
 };
+
+
+
+/*
+ *
+ *	UIDT class
+ * 
+ *	Draw test panel
+ * 
+ */
+
+
+class UIDT : public UIP
+{
+	TX* ptxTest;
+	TX* ptxTest2;
+public:
+	UIDT(UIGA& uiga);
+	virtual void CreateRsrc(void);
+	virtual void ReleaseRsrc(void);
+	virtual void Draw(const RC& rcUpdate);
+	void AdvanceDrawSz(const wstring& sz, TX* ptx, RC& rc);
+	void AdvanceDrawSzFit(const wstring& sz, TX* ptx, RC& rc);
+	void AdvanceDrawSzBaseline(const wstring& sz, TX* ptx, RC& rc, float dyBaseline);
+};

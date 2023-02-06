@@ -35,10 +35,12 @@ void UIGA::DiscardRsrcClass(void)
 }
 
 
-UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), app(app), ga(ga), 
-		uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uitip(this),
-	puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
-	spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
+UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), 
+							   app(app), ga(ga),
+							   uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uidt(*this), 
+							   uitip(this),
+							   puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
+							   spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
 }
@@ -164,6 +166,13 @@ void UIGA::Layout(void)
 	rc.right = rc.left + uidb.SizLayoutPreferred().width;
 	rc.right = max(rc.right, rcBounds.right - dxyMargin);
 	uidb.SetBounds(rc);
+
+	/* draw test window just goes on top */
+
+	rc = RcInterior();
+	rc.Inflate(-120, -120);
+	uidt.SetBounds(rc);
+
 }
 
 

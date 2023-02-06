@@ -120,6 +120,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     puiga->InitGame(nullptr, nullptr);
     puiga->uipvt.Show(false);
     puiga->uipcp.Show(false);
+    puiga->uidt.Show(false);
 
     ::ShowWindow(hwnd, sw);
 
@@ -1642,6 +1643,25 @@ public:
 };
 
 
+/*
+ *
+ *  CMDSHOWDRAWTEST
+ * 
+ */
+
+class CMDSHOWDRAWTEST : public CMD
+{
+public:
+    CMDSHOWDRAWTEST(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        app.puiga->uidt.Show(!app.puiga->uidt.FVisible());
+        return 1;
+    }
+};
+
+
 
 /*
  *
@@ -1721,7 +1741,7 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTourna_100_50_15, 100*60, -1));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_60_30_15, 60, -1));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_20, 20, 0));
-    
+    vcmd.Add(new CMDSHOWDRAWTEST(*this, cmdShowDrawTest));
 }
 
 

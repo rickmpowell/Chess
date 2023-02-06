@@ -232,10 +232,15 @@ public:
 	void DrawEll(const ELL& ell, ColorF co, float dxyWidth = 1.0f) const;
 	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
+	void DrawSzBaseline(const wstring& sz, TX* ptx, const RC& rc, float dyBaseline, BR* pbr = nullptr) const;
+	float DyBaselineSz(const wstring& sz, TX* ptx) const;
 	void DrawAch(const wchar_t* ach, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	SIZ SizFromSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
 	SIZ SizFromAch(const wchar_t* ach, int cch, TX* ptx, float dx = 1.0e6f, float dy = 1.0e6f) const;
 	void DrawSzFit(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
+	void DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, float dyBaseline, BR* pbrText = nullptr) const;
+
+
 	void DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity = 1.0f) const;
 	void FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, BR* pbr = nullptr) const;
 	void FillGeom(GEOM* pgeom, PT ptOffset, float dxyScale, BR* pbr = nullptr) const;

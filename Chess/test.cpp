@@ -879,3 +879,89 @@ void UIGA::Test(void)
 	testRoot.RunAll();
 }
 
+
+/*
+ *
+ * 
+ *	UIDT screen panel
+ * 
+ *	Drawing test panel, for testing rendering primitives in the UI object
+ * 
+ */
+
+
+UIDT::UIDT(UIGA& uiga) : UIP(uiga), ptxTest(nullptr), ptxTest2(nullptr)
+{
+	SetCoBack(coGridLine);
+}
+
+
+void UIDT::CreateRsrc(void)
+{
+	if (ptxTest)
+		return;
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+									 DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+									 30.0f, L"",
+									 &ptxTest);
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+									 DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+									 20.0f, L"",
+									 &ptxTest2);
+}
+
+void UIDT::ReleaseRsrc(void)
+{
+	SafeRelease(&ptxTest);
+	SafeRelease(&ptxTest2);
+}
+
+
+void UIDT::AdvanceDrawSz(const wstring& sz, TX* ptx, RC& rc)
+{
+	float dx = SizFromSz(sz, ptx).width;
+	DrawSz(sz, ptx, rc);
+	rc.left += dx;
+}
+
+void UIDT::AdvanceDrawSzFit(const wstring& sz, TX* ptx, RC& rc)
+{
+	float dx = SizFromSz(sz, ptx).width;
+	DrawSzFit(sz, ptx, rc);
+	rc.left += dx;
+}
+
+void UIDT::AdvanceDrawSzBaseline(const wstring& sz, TX* ptx, RC& rc, float dyBaseline)
+{
+	float dx = SizFromSz(sz, ptx).width;
+	DrawSzBaseline(sz, ptx, rc, dyBaseline);
+	rc.left += dx;
+}
+
+
+void UIDT::Draw(const RC& rcUpdate)
+{
+	RC rc = RcInterior();
+	rc.Inflate(-20, -20);
+
+	FillRc(rc, coBlack);
+	rc.Inflate(-1, -1);
+	FillRc(rc, coWhite);
+	rc.Inflate(-1, -1);
+
+	AdvanceDrawSz(L"BOO!", ptxTest, rc);
+	AdvanceDrawSz(L"ace", ptxTest, rc);
+	AdvanceDrawSz(L"gawk", ptxTest, rc);
+	AdvanceDrawSz(L"gpq", ptxTest, rc);
+	AdvanceDrawSz(L"gp0q", ptxTest, rc);
+	AdvanceDrawSz(L"0123456789", ptxTest, rc);
+
+	wchar_t sz[20] = { '1', '.', ' ', chBlackRook, 'g', '-', 'g', '3', ' ', ' ', chWhiteBishop, '-', 'b', '5', 0 };
+	rc.top += SizFromSz(L"0", ptxTest).height;
+	rc.bottom = rc.top + SizFromSz(sz, ptxTest2).height;
+	rc.left = 20;
+	float dyBaseline = DyBaselineSz(sz, ptxTest2);
+	AdvanceDrawSzBaseline(L"1. ", ptxTest2, rc, dyBaseline);
+	AdvanceDrawSzBaseline(sz, ptxTest2, rc, dyBaseline);
+
+}

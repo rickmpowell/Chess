@@ -982,6 +982,40 @@ void UI::DrawSz(const wstring& sz, TX* ptx, const RC& rc, ID2D1Brush* pbr) const
 }
 
 
+/*	UI::DrawSzBaseline
+ *
+ *	Draws text, like DrawSz, but baseline aligned. dyBaseline is the distance from the
+ *	top of the box to the baseline.
+ */
+void UI::DrawSzBaseline(const wstring& sz, TX* ptx, const RC& rc, float dyBaseline, BR* pbr) const
+{
+	RC rcText = RcGlobalFromLocal(rc);
+	float dyBaselineAct = DyBaselineSz(sz, ptx);
+	rcText.top += dyBaseline - dyBaselineAct;
+	App().pdc->DrawText(sz.c_str(), (UINT32)sz.size(), ptx, &rcText, pbr ? pbr : pbrText);
+}
+
+
+/*	UI::DyBaselineSz
+ *
+ *	Returns the height of the baseline of the text drawn with the given font.
+ */
+float UI::DyBaselineSz(const wstring& sz, TX* ptx) const
+{
+	IDWriteTextLayout* play = nullptr;
+	App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(), ptx, 1.0e+6, 1.0e+6, &play);
+	if (play == nullptr)
+		throw 1;
+	DWRITE_TEXT_METRICS tm;
+	play->GetMetrics(&tm);
+	DWRITE_LINE_METRICS lm;
+	uint32_t clm;
+	play->GetLineMetrics(&lm, 1, &clm);
+	SafeRelease(&play);
+	return lm.baseline;
+}
+
+
 void UI::DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, ID2D1Brush* pbr) const
 {
 	TATX tatxSav(ptx, DWRITE_TEXT_ALIGNMENT_CENTER);
@@ -1023,14 +1057,15 @@ void UI::DrawAch(const wchar_t* ach, int cch, TX* ptx, const RC& rc, BR* pbr) co
 }
 
 
-/*	UI::DrawSzFit
+/*	UI::DrawSzFitBaseline
  *
  *	Draws the text in the rectangle, sizing the font smaller to make it
  *	fit. Uses ptx as the font style to base dependent fonts on. Text
  *	is baseline aligned, which should be constant no matter what size
- *	font we eventually end up using.
+ *	font we eventually end up using. If dyBaseline is 0, align the baseline 
+ *	to where the baseline of the original ptxBase is.
  */
-void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText) const
+void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, float dyBaseline, BR* pbrText) const
 {
 	if (pbrText == nullptr)
 		pbrText = UI::pbrText;
@@ -1042,21 +1077,20 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 	if (play == nullptr)
 		throw 1;
 	DWRITE_TEXT_METRICS tm;
+	DWRITE_LINE_METRICS lm;
+	uint32_t clm;
 	play->GetMetrics(&tm);
+	if (dyBaseline <= 0.0) {
+		play->GetLineMetrics(&lm, 1, &clm);
+		dyBaseline = lm.baseline;
+	}
 	if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight()) {
-		DrawSz(sz, ptxBase, rcFit, pbrText);
+		DrawSzBaseline(sz, ptxBase, rcFit, dyBaseline, pbrText);
 		SafeRelease(&play);
 		return;
 	}
 
 	RC rcGlobal = RcGlobalFromLocal(rcFit);
-
-	/* figure out where our baseline is */
-
-	DWRITE_LINE_METRICS lm;
-	uint32_t clm;
-	play->GetLineMetrics(&lm, 1, &clm);
-	float yBaseline = rcGlobal.top + lm.baseline;
 
 	/* and loop using progressively smaller fonts until the text fits */
 
@@ -1068,25 +1102,33 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 										 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 										 dyFont, L"", 
 										 &ptx);
-		if (ptx == nullptr)
-			throw 1;
 		App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(),
-										 ptx, rcGlobal.DxWidth(), rcGlobal.DyHeight(), 
+										 ptx, 
+										 rcGlobal.DxWidth(), rcGlobal.DyHeight(), 
 										 &play);
-		if (play == nullptr)
-			throw 1;
-		DWRITE_TEXT_METRICS tm;
 		play->GetMetrics(&tm);
 		if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight())
 			break;
 	}
 
-	play->GetLineMetrics(&lm, 1, &clm);
-	App().pdc->DrawTextLayout(Point2F(rcGlobal.left, yBaseline - lm.baseline), play,
-							  pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
+	/* finally, draw the text baseline aligned */
 
+	play->GetLineMetrics(&lm, 1, &clm);
+	App().pdc->DrawTextLayout(Point2F(rcGlobal.left, rcGlobal.top + dyBaseline - lm.baseline), 
+							  play,
+							  pbrText, 
+							  D2D1_DRAW_TEXT_OPTIONS_NONE);
+
+	/* cleanup and return */
+	
 	SafeRelease(&play);
 	SafeRelease(&ptx);
+}
+
+
+void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText) const
+{
+	DrawSzFitBaseline(sz, ptxBase, rcFit, 0, pbrText);
 }
 
 

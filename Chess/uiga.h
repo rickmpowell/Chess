@@ -54,6 +54,7 @@ public:
 	UITIP uitip;
 	UIPVT uipvt;
 	UIPCP uipcp;
+	UIDT uidt;
 
 	UI* puiDrag;	/* mouse drag capture */
 	UI* puiFocus;	/* keyboard focus */
