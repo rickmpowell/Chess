@@ -93,12 +93,6 @@ SIZ UIPL::SizLayoutPreferred(void)
 }
 
 
-ColorF UIPL::CoBack(void) const
-{
-	return coButtonBarBack;
-}
-
-
 /*	UIPL::Draw
  *
  *	Draws the player UI element, which is just a circle to indicate the
@@ -630,6 +624,8 @@ UIML::UIML(UIGA& uiga) : UIPS(uiga),
 {
 	for (int col = 0; col < CArray(mpcoldx); col++)
 		mpcoldx[col] = 0.0f;
+	uiplWhite.SetCoBack(coButtonBarBack);
+	uiplBlack.SetCoBack(coButtonBarBack);
 }
 
 

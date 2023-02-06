@@ -1,5 +1,4 @@
-  Background of UIPL doesn't match in the title box
-  Cross isn't dragging in board setup in piece delete
+  Game controls don't redraw when game starts
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
     hit testing, but the APP does the mouse dispatching. Either the UIGA or APP should do both.
   Can we use a different mixing mode than using opacity for annotations?
@@ -89,6 +88,10 @@
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Hilite last made move on board
   UIBD: Implement queued move-ahead 
+* Cross isn't dragging in board setup in piece delete
+* Background of UIPL doesn't match in the title box
+* Click-click moving doesn't cancer with right-clicks
+* Right clicking doesn't give us single square annotation
 * Ticking clock overwrites popup tips
 * Separate background colors for content areas and button bars
 * UIBD: Implement click-from/click-to mouse move interface

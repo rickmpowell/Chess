@@ -797,6 +797,7 @@ void UIBD::NoButtonDrag(const PT& pt)
 
 void UIBD::StartRightDrag(const PT& pt)
 {
+	CancelClickClick();
 	SetDrag(this);
 
 	SQ sqHit;
@@ -859,11 +860,22 @@ void UIBD::RightDrag(const PT& pt)
 }
 
 
+void UIBD::CancelClickClick(void)
+{
+	if (!fClickClick)
+		return;
+	fClickClick = false;
+	sqDragInit = sqNil;
+}
+
+
 /*	UIBD::SqToNearestMove
  *
  *	Returns the square that is the nearest to sqHit that is a square that a piece
  *	could conceivably move to. Basically removes squares that are not on a line
  *	(row or column), diagonal, or knight-like L.
+ *	
+ *	If the hit point is the initial square, returns the initial square.
  */
 SQ UIBD::SqToNearestMove(SQ sqFrom, PT ptHit) const
 {
@@ -872,7 +884,7 @@ SQ UIBD::SqToNearestMove(SQ sqFrom, PT ptHit) const
 	   squares */
 	
 	BB bbHit = BB(sqFrom);
-	BB bb = Ga().bdg.BbKnightAttacked(bbHit);
+	BB bb = bbHit | Ga().bdg.BbKnightAttacked(bbHit);
 	for (DIR dir = dirMin; dir < dirMax; ++dir)
 		bb |= mpbb.BbSlideTo(sqFrom, dir);
 

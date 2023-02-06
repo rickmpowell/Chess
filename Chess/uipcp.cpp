@@ -272,7 +272,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 
 	rc.Inflate(-2*dxyLine-1, -2*dxyLine-1);
 	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
-	FillRotateGeom(pgeomCross, rc.PtCenter(), rc.DxWidth() / (2*dxyCrossFull), 45, coDragDelCross);
+	pui->FillRotateGeom(pgeomCross, rc.PtCenter(), rc.DxWidth() / (2*dxyCrossFull), 45, coDragDelCross);
 	SafeRelease(&pgeomCross);
 }
 

@@ -107,6 +107,7 @@ public:
 	void HiliteLegalMoves(SQ sq);
 	RC RcFromSq(SQ sq) const;
 	void SetDragHiliteSq(SQ sq);
+	void CancelClickClick(void);
 
 	virtual ColorF CoFore(void) const; 
 	virtual ColorF CoBack(void) const; 

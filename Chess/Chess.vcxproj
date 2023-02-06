@@ -166,6 +166,7 @@
   <ItemGroup>
     <Text Include="doc\keyboard.txt" />
     <Text Include="doc\style.txt" />
+    <Text Include="doc\ui.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

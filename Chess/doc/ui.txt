@@ -1,0 +1,70 @@
+
+
+UI CLASS LIBRARY
+
+
+The UI classes are a Direct2D-based windowing environment that runs on the Windows 
+operating system. It duplicates some of the same functionality that is found in
+the Windows API, but does so without the overhead of a Windows HWND and without
+using WndProcs.
+
+
+UI CLASS
+
+	The base class of the UI system is the UI class. A UI represents a 
+	rectangular area on the screen. Any UI element can have child UIs, which 
+	are completely contained within the bounds and owned by the parent UI. 
+	This creates a tree of UI elements.
+
+	DEFINING CLASSES
+		
+	CONSTRUCTORS and DESTRUCTORS
+
+	POSITION
+
+		The position of a UI element is defined by its bounding rectangle,
+		relative to its owning parent, and its z-order in relationship to its 
+		siblings. UI elements can be visible or not visible. If a parent
+		UI is hidden, none of its child UIs will be drawn.
+		
+	LAYOUT
+
+		Any UI that contains child UIs should implement a Layout system.
+		The Layout code will be called automatically when UI items get
+		re-positioned. 
+
+	DRAWING
+	
+		Drawing is broken up into two phases: erasing, and drawing.
+
+		coText, coBack
+		pbrText, pbrBack
+
+		Transparent UIs
+		
+	GRAPHICS PRIMITIVES
+
+		There is a reasonable collection of drawing primitives available to
+		a UI. 
+
+		Rectangles
+		Ellipses
+		Text
+		Bitmaps
+		Geometries
+		
+	RESOURCES
+
+	MOUSE INPUT
+
+	KEYBOARD INPUT
+
+	TIMERS
+
+	COMMANDS
+
+CONTROLS
+
+PANELS
+
+ATTACHING BASE UI TO A WINDOWS HWND

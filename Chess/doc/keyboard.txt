@@ -1,4 +1,9 @@
 
+
+KEYBOARD BINDINGS FOR MSVC
+
+
+
  `  1  2  3  4  5  6  7  8  9  0  -  =  bs
      q  w  e  r  t  y  u  i  o  p  [  ]  \
       a  s  d  f  g  h  j  k  l  ;  '  cr
@@ -31,7 +36,9 @@ J - character left
 K - line down
 L - character right
 ; - end of line 
-' - goto
+' - goto 
+    <ctrl-'>F - goto file
+    <ctrl-'>T - goto type
 cr
 
 N - matching brace
@@ -52,10 +59,10 @@ Left hand with Ctrl key - editing
 
 Tab 
 Q
-W
-E
+W   
+E   CUT LINE
 R
-T
+T   
 
 A   select all
 S   JOIN LINES

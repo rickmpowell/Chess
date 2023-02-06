@@ -44,7 +44,7 @@ const ColorF coBoardDark = ColorF(0.42f, 0.54f, 0.32f);
 const ColorF coBoardLight = ColorF(1.0f, 0.99f, 0.95f);
 const ColorF coBoardBWDark = ColorF(0.5f, 0.5, 0.5f);
 const ColorF coBoardBWLight = ColorF(0.9f, 0.9f, 0.9f);
-const ColorF coAnnotation(1.f, 0.15f, 0.0f);
+const ColorF coAnnotation(0.15f, 0.8f, 0.25f);
 const float opacityAnnotation = 0.75f;
 const ColorF coDragDelCircle(0.65f, 0.15f, 0.25f);
 const ColorF coDragDelCross(0, 0, 0);
