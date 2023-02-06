@@ -34,7 +34,7 @@ class TEST
 protected:
 	UIGA& uiga;
 	TEST* ptestParent;
-	vector<TEST*> rgptest;
+	vector<TEST*> vptest;
 
 public:
 	TEST(UIGA& uiga, TEST* ptestParent);
@@ -82,13 +82,13 @@ wstring TEST::SzSubName(void) const
 
 void TEST::Add(TEST* ptest)
 {
-	rgptest.push_back(ptest);
+	vptest.push_back(ptest);
 }
 
 void TEST::Clear(void)
 {
-	for (; rgptest.size() > 0; rgptest.pop_back())
-		delete rgptest.back();
+	for (; vptest.size() > 0; vptest.pop_back())
+		delete vptest.back();
 }
 
 ERR TEST::RunAll(void)
@@ -97,7 +97,7 @@ ERR TEST::RunAll(void)
 
 	ERR err = ErrRun();
 	if (FContinueTest(err)) {
-		for (TEST* ptest : rgptest) {
+		for (TEST* ptest : vptest) {
 			err = ptest->RunAll();
 			if (!FContinueTest(err))
 				break;
@@ -603,9 +603,9 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 struct {
 	const wchar_t* szTitle;
 	const wchar_t* szFEN;
-	unsigned long long rgull[20];
+	unsigned long long aull[20];
 	int cull;
-} rgperfttest[] = {
+} aperfttest[] = {
 	/*
 	 * perft tests from chessprogramming.org 
 	 */
@@ -788,11 +788,11 @@ struct {
 
 void UIGA::PerftTest(void)
 {
-	for (int iperfttest = 0; iperfttest < CArray(rgperfttest); iperfttest++)
-		RunPerftTest(rgperfttest[iperfttest].szTitle,
-			rgperfttest[iperfttest].szFEN,
-			rgperfttest[iperfttest].rgull,
-			rgperfttest[iperfttest].cull, true);
+	for (int iperfttest = 0; iperfttest < CArray(aperfttest); iperfttest++)
+		RunPerftTest(aperfttest[iperfttest].szTitle,
+			aperfttest[iperfttest].szFEN,
+			aperfttest[iperfttest].aull,
+			aperfttest[iperfttest].cull, true);
 }
 
 

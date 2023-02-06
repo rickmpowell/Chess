@@ -23,7 +23,7 @@
 
 const float dxyCrossFull = 20.0f;
 const float dxyCrossCenter = 4.0f;
-PT rgptCross[] = {
+PT aptCross[] = {
 	{-dxyCrossCenter, -dxyCrossFull},
 	{dxyCrossCenter, -dxyCrossFull},
 	{dxyCrossCenter, -dxyCrossCenter},
@@ -52,7 +52,7 @@ void UIBD::CreateRsrc(void)
 		dxySquare/4.0f, L"",
 		&ptxLabel);
 	pbmpPieces = PbmpFromPngRes(idbPieces);
-	pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
+	pgeomCross = PgeomCreate(aptCross, CArray(aptCross));
 }
 
 void UIBD::DiscardRsrc(void)
@@ -602,7 +602,7 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 		dyArrow -= dyShaft / 2;
 	}
 
-	PT rgptArrow[8] = {  {0,             dyShaft/2},
+	PT aptArrow[8] = {  {0,             dyShaft/2},
 						 {dxy - dxArrow, dyShaft/2},
 						 {dxy - dxArrow, dyArrow/2},
 						 {dxy,           0.0f},
@@ -610,7 +610,7 @@ void UIBD::DrawArrowAnnotation(SQ sqFrom, SQ sqTo)
 						 {dxy - dxArrow, -dyShaft/2},
 						 {0,			 -dyShaft/2},
 						 {0,             dyShaft/2} };
-	GEOM* pgeom = PgeomCreate(rgptArrow, 8);
+	GEOM* pgeom = PgeomCreate(aptArrow, CArray(aptArrow));
 
 	/* figure out the angle to rotate the arrow by */
 

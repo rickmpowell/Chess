@@ -99,7 +99,7 @@ protected:
 public:
 	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcClass(void);
-	GEOM* PgeomCreate(const PT rgpt[], int cpt) const;
+	GEOM* PgeomCreate(const PT apt[], int cpt) const;
 	BMP* PbmpFromPngRes(int idb);
 	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic);
 
@@ -232,8 +232,9 @@ public:
 	void DrawEll(const ELL& ell, ColorF co, float dxyWidth = 1.0f) const;
 	void DrawSz(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawSzCenter(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
-	void DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
+	void DrawAch(const wchar_t* ach, int cch, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	SIZ SizFromSz(const wstring& sz, TX* ptx, float dx=1.0e6f, float dy=1.0e6f) const;
+	SIZ SizFromAch(const wchar_t* ach, int cch, TX* ptx, float dx = 1.0e6f, float dy = 1.0e6f) const;
 	void DrawSzFit(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity = 1.0f) const;
 	void FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, BR* pbr = nullptr) const;
@@ -344,7 +345,7 @@ class BTNGEOM : public BTN
 	GEOM* pgeom;
 
 public:
-	BTNGEOM(UI* puiParent, int cmd, PT rgpt[], int cpt);
+	BTNGEOM(UI* puiParent, int cmd, PT apt[], int cpt);
 	~BTNGEOM();
 	virtual void Draw(const RC& rcUpdate);
 };

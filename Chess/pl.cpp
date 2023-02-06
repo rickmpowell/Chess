@@ -273,7 +273,7 @@ class LOGMVE : public LOGSEARCH, public AIBREAK
 	const AB& abInit;
 
 	static int imvExpand;
-	static MV rgmv[20];
+	static MV amv[20];
 
 public:
 	inline LOGMVE(PLAI& pl, const BDG& bdg,
@@ -308,10 +308,10 @@ public:
 
 	inline bool FExpandLog(const MVE& mve) const noexcept
 	{
-		if (rgmv[imvExpand] != mvAll) {
-			if (mve.sqFrom() != rgmv[imvExpand].sqFrom() ||
-					mve.sqTo() != rgmv[imvExpand].sqTo() ||
-					mve.apcPromote() != rgmv[imvExpand].apcPromote())
+		if (amv[imvExpand] != mvAll) {
+			if (mve.sqFrom() != amv[imvExpand].sqFrom() ||
+					mve.sqTo() != amv[imvExpand].sqTo() ||
+					mve.apcPromote() != amv[imvExpand].apcPromote())
 				return false;
 		}
 		imvExpand++;
@@ -365,7 +365,7 @@ public:
 /* a little debugging aid to trigger a change in log depth after a 
    specific sequence of moves */
 int LOGMVE::imvExpand = 0;
-MV LOGMVE::rgmv[] = { /*
+MV LOGMVE::amv[] = { /*
 	   MV(sqC2, sqC3),
 	   MV(sqB8, sqC6),
 	   MV(sqD1, sqB3),
@@ -1673,7 +1673,7 @@ MVU PLHUMAN::MvuGetNext(SPMV& spmv) noexcept
 
 /*
  *
- *	RGINFOPL
+ *	AINFOPL
  * 
  *	The list of players we have available to play. This is used as a player
  *	picker, and includes a factory for creating players.
@@ -1681,7 +1681,7 @@ MVU PLHUMAN::MvuGetNext(SPMV& spmv) noexcept
  */
 
 
-RGINFOPL::RGINFOPL(void) 
+AINFOPL::AINFOPL(void) 
 {
 	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobly", 5));
 	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"Max Mobly", 10));
@@ -1693,17 +1693,17 @@ RGINFOPL::RGINFOPL(void)
 }
 
 
-RGINFOPL::~RGINFOPL(void) 
+AINFOPL::~AINFOPL(void) 
 {
 }
 
 
-/*	RGINFOPL::PplFactory
+/*	AINFOPL::PplFactory
  *
  *	Creates a player for the given game using the given player index. The
  *	player is not added to the game yet. 
  */
-PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
+PL* AINFOPL::PplFactory(GA& ga, int iinfopl) const
 {
 	PL* ppl = nullptr;
 	switch (vinfopl[iinfopl].idclasspl) {
@@ -1725,11 +1725,11 @@ PL* RGINFOPL::PplFactory(GA& ga, int iinfopl) const
 }
 
 
-/*	RGINFOPL::IdbFromInfopl
+/*	AINFOPL::IdbFromInfopl
  *
  *	Returns an icon resource ID to use to help identify the players.
  */
-int RGINFOPL::IdbFromInfopl(const INFOPL& infopl) const
+int AINFOPL::IdbFromInfopl(const INFOPL& infopl) const
 {
 	switch (infopl.tpl) {
 	case tplAI:

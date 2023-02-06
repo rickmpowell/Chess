@@ -12,7 +12,7 @@
 
 
 
-RGINFOPL rginfopl;
+AINFOPL ainfopl;
 
 
 /*
@@ -88,7 +88,7 @@ SIZ UIPL::SizLayoutPreferred(void)
 {
 	SIZ siz(-1.0f, dyLine);
 	if (fChooser)
-		siz.height *= rginfopl.vinfopl.size();
+		siz.height *= ainfopl.vinfopl.size();
 	return siz;
 }
 
@@ -135,7 +135,7 @@ void UIPL::Draw(const RC& rcUpdate)
 void UIPL::DrawChooser(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
-	for (INFOPL& infopl : rginfopl.vinfopl)
+	for (INFOPL& infopl : ainfopl.vinfopl)
 		DrawChooserItem(infopl, rc);
 }
 
@@ -144,7 +144,7 @@ void UIPL::DrawChooserItem(const INFOPL& infopl, RC& rc)
 {
 	rc.bottom = rc.top + dyLine;
 
-	BMP* pbmpLogo = PbmpFromPngRes(rginfopl.IdbFromInfopl(infopl));
+	BMP* pbmpLogo = PbmpFromPngRes(ainfopl.IdbFromInfopl(infopl));
 	wstring sz = infopl.szName;
 	if (infopl.tpl == tplAI)
 		sz += L" (level " + to_wstring(infopl.level) + L")";
@@ -183,7 +183,7 @@ void UIPL::EndLeftDrag(const PT& pt, bool fClick)
 	if (fChooser) {
 		int iinfopl = (int)((pt.y - RcInterior().top) / dyLine);
 		if (iinfopl == iinfoplHit)
-			Ga().SetPl(cpc, rginfopl.PplFactory(Ga(), iinfopl));
+			Ga().SetPl(cpc, ainfopl.PplFactory(Ga(), iinfopl));
 	}
 	fChooser = !fChooser;
 	puiParent->Layout();
@@ -476,29 +476,29 @@ void UICLOCK::Draw(const RC& rcUpdate)
 	if (hr > 0) {
 		float dxClock = sizDigit.width + sizPunc.width + 2*sizDigit.width + sizPunc.width + 2*sizDigit.width;
 		rc.left = rc.XCenter() - dxClock/2;
-		DrawRgch(sz, 1, ptxClock, rc);	// hours
+		DrawAch(sz, 1, ptxClock, rc);	// hours
 		rc.left += sizDigit.width;
 		DrawColon(rc, frac);
-		DrawRgch(sz + 2, 2, ptxClock, rc); // minutes
+		DrawAch(sz + 2, 2, ptxClock, rc); // minutes
 		rc.left += 2*sizDigit.width;
 		DrawColon(rc, frac);
-		DrawRgch(sz + 5, 2, ptxClock, rc); // seconds
+		DrawAch(sz + 5, 2, ptxClock, rc); // seconds
 	}
 	else if (min > 0) {
 		float dxClock = 2*sizDigit.width + sizPunc.width + 2*sizDigit.width;
 		rc.left = (rc.left + rc.right - dxClock) / 2;
-		DrawRgch(sz + 2, 2, ptxClock, rc);	// minutes
+		DrawAch(sz + 2, 2, ptxClock, rc);	// minutes
 		rc.left += 2*sizDigit.width;
 		DrawColon(rc, frac);
-		DrawRgch(sz + 5, 2, ptxClock, rc);	// seconds 
+		DrawAch(sz + 5, 2, ptxClock, rc);	// seconds 
 	}
 	else {
 		float dxClock = sizDigit.width + sizPunc.width + 2*sizDigit.width + sizPunc.width + sizDigit.width;
 		rc.left = rc.XCenter() - dxClock / 2;;
-		DrawRgch(sz + 3, 1, ptxClock, rc);	// minutes (=0)
+		DrawAch(sz + 3, 1, ptxClock, rc);	// minutes (=0)
 		rc.left += sizDigit.width;
 		DrawColon(rc, frac);
-		DrawRgch(sz + 5, 4, ptxClock, rc);	// seconds and tenths
+		DrawAch(sz + 5, 4, ptxClock, rc);	// seconds and tenths
 	}
 
 
@@ -601,8 +601,8 @@ void UICLOCK::DrawColon(RC& rc, unsigned frac) const
 void UICLOCK::DrawFlag(void) const
 {
 	RC rc = RcInterior();
-	PT rgpt[] = { {0, 0}, {12, 0}, {12, 30}, {0, 12}, {0, 0} };
-	GEOM* pgeom = PgeomCreate(rgpt, CArray(rgpt));
+	PT apt[] = { {0, 0}, {12, 0}, {12, 30}, {0, 12}, {0, 0} };
+	GEOM* pgeom = PgeomCreate(apt, CArray(apt));
 	FillGeom(pgeom, PT(24.0f, 0), 1, coClockFlag);
 	SafeRelease(&pgeom);
 }
@@ -618,7 +618,7 @@ void UICLOCK::DrawFlag(void) const
 
 
 UIML::UIML(UIGA& uiga) : UIPS(uiga),  
-		ptxList(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvuSel(0),
+		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvuSel(0),
 		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack), 
 		uiclockWhite(*this, cpcWhite), uiclockBlack(*this, cpcBlack), uigc(*this)
 {
@@ -648,8 +648,11 @@ void UIML::CreateRsrc(void)
 	/* fonts */
 
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
-		&ptxList);
+									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
+									 &ptxList);
+	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20.0f, L"",
+									 &ptxPiece);
 }
 
 
@@ -661,6 +664,7 @@ void UIML::DiscardRsrc(void)
 {
 	UI::DiscardRsrc();
 	SafeRelease(&ptxList);
+	SafeRelease(&ptxPiece);
 }
 
 
@@ -749,11 +753,12 @@ void UIML::Layout(void)
 SIZ UIML::SizLayoutPreferred(void)
 {
 	/* I think this is the longest possible move text */
-	SIZ siz = SizFromSz(L"\x2659" L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
-	dyList = siz.height + 2*dyCellMarg;
+	SIZ sizText = SizFromSz(L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
+	SIZ sizPiece = SizFromSz(L"\x2659", ptxPiece);
+	dyList = max(sizText.height, sizPiece.height) +2*dyCellMarg;
 
 	mpcoldx[0] = dxCellMarg+SizFromSz(L"100.", ptxList).width;
-	mpcoldx[1] = mpcoldx[2] = dxCellMarg + siz.width;
+	mpcoldx[1] = mpcoldx[2] = dxCellMarg + sizText.width + sizPiece.width;
 	mpcoldx[3] = dxyScrollBarWidth;
 
 	return SIZ(XFromCol(4), -1.0f);
@@ -839,6 +844,12 @@ void UIML::SetSel(int64_t imvu, SPMV spmv)
  */
 void UIML::DrawSel(int64_t imvu)
 {
+}
+
+
+bool FChChessPiece(wchar_t ch)
+{
+	return in_range(ch, chWhiteKing, chBlackPawn);
 }
 
 

@@ -29,17 +29,17 @@ GENHABD genhabd;
  */
 GENHABD::GENHABD(void)
 {
-	rghabdPiece[0][0] = 0;	// shut up the compiler warning about uninitialized array
+	ahabdPiece[0][0] = 0;	// shut up the compiler warning about uninitialized array
 	for (SQ sq = 0; sq < sqMax; sq++)
 		for (PC pc = 0; pc < pcMax; pc++)
-			rghabdPiece[sq][pc] = HabdRandom(rgen);
+			ahabdPiece[sq][pc] = HabdRandom(rgen);
 
-	rghabdCastle[0] = 0;
-	for (int ics = 1; ics < CArray(rghabdCastle); ics++)
-		rghabdCastle[ics] = HabdRandom(rgen);
+	ahabdCastle[0] = 0;
+	for (int ics = 1; ics < CArray(ahabdCastle); ics++)
+		ahabdCastle[ics] = HabdRandom(rgen);
 
-	for (int iep = 0; iep < CArray(rghabdEnPassant); iep++)
-		rghabdEnPassant[iep] = HabdRandom(rgen); 
+	for (int iep = 0; iep < CArray(ahabdEnPassant); iep++)
+		ahabdEnPassant[iep] = HabdRandom(rgen); 
 
 	habdMove = HabdRandom(rgen);
 }
@@ -64,17 +64,17 @@ HABD GENHABD::HabdFromBd(const BD& bd) const
 	for (SQ sq = 0; sq < sqMax; sq++) {
 		PC pc = bd.PcFromSq(sq);
 		if (pc.apc() != apcNull)
-			habd ^= rghabdPiece[sq][pc];
+			habd ^= ahabdPiece[sq][pc];
 		}
 
 	/* castle state */
 
-	habd ^= rghabdCastle[bd.csCur];
+	habd ^= ahabdCastle[bd.csCur];
 
 	/* en passant state */
 
 	if (!bd.sqEnPassant.fIsNil())
-		habd ^= rghabdEnPassant[bd.sqEnPassant.file()];
+		habd ^= ahabdEnPassant[bd.sqEnPassant.file()];
 
 	/* current side to move */
 

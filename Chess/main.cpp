@@ -97,8 +97,8 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     InitCmdList();
 
     pga = new GA();
-    pga->SetPl(cpcBlack, rginfopl.PplFactory(*pga, 0));
-    pga->SetPl(cpcWhite, rginfopl.PplFactory(*pga, 2));
+    pga->SetPl(cpcBlack, ainfopl.PplFactory(*pga, 0));
+    pga->SetPl(cpcWhite, ainfopl.PplFactory(*pga, 2));
     pga->InitGame(nullptr, nullptr);
     
     /* create the main window */
@@ -186,16 +186,16 @@ void APP::CreateRsrc(void)
 {
     if (pdc == nullptr) {
 
-        D3D_FEATURE_LEVEL rgfld3[] = {
+        D3D_FEATURE_LEVEL afld3[] = {
             D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
             D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
         };
         ID3D11Device* pdevd3T;
         ID3D11DeviceContext* pdcd3T;
         D3D_FEATURE_LEVEL flRet;
-        D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-            rgfld3, CArray(rgfld3), D3D11_SDK_VERSION,
-            &pdevd3T, &flRet, &pdcd3T);
+        D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
+                          afld3, CArray(afld3), D3D11_SDK_VERSION,
+                          &pdevd3T, &flRet, &pdcd3T);
         if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
             throw 1;
         pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
@@ -1877,19 +1877,19 @@ wstring SzCommaFromLong(int long long w)
 
     /* break the number into groups of 3 */
 
-    int rgw[20];
+    int aw[20];
     int iw;
     for (iw = 0; w; w /= 1000)
-        rgw[iw++] = w % 1000;
+        aw[iw++] = w % 1000;
     iw--;
 
     /* and print out each group */
 
     assert(iw >= 0);
-    sz += to_wstring(rgw[iw]);
+    sz += to_wstring(aw[iw]);
     while (iw > 0) {
         sz += L",";
-        int wT = rgw[--iw];
+        int wT = aw[--iw];
         if (wT < 100)
             sz += wT < 10 ? L"00" : L"0";
         sz += to_wstring(wT);

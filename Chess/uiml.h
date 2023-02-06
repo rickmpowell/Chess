@@ -177,6 +177,7 @@ class UIML : public UIPS
 	friend class GA;
 
 	TX* ptxList;
+	TX* ptxPiece;
 	float mpcoldx[4];
 	float dxCellMarg, dyCellMarg;
 	float dyList;

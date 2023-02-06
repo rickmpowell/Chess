@@ -152,9 +152,9 @@ class BD;
 class GENHABD
 {
 private:
-	HABD rghabdPiece[sqMax][pcMax];
-	HABD rghabdCastle[16];
-	HABD rghabdEnPassant[8];
+	HABD ahabdPiece[sqMax][pcMax];
+	HABD ahabdCastle[16];
+	HABD ahabdEnPassant[8];
 	HABD habdMove;
 
 public:
@@ -170,7 +170,7 @@ public:
 	 */
 	inline void TogglePiece(HABD& habd, SQ sq, PC pc) const
 	{
-		habd ^= rghabdPiece[sq][pc];
+		habd ^= ahabdPiece[sq][pc];
 	}
 
 
@@ -190,7 +190,7 @@ public:
 	 */
 	inline void ToggleCastle(HABD& habd, int cs) const
 	{
-		habd ^= rghabdCastle[cs];
+		habd ^= ahabdCastle[cs];
 	}
 
 
@@ -200,7 +200,7 @@ public:
 	 */
 	inline void ToggleEnPassant(HABD& habd, int file) const
 	{
-		habd ^= rghabdEnPassant[file];
+		habd ^= ahabdEnPassant[file];
 	}
 };
 

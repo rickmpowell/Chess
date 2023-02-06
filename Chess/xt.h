@@ -123,7 +123,7 @@ struct XEV2 {
 
 class XT
 {
-	XEV2* rgxev2;
+	XEV2* axev2;
 public:
 	const uint32_t cxev2Max = 1UL << /*23*/ 16;
 	static_assert(sizeof(XEV2) == (1 << 5));
@@ -138,7 +138,7 @@ public:
 #endif
 
 public:
-	XT(void) : rgxev2(nullptr), 
+	XT(void) : axev2(nullptr), 
 #ifndef NOSTATS
 		cxevProbe(0), cxevProbeHit(0),  
 		cxevSave(0), cxevSaveCollision(0), cxevSaveReplace(0), cxevInUse(0),
@@ -149,9 +149,9 @@ public:
 
 	~XT(void)
 	{
-		if (rgxev2 != nullptr) {
-			delete[] rgxev2;
-			rgxev2 = nullptr;
+		if (axev2 != nullptr) {
+			delete[] axev2;
+			axev2 = nullptr;
 		}
 	}
 
@@ -162,14 +162,14 @@ public:
 	 */
 	void Init(void)
 	{
-		if (rgxev2 == nullptr) {
-			rgxev2 = new XEV2[cxev2Max];
-			if (rgxev2 == nullptr)
+		if (axev2 == nullptr) {
+			axev2 = new XEV2[cxev2Max];
+			if (axev2 == nullptr)
 				throw 1;
 		}
 		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
-			rgxev2[ixev2].xevDeep.SetNull();
-			rgxev2[ixev2].xevNew.SetNull();
+			axev2[ixev2].xevDeep.SetNull();
+			axev2[ixev2].xevNew.SetNull();
 		}
 #ifndef NOSTATS
 		cxevProbe = cxevProbeHit = 0;
@@ -196,19 +196,19 @@ public:
 	{
 		/* age out really old entries, and bump the table age */
 		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
-			if (Dage(rgxev2[ixev2].xevDeep) >= ageMax - 1) {
+			if (Dage(axev2[ixev2].xevDeep) >= ageMax - 1) {
 #ifndef NOSTATS
-				if (rgxev2[ixev2].xevDeep.tev() != tevNull)
+				if (axev2[ixev2].xevDeep.tev() != tevNull)
 					cxevInUse--;
 #endif
-				rgxev2[ixev2].xevDeep.SetNull();
+				axev2[ixev2].xevDeep.SetNull();
 			}
-			if (Dage(rgxev2[ixev2].xevNew) >= ageMax - 1) {
+			if (Dage(axev2[ixev2].xevNew) >= ageMax - 1) {
 #ifndef NOSTATS
-				if (rgxev2[ixev2].xevNew.tev() != tevNull)
+				if (axev2[ixev2].xevNew.tev() != tevNull)
 					cxevInUse--;
 #endif
-				rgxev2[ixev2].xevNew.SetNull();
+				axev2[ixev2].xevNew.SetNull();
 			}
 		}
 		age = (age + 1) & (ageMax - 1);
@@ -222,7 +222,7 @@ public:
 	 */
 	inline XEV2& operator[](const BDG& bdg) noexcept
 	{
-		return rgxev2[bdg.habd & cxev2MaxMask];
+		return axev2[bdg.habd & cxev2MaxMask];
 	}
 
 

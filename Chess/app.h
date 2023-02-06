@@ -147,10 +147,10 @@ struct TAG
 		mpnameval[attr.name] = attr.val;
 	}
 
-	TAG(const wstring& sz, const ATTR rgattr[], int cattr) : sz(sz)
+	TAG(const wstring& sz, const ATTR aattr[], int cattr) : sz(sz)
 	{
 		for (int iattr = 0; iattr < cattr; iattr++)
-			mpnameval[rgattr[iattr].name] = rgattr[iattr].val;
+			mpnameval[aattr[iattr].name] = aattr[iattr].val;
 	}
 };
 

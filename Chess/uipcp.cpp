@@ -255,7 +255,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 
 	const float dxyCrossFull = 10.0f;
 	const float dxyCrossCenter = 3.0f;
-	const PT rgptCross[] = {
+	const PT aptCross[] = {
 		{-dxyCrossCenter, -dxyCrossFull},
 		{dxyCrossCenter, -dxyCrossFull},
 		{dxyCrossCenter, -dxyCrossCenter},
@@ -271,7 +271,7 @@ void UIDRAGDEL::DrawInterior(UI* pui, const RC& rcDraw)
 		{-dxyCrossCenter, -dxyCrossFull} };
 
 	rc.Inflate(-2*dxyLine-1, -2*dxyLine-1);
-	GEOM* pgeomCross = PgeomCreate(rgptCross, CArray(rgptCross));
+	GEOM* pgeomCross = PgeomCreate(aptCross, CArray(aptCross));
 	pui->FillRotateGeom(pgeomCross, rc.PtCenter(), rc.DxWidth() / (2*dxyCrossFull), 45, coDragDelCross);
 	SafeRelease(&pgeomCross);
 }

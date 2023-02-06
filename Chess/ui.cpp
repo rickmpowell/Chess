@@ -87,14 +87,14 @@ void UI::DiscardRsrcClass(void)
  *
  *	Creates a geometry object from the array of points.
  */
-ID2D1PathGeometry* UI::PgeomCreate(const PT rgpt[], int cpt) const
+ID2D1PathGeometry* UI::PgeomCreate(const PT apt[], int cpt) const
 {
 	ID2D1PathGeometry* pgeom;
 	App().pfactd2->CreatePathGeometry(&pgeom);
 	ID2D1GeometrySink* psink;
 	pgeom->Open(&psink);
-	psink->BeginFigure(rgpt[0], D2D1_FIGURE_BEGIN_FILLED);
-	psink->AddLines(&rgpt[1], cpt - 1);
+	psink->BeginFigure(apt[0], D2D1_FIGURE_BEGIN_FILLED);
+	psink->AddLines(&apt[1], cpt - 1);
 	psink->EndFigure(D2D1_FIGURE_END_CLOSED);
 	psink->Close();
 	SafeRelease(&psink);
@@ -1000,15 +1000,26 @@ SIZ UI::SizFromSz(const wstring& sz, TX* ptx, float dx, float dy) const
 }
 
 
-/*	UI::DrawRgch
+SIZ UI::SizFromAch(const wchar_t* ach, int cch, TX* ptx, float dx, float dy) const
+{
+	IDWriteTextLayout* ptxl;
+	App().pfactdwr->CreateTextLayout(ach, cch, ptx, dx, dy, &ptxl);
+	DWRITE_TEXT_METRICS dtm;
+	ptxl->GetMetrics(&dtm);
+	SafeRelease(&ptxl);
+	return SIZ(dtm.width, dtm.height);
+}
+
+
+/*	UI::DrawAch
  *
  *	Helper function for drawing text on the screen panel. Rectangle is in local
  *	UI coordinates
  */
-void UI::DrawRgch(const wchar_t* rgch, int cch, TX* ptx, const RC& rc, BR* pbr) const
+void UI::DrawAch(const wchar_t* ach, int cch, TX* ptx, const RC& rc, BR* pbr) const
 {
 	RC rcGlobal = RcGlobalFromLocal(rc);
-	App().pdc->DrawText(rgch, (UINT32)cch, ptx, &rcGlobal, pbr ? pbr : pbrText);
+	App().pdc->DrawText(ach, (UINT32)cch, ptx, &rcGlobal, pbr ? pbr : pbrText);
 }
 
 
@@ -1054,12 +1065,14 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 		SafeRelease(&play);
 		SafeRelease(&ptx);
 		App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-			DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-			dyFont, L"", &ptx);
+										 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+										 dyFont, L"", 
+										 &ptx);
 		if (ptx == nullptr)
 			throw 1;
 		App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(),
-			ptx, rcGlobal.DxWidth(), rcGlobal.DyHeight(), &play);
+										 ptx, rcGlobal.DxWidth(), rcGlobal.DyHeight(), 
+										 &play);
 		if (play == nullptr)
 			throw 1;
 		DWRITE_TEXT_METRICS tm;
@@ -1070,7 +1083,7 @@ void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText)
 
 	play->GetLineMetrics(&lm, 1, &clm);
 	App().pdc->DrawTextLayout(Point2F(rcGlobal.left, yBaseline - lm.baseline), play,
-			pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
+							  pbrText, D2D1_DRAW_TEXT_OPTIONS_NONE);
 
 	SafeRelease(&play);
 	SafeRelease(&ptx);
@@ -1479,9 +1492,9 @@ void STATIC::Draw(const RC& rcUpdate)
  */
 
 
-BTNGEOM::BTNGEOM(UI* puiParent, int cmd, PT rgpt[], int cpt) : BTN(puiParent, cmd), pgeom(nullptr)
+BTNGEOM::BTNGEOM(UI* puiParent, int cmd, PT apt[], int cpt) : BTN(puiParent, cmd), pgeom(nullptr)
 {
-	pgeom = PgeomCreate(rgpt, cpt);
+	pgeom = PgeomCreate(apt, cpt);
 }
 
 BTNGEOM::~BTNGEOM(void)
@@ -1502,12 +1515,12 @@ void BTNGEOM::Draw(const RC& rcUpdate)
  *	SPIN ui control
  * 
  */
-static PT rgptLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
-static PT rgptRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
+static PT aptLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
+static PT aptRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
 
 
 SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), ptxSpin(nullptr),
-		btngeomDown(this, cmdDown, rgptLeft, 3), btngeomUp(this, cmdUp, rgptRight, 3)
+		btngeomDown(this, cmdDown, aptLeft, 3), btngeomUp(this, cmdUp, aptRight, 3)
 		
 {
 }

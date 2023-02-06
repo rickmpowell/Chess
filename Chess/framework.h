@@ -79,7 +79,7 @@ extern bool fValidate;
  */
 
 
-#define CArray(rg) (sizeof(rg) / sizeof((rg)[0]))
+#define CArray(a) (sizeof(a) / sizeof((a)[0]))
 
 template<class Interface>
 inline void SafeRelease(Interface** ppi)

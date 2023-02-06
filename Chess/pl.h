@@ -546,15 +546,15 @@ struct INFOPL
 };
 
 
-class RGINFOPL
+class AINFOPL
 {
 public:
 	vector <INFOPL> vinfopl;
 
-	RGINFOPL(void);
-	~RGINFOPL(void);
+	AINFOPL(void);
+	~AINFOPL(void);
 	PL* PplFactory(GA& ga, int iinfopl) const;
 	int IdbFromInfopl(const INFOPL& infopl) const;
 };
 
-extern RGINFOPL rginfopl;
+extern AINFOPL ainfopl;
