@@ -74,7 +74,7 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), 
 	    dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr), fClickClick(false)
+		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr), fClickClick(false), mvuHilite(mvuNil)
 {
 }
 
@@ -157,6 +157,7 @@ void UIBD::MakeMvu(MVU mvu, SPMV spmv)
 	if (FSpmvAnimate(spmv))
 		AnimateMvu(mvu, DframeFromSpmv(spmv));
 	uiga.ga.bdg.MakeMvu(mvu);
+	SetMoveHilite(mvu);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
@@ -171,6 +172,7 @@ void UIBD::UndoMvu(SPMV spmv)
 		AnimateSqToSq(mvu.sqTo(), mvu.sqFrom(), DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.UndoMvu();
+	SetMoveHilite(mvuNil);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGs(gsPlaying);
 	if (spmv != spmvHidden)
@@ -185,10 +187,17 @@ void UIBD::RedoMvu(SPMV spmv)
 		AnimateMvu(mvu, DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.RedoMvu();
+	SetMoveHilite(mvuNil);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();
+}
+
+
+void UIBD::SetMoveHilite(MVU mvu)
+{
+	mvuHilite = mvu;
 }
 
 
@@ -231,21 +240,24 @@ void UIBD::Draw(const RC& rcDraw)
 	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcBounds.PtCenter()));
 	DrawMargins(rcDraw, rankFirst, rankLast, fileFirst, fileLast);
 	DrawSquares(rankFirst, rankLast, fileFirst, fileLast);
-	DrawHilites();
+	DrawDragHilite();
 	DrawAnnotations();
 	DrawGameState();
 	}
 }
+
 
 ColorF UIBD::CoFore(void) const
 {
 	return uiga.FInBoardSetup() ? coBoardBWDark : coBoardDark; 
 }
 
+
 ColorF UIBD::CoBack(void) const
 {
 	return uiga.FInBoardSetup() ? coBoardBWLight : coBoardLight; 
 }
+
 
 /*	UIBD::DrawMargins
  *
@@ -282,11 +294,17 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 	for (int rank = rankFirst; rank <= rankLast; rank++)
 		for (int file = fileFirst; file <= fileLast; file++) {
 			SQ sq(rank, file);
+			RC rcSq = RcFromSq(sq);
 			if ((rank + file) % 2 == 0)
-				FillRc(RcFromSq(sq), pbrText);
+				FillRc(rcSq, pbrText);
 			MVU mvu;
 			if (FHoverSq(sqDragInit.fIsNil() ? sqHover : sqDragInit, sq, mvu))
-				DrawHoverMvu(mvu);
+				DrawHoverMove(mvu);
+			if (!mvuHilite.fIsNil() && (mvuHilite.sqFrom() == sq || mvuHilite.sqTo() == sq)) {
+				OPACITYBR opacitybr(pbrBlack, 0.1f);
+				COLORBRS colorbrs(pbrBlack, coRed);
+				FillRc(rcSq, pbrBlack);
+			}
 			DrawPieceSq(sq);
 		}
 }
@@ -414,14 +432,14 @@ bool UIBD::FHoverSq(SQ sqFrom, SQ sq, MVU& mvu)
 }
 
 
-/*	UIBD::DrawHoverMvu
+/*	UIBD::DrawHoverMove
  *
  *	Draws the move hints over destination squares that we display while the 
  *	user is hovering the mouse over a moveable piece.
  *
  *	We draw a circle over every square you can move to, and an X over captures.
  */
-void UIBD::DrawHoverMvu(MVU mvu)
+void UIBD::DrawHoverMove(MVU mvu)
 {
 	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
@@ -513,7 +531,7 @@ void UIBD::AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned framefMax)
 }
 
 
-void UIBD::DrawHilites(void)
+void UIBD::DrawDragHilite(void)
 {
 	if (sqDragHilite.fIsNil())
 		return;

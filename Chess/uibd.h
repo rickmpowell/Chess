@@ -63,7 +63,8 @@ public:
 	SQ sqDragInit;	// square of ptDragInit
 	PT ptDragCur;	// current mouse position when dragging
 	RC rcDragPc;	// rectangle the dragged piece was last drawn in
-	SQ sqDragHilite;
+	SQ sqDragHilite;	// square we're hiliting during dragging
+	MVU mvuHilite;		// hilite last move
 	bool fClickClick;	// true after click-click move selection mode started
 	SQ sqHover;
 
@@ -80,6 +81,7 @@ public:
 	void MakeMvu(MVU mvu, SPMV spmv);
 	void UndoMvu(SPMV spmv);
 	void RedoMvu(SPMV spmv);
+	void SetMoveHilite(MVU mvu);
 
 	virtual void Layout(void);
 
@@ -91,23 +93,23 @@ public:
 	void DrawFileLabels(int fileFirst, int fileLast);
 	void DrawRankLabels(int rankFirst, int rankLast);
 	bool FHoverSq(SQ sqFrom, SQ sq, MVU& mvu);
-	void DrawHoverMvu(MVU mvu);
+	void DrawHoverMove(MVU mvu);
 	void DrawPieceSq(SQ sq);
 	void DrawAnnotations(void);
 	void DrawSquareAnnotation(SQ sq);
 	void DrawArrowAnnotation(SQ sqFrom, SQ sqTo);
 	SQ SqToNearestMove(SQ sqFrom, PT ptHit) const;
-
-	void DrawHilites(void);
+	void DrawDragHilite(void);
 	void DrawGameState(void);
+
 	void DrawPc(UI* pui, const RC& rc, float opacity, PC pc);
 	void AnimateMvu(MVU mvu, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
-	RC RcGetDrag(void);
 	void HiliteLegalMoves(SQ sq);
-	RC RcFromSq(SQ sq) const;
 	void SetDragHiliteSq(SQ sq);
 	void CancelClickClick(void);
+	RC RcGetDrag(void);
+	RC RcFromSq(SQ sq) const;
 
 	virtual ColorF CoFore(void) const; 
 	virtual ColorF CoBack(void) const; 

@@ -86,8 +86,8 @@
   Keyboard entry of moves
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
-  UIBD: Hilite last made move on board
   UIBD: Implement queued move-ahead 
+* UIBD: Hilite last made move on board
 * Cross isn't dragging in board setup in piece delete
 * Background of UIPL doesn't match in the title box
 * Click-click moving doesn't cancer with right-clicks
