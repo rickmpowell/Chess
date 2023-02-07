@@ -808,6 +808,12 @@ public:
     {
         return app.SzLoad(idsTipTest);
     }
+
+    virtual bool FEnabled(void) const
+    {
+        return CMD::FEnabled() || app.puiga->fInTest;
+    }
+
 };
 
 
@@ -1682,6 +1688,11 @@ public:
     {
         ::DestroyWindow(app.hwnd);
         return 1;
+    }
+
+    virtual bool FEnabled(void) const
+    {
+        return true;
     }
 };
 

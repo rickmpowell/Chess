@@ -40,7 +40,7 @@ UIGA::UIGA(APP& app, GA& ga) : UI(nullptr),
 							   uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uidt(*this), 
 							   uitip(this),
 							   puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
-							   spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0)
+							   spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0), fInTest(false)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
 }
@@ -269,7 +269,7 @@ void UIGA::DispatchCmd(int cmd)
  */
 bool UIGA::FEnableCmds(void) const
 {
-	return true;
+	return !fInTest;
 }
 
 

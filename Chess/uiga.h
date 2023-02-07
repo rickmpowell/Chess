@@ -67,6 +67,8 @@ public:
 	DWORD mpcpcdmsecClock[cpcMax];	// player clocks
 	DWORD msecLast;	// time of last move
 
+	bool fInTest;
+
 public:
 	UIGA(APP& app, GA& ga);
 	~UIGA();

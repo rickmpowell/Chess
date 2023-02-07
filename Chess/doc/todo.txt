@@ -9,7 +9,6 @@
   When AIs are playing moves aren't animated
   PGN files that start in standard position shouldn't save FEN
   Escaping out of an AI game needs to stop the clocks
-  BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
   In board edit mode, changes in the UIBD need to redraw the UIPCP
   On clock expiration, game result should be a draw if "winning" side has insufficient material
   Change FEN control in board editor to be an edit box
@@ -72,7 +71,6 @@
   Open: PGN game browser if multiple games in Open...
   UI: Implement labeled icon buttons
   UI for specifying human player names
-  Limit UI during message pumps in test and AI
   UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
   UI: Implement disabled buttons that hook to CMD
   ML: With small windows, need to do something about the move list. Or limit window size?
@@ -84,6 +82,8 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Limit UI during message pumps in test
+* BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
 * UI: Implement disabled menu items hooked to the CMD
 * ML: I don't think move list is baseline aligned - problem with descenders? 
 * ML: Reize icons in move list slightly larger than text
