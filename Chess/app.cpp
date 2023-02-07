@@ -196,31 +196,44 @@ bool CMD::FEnabled(void) const
 	return app.FEnableCmds();
 }
 
+
 bool CMD::FChecked(void) const
 {
 	return false;
 }
 
 
-bool CMD::FCustomSzMenu(void) const
-{
-	return false;
-}
-
-
+/*	CZMD::IdsMenu
+ *
+ *	Returns the string resource identifier to be used to load the menu string
+ *	for this command. Returns 0 if  the item should be left alone, i.e., that
+ *	it is static and doesn't change.
+ */
 int CMD::IdsMenu(void) const
 {
 	return 0;
 }
 
 
+/*	CMD::SzMenu
+ *
+ *	Returns the text of the string to use in the menu for the given command.
+ *	Returns a zero length string to mean "don't touch the current string",
+ *	which is really used to say the string is static and doesn't need to be
+ *	touched.
+ */
 wstring CMD::SzMenu(void) const
 {
 	int ids = IdsMenu();
-	return ids ? app.SzLoad(ids) : L"(error)";
+	return ids ? app.SzLoad(ids) : L"";
 }
 
 
+/*	CMD::InitMenu
+ *
+ *	Initializes the menu item of the command, called when menus are about
+ *	to drop down. Sets the text, disabled state, and check state. 
+ */
 void CMD::InitMenu(HMENU hmenu)
 {
 	MENUITEMINFOW mi;
@@ -234,10 +247,11 @@ void CMD::InitMenu(HMENU hmenu)
 	if (FChecked())
 		mi.fState |= MFS_CHECKED;
 	UINT cmd = (UINT)icmd;
-	if (FCustomSzMenu()) {
+	wstring szMenu = SzMenu();
+	if (szMenu.size() > 0) {
 		mi.fMask |= MIIM_TYPE;
 		wchar_t szText[256];
-		lstrcpy(szText, SzMenu().c_str());
+		lstrcpy(szText, szMenu.c_str());
 		mi.dwTypeData = szText;
 		::SetMenuItemInfoW(hmenu, cmd, false, &mi);
 	}
@@ -247,9 +261,22 @@ void CMD::InitMenu(HMENU hmenu)
 }
 
 
+/*	CMD::SzTip
+ *
+ *	Returns the tooltip text to be used when hovering over the item. Used mostly for
+ *	button items.
+ */
 wstring CMD::SzTip(void) const
 {
-	return L"";
+	int ids = IdsTip();
+	return ids ? app.SzLoad(ids) : L"";
+
+}
+
+
+int CMD::IdsTip(void) const
+{
+	return 0;
 }
 
 

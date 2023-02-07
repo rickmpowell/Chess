@@ -690,9 +690,9 @@ void UITIP::AttachOwner(UI* pui)
 	RC rcOwner = puiOwner->RcInterior();
 	rcOwner = puiOwner->RcGlobalFromLocal(rcOwner);
 	wstring szTip = puiOwner->SzTip();
-	SIZ sizTip = SizFromSz(szTip, ptxTip, 1000.0f, 1000.0f);
+	SIZ sizTip = SizFromSz(szTip, ptxTip);
 	sizTip.height += 8.0f;
-	sizTip.width += 14.0f;
+	sizTip.width += 16.0f;
 	RC rcTip = RC(PT(rcOwner.XCenter(), rcOwner.top - sizTip.height - 1.0f), sizTip);
 	RC rcDesk = puiParent->RcInterior();
 	if (rcTip.top < rcDesk.top)

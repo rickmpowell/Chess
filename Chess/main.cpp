@@ -672,9 +672,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipUndoMove);
+        return idsTipUndoMove;
     }
 };
 
@@ -699,9 +699,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipRedoMove);
+        return idsTipRedoMove;
     }
 };
 
@@ -725,9 +725,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipRotateBoard);
+        return idsTipRotateBoard;
     }
 };
 
@@ -751,9 +751,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipResign);
+        return idsTipResign;
     }
 };
 
@@ -777,9 +777,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipOfferDraw);
+        return idsTipOfferDraw;
     }
 };
 
@@ -804,9 +804,14 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipTest);
+        return app.puiga->fInTest ? idsTipStopTest : idsTipTest;
+    }
+
+    virtual int IdsMenu(void) const
+    {
+        return app.puiga->fInTest ? idsMenuStopTest : idsMenuTest;
     }
 
     virtual bool FEnabled(void) const
@@ -945,11 +950,6 @@ public:
         LogData(L"Speed: " + to_wstring((int)round(sp)) + L" moves/ms");
         LogClose(L"perft", to_wstring(cmv), lgfBold);
         return 1;
-    }
-
-    virtual bool FCustomSzMenu(void) const
-    {
-        return true;
     }
 
     virtual wstring SzMenu(void) const
@@ -1213,11 +1213,6 @@ public:
         return 1;
     }
 
-    virtual bool FCustomSzMenu(void) const
-    {
-        return true;
-    }
-
     virtual int IdsMenu(void) const
     {
         return app.puiga->uipvt.FVisible() ? idsHidePieceValues: idsShowPieceValues;
@@ -1406,11 +1401,6 @@ public:
         return 1;
     }
 
-    virtual bool FCustomSzMenu(void) const
-    {
-        return true;
-    }
-
     virtual int IdsMenu(void) const
     {
         return app.puiga->FInBoardSetup() ? idsExitBoardSetup : idsEnterBoardSetup;
@@ -1447,9 +1437,9 @@ public:
         return 1;
     }
     
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipPlayerLvlUp+(int)icmd-cmdPlayerLvlUp);
+        return idsTipPlayerLvlUp + (int)icmd - cmdPlayerLvlUp;
     }
 };
 
@@ -1472,11 +1462,6 @@ public:
     {
         app.puiga->uidb.Show(!app.puiga->uidb.FVisible());
         return 1;
-    }
-
-    virtual bool FCustomSzMenu(void) const
-    {
-        return true;
     }
 
     virtual int IdsMenu(void) const
@@ -1508,9 +1493,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipLogDepthUp);
+        return idsTipLogDepthUp;
     }
 };
 
@@ -1539,9 +1524,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipLogDepthDown);
+        return idsTipLogDepthDown;
     }
 };
 
@@ -1566,9 +1551,9 @@ public:
         return 1;
     }
 
-    virtual wstring SzTip(void) const
+    virtual int IdsTip(void) const
     {
-        return app.SzLoad(idsTipLogFileToggle);
+        return idsTipLogFileToggle;
     }
 };
 

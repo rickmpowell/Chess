@@ -50,6 +50,7 @@
   Log: Should we hash tags?
   Log: File logging and UIDB logging need to have their own depth
   Log: when hovering over log entries with FEN attributes, hover a mini-board
+  Log: make the logs collapsible
   UI: Add a new game panel
   UI: try to pixel align as many borders as possible
   UI: Move as many drawing objects into classes as possible

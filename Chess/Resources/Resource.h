@@ -10,20 +10,23 @@
 #define idsTipResign			5
 #define idsTipOfferDraw			6
 #define idsTipTest				7
-#define idsTipUndoMove			8
-#define idsTipRedoMove			9
-#define idsTipLogDepthUp		10
-#define idsTipLogDepthDown		11
-#define idsTipLogFileToggle		12
-#define idsTipPlayerLvlUp		13
-#define idsTipPlayerLvlUpBlack	14
-#define idsTipPlayerLvlDown		15
-#define idsTipPlayerLvlDownBlack	16
-#define idsShowPieceValues		17
-#define idsHidePieceValues		18
-#define idsEnterBoardSetup		19
-#define idsExitBoardSetup		20
-#define idsClosePanel			21
+#define idsTipStopTest          8
+#define idsTipUndoMove			9
+#define idsTipRedoMove			10
+#define idsTipLogDepthUp		11
+#define idsTipLogDepthDown		12
+#define idsTipLogFileToggle		13
+#define idsTipPlayerLvlUp		14
+#define idsTipPlayerLvlUpBlack	15
+#define idsTipPlayerLvlDown		16
+#define idsTipPlayerLvlDownBlack	17
+#define idsShowPieceValues		18
+#define idsHidePieceValues		19
+#define idsEnterBoardSetup		20
+#define idsExitBoardSetup		21
+#define idsClosePanel			22
+#define idsMenuTest             23
+#define idsMenuStopTest         24
 
 /*
  *	Dialog definitions

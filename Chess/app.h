@@ -73,11 +73,11 @@ public:
 	virtual int Execute(void);
 	virtual bool FEnabled(void) const;
 	virtual bool FChecked(void) const;
-	virtual bool FCustomSzMenu(void) const;
 	virtual wstring SzMenu(void) const;
 	virtual void InitMenu(HMENU hmenu);
 	virtual int IdsMenu(void) const;
 	virtual wstring SzTip(void) const;
+	virtual int IdsTip(void) const;
 };
 
 
