@@ -869,6 +869,10 @@ Done:
  */
 void UIGA::Test(void)
 {
+	if (fInTest) {
+		fInterruptPumpMsg = true;
+		return;
+	}
 	TEST testRoot(*this, nullptr);
 	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
 	testRoot.Add(new TESTPERFT(*this, &testRoot));

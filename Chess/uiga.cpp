@@ -35,12 +35,12 @@ void UIGA::DiscardRsrcClass(void)
 }
 
 
-UIGA::UIGA(APP& app, GA& ga) : UI(nullptr), 
-							   app(app), ga(ga),
-							   uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uidt(*this), 
-							   uitip(this),
-							   puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
-							   spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0), fInTest(false)
+UIGA::UIGA(APP& app, GA& ga) :	UI(nullptr),
+								app(app), ga(ga),
+								uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uidt(*this),
+								uitip(this),
+								puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
+								spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0), fInTest(false), fInterruptPumpMsg(false)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
 }
@@ -170,7 +170,7 @@ void UIGA::Layout(void)
 	/* draw test window just goes on top */
 
 	rc = RcInterior();
-	rc.Inflate(-120, -120);
+	rc.Inflate(-220, -80);
 	uidt.SetBounds(rc);
 
 }
@@ -557,6 +557,10 @@ void UIGA::PumpMsg(void)
 			continue;
 		::TranslateMessage(&msg);
 		::DispatchMessageW(&msg);
+		if (fInTest && fInterruptPumpMsg) {
+			fInterruptPumpMsg = false;
+			throw EXINT();
+		}
 	}
 }
 

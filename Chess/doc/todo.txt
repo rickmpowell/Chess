@@ -1,3 +1,4 @@
+  Interrupting perft tests doesn't clean up and abort right
   Game controls don't redraw when game starts
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
     hit testing, but the APP does the mouse dispatching. Either the UIGA or APP should do both.
@@ -26,7 +27,6 @@
   Test: Don't display resign/draw controls during test playback
   Test: Aborting Undo test doesn't stop the entire test run - it just keeps on to player test run
   Test: We're erroneously reporting success when aborting test run
-  Test: Clicking test button in UIDB should interrupt a running test
   Test: add option to choose which PGN files to run
   Test: add options for which tests to run
   Test: if no pgn files in a directory, file enumeration crashes
@@ -82,6 +82,7 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Test: Clicking test button in UIDB should interrupt a running test
 * Limit UI during message pumps in test
 * BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon
 * UI: Implement disabled menu items hooked to the CMD

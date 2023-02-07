@@ -68,6 +68,7 @@ public:
 	DWORD msecLast;	// time of last move
 
 	bool fInTest;
+	bool fInterruptPumpMsg;
 
 public:
 	UIGA(APP& app, GA& ga);
