@@ -60,13 +60,11 @@
   UIPL: Move level control into the chooser
   Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
-  ML: I don't think move list is baseline aligned - problem with descenders? 
   ML: Take advantage of DrawSzFit in move list, etc. to  make move list narrower
   Use UCI (universal chess interface) to communicate to UI from AI
   UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
   ML: Scrollbar thumb isn't resizing when move list gets long enough to have a thumb
-  ML: Reize icons in move list slightly larger than text
   ML: If text in move list gets too small, replace icons with letters
   UI: Scale buttons to size of window
   UITI: Layout using font metrics
@@ -87,6 +85,8 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* ML: I don't think move list is baseline aligned - problem with descenders? 
+* ML: Reize icons in move list slightly larger than text
 * UIBD: Hilite last made move on board
 * Cross isn't dragging in board setup in piece delete
 * Background of UIPL doesn't match in the title box

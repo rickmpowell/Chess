@@ -180,7 +180,7 @@ class UIML : public UIPS
 	TX* ptxPiece;
 	float mpcoldx[4];
 	float dxCellMarg, dyCellMarg;
-	float dyList;
+	float dyList, dyListBaseline;
 
 	float XFromCol(int col) const;
 	float DxFromCol(int col) const;

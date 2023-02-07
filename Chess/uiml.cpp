@@ -754,8 +754,9 @@ SIZ UIML::SizLayoutPreferred(void)
 {
 	/* I think this is the longest possible move text */
 	SIZ sizText = SizFromSz(L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
-	SIZ sizPiece = SizFromSz(L"\x2659", ptxPiece);
+	SIZ sizPiece = SizFromSz(L"\x2654", ptxPiece);
 	dyList = max(sizText.height, sizPiece.height) +2*dyCellMarg;
+	dyListBaseline = DyBaselineSz(L"\x2654", ptxPiece);
 
 	mpcoldx[0] = dxCellMarg+SizFromSz(L"100.", ptxList).width;
 	mpcoldx[1] = mpcoldx[2] = dxCellMarg + sizText.width + sizPiece.width;
@@ -868,7 +869,16 @@ void UIML::DrawAndMakeMvu(const RC& rc, BDG& bdg, MVU mvu)
 	rcText.top += dyCellMarg;
 	rcText.bottom -= dyCellMarg;
 	rcText.left += dxCellMarg;
-	DrawSz(sz, ptxList, rcText);
+	if (FChChessPiece(sz[0])) {
+		wchar_t szPiece[2] = { sz[0], 0 };
+		float dx = SizFromSz(szPiece, ptxPiece).width;
+		DrawSzBaseline(szPiece, ptxPiece, rcText, dyListBaseline);
+		rcText.left += dx;
+		DrawSzBaseline(sz.c_str()+1, ptxList, rcText, dyListBaseline);
+	}
+	else {
+		DrawSzBaseline(sz, ptxList, rcText, dyListBaseline);
+	}
 }
 
 
@@ -888,7 +898,7 @@ void UIML::DrawMoveNumber(const RC& rc, int imv)
 	*pch++ = chPeriod;
 	*pch = 0;
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_TRAILING);
-	DrawSz(wstring(sz), ptxList, rcText);
+	DrawSzBaseline(wstring(sz), ptxList, rcText, dyListBaseline);
 }
 
 
