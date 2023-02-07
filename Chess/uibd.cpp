@@ -247,7 +247,7 @@ void UIBD::Draw(const RC& rcDraw)
 }
 
 
-ColorF UIBD::CoFore(void) const
+ColorF UIBD::CoText(void) const
 {
 	return uiga.FInBoardSetup() ? coBoardBWDark : coBoardDark; 
 }

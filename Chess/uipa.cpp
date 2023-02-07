@@ -625,7 +625,7 @@ ColorF UIBB::CoBack(void) const
 
 UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, cmdClosePanel, L"\x2713 Done"), szTitle(szTitle)
 {
-	btnClose.SetCoFore(coWhite);
+	btnClose.SetCoText(coWhite);
 	btnClose.SetCoBack(coBlack);
 }
 

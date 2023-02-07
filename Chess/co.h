@@ -35,6 +35,7 @@ const ColorF coTipBack(1.0f, 1.0f, 0.85f);
 const ColorF coButtonBarBack(0.92f, 0.91f, 0.85f);
 const ColorF coBtnText(0, 0, 0);
 const ColorF coBtnHilite(1, 0, 0);
+const ColorF coBtnDisabled(0.75f, 0.75f, 0.75f);
 
 const ColorF coStaticText(0, 0, 0);
 

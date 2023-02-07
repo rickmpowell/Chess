@@ -1,7 +1,6 @@
   When tests running, change Test menu item text to "Stop Test" and change tooltip on test button
   For Chess960, need a special castling flag in the MV (use apcPromote?)
   Interrupting perft tests doesn't clean up and abort right
-  Game controls don't redraw when game starts
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
     hit testing, but the APP does the mouse dispatching. Either the UIGA or APP should do both.
   Can we use a different mixing mode than using opacity for annotations?
@@ -74,7 +73,6 @@
   UI: Implement labeled icon buttons
   UI for specifying human player names
   UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
-  UI: Implement disabled buttons that hook to CMD
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
   ML: Add a UI for offering draws
@@ -84,6 +82,8 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* UI: Implement disabled buttons that hook to CMD
+* Game controls don't redraw when game starts
 * Test: Clicking test button in UIDB should interrupt a running test
 * Limit UI during message pumps in test
 * BUG: dragging UIPCP icons doesn't update the icons themselves when dragging over the icon

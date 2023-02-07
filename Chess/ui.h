@@ -108,7 +108,7 @@ protected:
 	vector<UI*> vpuiChild;
 	RC rcBounds;	// rectangle is in global coordinates
 	bool fVisible;
-	ColorF coFore, coBack;
+	ColorF coText, coBack;
 
 public:
 	
@@ -175,6 +175,7 @@ public:
 	/* command dispatch */
 
 	virtual void DispatchCmd(int cmd);
+	virtual bool FEnabledCmd(int cmd) const;
 
 	/* tool tips */
 
@@ -218,9 +219,9 @@ public:
 
 	/* drawing primitives */
 
-	void SetCoFore(ColorF co);
+	void SetCoText(ColorF co);
 	void SetCoBack(ColorF co);
-	virtual ColorF CoFore(void) const;
+	virtual ColorF CoText(void) const;
 	virtual ColorF CoBack(void) const;
 	void FillRc(const RC& rc, BR* pbr) const;
 	void FillRc(const RC& rc, ColorF co) const;
@@ -272,7 +273,7 @@ public:
 public:
 	BTN(UI* puiParent, int cmd);
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
-
+	virtual ColorF CoText(void) const;
 	void Track(bool fTrackNew);
 	void Hilite(bool fHiliteNew);
 

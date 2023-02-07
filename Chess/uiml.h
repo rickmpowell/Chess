@@ -100,7 +100,7 @@ public:
 	virtual SIZ SizLayoutPreferred(void);
 	
 	virtual void Draw(const RC& rcUpdate);
-	virtual ColorF CoFore(void) const;
+	virtual ColorF CoText(void) const;
 	virtual ColorF CoBack(void) const;
 
 	void Flag(bool fFlag);

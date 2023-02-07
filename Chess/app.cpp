@@ -138,6 +138,14 @@ int VCMD::Execute(int icmd)
 }
 
 
+bool VCMD::FEnabled(int icmd)
+{
+	assert(icmd < size());
+	assert((*this)[icmd]);
+	return (*this)[icmd]->FEnabled();
+}
+
+
 /*  VCMD::InitMenu
  *
  *  Called before the given menu drops something down, so that variable menu text

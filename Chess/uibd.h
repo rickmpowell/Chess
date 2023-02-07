@@ -111,7 +111,7 @@ public:
 	RC RcGetDrag(void);
 	RC RcFromSq(SQ sq) const;
 
-	virtual ColorF CoFore(void) const; 
+	virtual ColorF CoText(void) const; 
 	virtual ColorF CoBack(void) const; 
 
 	void FlipBoard(CPC cpcNew);
@@ -253,7 +253,7 @@ public:
 
 	virtual void Draw(const RC& rcUpdate);
 	RC RcFromSq(SQ sq) const;
-	virtual ColorF CoFore(void) const { return coBoardBWDark; }
+	virtual ColorF CoText(void) const { return coBoardBWDark; }
 	virtual ColorF CoBack(void) const { return coBoardBWLight; }
 };
 

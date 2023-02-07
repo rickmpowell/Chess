@@ -86,7 +86,7 @@ public:
 	virtual void InvalRc(const RC& rc, bool fErase) const;
 	virtual void Layout(void);
 	virtual ColorF CoBack(void) const { return coGameBack; }
-	virtual ColorF CoFore(void) const { return coGameText; }
+	virtual ColorF CoText(void) const { return coGameText; }
 
 	/*
 	 *	Commands
@@ -95,6 +95,7 @@ public:
 	virtual void DispatchCmd(int cmd);
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTipFromCmd(int cmd) const;
+	virtual bool FEnabledCmd(int cmd) const;
 	bool FInBoardSetup(void) const;
 	bool FEnableCmds(void) const;
 

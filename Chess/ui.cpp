@@ -162,7 +162,7 @@ TX* UI::PtxCreate(float dyHeight, bool fBold, bool fItalic)
  *	by connecting it to the parent.
  */
 UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0), fVisible(fVisible),
-		coFore(coStdText), coBack(coStdBack)
+		coText(coStdText), coBack(coStdBack)
 {
 	if (puiParent)
 		puiParent->AddChild(this);
@@ -170,7 +170,7 @@ UI::UI(UI* puiParent, bool fVisible) : puiParent(puiParent), rcBounds(0, 0, 0, 0
 
 
 UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent), rcBounds(rcBounds), fVisible(fVisible),
-		coFore(coStdText), coBack(coStdBack)
+		coText(coStdText), coBack(coStdBack)
 {
 	if (puiParent) {
 		puiParent->AddChild(this);
@@ -532,10 +532,29 @@ void UI::TickTimer(TID tid, DWORD msecCur)
 }
 
 
+/*	UI::DispatchCmd
+ *
+ *	Dispatches a command. We simply propogate the command id to the parent. It is up to the
+ *	top level UI element to intercept this command and do something with it.
+ */
 void UI::DispatchCmd(int cmd)
 {
 	if (puiParent)
 		puiParent->DispatchCmd(cmd);;
+}
+
+
+/*	UI::FEnabledCmd
+ *
+ *	Returns true if the given command is enabled. This works by just propogating the command
+ *	up through the parent chain until we find a UI elment tha thandles these commands.
+ */
+bool UI::FEnabledCmd(int cmd) const
+{
+	if (puiParent)
+		return puiParent->FEnabledCmd(cmd);
+	else
+		return true;
 }
 
 
@@ -687,7 +706,7 @@ void UI::RedrawNoChildren(const RC& rc, bool fParentDrawn)
 	App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 	RC rcDraw = RcLocalFromGlobal(rc);
 	COLORBRS colorbrsBack(pbrBack, CoBack());
-	COLORBRS colorbrsText(pbrText, CoFore());
+	COLORBRS colorbrsText(pbrText, CoText());
 	Erase(rcDraw, fParentDrawn);
 	Draw(rcDraw);
 	App().pdc->PopAxisAlignedClip();
@@ -873,9 +892,9 @@ void UI::EndDraw(void)
 }
 
 
-void UI::SetCoFore(ColorF co)
+void UI::SetCoText(ColorF co)
 {
-	coFore = co;
+	coText = co;
 }
 
 void UI::SetCoBack(ColorF co)
@@ -883,9 +902,9 @@ void UI::SetCoBack(ColorF co)
 	coBack = co;
 }
 
-ColorF UI::CoFore(void) const
+ColorF UI::CoText(void) const
 {
-	return coFore;
+	return coText;
 }
 
 
@@ -1207,6 +1226,7 @@ void UI::FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, C
 	FillRotateGeom(pgeom, ptOffset, dxyScale, angle, pbrText);
 }
 
+
 /*
  *
  *	BTN classes
@@ -1226,6 +1246,21 @@ void BTN::Erase(const RC& rcUpdate, bool fParentDrawn)
 	TransparentErase(rcUpdate, fParentDrawn);
 }
 
+ColorF CoBlend(ColorF co1, ColorF co2, float pct)
+{
+	return ColorF(co1.r * (1.0f - pct) + co2.r * pct,
+				  co1.g * (1.0f - pct) + co2.g * pct,
+				  co1.b * (1.0f - pct) + co2.b * pct);
+}
+
+ColorF BTN::CoText(void) const
+{
+	return FEnabledCmd(cmd) ?
+		CoBlend(coBtnText, coBtnHilite, (float)(fHilite + fTrack) / 2.0f) :
+		coBtnDisabled;
+
+}
+
 void BTN::Track(bool fTrackNew) 
 {
 	fTrack = fTrackNew;
@@ -1242,6 +1277,8 @@ void BTN::Hilite(bool fHiliteNew)
 
 void BTN::StartLeftDrag(const PT& pt)
 {
+	if (!FEnabledCmd(cmd))
+		return;
 	SetDrag(this);
 	Track(true);
 }
@@ -1251,6 +1288,8 @@ void BTN::EndLeftDrag(const PT& pt, bool fClick)
 {
 	ReleaseDrag();
 	Track(false);
+	if (!FEnabledCmd(cmd))
+		return;
 	if (RcInterior().FContainsPt(pt))
 		DispatchCmd(cmd);
 }
@@ -1264,6 +1303,8 @@ void BTN::LeftDrag(const PT& pt)
 
 void BTN::MouseHover(const PT& pt, MHT mht)
 {
+	if (!FEnabledCmd(cmd))
+		return;
 	if (mht == mhtEnter) {
 		Hilite(true);
 		ShowTip(this, true);
@@ -1309,13 +1350,6 @@ BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
 }
 
 
-ColorF CoBlend(ColorF co1, ColorF co2, float pct)
-{
-	return ColorF(co1.r * (1.0f - pct) + co2.r * pct,
-		co1.g * (1.0f - pct) + co2.g * pct,
-		co1.b * (1.0f - pct) + co2.b * pct);
-}
-
 
 void BTNCH::Draw(const RC& rcUpdate)
 {
@@ -1325,7 +1359,7 @@ void BTNCH::Draw(const RC& rcUpdate)
 	sz[1] = 0;
 	RC rcChar(PT(0, 0), SizFromSz(sz, ptxButton));
 	RC rcTo = RcInterior();
-	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), coBtnHilite, (float)(fHilite + fTrack) / 2.0f));
+	COLORBRS colorbrsSav(pbrsButton, CoText());
 	rcChar += rcTo.PtCenter();
 	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
 	DrawSzCenter(sz, ptxButton, rcChar, pbrsButton);
@@ -1387,7 +1421,7 @@ void BTNTEXT::Draw(const RC& rcUpdate)
 	CreateRsrc();
 	RC rcText(PT(0, 0), SizFromSz(szText, ptxButton));
 	RC rcTo = RcInterior();
-	COLORBRS colorbrsSav(pbrsButton, CoBlend(CoFore(), coBtnHilite, (float)(fHilite + fTrack) / 2.0f));
+	COLORBRS colorbrsSav(pbrsButton, CoText());
 	rcText += rcTo.PtCenter() - rcText.PtCenter();
 	DrawSzCenter(szText, ptxButton, rcText, pbrsButton);
 }
@@ -1442,7 +1476,7 @@ void BTNIMG::Draw(const RC& rcUpdate)
 		float dxy = (rcTo.DyHeight() - rcFrom.DyHeight()) / 2.0f;
 		rcTo.Inflate(-dxy, -dxy);
 	}
-	COLORBRS colorbrsSav(pbrText, CoBlend(CoFore(), coBtnHilite, (float)(fHilite + fTrack) * 0.5f));
+	COLORBRS colorbrsSav(pbrText, CoText());
 	pdc->FillOpacityMask(pbmp, pbrText, D2D1_OPACITY_MASK_CONTENT_GRAPHICS, rcTo, rcFrom);
 }
 
@@ -1548,7 +1582,7 @@ void BTNGEOM::Draw(const RC& rcUpdate)
 {
 	float dxyScale = RcInterior().DxWidth() / 2.0f;
 	FillGeom(pgeom, RcInterior().PtCenter(), dxyScale,
-			 CoBlend(CoFore(), coBtnHilite, (fHilite + fTrack) * 0.5f));
+			 CoBlend(CoText(), coBtnHilite, (fHilite + fTrack) * 0.5f));
 }
 
 
@@ -1574,9 +1608,9 @@ void SPIN::CreateRsrc(void)
 		return;
 
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		14.0f, L"",
-		&ptxSpin);
+									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+									 14.0f, L"",
+									 &ptxSpin);
 }
 
 
@@ -1610,5 +1644,6 @@ void SPIN::Draw(const RC& rcUpdate)
 	SIZ siz = SizFromSz(szValue, ptxSpin);
 	RC rc = RcInterior();
 	rc.Offset(PT(0, (rc.DyHeight() - siz.height) / 2));
+	COLORBRS colorbrs(pbrText, btngeomDown.CoText());
 	DrawSzCenter(szValue, ptxSpin, rc);
 }

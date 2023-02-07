@@ -96,6 +96,7 @@ public:
 	~VCMD(void);
 	void Add(CMD* pcmd);
 	int Execute(int icmd);
+	bool FEnabled(int icmd);
 	void InitMenu(HMENU hmenu);
 	wstring SzTip(int cmd);
 };

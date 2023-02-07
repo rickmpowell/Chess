@@ -196,5 +196,5 @@ public:
 	virtual void Layout(void);
 	virtual void Draw(const RC& rcUpdate);
 	virtual ColorF CoBack(void) const { return coBlack; }
-	virtual ColorF CoFore(void) const { return coWhite; }
+	virtual ColorF CoText(void) const { return coWhite; }
 };

@@ -260,6 +260,12 @@ void UIGA::DispatchCmd(int cmd)
 }
 
 
+bool UIGA::FEnabledCmd(int cmd) const
+{
+	return app.vcmd.FEnabled(cmd);
+}
+
+
 /*	UIGA::FEnableCmds
  *
  *	There are states where we need to bulk disable a lot of the UI. This function is that

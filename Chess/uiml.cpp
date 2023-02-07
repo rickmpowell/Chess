@@ -428,7 +428,7 @@ ColorF UICLOCK::CoBack(void) const
 	return FTimeOutWarning(dmsec) ? coClockWarningBack : coClockBack;
 }
 
-ColorF UICLOCK::CoFore(void) const
+ColorF UICLOCK::CoText(void) const
 {
 	DWORD dmsec = uiga.mpcpcdmsecClock[cpc];
 	return FTimeOutWarning(dmsec) ? coClockWarningText : coClockText;
