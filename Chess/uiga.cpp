@@ -367,6 +367,8 @@ void UIGA::StartGame(SPMV spmv)
 	tidClock = StartTimer(this, 10);
 	msecLast = app.MsecMessage();
 	StartClock(ga.bdg.cpcToMove, app.MsecMessage());
+	uiml.Layout();
+	uiml.Redraw();
 }
 
 

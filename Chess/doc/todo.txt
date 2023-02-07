@@ -1,3 +1,5 @@
+  When tests running, change Test menu item text to "Stop Test" and change tooltip on test button
+  For Chess960, need a special castling flag in the MV (use apcPromote?)
   Interrupting perft tests doesn't clean up and abort right
   Game controls don't redraw when game starts
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
@@ -5,7 +7,7 @@
   Can we use a different mixing mode than using opacity for annotations?
   Should we support move numbers that don't start at 1? For PGN and FEN reads?
   Test reading PGN files that don't have white to start
-  Save thinking time with each move
+  Save thinking time with each move in the move log
   Allow each player to use different time controls
   When AIs are playing moves aren't animated
   PGN files that start in standard position shouldn't save FEN
