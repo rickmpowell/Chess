@@ -132,6 +132,8 @@ int VCMD::Execute(int icmd)
 {
 	assert(icmd < size());
 	assert((*this)[icmd] != nullptr);
+	if (!(*this)[icmd]->FEnabled())
+		return 1;
 	return (*this)[icmd]->Execute();
 }
 
@@ -143,9 +145,11 @@ int VCMD::Execute(int icmd)
  */
 void VCMD::InitMenu(HMENU hmenu)
 {
-	for (size_t icmd = 0; icmd < size(); icmd++)
-		if ((*this)[icmd])
+	for (int icmd = 0; icmd < size(); icmd++) {
+		if ((*this)[icmd]) {
 			(*this)[icmd]->InitMenu(hmenu);
+		}
+	}
 }
 
 
@@ -181,7 +185,12 @@ int CMD::Execute(void)
 
 bool CMD::FEnabled(void) const
 {
-	return true;
+	return app.FEnableCmds();
+}
+
+bool CMD::FChecked(void) const
+{
+	return false;
 }
 
 
@@ -206,11 +215,27 @@ wstring CMD::SzMenu(void) const
 
 void CMD::InitMenu(HMENU hmenu)
 {
-	if (!FCustomSzMenu())
-		return;
-	int mf = MF_UNCHECKED | MF_ENABLED;
+	MENUITEMINFOW mi;
+	memset(&mi, 0, sizeof(mi));
+	mi.cbSize = sizeof(mi);
+	mi.fMask = MIIM_STATE;
+	mi.fState = MFS_UNCHECKED | MFS_ENABLED;
+	assert(mi.fState == 0);
+	if (!FEnabled())
+		mi.fState |= MFS_DISABLED | MF_GRAYED;
+	if (FChecked())
+		mi.fState |= MFS_CHECKED;
 	UINT cmd = (UINT)icmd;
-	::ModifyMenuW(hmenu, cmd, MF_BYCOMMAND | MF_STRING | mf, cmd, SzMenu().c_str());
+	if (FCustomSzMenu()) {
+		mi.fMask |= MIIM_TYPE;
+		wchar_t szText[256];
+		lstrcpy(szText, SzMenu().c_str());
+		mi.dwTypeData = szText;
+		::SetMenuItemInfoW(hmenu, cmd, false, &mi);
+	}
+	else
+		::SetMenuItemInfoW(hmenu, cmd, false, &mi);
+
 }
 
 

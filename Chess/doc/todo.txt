@@ -74,7 +74,6 @@
   UI for specifying human player names
   Limit UI during message pumps in test and AI
   UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
-  UI: Implement disabled menu items hooked to the CMD
   UI: Implement disabled buttons that hook to CMD
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
@@ -85,6 +84,7 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* UI: Implement disabled menu items hooked to the CMD
 * ML: I don't think move list is baseline aligned - problem with descenders? 
 * ML: Reize icons in move list slightly larger than text
 * UIBD: Hilite last made move on board

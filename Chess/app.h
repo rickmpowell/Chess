@@ -72,6 +72,7 @@ public:
 	virtual ~CMD(void) { }
 	virtual int Execute(void);
 	virtual bool FEnabled(void) const;
+	virtual bool FChecked(void) const;
 	virtual bool FCustomSzMenu(void) const;
 	virtual wstring SzMenu(void) const;
 	virtual void InitMenu(HMENU hmenu);
@@ -197,6 +198,7 @@ class GA;
 class APP : public D2
 {
 	friend class UIGA;
+	friend class CMD;
 
 public:
 
@@ -252,6 +254,7 @@ private:
 	void DiscardRsrcSize(void);
 
 	void InitCmdList(void);
+	bool FEnableCmds(void) const;
 
 	void Redraw(void);
 	void Redraw(RC rc);

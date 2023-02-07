@@ -93,6 +93,7 @@ public:
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTipFromCmd(int cmd) const;
 	bool FInBoardSetup(void) const;
+	bool FEnableCmds(void) const;
 
 	/*
 	 *	Mouse and keyboard interface

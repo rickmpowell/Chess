@@ -1659,6 +1659,7 @@ public:
         app.puiga->uidt.Show(!app.puiga->uidt.FVisible());
         return 1;
     }
+
 };
 
 
@@ -1742,6 +1743,13 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_60_30_15, 60, -1));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_20, 20, 0));
     vcmd.Add(new CMDSHOWDRAWTEST(*this, cmdShowDrawTest));
+}
+
+
+bool APP::FEnableCmds(void) const
+{
+    /* bulk disabling of commands can be done here */
+    return puiga->FEnableCmds();
 }
 
 

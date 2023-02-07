@@ -260,6 +260,19 @@ void UIGA::DispatchCmd(int cmd)
 }
 
 
+/*	UIGA::FEnableCmds
+ *
+ *	There are states where we need to bulk disable a lot of the UI. This function is that
+ *	bulk state. Any commands that need to work outside this state need to override
+ *	CMD::FEnabled, and any commands that override CMD::FEnabled need to take this state
+ *	into consideration.
+ */
+bool UIGA::FEnableCmds(void) const
+{
+	return true;
+}
+
+
 /*	UIGA::FInBoardSetup
  *
  *	Returns true if we're in board setup mode. Game play is blocked while we're in this
