@@ -188,7 +188,7 @@ class UIML : public UIPS
 	RC RcFromImv(int imv) const;
 
 	BDG bdgInit;	// initial board at the start of the game list
-	int64_t imvuSel;
+	int imvuSel;
 	UIPL uiplWhite, uiplBlack;
 	UICLOCK uiclockWhite, uiclockBlack;
 	UIGC uigc;
@@ -212,14 +212,14 @@ public:
 
 	void DrawAndMakeMvu(const RC& rc, BDG& bdg, MVU mvu);
 	void DrawMoveNumber(const RC& rc, int imv);
-	void DrawSel(int64_t imv);
-	void SetSel(int64_t imv, SPMV spmv);
+	void DrawSel(int imv);
+	void SetSel(int imv, SPMV spmv);
 
-	bool FMakeVis(int64_t imv);
+	bool FMakeVis(int imv);
 	void UpdateContSize(void);
 	virtual float DyLine(void) const;
 
-	HTML HtmlHitTest(const PT& pt, int64_t* pimv);
+	HTML HtmlHitTest(const PT& pt, int* pimv);
 	virtual void StartLeftDrag(const PT& pt);
 	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);

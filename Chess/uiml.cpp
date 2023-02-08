@@ -618,7 +618,7 @@ void UICLOCK::DrawFlag(void) const
 
 
 UIML::UIML(UIGA& uiga) : UIPS(uiga),  
-		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), imvuSel(0),
+		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), dyListBaseline(0), imvuSel(0),
 		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack), 
 		uiclockWhite(*this, cpcWhite), uiclockBlack(*this, cpcBlack), uigc(*this)
 {
@@ -830,7 +830,7 @@ void UIML::DrawContent(const RC& rcCont)
  *
  *	Sets the selection
  */
-void UIML::SetSel(int64_t imvu, SPMV spmv)
+void UIML::SetSel(int imvu, SPMV spmv)
 {
 	imvuSel = imvu;
 	if (spmv != spmvHidden)
@@ -843,7 +843,7 @@ void UIML::SetSel(int64_t imvu, SPMV spmv)
  *
  *	Draws the selection in the move list.
  */
-void UIML::DrawSel(int64_t imvu)
+void UIML::DrawSel(int imvu)
 {
 }
 
@@ -943,12 +943,12 @@ void UIML::UpdateContSize(void)
 }
 
 
-bool UIML::FMakeVis(int64_t imv)
+bool UIML::FMakeVis(int imv)
 {
 	return UIPS::FMakeVis(RcContent().top + 4.0f + (imv / 2) * dyList, dyList);
 }
 
-HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
+HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
 {
 	if (pt.x < 0 || pt.x >= RcContent().right)
 		return htmlMiss;
@@ -960,16 +960,16 @@ HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 	int li = (int)floor((pt.y - RcContent().top) / DyLine());
 	if (pt.x < mpcoldx[0])
 		return htmlMoveNumber;
-	int64_t imv = -1;
+	int imv = -1;
 	if (pt.x < mpcoldx[0] + mpcoldx[1])
-		imv = (int64_t)li * 2;
+		imv = li * 2;
 	else if (pt.x < mpcoldx[0] + mpcoldx[1] + mpcoldx[2])
-		imv = (int64_t)li * 2 + 1;
+		imv = li * 2 + 1;
 	if (Ga().FImvFirstIsBlack())
 		imv--;
 	if (imv < 0)
 		return htmlEmptyBefore;
-	if (imv >= (int64_t)uiga.ga.bdg.vmvuGame.size())
+	if (imv >= uiga.ga.bdg.vmvuGame.size())
 		return htmlEmptyAfter;
 	*pimv = imv;
 	return htmlList;
@@ -977,7 +977,7 @@ HTML UIML::HtmlHitTest(const PT& pt, int64_t* pimv)
 
 void UIML::StartLeftDrag(const PT& pt)
 {
-	int64_t imv;
+	int imv;
 	HTML html = HtmlHitTest(pt, &imv);
 	if (html != htmlList)
 		return;

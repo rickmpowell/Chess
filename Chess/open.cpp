@@ -287,11 +287,11 @@ ERR GA::ParseAndProcessMove(const string& szMove)
 {
 	assert(pprocpgn);
 
-	MVU mvu;
+	MVE mve;
 	const char* pch = szMove.c_str();
-	if (bdg.ParseMvu(pch, mvu) == errEndOfFile)
+	if (bdg.ParseMve(pch, mve) == errEndOfFile)
 		return errEndOfFile;
-	pprocpgn->ProcessMvu(mvu);
+	pprocpgn->ProcessMvu(mve);
 	return errNone;
 }
 
@@ -427,7 +427,7 @@ string to_string(TKMV tkmv)
  *	File loading code needs to intercept this exception and add more information
  *	to make the error message complete.
  */
-ERR BDG::ParseMvu(const char*& pch, MVU& mvu)
+ERR BDG::ParseMve(const char*& pch, MVE& mve)
 {
 	VMVE vmve;
 	GenVmve(vmve, ggLegal);
@@ -444,13 +444,13 @@ ERR BDG::ParseMvu(const char*& pch, MVU& mvu)
 	case tkmvBishop:
 	case tkmvKnight:
 	case tkmvPawn:
-		return ParsePieceMvu(vmve, tkmv, pchInit, pch, mvu);
+		return ParsePieceMve(vmve, tkmv, pchInit, pch, mve);
 	case tkmvSquare:
-		return ParseSquareMvu(vmve, sq1, pchInit, pch, mvu);
+		return ParseSquareMve(vmve, sq1, pchInit, pch, mve);
 	case tkmvFile:
-		return ParseFileMvu(vmve, sq1, pchInit, pch, mvu);
+		return ParseFileMve(vmve, sq1, pchInit, pch, mve);
 	case tkmvRank:
-		return ParseRankMvu(vmve, sq1, pchInit, pch, mvu);
+		return ParseRankMve(vmve, sq1, pchInit, pch, mve);
 	case tkmvCastleKing:
 		file = fileKingKnight;
 		goto BuildCastle;
@@ -458,7 +458,7 @@ ERR BDG::ParseMvu(const char*& pch, MVU& mvu)
 		file = fileQueenBishop;
 BuildCastle:
 		rank = RankBackFromCpc(cpcToMove);
-		mvu = MVU(SQ(rank, fileKing), SQ(rank, file), PC(cpcToMove, apcKing));
+		mve = MVE(SQ(rank, fileKing), SQ(rank, file), PC(cpcToMove, apcKing));
 		return errNone;
 	case tkmvWhiteWins:
 	case tkmvBlackWins:
@@ -491,7 +491,7 @@ APC ApcFromTkmv(TKMV tkmv)
 }
 
 
-ERR BDG::ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MVU& mvu) const
+ERR BDG::ParsePieceMve(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MVE& mve) const
 {
 	SQ sq;
 	APC apc = ApcFromTkmv(tkmv);
@@ -502,7 +502,7 @@ ERR BDG::ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const c
 	case tkmvTake:
 		if (TkmvScan(pch, sq) != tkmvSquare)
 			throw EXPARSE(format("Missing destination square (got {})", to_string(tkmv)));
-		mvu = MvuMatchPieceTo(vmve, apc, -1, -1, sq, pchInit, pch);
+		mve = MveMatchPieceTo(vmve, apc, -1, -1, sq, pchInit, pch);
 		break;
 
 	case tkmvSquare:	/* Bc5, Bd3c5, Bd3-c5, Bd3xc5 */
@@ -516,12 +516,12 @@ ERR BDG::ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const c
 		}
 		if (tkmv != tkmvSquare) { /* Bc5 */
 			/* look up piece that can move to this square */
-			mvu = MvuMatchPieceTo(vmve, apc, -1, -1, sq, pchInit, pch);
+			mve = MveMatchPieceTo(vmve, apc, -1, -1, sq, pchInit, pch);
 			break;
 		}
 		/* Bd5c4 */
 		pch = pchNext;
-		mvu = MvuMatchFromTo(vmve, sq, sqTo, pchInit, pch);
+		mve = MveMatchFromTo(vmve, sq, sqTo, pchInit, pch);
 		break;
 	}
 
@@ -537,7 +537,7 @@ ERR BDG::ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const c
 		if (tkmv != tkmvSquare)
 			throw EXPARSE(format("Expected destination square (got {})", to_string(tkmv)));
 		pch = pchNext;
-		mvu = MvuMatchPieceTo(vmve, apc, -1, sq.file(), sqTo, pchInit, pch);
+		mve = MveMatchPieceTo(vmve, apc, -1, sq.file(), sqTo, pchInit, pch);
 		break;
 	}
 
@@ -553,18 +553,18 @@ ERR BDG::ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const c
 		if (tkmv != tkmvSquare)
 			throw EXPARSE(format("Expected a square (got {})", to_string(tkmv)));
 		pch = pchNext;
-		mvu = MvuMatchPieceTo(vmve, apc, sq.rank(), -1, sqTo, pchInit, pch);
+		mve = MveMatchPieceTo(vmve, apc, sq.rank(), -1, sqTo, pchInit, pch);
 		break;
 	}
 
 	default:
 		throw EXPARSE(format("Invalid token {}", to_string(tkmv)));
 	}
-	return ParseMvuSuffixes(mvu, pch);
+	return ParseMveSuffixes(mve, pch);
 }
 
 
-ERR BDG::ParseSquareMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const
+ERR BDG::ParseSquareMve(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVE& mve) const
 {
 	/* e4, e4e5, e4-e5, e4xe5 */
 	const char* pchNext = pch;
@@ -577,16 +577,16 @@ ERR BDG::ParseSquareMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char
 	}
 	if (TkmvScan(pchNext, sq) == tkmvSquare) {
 		pch = pchNext;
-		mvu = MvuMatchFromTo(vmve, sq, sqTo, pchInit, pch);
+		mve = MveMatchFromTo(vmve, sq, sqTo, pchInit, pch);
 	}
 	else { /* e4: plain square is a pawn move */
-		mvu = MvuMatchPieceTo(vmve, apcPawn, -1, -1, sq, pchInit, pch);
+		mve = MveMatchPieceTo(vmve, apcPawn, -1, -1, sq, pchInit, pch);
 	}
-	return ParseMvuSuffixes(mvu, pch);
+	return ParseMveSuffixes(mve, pch);
 }
 
 
-ERR BDG::ParseMvuSuffixes(MVU& mvu, const char*& pch) const
+ERR BDG::ParseMveSuffixes(MVE& mve, const char*& pch) const
 {
 	const char* pchNext = pch;
 	for (;;) {
@@ -605,7 +605,7 @@ ERR BDG::ParseMvuSuffixes(MVU& mvu, const char*& pch) const
 			if (apc == apcNull || apc == apcPawn || apc == apcKing)
 				throw EXPARSE("Not a valid promotion");
 			pch = pchNext;
-			mvu.SetApcPromote(apc);
+			mve.SetApcPromote(apc);
 			break;
 		}
 		case tkmvEnd:
@@ -624,7 +624,7 @@ ERR BDG::ParseMvuSuffixes(MVU& mvu, const char*& pch) const
 }
 
 
-ERR BDG::ParseFileMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const
+ERR BDG::ParseFileMve(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVE& mve) const
 {
 	/* de4, d-e4, dxe4 */
 	const char* pchNext = pch;
@@ -637,12 +637,12 @@ ERR BDG::ParseFileMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*&
 	if (tkmv != tkmvSquare)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
-	mvu = MvuMatchPieceTo(vmve, apcPawn, -1, sq.file(), sqTo, pchInit, pch);
-	return ParseMvuSuffixes(mvu, pch);
+	mve = MveMatchPieceTo(vmve, apcPawn, -1, sq.file(), sqTo, pchInit, pch);
+	return ParseMveSuffixes(mve, pch);
 }
 
 
-ERR BDG::ParseRankMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const
+ERR BDG::ParseRankMve(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVE& mve) const
 {
 	/* 7e4, 7-e4, 7xe4 */
 	const char* pchNext = pch;
@@ -655,14 +655,14 @@ ERR BDG::ParseRankMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*&
 	if (tkmv != tkmvSquare)
 		throw EXPARSE(format("Expected a destination square (got {})", to_string(tkmv)));
 	pch = pchNext;
-	mvu = MvuMatchPieceTo(vmve, apcPawn, sq.rank(), -1, sqTo, pchInit, pch);
-	return ParseMvuSuffixes(mvu, pch);
+	mve = MveMatchPieceTo(vmve, apcPawn, sq.rank(), -1, sqTo, pchInit, pch);
+	return ParseMveSuffixes(mve, pch);
 }
 
 
-MVU BDG::MvuMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
+MVE BDG::MveMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
 {
-	for (MVE mveSearch : vmve) {
+	for (const MVE& mveSearch : vmve) {
 		if (mveSearch.sqTo() == sqTo && mveSearch.apcMove() == apc) {
 			if (fileFrom != -1 && fileFrom != mveSearch.sqFrom().file())
 				continue;
@@ -674,11 +674,11 @@ MVU BDG::MvuMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, 
 	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim - pchFirst)));
 }
 
-MVU BDG::MvuMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
+MVE BDG::MveMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const
 {
-	for (MVE mveSearch : vmve) {
+	for (const MVE& mveSearch : vmve) {
 		if (mveSearch.sqFrom() == sqFrom && mveSearch.sqTo() == sqTo)
-			return (MVU)mveSearch;
+			return mveSearch;
 	}
 	throw EXPARSE(format("{} is not a legal move", string(pchFirst, pchLim-pchFirst)));
 }

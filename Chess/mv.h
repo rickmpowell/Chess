@@ -75,7 +75,7 @@ static_assert(sizeof(MV) == sizeof(uint16_t));
 
 
 class MVU : public MV {
-private:
+protected:
 	uint16_t
 		upcMove : 4,	// the piece that is moving
 		uapcCapt : 3,	// for captures, the piece we take
@@ -230,13 +230,21 @@ public:
 	EV ev;
 	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
-	MVE(MVU mvu = mvuNil) noexcept : MVU(mvu), ev(0), utsc(0) { }
+	inline MVE(void) noexcept { *(uint64_t*)this = (uint32_t)mvuNil; }
+	MVE(MVU mvu) noexcept { *(uint64_t*)this = (uint32_t)mvu; }
 	MVE(MVU mvu, EV ev) noexcept : MVU(mvu), ev(ev), utsc(0) { }
 #pragma warning(suppress:26495)	 
 	MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
+#pragma warning(suppress:26495)	
+	MVE(SQ sqFrom, SQ sqTo, PC pcMove) noexcept {
+		*(uint64_t*)this = 0;
+		usqFrom = sqFrom;
+		usqTo = sqTo;
+		upcMove = pcMove;
+	}
+
 	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
 	inline operator MVU() const noexcept { return *(uint32_t*)this; }
-
 
 	/* comparison operations work on the eval */
 

@@ -667,14 +667,14 @@ public:
 	 *	parsing moves 
 	 */
 
-	ERR ParseMvu(const char*& pch, MVU& mvu);
-	ERR ParsePieceMvu(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MVU& mvu) const;
-	ERR ParseSquareMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const;
-	ERR ParseMvuSuffixes(MVU& mvu, const char*& pch) const;
-	ERR ParseFileMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const;
-	ERR ParseRankMvu(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVU& mvu) const;
-	MVU MvuMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
-	MVU MvuMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	ERR ParseMve(const char*& pch, MVE& mve);
+	ERR ParsePieceMve(const VMVE& vmve, TKMV tkmv, const char* pchInit, const char*& pch, MVE& mve) const;
+	ERR ParseSquareMve(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVE& mve) const;
+	ERR ParseMveSuffixes(MVE& mve, const char*& pch) const;
+	ERR ParseFileMve(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVE& mve) const;
+	ERR ParseRankMve(const VMVE& vmve, SQ sq, const char* pchInit, const char*& pch, MVE& mve) const;
+	MVE MveMatchPieceTo(const VMVE& vmve, APC apc, int rankFrom, int fileFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
+	MVE MveMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFirst, const char* pchLim) const;
 	TKMV TkmvScan(const char*& pch, SQ& sq) const;
 
 	/*

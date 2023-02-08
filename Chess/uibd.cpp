@@ -69,7 +69,7 @@ void UIBD::DiscardRsrc(void)
  *	Constructor for the board screen panel.
  */
 UIBD::UIBD(UIGA& uiga) : UIP(uiga), 
-		pbmpPieces(nullptr), pgeomCross(nullptr), ptxLabel(nullptr),
+		pbmpPieces(nullptr), pgeomCross(nullptr), ptxLabel(nullptr), pbrAnnotation(nullptr), pgeomArrowHead(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), 
@@ -301,8 +301,8 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 			if (FHoverSq(sqDragInit.fIsNil() ? sqHover : sqDragInit, sq, mvu))
 				DrawHoverMove(mvu);
 			if (!mvuHilite.fIsNil() && (mvuHilite.sqFrom() == sq || mvuHilite.sqTo() == sq)) {
-				OPACITYBR opacitybr(pbrBlack, 0.1f);
-				COLORBRS colorbrs(pbrBlack, coRed);
+				OPACITYBR opacitybr(pbrBlack, (rank+file) % 2 ? opacityBoardMoveHilite : 0.2f);
+				COLORBRS colorbrs(pbrBlack, coBoardMoveHilite);
 				FillRc(rcSq, pbrBlack);
 			}
 			DrawPieceSq(sq);

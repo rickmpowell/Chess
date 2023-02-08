@@ -484,9 +484,9 @@ void UIGA::RedoMvu(SPMV spmv)
  *	current game speed mode. imv can be -1 to go to the start of the game, up to
  *	the last move the game.
  */
-void UIGA::MoveToImv(int64_t imv, SPMV spmv)
+void UIGA::MoveToImv(int imv, SPMV spmv)
 {
-	imv = clamp(imv, (int64_t)-1, (int64_t)ga.bdg.vmvuGame.size() - 1);
+	imv = clamp(imv, -1, (int)ga.bdg.vmvuGame.size() - 1);
 	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvuCurLast - imv) > 1) {
 		spmv = spmvAnimateFast;
 		if (abs(ga.bdg.imvuCurLast - imv) > 5)

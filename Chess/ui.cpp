@@ -1117,14 +1117,17 @@ void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, floa
 	for (float dyFont = ptxBase->GetFontSize() - 1.0f; dyFont > 6.0f; dyFont--) {
 		SafeRelease(&play);
 		SafeRelease(&ptx);
-		App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
+		if (App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 										 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 										 dyFont, L"", 
-										 &ptx);
-		App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(),
-										 ptx, 
-										 rcGlobal.DxWidth(), rcGlobal.DyHeight(), 
-										 &play);
+										 &ptx) != S_OK)
+			throw 1;
+
+		if (App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(),
+											 ptx,
+											 rcGlobal.DxWidth(), rcGlobal.DyHeight(),
+											 &play) != S_OK)
+			throw 1;
 		play->GetMetrics(&tm);
 		if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight())
 			break;

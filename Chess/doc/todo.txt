@@ -1,4 +1,3 @@
-  When tests running, change Test menu item text to "Stop Test" and change tooltip on test button
   For Chess960, need a special castling flag in the MV (use apcPromote?)
   Interrupting perft tests doesn't clean up and abort right
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
@@ -83,6 +82,7 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* When tests running, change Test menu item text to "Stop Test" and change tooltip on test button
 * UI: Implement disabled buttons that hook to CMD
 * Game controls don't redraw when game starts
 * Test: Clicking test button in UIDB should interrupt a running test

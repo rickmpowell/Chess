@@ -41,10 +41,12 @@ const ColorF coStaticText(0, 0, 0);
 
 /*  board colors */
 
-const ColorF coBoardDark = ColorF(0.42f, 0.54f, 0.32f);
-const ColorF coBoardLight = ColorF(1.0f, 0.99f, 0.95f);
-const ColorF coBoardBWDark = ColorF(0.5f, 0.5, 0.5f);
-const ColorF coBoardBWLight = ColorF(0.9f, 0.9f, 0.9f);
+const ColorF coBoardDark(0.42f, 0.54f, 0.32f);
+const ColorF coBoardLight(1.0f, 0.99f, 0.95f);
+const ColorF coBoardBWDark(0.5f, 0.5, 0.5f);
+const ColorF coBoardBWLight(0.9f, 0.9f, 0.9f);
+const ColorF coBoardMoveHilite(1.0f, 0.5f, 0);
+const float opacityBoardMoveHilite = 0.1f;
 const ColorF coAnnotation(0.15f, 0.8f, 0.25f);
 const float opacityAnnotation = 0.75f;
 const ColorF coDragDelCircle(0.65f, 0.15f, 0.25f);

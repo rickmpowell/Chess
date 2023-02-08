@@ -134,7 +134,7 @@ public:
 	void MakeMvu(MVU mvu, SPMV spmvMove);
 	void UndoMvu(SPMV spmv);
 	void RedoMvu(SPMV spmv);
-	void MoveToImv(int64_t imv, SPMV spmv);
+	void MoveToImv(int imv, SPMV spmv);
 
 	void InitClocks(void);
 	void StartClock(CPC cpc, DWORD msecCur);
