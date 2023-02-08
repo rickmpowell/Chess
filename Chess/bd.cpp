@@ -1148,7 +1148,7 @@ void BD::ValidateBB(PC pcVal, SQ sq) const noexcept
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) noexcept : gs(gsPlaying), imvuCurLast(-1), imvuPawnOrTakeLast(-1)
+BDG::BDG(void) noexcept : gs(gsPlaying), imveCurLast(-1), imvePawnOrTakeLast(-1)
 {
 }
 
@@ -1163,8 +1163,8 @@ BDG::BDG(const wchar_t* szFEN)
 }
 
 
-BDG::BDG(const BDG& bdg) noexcept : BD(bdg), gs(bdg.gs), vmvuGame(bdg.vmvuGame), 
-		imvuPawnOrTakeLast(bdg.imvuPawnOrTakeLast), imvuCurLast(bdg.imvuCurLast)
+BDG::BDG(const BDG& bdg) noexcept : BD(bdg), gs(bdg.gs), vmveGame(bdg.vmveGame), 
+		imvePawnOrTakeLast(bdg.imvePawnOrTakeLast), imveCurLast(bdg.imveCurLast)
 {
 }
 
@@ -1189,9 +1189,9 @@ void BDG::InitGame(const wchar_t* szFEN)
 
 void BDG::InitGame(void)
 {
-	vmvuGame.clear();
-	imvuCurLast = -1;
-	imvuPawnOrTakeLast = -1;
+	vmveGame.clear();
+	imveCurLast = -1;
+	imvePawnOrTakeLast = -1;
 	SetGs(gsNotStarted);
 }
 
@@ -1285,12 +1285,12 @@ wstring BDG::SzFEN(void) const
 	/* halfmove clock */
 
 	sz += L' ';
-	sz += to_wstring(imvuCurLast - imvuPawnOrTakeLast);
+	sz += to_wstring(imveCurLast - imvePawnOrTakeLast);
 
 	/* fullmove number */
 
 	sz += L' ';
-	sz += to_wstring(1 + imvuCurLast/2);
+	sz += to_wstring(1 + imveCurLast/2);
 
 	return sz;
 }
@@ -1308,19 +1308,19 @@ void BDG::MakeMvu(MVU& mvu) noexcept
 	/* make the move and save the move in the move list */
 
 	MakeMvuSq(mvu);
-	if (++imvuCurLast == vmvuGame.size())
-		vmvuGame.push_back(mvu);
-	else if (mvu != vmvuGame[imvuCurLast]) {
-		vmvuGame[imvuCurLast] = mvu;
+	if (++imveCurLast == vmveGame.size())
+		vmveGame.push_back(mvu);
+	else if (mvu != vmveGame[imveCurLast]) {
+		vmveGame[imveCurLast] = mvu;
 		/* all moves after this in the move list are now invalid */
-		for (size_t imvu = (size_t)imvuCurLast + 1; imvu < vmvuGame.size(); imvu++)
-			vmvuGame[imvu] = mvuNil;
+		for (int imve = imveCurLast + 1; imve < vmveGame.size(); imve++)
+			vmveGame[imve] = mveNil;
 	}
 
 	/* keep track of last pawn move or capture, which is used to detect draws */
 
 	if (mvu.apcMove() == apcPawn || mvu.fIsCapture())
-		imvuPawnOrTakeLast = imvuCurLast;
+		imvePawnOrTakeLast = imveCurLast;
 }
 
 
@@ -1328,10 +1328,10 @@ void BDG::MakeMvuNull(void) noexcept
 {
 	MVU mvu;
 	MakeMvuNullSq(mvu);
-	if (++imvuCurLast == vmvuGame.size())
-		vmvuGame.push_back(mvu);
+	if (++imveCurLast == vmveGame.size())
+		vmveGame.push_back(mvu);
 	else 
-		vmvuGame[imvuCurLast] = mvu;
+		vmveGame[imveCurLast] = mvu;
 }
 
 
@@ -1359,17 +1359,17 @@ wstring BDG::SzMoveAndDecode(MVU mvu)
  */
 void BDG::UndoMvu(void) noexcept
 {
-	if (imvuCurLast < 0)
+	if (imveCurLast < 0)
 		return;
-	if (imvuCurLast == imvuPawnOrTakeLast) {
+	if (imveCurLast == imvePawnOrTakeLast) {
 		/* scan backwards looking for pawn moves or captures */
-		for (imvuPawnOrTakeLast = imvuCurLast-1; imvuPawnOrTakeLast >= 0; imvuPawnOrTakeLast--)
-			if (vmvuGame[imvuPawnOrTakeLast].apcMove() == apcPawn || 
-					vmvuGame[imvuPawnOrTakeLast].fIsCapture())
+		for (imvePawnOrTakeLast = imveCurLast-1; imvePawnOrTakeLast >= 0; imvePawnOrTakeLast--)
+			if (vmveGame[imvePawnOrTakeLast].apcMove() == apcPawn || 
+					vmveGame[imvePawnOrTakeLast].fIsCapture())
 				break;
 	}
-	UndoMvuSq(vmvuGame[imvuCurLast--]);
-	assert(imvuCurLast >= -1);
+	UndoMvuSq(vmveGame[imveCurLast--]);
+	assert(imveCurLast >= -1);
 }
 
 
@@ -1380,13 +1380,13 @@ void BDG::UndoMvu(void) noexcept
  */
 void BDG::RedoMvu(void) noexcept
 {
-	if (imvuCurLast > (int)vmvuGame.size() || vmvuGame[imvuCurLast+1].fIsNil())
+	if (imveCurLast > vmveGame.size() || vmveGame[imveCurLast+1].fIsNil())
 		return;
-	imvuCurLast++;
-	MVU mvu = vmvuGame[imvuCurLast];
-	if (mvu.apcMove() == apcPawn || mvu.fIsCapture())
-		imvuPawnOrTakeLast = imvuCurLast;
-	MakeMvuSq(mvu);
+	imveCurLast++;
+	MVE mve = vmveGame[imveCurLast];
+	if (mve.apcMove() == apcPawn || mve.fIsCapture())
+		imvePawnOrTakeLast = imveCurLast;
+	MakeMvuSq(mve);
 }
 
 
@@ -1476,26 +1476,26 @@ bool BDG::FDraw3Repeat(int cbdDraw) const noexcept
 {
 	if (cbdDraw == 0)
 		return false;
-	if (imvuCurLast - imvuPawnOrTakeLast < (cbdDraw-1) * 2 * 2)
+	if (imveCurLast - imvePawnOrTakeLast < (cbdDraw-1) * 2 * 2)
 		return false;
 	BD bd = *this;
 	int cbdSame = 1;
 	assert(imvuCurLast - 1 >= 0);
-	bd.UndoMvuSq(vmvuGame[imvuCurLast]);
-	bd.UndoMvuSq(vmvuGame[imvuCurLast - 1]);
-	for (int imvu = imvuCurLast - 2; imvu >= imvuPawnOrTakeLast + 2; imvu -= 2) {
-		bd.UndoMvuSq(vmvuGame[imvu]);
-		bd.UndoMvuSq(vmvuGame[imvu - 1]);
+	bd.UndoMvuSq(vmveGame[imveCurLast]);
+	bd.UndoMvuSq(vmveGame[imveCurLast - 1]);
+	for (int imve = imveCurLast - 2; imve >= imvePawnOrTakeLast + 2; imve -= 2) {
+		bd.UndoMvuSq(vmveGame[imve]);
+		bd.UndoMvuSq(vmveGame[imve - 1]);
 		if (bd == *this) {
 			if (++cbdSame >= cbdDraw)
 				return true;
-			imvu -= 2;
+			imve -= 2;
 			/* let's go ahead and back up two more moves here, since we can't possibly 
 			   match the next position */
-			if (imvu < imvuPawnOrTakeLast + 2)
+			if (imve < imvePawnOrTakeLast + 2)
 				break;
-			bd.UndoMvuSq(vmvuGame[imvu]);
-			bd.UndoMvuSq(vmvuGame[imvu - 1]);
+			bd.UndoMvuSq(vmveGame[imve]);
+			bd.UndoMvuSq(vmveGame[imve - 1]);
 			assert(bd != *this);
 		}
 	}
@@ -1508,9 +1508,9 @@ bool BDG::FDraw3Repeat(int cbdDraw) const noexcept
  *	If we've gone 50 moves (black and white both gone 50 moves each) without a pawn move
  *	or a capture. 
  */
-bool BDG::FDraw50Move(int64_t cmvDraw) const noexcept
+bool BDG::FDraw50Move(int cmvDraw) const noexcept
 {
-	return imvuCurLast - imvuPawnOrTakeLast >= cmvDraw * 2;
+	return imveCurLast - imvePawnOrTakeLast >= cmvDraw * 2;
 }
 
 

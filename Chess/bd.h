@@ -602,10 +602,10 @@ class BDG : public BD
 {
 public:
 	GS gs;
-	vector<MVU> vmvuGame;		/* the game moves that resulted in bd board state */
-	int imvuCurLast;		/* position of current last made move, -1 before first move; may be 
+	VMVE vmveGame;		/* the game moves that resulted in bd board state */
+	int imveCurLast;		/* position of current last made move, -1 before first move; may be 
 							   less than vmvGame.size after Undo/Redo */
-	int imvuPawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
+	int imvePawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
 							       detection and 3-move repetition draws) */
 
 public:
@@ -638,7 +638,7 @@ public:
 	void SetGameOver(const VMVE& vmve, const RULE& rule) noexcept;
 	bool FDrawDead(void) const noexcept;
 	bool FDraw3Repeat(int cbdDraw) const noexcept;
-	bool FDraw50Move(int64_t cmvDraw) const noexcept;
+	bool FDraw50Move(int cmvDraw) const noexcept;
 	void SetGs(GS gs) noexcept; 
 
 	/* once the game over state is set, these will test it */

@@ -197,7 +197,7 @@ void PLAI::StartMoveLog(void)
 	cmveTotalEval = 0L;
 #endif
 	stbfTotal.Init();
-	LogOpen(TAG(wjoin(to_wstring(ga.bdg.vmvuGame.size()/2+1) + L".", SzFromCpc(ga.bdg.cpcToMove)),  
+	LogOpen(TAG(wjoin(to_wstring(ga.bdg.vmveGame.size()/2+1) + L".", SzFromCpc(ga.bdg.cpcToMove)),  
 				ATTR(L"FEN", ga.bdg)),
 			L"(" + szName + L")", lgfBold);
 }
@@ -1100,7 +1100,7 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 	case ttmSmart:
 		if (!ga.prule->FUntimed()) {
 			dmsecFlag = ga.DmsecRemaining(bdg.cpcToMove);
-			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, ga.NmvFromImv(bdg.imvuCurLast));
+			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, ga.NmvFromImv(bdg.imveCurLast));
 			/* number of moves left in the game based on total material on the board;
 			   yeah, I know I know, really lame */
 			int cmvDen = WInterpolate(EvMaterialTotal(bdg), 200, 7800, 10, 50);

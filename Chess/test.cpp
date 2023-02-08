@@ -421,7 +421,7 @@ public:
 
 	void UndoFullGame(void)
 	{
-		while (uiga.ga.bdg.imvuCurLast >= 0) {
+		while (uiga.ga.bdg.imveCurLast >= 0) {
 			BDG bdgInit = uiga.ga.bdg;
 			uiga.UndoMvu(spmvHidden);
 			uiga.RedoMvu(spmvHidden);

@@ -188,7 +188,7 @@ class UIML : public UIPS
 	RC RcFromImv(int imv) const;
 
 	BDG bdgInit;	// initial board at the start of the game list
-	int imvuSel;
+	int imveSel;
 	UIPL uiplWhite, uiplBlack;
 	UICLOCK uiclockWhite, uiclockBlack;
 	UIGC uigc;

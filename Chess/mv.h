@@ -230,8 +230,10 @@ public:
 	EV ev;
 	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
+#pragma warning(suppress:26495)	
 	inline MVE(void) noexcept { *(uint64_t*)this = (uint32_t)mvuNil; }
-	MVE(MVU mvu) noexcept { *(uint64_t*)this = (uint32_t)mvu; }
+#pragma warning(suppress:26495)	
+	inline MVE(MVU mvu) noexcept { *(uint64_t*)this = (uint32_t)mvu; }
 	MVE(MVU mvu, EV ev) noexcept : MVU(mvu), ev(ev), utsc(0) { }
 #pragma warning(suppress:26495)	 
 	MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
@@ -259,6 +261,9 @@ public:
 };
 
 static_assert(sizeof(MVE) == sizeof(uint64_t));
+
+
+const MVE mveNil;
 
 
 /*

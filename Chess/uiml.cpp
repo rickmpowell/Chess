@@ -809,19 +809,19 @@ void UIML::DrawContent(const RC& rcCont)
 	float yCont = RcContent().top + 4.0f;
 	if (Ga().FImvFirstIsBlack())
 		DrawMoveNumber(RcFromCol(yCont, 0), 1);
-	for (int imvu = 0; imvu < Ga().bdg.vmvuGame.size(); imvu++) {
-		MVU mvu = uiga.ga.bdg.vmvuGame[imvu];
-		if (Ga().FImvIsWhite(imvu)) {
-			int nmv = Ga().NmvFromImv(imvu);
+	for (int imve = 0; imve < Ga().bdg.vmveGame.size(); imve++) {
+		MVE mve = uiga.ga.bdg.vmveGame[imve];
+		if (Ga().FImvIsWhite(imve)) {
+			int nmv = Ga().NmvFromImv(imve);
 			RC rc = RcFromCol(yCont + (nmv-1) * dyList, 0);
 			DrawMoveNumber(rc, nmv);
 		}
-		if (mvu.fIsNil())
+		if (mve.fIsNil())
 			continue;
-		RC rc = RcFromImv(imvu);
-		if (imvu == imvuSel)
+		RC rc = RcFromImv(imve);
+		if (imve == imvuSel)
 			FillRc(rc, pbrHilite);
-		DrawAndMakeMvu(rc, bdgT, mvu);
+		DrawAndMakeMvu(rc, bdgT, mve);
 	}
 }
 
@@ -936,7 +936,7 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dy = (uiga.ga.bdg.vmvuGame.size()+1) / 2 * dyList;
+	float dy = (uiga.ga.bdg.vmveGame.size()+1) / 2 * dyList;
 	if (dy == 0)
 		dy = dyList;
 	UIPS::UpdateContSize(SIZ(RcContent().DxWidth(), 4.0f + dy));
@@ -969,7 +969,7 @@ HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
 		imv--;
 	if (imv < 0)
 		return htmlEmptyBefore;
-	if (imv >= uiga.ga.bdg.vmvuGame.size())
+	if (imv >= uiga.ga.bdg.vmveGame.size())
 		return htmlEmptyAfter;
 	*pimv = imv;
 	return htmlList;
@@ -999,23 +999,23 @@ void UIML::KeyDown(int vk)
 	switch (vk) {
 	case VK_UP:
 	case VK_LEFT:
-		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast - 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imveCurLast - 1, spmvAnimate);
 		break;
 	case VK_DOWN:
 	case VK_RIGHT:
-		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast + 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imveCurLast + 1, spmvAnimate);
 		break;
 	case VK_HOME:
 		uiga.MoveToImv(0, spmvAnimate);
 		break;
 	case VK_END:
-		uiga.MoveToImv((int)uiga.ga.bdg.vmvuGame.size() - 1, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.vmveGame.size() - 1, spmvAnimate);
 		break;
 	case VK_PRIOR:
-		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast - 5 * 2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imveCurLast - 5*2, spmvAnimate);
 		break;
 	case VK_NEXT:
-		uiga.MoveToImv(uiga.ga.bdg.imvuCurLast + 5*2, spmvAnimate);
+		uiga.MoveToImv(uiga.ga.bdg.imveCurLast + 5*2, spmvAnimate);
 		break;
 	default:
 		break;

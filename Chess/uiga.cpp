@@ -433,7 +433,7 @@ void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 	if (ga.prule->FUntimed())
 		return;
 	mpcpcdmsecClock[cpc] -= msecCur - msecLast;
-	int nmvThis = ga.NmvFromImv(ga.bdg.imvuCurLast+1);
+	int nmvThis = ga.NmvFromImv(ga.bdg.imveCurLast+1);
 	mpcpcdmsecClock[cpc] +=
 		ga.prule->DmsecAddMove(cpc, nmvThis) + ga.prule->DmsecAddBlock(cpc, nmvThis+1);
 	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);
@@ -451,7 +451,7 @@ void UIGA::MakeMvu(MVU mvu, SPMV spmvMove)
 		EndGame(spmvMove);
 	if (spmvMove != spmvHidden) {
 		uiml.UpdateContSize();
-		uiml.SetSel(ga.bdg.imvuCurLast, spmvMove);
+		uiml.SetSel(ga.bdg.imveCurLast, spmvMove);
 	}
 }
 
@@ -463,7 +463,7 @@ void UIGA::MakeMvu(MVU mvu, SPMV spmvMove)
  */
 void UIGA::UndoMvu(SPMV spmv)
 {
-	MoveToImv(ga.bdg.imvuCurLast - 1, spmv);
+	MoveToImv(ga.bdg.imveCurLast - 1, spmv);
 }
 
 
@@ -474,7 +474,7 @@ void UIGA::UndoMvu(SPMV spmv)
  */
 void UIGA::RedoMvu(SPMV spmv)
 {
-	MoveToImv(ga.bdg.imvuCurLast + 1, spmv);
+	MoveToImv(ga.bdg.imveCurLast + 1, spmv);
 }
 
 
@@ -486,19 +486,19 @@ void UIGA::RedoMvu(SPMV spmv)
  */
 void UIGA::MoveToImv(int imv, SPMV spmv)
 {
-	imv = clamp(imv, -1, (int)ga.bdg.vmvuGame.size() - 1);
-	if (FSpmvAnimate(spmv) && abs(ga.bdg.imvuCurLast - imv) > 1) {
+	imv = clamp(imv, -1, ga.bdg.vmveGame.size() - 1);
+	if (FSpmvAnimate(spmv) && abs(ga.bdg.imveCurLast - imv) > 1) {
 		spmv = spmvAnimateFast;
-		if (abs(ga.bdg.imvuCurLast - imv) > 5)
+		if (abs(ga.bdg.imveCurLast - imv) > 5)
 			spmv = spmvAnimateVeryFast;
 	}
-	while (ga.bdg.imvuCurLast > imv)
+	while (ga.bdg.imveCurLast > imv)
 		uibd.UndoMvu(spmv);
-	while (ga.bdg.imvuCurLast < imv)
+	while (ga.bdg.imveCurLast < imv)
 		uibd.RedoMvu(spmv);
 	if (spmv != spmvHidden)
 		uiml.Layout();	// in case game over state changed
-	uiml.SetSel(ga.bdg.imvuCurLast, spmv);
+	uiml.SetSel(ga.bdg.imveCurLast, spmv);
 }
 
 

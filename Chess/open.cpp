@@ -36,8 +36,8 @@ void GA::OpenPGNFile(const wchar_t szFile[])
 	PROCPGNGA procpgngaSav(*this, new PROCPGNOPEN(*this));
 	Deserialize(istkpgn);
 	puiga->uiml.UpdateContSize();
-	puiga->uiml.SetSel((int)bdg.vmvuGame.size() - 1, spmvHidden);
-	puiga->uiml.FMakeVis(bdg.imvuCurLast);
+	puiga->uiml.SetSel(bdg.vmveGame.size() - 1, spmvHidden);
+	puiga->uiml.FMakeVis(bdg.imveCurLast);
 	puiga->Redraw();
 }
 
@@ -686,7 +686,6 @@ MVE BDG::MveMatchFromTo(const VMVE& vmve, SQ sqFrom, SQ sqTo, const char* pchFir
 
 TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 {
-	char ch;
 	int file;
 
 	if (!*pch)
@@ -716,6 +715,7 @@ TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 NextKeyWord: ;
 	}
 
+	char ch;
 	switch (ch = *pch++) {
 	case 'P': return tkmvPawn;
 	case 'B': return tkmvBishop;

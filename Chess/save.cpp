@@ -122,18 +122,18 @@ void GA::SerializeMoveList(ostream& os)
 
 	BDG bdgSav = bdgInit;
 
-	if (bdg.vmvuGame.size() > 0) {
+	if (bdg.vmveGame.size() > 0) {
 		/* first move needs some special handling to put leading "..." on move lists
 		   when black was the first to move */
 		WriteSzLine80(os, szLine, FImvFirstIsBlack()  ? "1... " : "1. ");
-		SerializeMove(os, szLine, bdgSav, bdg.vmvuGame[0]);
-		for (int imvu = 1; imvu < bdg.vmvuGame.size(); imvu++) {
-			MVU mvu = bdg.vmvuGame[imvu];
-			if (mvu.fIsNil())
+		SerializeMove(os, szLine, bdgSav, bdg.vmveGame[0]);
+		for (int imve = 1; imve < bdg.vmveGame.size(); imve++) {
+			MVE mve = bdg.vmveGame[imve];
+			if (mve.fIsNil())
 				continue;
-			if (FImvIsWhite(imvu))
-				WriteSzLine80(os, szLine, to_string(NmvFromImv(imvu)) + ". ");
-			SerializeMove(os, szLine, bdgSav, mvu);
+			if (FImvIsWhite(imve))
+				WriteSzLine80(os, szLine, to_string(NmvFromImv(imve)) + ". ");
+			SerializeMove(os, szLine, bdgSav, mve);
 		}
 	}
 

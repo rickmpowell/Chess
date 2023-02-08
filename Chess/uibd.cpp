@@ -167,9 +167,9 @@ void UIBD::MakeMvu(MVU mvu, SPMV spmv)
 
 void UIBD::UndoMvu(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvuCurLast >= 0) {
-		MVU mvu = uiga.ga.bdg.vmvuGame[uiga.ga.bdg.imvuCurLast];
-		AnimateSqToSq(mvu.sqTo(), mvu.sqFrom(), DframeFromSpmv(spmv));
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imveCurLast >= 0) {
+		MVE mve = uiga.ga.bdg.vmveGame[uiga.ga.bdg.imveCurLast];
+		AnimateSqToSq(mve.sqTo(), mve.sqFrom(), DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.UndoMvu();
 	SetMoveHilite(mvuNil);
@@ -182,9 +182,9 @@ void UIBD::UndoMvu(SPMV spmv)
 
 void UIBD::RedoMvu(SPMV spmv)
 {
-	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imvuCurLast < (int)uiga.ga.bdg.vmvuGame.size()) {
-		MVU mvu = uiga.ga.bdg.vmvuGame[uiga.ga.bdg.imvuCurLast+1];
-		AnimateMvu(mvu, DframeFromSpmv(spmv));
+	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imveCurLast < uiga.ga.bdg.vmveGame.size()) {
+		MVE mve = uiga.ga.bdg.vmveGame[uiga.ga.bdg.imveCurLast+1];
+		AnimateMvu(mve, DframeFromSpmv(spmv));
 	}
 	uiga.ga.bdg.RedoMvu();
 	SetMoveHilite(mvuNil);

@@ -106,7 +106,7 @@ void GA::EndGame(void)
 
 int GA::NmvNextFromCpc(CPC cpc) const
 {
-	return NmvFromImv((int)bdg.vmvuGame.size() + (bdg.cpcToMove != cpc));
+	return NmvFromImv((int)bdg.vmveGame.size() + (bdg.cpcToMove != cpc));
 }
 
 bool GA::FImvIsWhite(int imv) const
