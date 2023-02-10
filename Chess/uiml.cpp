@@ -618,7 +618,7 @@ void UICLOCK::DrawFlag(void) const
 
 
 UIML::UIML(UIGA& uiga) : UIPS(uiga),  
-		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), dyListBaseline(0), imvuSel(0),
+		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), dyListBaseline(0), imveSel(0),
 		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack), 
 		uiclockWhite(*this, cpcWhite), uiclockBlack(*this, cpcBlack), uigc(*this)
 {
@@ -805,23 +805,24 @@ RC UIML::RcFromImv(int imv) const
  */
 void UIML::DrawContent(const RC& rcCont)
 {
-	BDG bdgT(bdgInit);
+	GA& ga(Ga());
 	float yCont = RcContent().top + 4.0f;
-	if (Ga().FImvFirstIsBlack())
+	if (ga.FImvFirstIsBlack())
 		DrawMoveNumber(RcFromCol(yCont, 0), 1);
-	for (int imve = 0; imve < Ga().bdg.vmveGame.size(); imve++) {
-		MVE mve = uiga.ga.bdg.vmveGame[imve];
-		if (Ga().FImvIsWhite(imve)) {
-			int nmv = Ga().NmvFromImv(imve);
+	BDG bdgT(ga.bdgInit);
+	for (int imve = 0; imve < ga.bdg.vmveGame.size(); imve++) {
+		MVE mve = ga.bdg.vmveGame[imve];
+		if (ga.FImvIsWhite(imve)) {
+			int nmv = ga.NmvFromImv(imve);
 			RC rc = RcFromCol(yCont + (nmv-1) * dyList, 0);
 			DrawMoveNumber(rc, nmv);
 		}
 		if (mve.fIsNil())
 			continue;
 		RC rc = RcFromImv(imve);
-		if (imve == imvuSel)
+		if (imve == imveSel)
 			FillRc(rc, pbrHilite);
-		DrawAndMakeMvu(rc, bdgT, mve);
+		DrawAndMakeMv(rc, bdgT, mve);
 	}
 }
 
@@ -830,11 +831,11 @@ void UIML::DrawContent(const RC& rcCont)
  *
  *	Sets the selection
  */
-void UIML::SetSel(int imvu, SPMV spmv)
+void UIML::SetSel(int imve, SPMV spmv)
 {
-	imvuSel = imvu;
+	imveSel = imve;
 	if (spmv != spmvHidden)
-		if (!FMakeVis(imvuSel))
+		if (!FMakeVis(imveSel))
 			Redraw();
 }
 
@@ -843,7 +844,7 @@ void UIML::SetSel(int imvu, SPMV spmv)
  *
  *	Draws the selection in the move list.
  */
-void UIML::DrawSel(int imvu)
+void UIML::DrawSel(int imve)
 {
 }
 
@@ -854,16 +855,16 @@ bool FChChessPiece(wchar_t ch)
 }
 
 
-/*	UIML::DrawAndMakeMvu
+/*	UIML::DrawAndMakeMv
  *
  *	Draws the text of an individual move in the rectangle given, using the
  *	given board bdg and move mv, and makes the move on the board. Note that
  *	the text of the decoded move is dependent on the board to take advantage
  *	of shorter text when there are no ambiguities.
  */
-void UIML::DrawAndMakeMvu(const RC& rc, BDG& bdg, MVU mvu)
+void UIML::DrawAndMakeMv(const RC& rc, BDG& bdg, MVE mve)
 {
-	wstring sz = bdg.SzMoveAndDecode(mvu);
+	wstring sz = bdg.SzMoveAndDecode(mve);
 	TATX tatxSav(ptxList, DWRITE_TEXT_ALIGNMENT_LEADING);
 	RC rcText = rc;
 	rcText.top += dyCellMarg;
@@ -905,7 +906,6 @@ void UIML::DrawMoveNumber(const RC& rc, int imv)
 void UIML::InitGame(void)
 {
 	ShowClocks(!uiga.ga.prule->FUntimed());
-	bdgInit = uiga.ga.bdg;
 	UpdateContSize();
 }
 

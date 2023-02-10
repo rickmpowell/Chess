@@ -1,4 +1,9 @@
-  For Chess960, need a special castling flag in the MV (use apcPromote?)
+  Scroll-wheeling over UIML during test redraws movelist in wrong place
+  Turn off clocks during test, turn back on when done
+  Use gray scale everywhere in board edit mode
+  Block appropriate UI when in board edit mode
+  Disable mouse interface on UIBD when tests running
+  Reimplement castling for Chess960; need a castling flag in the MV (use apcPromote for rook position?)
   Interrupting perft tests doesn't clean up and abort right
   Review mouse hit testing in Hover/Drag when drag capture is on. Currently the UIGA does all 
     hit testing, but the APP does the mouse dispatching. Either the UIGA or APP should do both.
@@ -60,7 +65,6 @@
   UIPL: Move level control into the chooser
   Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
-  ML: Take advantage of DrawSzFit in move list, etc. to  make move list narrower
   Use UCI (universal chess interface) to communicate to UI from AI
   UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
@@ -82,6 +86,8 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* We're sometimes asserting in uiml Draw() when running test and alt-tabbing away and back
+* Make VMVE a template and make generated move lists and game move lists with separate sizes
 * When tests running, change Test menu item text to "Stop Test" and change tooltip on test button
 * UI: Implement disabled buttons that hook to CMD
 * Game controls don't redraw when game starts

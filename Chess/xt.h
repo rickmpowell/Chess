@@ -36,9 +36,9 @@ enum TEV : int {
 	tevEqual = 3
 };
 
-inline int crunch(TEV tev) noexcept { return tev - (tev >> 1); }
-inline bool operator>(TEV tev1, TEV tev2) noexcept { return crunch(tev1) > crunch(tev2); }
-inline bool operator<(TEV tev1, TEV tev2) noexcept { return crunch(tev1) < crunch(tev2); }
+__forceinline int crunch(TEV tev) noexcept { return tev - (tev >> 1); }
+__forceinline bool operator>(TEV tev1, TEV tev2) noexcept { return crunch(tev1) > crunch(tev2); }
+__forceinline bool operator<(TEV tev1, TEV tev2) noexcept { return crunch(tev1) < crunch(tev2); }
 
 
 /*
@@ -63,22 +63,22 @@ private:
 public:
 
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
-	inline XEV(void) { SetNull(); }
-	inline XEV(HABD habd, MVU mvu, TEV tev, EV ev, int depth) { Save(habd, ev, tev, depth, mvu, 0); }
-	inline void SetNull(void) noexcept { *(uint64_t*)this = 0; *((uint64_t*)this + 1) = 0; }
-	inline EV ev(void) const noexcept { return static_cast<EV>(uevBiased)-evBias; }
-	inline void SetEv(EV ev) noexcept { assert(ev < evInf && ev > -evInf);  uevBiased = static_cast<uint16_t>(ev+evBias); }
-	inline TEV tev(void) const noexcept { return static_cast<TEV>(utev); }
-	inline void SetTev(TEV tev) noexcept { utev = static_cast<unsigned>(tev); }
-	inline int depth(void) const noexcept { return static_cast<int>(udepth); }
-	inline void SetDepth(int depth) noexcept { udepth = (unsigned)depth; }
-	inline bool FMatchHabd(HABD habd) const noexcept { return uhabd == habd; }
-	inline void SetHabd(HABD habd) noexcept { uhabd = habd; }
-	inline void SetMvu(MVU mvu) noexcept { this->umvu = mvu; }
-	inline MVU mvu(void) const noexcept { return umvu; }
-	inline void SetAge(unsigned age) noexcept { this->uage = age; }
-	inline unsigned age(void) const noexcept { return uage; }
-	inline void Save(HABD habd, EV ev, TEV tev, int depth, MVU mvu, unsigned age) noexcept {
+	__forceinline XEV(void) { SetNull(); }
+	__forceinline XEV(HABD habd, MVU mvu, TEV tev, EV ev, int depth) { Save(habd, ev, tev, depth, mvu, 0); }
+	__forceinline void SetNull(void) noexcept { *(uint64_t*)this = 0; *((uint64_t*)this + 1) = 0; }
+	__forceinline EV ev(void) const noexcept { return static_cast<EV>(uevBiased)-evBias; }
+	__forceinline void SetEv(EV ev) noexcept { assert(ev < evInf && ev > -evInf);  uevBiased = static_cast<uint16_t>(ev+evBias); }
+	__forceinline TEV tev(void) const noexcept { return static_cast<TEV>(utev); }
+	__forceinline void SetTev(TEV tev) noexcept { utev = static_cast<unsigned>(tev); }
+	__forceinline int depth(void) const noexcept { return static_cast<int>(udepth); }
+	__forceinline void SetDepth(int depth) noexcept { udepth = (unsigned)depth; }
+	__forceinline bool FMatchHabd(HABD habd) const noexcept { return uhabd == habd; }
+	__forceinline void SetHabd(HABD habd) noexcept { uhabd = habd; }
+	__forceinline void SetMvu(MVU mvu) noexcept { this->umvu = mvu; }
+	__forceinline MVU mvu(void) const noexcept { return umvu; }
+	__forceinline void SetAge(unsigned age) noexcept { this->uage = age; }
+	__forceinline unsigned age(void) const noexcept { return uage; }
+	__forceinline void Save(HABD habd, EV ev, TEV tev, int depth, MVU mvu, unsigned age) noexcept {
 		SetHabd(habd);
 		SetEv(ev);
 		SetTev(tev);
@@ -220,7 +220,7 @@ public:
 	 *	Returns a reference to the hash table entry that may or may not be used by the
 	 *	board. Caller is responsible for making sure the entry is valid.
 	 */
-	inline XEV2& operator[](const BDG& bdg) noexcept
+	__forceinline XEV2& operator[](const BDG& bdg) noexcept
 	{
 		return axev2[bdg.habd & cxev2MaxMask];
 	}
@@ -231,7 +231,7 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	inline XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int depth) noexcept
+	__forceinline XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int depth) noexcept
 	{
 		assert(mve.ev != evInf && mve.ev != -evInf);
 #ifndef NOSTATS
@@ -277,7 +277,7 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as depth. Returns nullptr if no such entry exists.
 	 */
-	inline /*__declspec(noinline)*/ XEV* Find(const BDG& bdg, int depth) noexcept
+	__forceinline /*__declspec(noinline)*/ XEV* Find(const BDG& bdg, int depth) noexcept
 	{
 #ifndef NOSTATS
 		cxevProbe++;

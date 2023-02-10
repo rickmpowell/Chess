@@ -276,37 +276,49 @@ const MVE mveNil;
  */
 
 
-const size_t cmvePreMax = 60;
-
-class VMVE
+template<int cmvePreMax> class T_VMVE
 {
 private:
 	uint64_t amve[cmvePreMax];
 	int cmveCur;
+#ifdef OVERFLOW_VMVE
 	vector<uint64_t>* pvmveOverflow;
+#endif
 
 public:
 
 
-	VMVE() : cmveCur(0), pvmveOverflow(nullptr)
+	T_VMVE() : 
+#ifdef OVERFLOW_VMVE
+		pvmveOverflow(nullptr), 
+#endif
+		cmveCur(0)
 	{
 		amve[0] = 0;
 	}
 
 
-	~VMVE()
+	~T_VMVE()
 	{
+#ifdef OVERFLOW_VMVE
 		if (pvmveOverflow)
 			delete pvmveOverflow;
+#endif
 	}
 
 
-	VMVE(const VMVE& vmve) noexcept : cmveCur(vmve.cmveCur), pvmveOverflow(nullptr)
+	T_VMVE(const T_VMVE& vmve) noexcept :
+#ifdef OVERFLOW_VMVE
+		pvmveOverflow(nullptr), 
+#endif
+		cmveCur(vmve.cmveCur)
 	{
 		assert(vmve.FValid());
 		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+#ifdef OVERFLOW_VMVE
 		if (vmve.pvmveOverflow)
 			pvmveOverflow = new vector<uint64_t>(*vmve.pvmveOverflow);
+#endif
 	}
 
 
@@ -314,20 +326,27 @@ public:
 	 *
 	 *	Moves data from one GMV to another. Note that the source GMV is trashed.
 	 */
-	VMVE(VMVE&& vmve) noexcept : cmveCur(vmve.cmveCur), pvmveOverflow(vmve.pvmveOverflow)
+	T_VMVE(T_VMVE&& vmve) noexcept : 
+#ifdef OVERFLOW_VMVE
+		pvmveOverflow(vmve.pvmveOverflow),
+#endif
+		cmveCur(vmve.cmveCur)
 	{
 		assert(vmve.FValid());
 		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
 		vmve.cmveCur = 0;
+#ifdef OVERFLOW_VMVE
 		vmve.pvmveOverflow = nullptr;
+#endif
 	}
 
 
-	VMVE& operator=(const VMVE& vmve)
+	T_VMVE& operator=(const T_VMVE& vmve)
 	{
 		assert(vmve.FValid());
 		cmveCur = vmve.cmveCur;
 		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+#ifdef OVERFLOW_VMVE
 		if (vmve.pvmveOverflow) {
 			if (pvmveOverflow)
 				*pvmveOverflow = *vmve.pvmveOverflow;
@@ -340,23 +359,25 @@ public:
 				pvmveOverflow = nullptr;
 			}
 		}
-		assert(FValid());
+#endif
 		return *this;
 	}
 
 
-	VMVE& operator=(VMVE&& vmve) noexcept
+	T_VMVE& operator=(T_VMVE&& vmve) noexcept
 	{
 		if (this == &vmve)
 			return *this;
 		cmveCur = vmve.cmveCur;
 		memcpy(amve, vmve.amve, min(cmveCur, cmvePreMax) * sizeof(uint64_t));
+#ifdef OVERFLOW_VMVE
 		if (pvmveOverflow != nullptr) {
 			delete pvmveOverflow;
 			pvmveOverflow = nullptr;
 		}
 		pvmveOverflow = vmve.pvmveOverflow;
 		vmve.pvmveOverflow = nullptr;
+#endif
 		return *this;
 	}
 
@@ -364,48 +385,54 @@ public:
 #ifndef NDEBUG
 	bool FValid(void) const noexcept
 	{
+#ifdef OVERFLOW_VMVE
 		return (cmveCur <= cmvePreMax && pvmveOverflow == nullptr) ||
 			(cmveCur > cmvePreMax && pvmveOverflow != nullptr && pvmveOverflow->size() + cmvePreMax == cmveCur);
+#else
+		return cmveCur <= cmvePreMax;
+#endif
 	}
 #endif
 
 
-	inline int cmve(void) const noexcept
+	__forceinline int cmve(void) const noexcept
 	{
 		assert(FValid());
 		return cmveCur;
 	}
 
 
-	inline MVE& operator[](int imve) noexcept
+	__forceinline MVE& operator[](int imve) noexcept
 	{
 		assert(FValid());
 		assert(imve >= 0 && imve < cmveCur);
-		if (imve < cmvePreMax)
-			return *(MVE*)&amve[imve];
-		else {
+#ifdef OVERFLOW_VMVE
+		if (imve >= cmvePreMax) {
 			assert(pvmveOverflow != nullptr);
 			return *(MVE*)&(*pvmveOverflow)[imve - cmvePreMax];
 		}
+#endif
+		return *(MVE*)&amve[imve];
 	}
 
 
-	inline const MVE& operator[](int imve) const noexcept
+	__forceinline const MVE& operator[](int imve) const noexcept
 	{
 		assert(FValid());
 		assert(imve >= 0 && imve < cmveCur);
-		if (imve < cmvePreMax)
-			return *(MVE*)&amve[imve];
-		else {
+#ifdef OVERFLOW_VMVE
+		if (imve >= cmvePreMax) {
 			assert(pvmveOverflow != nullptr);
 			return *(MVE*)&(*pvmveOverflow)[imve - cmvePreMax];
 		}
+#endif
+		return *(MVE*)&amve[imve];
 	}
 
 	/* iterator and const iterator for the arrays */
 
 	class iterator {
-		VMVE* pvmve;
+		T_VMVE* pvmve;
 		int imve;
 	public:
 		using difference_type = int;
@@ -414,7 +441,7 @@ public:
 		using reference = MVE&;
 		using iterator_category = random_access_iterator_tag;
 
-		inline iterator(VMVE* pvmve, difference_type imve) noexcept : pvmve(pvmve), imve(imve) { }
+		inline iterator(T_VMVE* pvmve, difference_type imve) noexcept : pvmve(pvmve), imve(imve) { }
 		inline iterator(const iterator& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
 		inline iterator& operator=(const iterator& it) noexcept { pvmve = it.pvmve; imve = it.imve; return *this; }
 		inline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
@@ -436,7 +463,7 @@ public:
 	};
 
 	class citerator {
-		const VMVE* pvmve;
+		const T_VMVE* pvmve;
 		int imve;
 	public:
 		using difference_type = int;
@@ -445,7 +472,7 @@ public:
 		using reference = const MVE&;
 		typedef random_access_iterator_tag iterator_category;
 
-		inline citerator(const VMVE* pvmve, int imve) noexcept : pvmve(pvmve), imve(imve) { }
+		inline citerator(const T_VMVE* pvmve, int imve) noexcept : pvmve(pvmve), imve(imve) { }
 		inline citerator(const citerator& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
 		//		inline citerator operator=(const citerator& cit) noexcept { pvmve = cit.pvmve; imve = cit.imve; return *this; }
 
@@ -477,7 +504,8 @@ public:
 	inline citerator end(void) const noexcept { return citerator(this, size()); }
 
 
-	void push_back_overflow(MVE mve) noexcept
+#ifdef OVERFLOW_VMVE
+	__declspec(noinline) void push_back_overflow(MVE mve) noexcept
 	{
 		if (pvmveOverflow == nullptr) {
 			assert(cmveCur == cmvePreMax);
@@ -486,26 +514,30 @@ public:
 		pvmveOverflow->push_back(mve);
 		cmveCur++;
 	}
+#endif
 
 
-	inline void push_back(MVU mvu) noexcept
+	__forceinline void push_back(MVE mve) noexcept
 	{
 		assert(FValid());
-		if (cmveCur < cmvePreMax)
-			amve[cmveCur++] = (uint32_t)mvu;
-		else
-			push_back_overflow((uint32_t)mvu);
-		assert(FValid());
+#ifdef OVERFLOW_VMVE
+		if (cmveCur >= cmvePreMax) {
+			push_back_overflow((uint64_t)mve);
+			return;
+		}
+#endif
+		amve[cmveCur++] = (uint64_t)mve;
 	}
 
 
-	inline void push_back(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
+	__forceinline void push_back(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
-		push_back(MVU(sqFrom, sqTo, pcMove));
+		push_back(MVE(sqFrom, sqTo, pcMove));
 	}
 
 
-	void insert_overflow(int imve, const MVE& mve) noexcept
+#ifdef OVERFLOW_VMVE
+	__declspec(noinline) void insert_overflow(int imve, const MVE& mve) noexcept
 	{
 		if (pvmveOverflow == nullptr)
 			pvmveOverflow = new vector<uint64_t>;
@@ -517,24 +549,28 @@ public:
 		}
 		cmveCur++;
 	}
+#endif
 
 
 	inline void insert(int imve, const MVE& mve) noexcept
 	{
 		assert(FValid());
-		if (cmveCur >= cmvePreMax)
+#ifdef OVERFLOW_VMVE
+		if (cmveCur >= cmvePreMax) {
 			insert_overflow(imve, mve);
-		else {
-			memmove(&amve[imve + 1], &amve[imve], sizeof(uint64_t) * (cmveCur - imve));
-			amve[imve] = mve;
-			cmveCur++;
+			return;
 		}
+#endif
+		memmove(&amve[imve + 1], &amve[imve], sizeof(uint64_t) * (cmveCur - imve));
+		amve[imve] = mve;
+		cmveCur++;
 	}
 
 
 	void resize(int cmveNew) noexcept
 	{
 		assert(FValid());
+#ifdef OVERFLOW_VMVE
 		if (cmveNew > cmvePreMax) {
 			if (pvmveOverflow == nullptr)
 				pvmveOverflow = new vector<uint64_t>;
@@ -546,6 +582,7 @@ public:
 				pvmveOverflow = nullptr;
 			}
 		}
+#endif
 		cmveCur = cmveNew;
 		assert(FValid());
 	}
@@ -553,20 +590,27 @@ public:
 
 	void reserve(int cmve) noexcept
 	{
+#ifdef OVERFLOW_VMVE
 		if (cmve <= cmvePreMax)
 			return;
 		if (pvmveOverflow == nullptr)
 			pvmveOverflow = new vector<uint64_t>;
 		pvmveOverflow->reserve(cmve - cmvePreMax);
+#endif
 	}
 
 
 	void clear(void) noexcept
 	{
+#ifdef OVERFLOW_VMVE
 		if (pvmveOverflow) {
 			delete pvmveOverflow;
 			pvmveOverflow = nullptr;
 		}
+#endif
 		cmveCur = 0;
 	}
 };
+
+
+typedef T_VMVE<256> VMVE;

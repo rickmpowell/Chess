@@ -30,7 +30,7 @@ const uint16_t dcYield = 512;
 
 
 PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
-		mvuNext(mvuNil), spmvNext(spmvAnimate), 
+		mveNext(mveNil), spmvNext(spmvAnimate), 
 		pvmvBreak(nullptr), imvBreakLast(-1), cBreakRepeat(0)
 {
 }
@@ -57,17 +57,17 @@ wstring SzPercent(uint64_t wNum, uint64_t wDen)
 }
 
 
-/*	PL::ReceiveMvu
+/*	PL::ReceiveMv
  *
  *	receives a move from an external source, like the human UI, or by playing from
  *	a file.
  */
-void PL::ReceiveMvu(MVU mvu, SPMV spmv)
+void PL::ReceiveMv(MVE mve, SPMV spmv)
 {
 	if (!ga.puiga->fInPlay)
-		ga.puiga->Play(mvu, spmv);
+		ga.puiga->Play(mve, spmv);
 	else {
-		mvuNext = mvu;
+		mveNext = mve;
 		spmvNext = spmv;
 	}
 }
@@ -291,7 +291,7 @@ public:
 		else {
 			pl.PumpMsg(true);
 			papp->AddLog(lgtOpen, lgfNormal, depthLog,
-						 TAG(bdg.SzDecodeMvuPost(mvePrev), ATTR(L"FEN", bdg)),
+						 TAG(bdg.SzDecodeMvPost(mvePrev), ATTR(L"FEN", bdg)),
 						 wjoin(wstring(1, chType) + to_wstring(depth),
 							   SzFromTsc(mvePrev.tsc()),
 							   SzFromEv(-mvePrev.ev), abInit));
@@ -301,7 +301,7 @@ public:
 
 	inline ~LOGMVE() noexcept
 	{
-		LogClose(bdg.SzDecodeMvuPost(mvePrev), wjoin(SzFromEv(mveBest.ev), SzEvt()), LgfEvt());
+		LogClose(bdg.SzDecodeMvPost(mvePrev), wjoin(SzFromEv(mveBest.ev), SzEvt()), LgfEvt());
 		SetDepthLog(depthLogSav);
 		imvExpand = imvExpandSav;
 	}
@@ -399,7 +399,7 @@ public:
 	~LOGITD() noexcept
 	{
 		LogClose(L"Depth", wjoin(L"[BF=" + (wstring)pl.stbfMain + L"]",
-								 bdg.SzDecodeMvuPost(mveBest),
+								 bdg.SzDecodeMvPost(mveBest),
 								 SzFromEv(mveBest.ev)), 
 				 lgfNormal);
 	}
@@ -439,25 +439,25 @@ bool VMVES::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
 	while (imveNext < cmve()) {
 		pmve = &(*this)[imveNext++];
-		bdg.MakeMvu(*pmve);
+		bdg.MakeMv(*pmve);
 		if (!bdg.FInCheck(~bdg.cpcToMove)) {
 			cmvLegal++;
 			return true;
 		}
-		bdg.UndoMvu();
+		bdg.UndoMv();
 		/* TODO: should we remove the in-check move from the list? */
 	}
 	return false;
 }
 
 
-/*	VMVES::UndoMve
+/*	VMVES::UndoMv
  *
  *	Undoes the move made by FMakeMvNext
  */
-void VMVES::UndoMve(BDG& bdg) noexcept
+void VMVES::UndoMv(BDG& bdg) noexcept
 {
-	bdg.UndoMvu();
+	bdg.UndoMv();
 }
 
 
@@ -536,12 +536,12 @@ bool VMVESS::FMakeMveNext(BDG& bdg, MVE*& pmveNext) noexcept
 
 		/* make sure move is legal */
 
-		bdg.MakeMvu(*pmveNext);
+		bdg.MakeMv(*pmveNext);
 		if (!bdg.FInCheck(~bdg.cpcToMove)) {
 			cmvLegal++;
 			return true;
 		}
-		bdg.UndoMvu();
+		bdg.UndoMv();
 	}
 	return false;
 }
@@ -584,12 +584,12 @@ void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
 		   it, go ahead and reset all the other moves to nil so we re-score them on
 		   subsequent passes */
 		XEV* pxev = pplai->xt.Find(bdg, 0);
-		MVU mvuPV = pxev && pxev->tev() == tevEqual ? pxev->mvu() : mvuNil;
+		MVE mvePV = pxev && pxev->tev() == tevEqual ? MVE(pxev->mvu()) : mveNil;
 		for (int imve = imveFirst; imve < cmve(); imve++) {
 			MVE& mve = (*this)[imve];
 			assert(!mve.fIsNil());
 			mve.SetTsc(tscNil);
-			if (mvuPV == (MVU)mve) {
+			if (mvePV == mve) {
 				assert(pxev != nullptr);
 				mve.SetTsc(tscPrincipalVar);
 				mve.ev = -pxev->ev();
@@ -604,13 +604,13 @@ void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
 		for (int imve = imveFirst; imve < cmve(); imve++) {
 			MVE& mve = (*this)[imve];
 			assert(mve.tsc() == tscNil);	// should all be marked nil by tscPrincipalVar pass
-			bdg.MakeMvuSq(mve);
+			bdg.MakeMvSq(mve);
 			XEV* pxev = pplai->xt.Find(bdg, 0);
 			if (pxev && pxev->tev() == tevEqual) {
 				mve.SetTsc(tscXTable);
 				mve.ev = -pxev->ev();
 			}
-			bdg.UndoMvuSq(mve);
+			bdg.UndoMvSq(mve);
 		}
 		break;
 	}
@@ -624,10 +624,10 @@ void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
 			assert(mve.tsc() == tscNil);
 			if (tscCur == tscEvCapture && !mve.fIsCapture())
 				continue;
-			bdg.MakeMvuSq(mve);
+			bdg.MakeMvSq(mve);
 			mve.SetTsc(tscCur);
 			mve.ev = -pplai->EvBdgStatic(bdg, mve, false);
-			bdg.UndoMvuSq(mve);
+			bdg.UndoMvSq(mve);
 		}
 		break;
 	}
@@ -661,15 +661,15 @@ VMVESQ::VMVESQ(BDG& bdg, PLAI* pplai, GG gg) noexcept : VMVES(bdg, pplai, gg)
 bool VMVESQ::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
 	while (VMVES::FMakeMveNext(bdg, pmve)) {
-		if (!bdg.FMvuIsQuiescent(*pmve))
+		if (!bdg.FMvIsQuiescent(*pmve))
 			return true;
-		bdg.UndoMvu();
+		bdg.UndoMv();
 	}
 	return false;
 }
 
 
-/*	PLAI::MvuGetNext
+/*	PLAI::MveGetNext
  *
  *	Returns the next move for the player. Assumes we've already checked for
  *	mates on entry. If the game cancels or times out, returns a cancel move
@@ -680,7 +680,7 @@ bool VMVESQ::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
  * 
  *	For an AI, this is the root node of the alpha-beta search.
  */
-MVU PLAI::MvuGetNext(SPMV& spmv) noexcept
+MVE PLAI::MveGetNext(SPMV& spmv) noexcept
 {
 	spmv = spmvAnimate;
 	cYield = 0; sint = sintNull;
@@ -802,7 +802,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 	stbfQuiescent.AddGen(1);
 	for (MVE* pmve; vmvesq.FMakeMveNext(bdg, pmve); ) {
 		pmve->ev = -EvBdgQuiescent(bdg, *pmve, -ab, depth + 1, ts);
-		vmvesq.UndoMve(bdg);
+		vmvesq.UndoMv(bdg);
 		if (FPrune(pmve, mveBest, ab, depthLim))
 			goto Done;
 	}
@@ -830,7 +830,7 @@ bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int dep
 	if (!vmvess.FMakeMveNext(bdg, pmve))
 		return false;
 	pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
-	vmvess.UndoMve(bdg);
+	vmvess.UndoMv(bdg);
 	if (FPrune(pmve, mveBest, ab, depthLim))
 		return true;
 
@@ -842,7 +842,7 @@ bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int dep
 		pmve->ev = -EvBdgSearch(bdg, *pmve, -ab.AbNull(), depth + 1, depthLim, ts);
 		if (!(pmve->ev < ab))
 			pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
-		vmvess.UndoMve(bdg);
+		vmvess.UndoMv(bdg);
 		if (FPrune(pmve, mveBest, ab, depthLim))
 			return true;
 	}
@@ -948,9 +948,9 @@ bool PLAI::FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, 
 		return false;
 
 	mveBest.SetMvu(mvuNil);
-	bdg.MakeMvuNull();
+	bdg.MakeMvNull();
 	mveBest.ev = -EvBdgSearch(bdg, mveBest, (-ab).AbNull(), depth + 1, depthLim - R, ts + tsNoNullMove);
-	bdg.UndoMvu();
+	bdg.UndoMv();
 	return mveBest.ev > ab;
 }
 
@@ -1261,14 +1261,14 @@ EV PLAI::EvTempo(const BDG& bdg) const noexcept
  *	Destination square of the previous move is in sqTo. Returns the amount to adjust 
  *	the evaluation by.
  */
-EV PLAI::EvBdgAttackDefend(BDG& bdg, MVU mvuPrev) const noexcept
+EV PLAI::EvBdgAttackDefend(BDG& bdg, MVE mvePrev) const noexcept
 {
-	APC apcMove = bdg.ApcFromSq(mvuPrev.sqTo());
-	APC apcAttacker = bdg.ApcSqAttacked(mvuPrev.sqTo(), bdg.cpcToMove);
+	APC apcMove = bdg.ApcFromSq(mvePrev.sqTo());
+	APC apcAttacker = bdg.ApcSqAttacked(mvePrev.sqTo(), bdg.cpcToMove);
 	if (apcAttacker != apcNull) {
 		if (apcAttacker < apcMove)
 			return EvBaseApc(apcMove);
-		APC apcDefended = bdg.ApcSqAttacked(mvuPrev.sqTo(), ~bdg.cpcToMove);
+		APC apcDefended = bdg.ApcSqAttacked(mvePrev.sqTo(), ~bdg.cpcToMove);
 		if (apcDefended == apcNull)
 			return EvBaseApc(apcMove);
 	}
@@ -1284,7 +1284,7 @@ EV PLAI::EvBdgAttackDefend(BDG& bdg, MVU mvuPrev) const noexcept
  * 
  *	fFull is true for full, potentially slow, evaluation. 
  */
-EV PLAI::EvBdgStatic(BDG& bdg, MVU mvuPrev, bool fFull) noexcept
+EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev, bool fFull) noexcept
 {
 	EV evMaterial = 0, evMobility = 0, evKingSafety = 0, evPawnStructure = 0;
 	EV evTempo = 0, evRandom = 0;
@@ -1292,7 +1292,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVU mvuPrev, bool fFull) noexcept
 	if (fecoMaterial) {
 		evMaterial = EvFromPst(bdg);
 		if (!fFull)
-			evMaterial += EvBdgAttackDefend(bdg, mvuPrev);
+			evMaterial += EvBdgAttackDefend(bdg, mvePrev);
 	}
 	if (fecoRandom) {
 		/* if we want randomness in the board eval, we need it to be stable randomness,
@@ -1651,9 +1651,9 @@ PLHUMAN::PLHUMAN(GA& ga, wstring szName) : PL(ga, szName)
 }
 
 
-MVU PLHUMAN::MvuGetNext(SPMV& spmv) noexcept
+MVE PLHUMAN::MveGetNext(SPMV& spmv) noexcept
 {
-	mvuNext = mvuNil;
+	mveNext = mveNil;
 	do {
 		try {
 			ga.puiga->PumpMsg();
@@ -1661,13 +1661,13 @@ MVU PLHUMAN::MvuGetNext(SPMV& spmv) noexcept
 		catch (...) {
 			break;
 		}
-	} while (mvuNext.fIsNil() && ga.bdg.FGsPlaying());
+	} while (mveNext.fIsNil() && ga.bdg.FGsPlaying());
 	
-	MVU mvu = mvuNext;
+	MVE mve = mveNext;
 	spmv = spmvNext;
-	mvuNext = mvuNil;
+	mveNext = mveNil;
 	
-	return mvu;
+	return mve;
 }
 
 

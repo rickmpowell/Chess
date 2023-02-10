@@ -423,12 +423,12 @@ public:
 	{
 		while (uiga.ga.bdg.imveCurLast >= 0) {
 			BDG bdgInit = uiga.ga.bdg;
-			uiga.UndoMvu(spmvHidden);
-			uiga.RedoMvu(spmvHidden);
+			uiga.UndoMv(spmvHidden);
+			uiga.RedoMv(spmvHidden);
 			assert(uiga.ga.bdg == bdgInit);
 			if (uiga.ga.bdg != bdgInit)
 				throw EXFAILTEST();
-			uiga.UndoMvu(spmvHidden);
+			uiga.UndoMv(spmvHidden);
 		}
 	}
 };
@@ -440,15 +440,15 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 }
 
 
-ERR PROCPGNTESTUNDO::ProcessMvu(MVU mvu)
+ERR PROCPGNTESTUNDO::ProcessMv(MVE mve)
 {
 	BDG bdgInit = ga.bdg;
-	ga.bdg.MakeMvu(mvu);
+	ga.bdg.MakeMv(mve);
 	BDG bdgNew = ga.bdg;
-	ga.bdg.UndoMvu();
+	ga.bdg.UndoMv();
 	if (bdgInit != ga.bdg)
 		throw EXFAILTEST();
-	ga.bdg.RedoMvu();
+	ga.bdg.RedoMv();
 	if (bdgNew != ga.bdg)
 		throw EXFAILTEST();
 	return errNone;
@@ -525,9 +525,9 @@ ERR PROCPGNTEST::ProcessTag(int tkpgn, const string& szValue)
 }
 
 
-ERR PROCPGNTEST::ProcessMvu(MVU mvu)
+ERR PROCPGNTEST::ProcessMv(MVE mve)
 {
-	return PROCPGNOPEN::ProcessMvu(mvu);
+	return PROCPGNOPEN::ProcessMv(mve);
 }
 
 
@@ -544,10 +544,10 @@ uint64_t GA::CmvPerft(int depth)
 	bdg.GenVmve(vmve, ggPseudo);
 	uint64_t cmv = 0;
 	for (MVE mve : vmve) {
-		bdg.MakeMvu(mve);
+		bdg.MakeMv(mve);
 		if (!bdg.FInCheck(~bdg.cpcToMove))
 			cmv += CmvPerft(depth - 1);
-		bdg.UndoMvu();
+		bdg.UndoMv();
 	}
 	return cmv;
 }
@@ -560,9 +560,9 @@ uint64_t GA::CmvPerftBulk(int depth)
 		return vmve.cmve();
 	uint64_t cmv = 0;
 	for (MVE mve : vmve) {
-		bdg.MakeMvu(mve);
+		bdg.MakeMv(mve);
 		cmv += CmvPerftBulk(depth - 1);
-		bdg.UndoMvu();
+		bdg.UndoMv();
 	}
 	return cmv;
 }
@@ -581,12 +581,12 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 	BDG bdgInit = ga.bdg;
 #endif
 	for (MVE mve : vmve) {
-		ga.bdg.MakeMvu(mve);
-		LogOpen(TAG(ga.bdg.SzDecodeMvuPost(mve), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
+		ga.bdg.MakeMv(mve);
+		LogOpen(TAG(ga.bdg.SzDecodeMvPost(mve), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
 		uint64_t cmvMove = ga.CmvPerft(depthPerft - 1);
 		cmv += cmvMove;
-		ga.bdg.UndoMvu();
-		LogClose(ga.bdg.SzDecodeMvuPost(mve), to_wstring(cmvMove), lgfNormal);
+		ga.bdg.UndoMv();
+		LogClose(ga.bdg.SzDecodeMvPost(mve), to_wstring(cmvMove), lgfNormal);
 		assert(ga.bdg == bdgInit);
 	}
 	return cmv;

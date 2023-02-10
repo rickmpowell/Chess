@@ -60,7 +60,7 @@ protected:
 public:
 	PROCPGN(GA& ga);
 	virtual ~PROCPGN(void) { }
-	virtual ERR ProcessMvu(MVU mvu) = 0;
+	virtual ERR ProcessMv(MVE mve) = 0;
 	virtual ERR ProcessTag(int tkpgn, const string& szVal) = 0;
 };
 
@@ -69,7 +69,7 @@ class PROCPGNOPEN : public PROCPGN
 {
 public:
 	PROCPGNOPEN(GA& ga) : PROCPGN(ga) { }
-	virtual ERR ProcessMvu(MVU mvu);
+	virtual ERR ProcessMv(MVE mve);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -78,7 +78,7 @@ class PROCPGNPASTE : public PROCPGNOPEN
 {
 public:
 	PROCPGNPASTE(GA& ga) : PROCPGNOPEN(ga) { }
-	virtual ERR ProcessMvu(MVU mvu);
+	virtual ERR ProcessMv(MVE mve);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -87,7 +87,7 @@ class PROCPGNTEST : public PROCPGNOPEN
 {
 public:
 	PROCPGNTEST(GA& ga) : PROCPGNOPEN(ga) { }
-	virtual ERR ProcessMvu(MVU mvu);
+	virtual ERR ProcessMv(MVE mve);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -96,7 +96,7 @@ class PROCPGNTESTUNDO : public PROCPGNTEST
 {
 public:
 	PROCPGNTESTUNDO(GA& ga) : PROCPGNTEST(ga) { }
-	virtual ERR ProcessMvu(MVU mvu);
+	virtual ERR ProcessMv(MVE mve);
 	virtual ERR ProcessTag(int tkpgn, const string& szVal);
 };
 
@@ -191,7 +191,7 @@ public:
 	ERR ParseAndProcessMove(const string& szMove);
 	bool FIsPgnData(const char* pch) const;
 	bool FResultSz(GS gs, wstring& sz) const;
-	void SerializeMove(ostream& os, string& szLine, BDG& bdg, MVU mvu);
+	void SerializeMove(ostream& os, string& szLine, BDG& bdg, MVE mve);
 
 	/*
 	 *	Serialization

@@ -148,11 +148,11 @@ void GA::SerializeMoveList(ostream& os)
 	os << endl;
 }
 
-void GA::SerializeMove(ostream& os, string& szLine, BDG& bdg, MVU mvu)
+void GA::SerializeMove(ostream& os, string& szLine, BDG& bdg, MVE mve)
 {
-	wstring wsz = bdg.SzDecodeMvu(mvu, false);
-	WriteSzLine80(os, szLine, bdg.SzFlattenMvuSz(wsz) + " ");
-	bdg.MakeMvu(mvu);
+	wstring wsz = bdg.SzDecodeMv(mve, false);
+	WriteSzLine80(os, szLine, bdg.SzFlattenMvSz(wsz) + " ");
+	bdg.MakeMv(mve);
 }
 
 /*	GA::WriteSzLine80
@@ -192,15 +192,15 @@ const wchar_t mpapcchFig[cpcMax][apcMax] =
 	{ chSpace, chBlackPawn, chBlackKnight, chBlackBishop, chBlackRook, chBlackQueen, chBlackKing }
 };
 
-wstring BDG::SzDecodeMvu(MVU mvu, bool fPretty)
+wstring BDG::SzDecodeMv(MVE mve, bool fPretty)
 {
 	VMVE vmve;
 	GenVmve(vmve, ggPseudo);
 
 	/* if destination square is unique, just include the destination square */
-	SQ sqFrom = mvu.sqFrom();
-	APC apc = mvu.apcMove();
-	SQ sqTo = mvu.sqTo();
+	SQ sqFrom = mve.sqFrom();
+	APC apc = mve.apcMove();
+	SQ sqTo = mve.sqTo();
 	SQ sqCapture = sqTo;
 
 	wchar_t sz[16];
@@ -247,11 +247,11 @@ FinishCastle:
 	/* for ambiguous moves, we need to add various from square qualifiers depending
 	 * on where the ambiguity is */
 
-	if (FMvuApcAmbiguous(vmve, mvu)) {
-		if (!FMvuApcFileAmbiguous(vmve, mvu))
+	if (FMvApcAmbiguous(vmve, mve)) {
+		if (!FMvApcFileAmbiguous(vmve, mve))
 			*pch++ = L'a' + sqFrom.file();
 		else {
-			if (FMvuApcRankAmbiguous(vmve, mvu))
+			if (FMvApcRankAmbiguous(vmve, mve))
 				*pch++ = L'a' + sqFrom.file();
 			*pch++ = L'1' + sqFrom.rank();
 		}
@@ -276,7 +276,7 @@ FinishCastle:
 	}
 
 	{
-	APC apcPromote = mvu.apcPromote();
+	APC apcPromote = mve.apcPromote();
 	if (apcPromote != apcNull) {
 		*pch++ = chEqual;
 		*pch++ = mpapcch[apcPromote];
@@ -289,49 +289,49 @@ FinishMove:
 }
 
 
-bool BDG::FMvuApcAmbiguous(const VMVE& vmve, MVU mvu) const
+bool BDG::FMvApcAmbiguous(const VMVE& vmve, MVE mve) const
 {
-	SQ sqFrom = mvu.sqFrom();
-	SQ sqTo = mvu.sqTo();
+	SQ sqFrom = mve.sqFrom();
+	SQ sqTo = mve.sqTo();
 	for (MVE mveOther : vmve) {
 		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (mveOther.apcMove() == mvu.apcMove())
+		if (mveOther.apcMove() == mve.apcMove())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvuApcRankAmbiguous(const VMVE& vmve, MVU mvu) const
+bool BDG::FMvApcRankAmbiguous(const VMVE& vmve, MVE mve) const
 {
-	SQ sqFrom = mvu.sqFrom();
-	SQ sqTo = mvu.sqTo();
+	SQ sqFrom = mve.sqFrom();
+	SQ sqTo = mve.sqTo();
 	for (MVE mveOther : vmve) {
 		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (mveOther.apcMove() == mvu.apcMove() && mveOther.sqFrom().rank() == sqFrom.rank())
+		if (mveOther.apcMove() == mve.apcMove() && mveOther.sqFrom().rank() == sqFrom.rank())
 			return true;
 	}
 	return false;
 }
 
 
-bool BDG::FMvuApcFileAmbiguous(const VMVE& vmve, MVU mvu) const
+bool BDG::FMvApcFileAmbiguous(const VMVE& vmve, MVE mve) const
 {
-	SQ sqFrom = mvu.sqFrom();
-	SQ sqTo = mvu.sqTo();
+	SQ sqFrom = mve.sqFrom();
+	SQ sqTo = mve.sqTo();
 	for (MVE mveOther : vmve) {
 		if (mveOther.sqTo() != sqTo || mveOther.sqFrom() == sqFrom)
 			continue;
-		if (mveOther.apcMove() == mvu.apcMove() && mveOther.sqFrom().file() == sqFrom.file())
+		if (mveOther.apcMove() == mve.apcMove() && mveOther.sqFrom().file() == sqFrom.file())
 			return true;
 	}
 	return false;
 }
 
 
-string BDG::SzFlattenMvuSz(const wstring& wsz) const
+string BDG::SzFlattenMvSz(const wstring& wsz) const
 {
 	string sz;
 	for (int ich = 0; wsz[ich]; ich++) {
@@ -360,20 +360,20 @@ string BDG::SzFlattenMvuSz(const wstring& wsz) const
  *	for official decoding, because ambiguities are not removed and stuff like promotion
  *	and en passant are not available, but useful for logging and debuggingn
  */
-wstring BDG::SzDecodeMvuPost(MVU mvu) const
+wstring BDG::SzDecodeMvPost(MVE mve) const
 {
-	SQ sqFrom = mvu.sqFrom();
-	SQ sqTo = mvu.sqTo();
+	SQ sqFrom = mve.sqFrom();
+	SQ sqTo = mve.sqTo();
 	wstring sz;
 	sz += L'a' + sqFrom.file();
 	sz += to_wstring(sqFrom.rank() + 1);
-	if (mvu.fIsCapture())
+	if (mve.fIsCapture())
 		sz += L'x';
 	sz += L'a' + sqTo.file();
 	sz += to_wstring(sqTo.rank() + 1);
-	if (mvu.apcPromote() != apcNull) {
+	if (mve.apcPromote() != apcNull) {
 		sz += chEqual;
-		sz += mpapcch[mvu.apcPromote()];
+		sz += mpapcch[mve.apcPromote()];
 	}
 	return sz;
 }

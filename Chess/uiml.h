@@ -187,7 +187,6 @@ class UIML : public UIPS
 	RC RcFromCol(float y, int col) const;
 	RC RcFromImv(int imv) const;
 
-	BDG bdgInit;	// initial board at the start of the game list
 	int imveSel;
 	UIPL uiplWhite, uiplBlack;
 	UICLOCK uiclockWhite, uiclockBlack;
@@ -210,7 +209,7 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	virtual void DrawContent(const RC& rcCont);
 
-	void DrawAndMakeMvu(const RC& rc, BDG& bdg, MVU mvu);
+	void DrawAndMakeMv(const RC& rc, BDG& bdg, MVE mve);
 	void DrawMoveNumber(const RC& rc, int imv);
 	void DrawSel(int imv);
 	void SetSel(int imv, SPMV spmv);

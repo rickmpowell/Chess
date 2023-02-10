@@ -33,7 +33,7 @@ protected:
 	wstring szName;
 	int level;
 
-	MVU mvuNext;
+	MVE mveNext;
 	SPMV spmvNext;
 	int imvBreakLast;
 	vector<MV>* pvmvBreak;
@@ -46,8 +46,8 @@ public:
 	void SetName(const wstring& szNew) { szName = szNew; }
 
 	virtual void StartGame(void) { }
-	virtual MVU MvuGetNext(SPMV& spmv) noexcept = 0;
-	void ReceiveMvu(MVU mvu, SPMV spmv);
+	virtual MVE MveGetNext(SPMV& spmv) noexcept = 0;
+	void ReceiveMv(MVE mve, SPMV spmv);
 
 	virtual bool FHasLevel(void) const noexcept { return false; }
 	virtual int Level(void) const noexcept { return level; }
@@ -92,7 +92,7 @@ public:
 	inline VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
-	inline void UndoMve(BDG& bdg) noexcept;
+	inline void UndoMv(BDG& bdg) noexcept;
 	bool FOnlyOneMove(MVE& mve) const noexcept;
 };
 
@@ -423,7 +423,7 @@ public:
 	/* search */
 
 public:
-	virtual MVU MvuGetNext(SPMV& spmv) noexcept;
+	virtual MVE MveGetNext(SPMV& spmv) noexcept;
 protected:
 	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int depth, int depthLim, TS ts) noexcept;
 	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int depth, TS ts) noexcept; 
@@ -446,7 +446,7 @@ protected:
 	
 	/* eval */
 
-	virtual EV EvBdgStatic(BDG& bdg, MVU mvu, bool fFull) noexcept;
+	virtual EV EvBdgStatic(BDG& bdg, MVE mve, bool fFull) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	virtual void InitWeightTables(void);
@@ -456,7 +456,7 @@ protected:
 	inline void ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[],
 					  const EV mpapcsqev1[apcMax][sqMax], const EV mpapcsqev2[apcMax][sqMax]) const noexcept;
 	inline EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
-	EV EvBdgAttackDefend(BDG& bdg, MVU mvuPrev) const noexcept;
+	EV EvBdgAttackDefend(BDG& bdg, MVE mvePrev) const noexcept;
 	EV EvTempo(const BDG& bdg) const noexcept;
 
 	int CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept;
@@ -507,7 +507,7 @@ class PLHUMAN : public PL
 public:
 	PLHUMAN(GA& ga, wstring szName);
 
-	virtual MVU MvuGetNext(SPMV& spmv) noexcept;
+	virtual MVE MveGetNext(SPMV& spmv) noexcept;
 };
 
 

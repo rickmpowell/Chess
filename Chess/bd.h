@@ -285,18 +285,22 @@ public:
 					   of en passant capture */
 	uint8_t csCur;	/* castle sides */
 
-	/* everything below is derived from previous state */
+	/* everything below is derived from minimal state */
 
-	BB mpcpcbb[cpcMax]; // squares occupied by pieces of the color 
-	BB bbUnoccupied;	// empty squares
+	BB mpcpcbb[cpcMax]; /* squares occupied by pieces of the color */
+	BB bbUnoccupied;	/* empty squares */
 	HABD habd;	/* board hash */
 	GPH gph;	/* game phase */
 
 public:
 	BD(void);
 
-	BD(const BD& bd) noexcept : bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove),
-		sqEnPassant(bd.sqEnPassant), csCur(bd.csCur), habd(bd.habd),
+	BD(const BD& bd) noexcept : 
+		cpcToMove(bd.cpcToMove), 
+		sqEnPassant(bd.sqEnPassant), 
+		csCur(bd.csCur),
+		bbUnoccupied(bd.bbUnoccupied),
+		habd(bd.habd),
 		gph(bd.gph)
 	{
 		memcpy(mppcbb, bd.mppcbb, sizeof(mppcbb));
@@ -309,20 +313,19 @@ public:
 
 	/* making moves */
 
-	void MakeMvuSq(MVU& mvu) noexcept;
-	void UndoMvuSq(MVU mvu) noexcept;
-	void MakeMvuNullSq(MVU& mvu) noexcept;
-	void UndoMvuNullSq(MVU mvu) noexcept;
+	void MakeMvSq(MVE& mve) noexcept;
+	void UndoMvSq(MVE mve) noexcept;
+	void MakeMvNullSq(MVE& mve) noexcept;
+	void UndoMvNullSq(MVE mve) noexcept;
 
 	/* move generation */
 
 	void GenVmve(VMVE& vmve, GG gg) noexcept;
 	void GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
 	void GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept;
-	inline void GenVmvePawnMoves(VMVE& vmve, BB bbPawns, CPC cpcMove) const noexcept;
+	void GenVmveBbPawnPromotionMoves(VMVE& vmve, BB bbTo, int dsq, CPC cpcMove) const noexcept;
+	inline void GenVmvePawnMoves(VMVE& vmve, CPC cpcMove) const noexcept;
 	inline void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
-	inline void AddVmveMvuPromotions(VMVE& vmve, MVU mvu) const noexcept;
-	inline void GenVmveBbPawnMoves(VMVE& vmve, BB bbTo, BB bbRankPromotion, int dsq, CPC cpcMove) const noexcept;
 	inline void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
 	inline void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
 
@@ -331,8 +334,8 @@ public:
 	 */
 
 	void RemoveInCheckMoves(VMVE& vmve, CPC cpc) noexcept;
-	bool FMvuIsQuiescent(MVU mvu) const noexcept;
-	bool FInCheck(CPC cpc) const noexcept;
+	bool FMvIsQuiescent(MVE mve) const noexcept;
+	bool FInCheck(CPC cpc) noexcept;
 	bool FIsCheckMate(CPC cpc) noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
 
@@ -342,11 +345,11 @@ public:
 	inline BB BbKingAttacked(BB bbKing) const noexcept;
 	inline BB BbKnightAttacked(BB bbKnights) const noexcept;
 	inline BB BbBishopAttacked(BB bbBishops) const noexcept;
-	inline BB BbBishop1Attacked(BB bbBishops) const noexcept;
+	inline BB BbBishop1Attacked(SQ sq) const noexcept;
 	inline BB BbRookAttacked(BB bbRooks) const noexcept;
-	inline BB BbRook1Attacked(BB bbRooks) const noexcept;
+	inline BB BbRook1Attacked(SQ sq) const noexcept;
 	inline BB BbQueenAttacked(BB bbQueens) const noexcept;
-	inline BB BbQueen1Attacked(BB bbQueen) const noexcept;
+	inline BB BbQueen1Attacked(SQ sq) const noexcept;
 
 	/*	BD::ApcSqAttacked
 	 *
@@ -364,14 +367,14 @@ public:
 	 *	optimized - beware of bit twiddling tricks!
 	 */
 
-	inline bool FMvuEnPassant(MVU mvu) const noexcept
+	inline bool FMvEnPassant(MVE mve) const noexcept
 	{
-		return mvu.sqTo() == sqEnPassant && mvu.apcMove() == apcPawn;
+		return mve.sqTo() == sqEnPassant && mve.apcMove() == apcPawn;
 	}
 
-	inline bool FMvuIsCapture(MVU mvu) const noexcept
+	inline bool FMvIsCapture(MVE mve) const noexcept
 	{
-		return !FIsEmpty(mvu.sqTo()) || FMvuEnPassant(mvu);
+		return !FIsEmpty(mve.sqTo()) || FMvEnPassant(mve);
 	}
 
 	inline void SetEnPassant(SQ sq) noexcept
@@ -602,7 +605,7 @@ class BDG : public BD
 {
 public:
 	GS gs;
-	VMVE vmveGame;		/* the game moves that resulted in bd board state */
+	T_VMVE<1024> vmveGame;		/* the game moves that resulted in bd board state */
 	int imveCurLast;		/* position of current last made move, -1 before first move; may be 
 							   less than vmvGame.size after Undo/Redo */
 	int imvePawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
@@ -625,16 +628,16 @@ public:
 	 *	making moves 
 	 */
 
-	void MakeMvu(MVU& mvu) noexcept;
-	void UndoMvu(void) noexcept;
-	void RedoMvu(void) noexcept;
-	void MakeMvuNull(void) noexcept;
+	void MakeMv(MVE& mve) noexcept;
+	void UndoMv(void) noexcept;
+	void RedoMv(void) noexcept;
+	void MakeMvNull(void) noexcept;
 	
 	/* 
 	 *	game over tests
 	 */
 
-	GS GsTestGameOver(int cmvToMove, int cmvRepeatDraw) const noexcept;
+	GS GsTestGameOver(int cmvToMove, int cmvRepeatDraw) noexcept;
 	void SetGameOver(const VMVE& vmve, const RULE& rule) noexcept;
 	bool FDrawDead(void) const noexcept;
 	bool FDraw3Repeat(int cbdDraw) const noexcept;
@@ -655,13 +658,13 @@ public:
 	 *	decoding moves 
 	 */
 
-	wstring SzMoveAndDecode(MVU mvu);
-	wstring SzDecodeMvu(MVU mvu, bool fPretty);
-	bool FMvuApcAmbiguous(const VMVE& vmve, MVU mvu) const;
-	bool FMvuApcRankAmbiguous(const VMVE& vmve, MVU mvu) const;
-	bool FMvuApcFileAmbiguous(const VMVE& vmve, MVU mvu) const;
-	string SzFlattenMvuSz(const wstring& wsz) const;
-	wstring SzDecodeMvuPost(MVU mvu) const;
+	wstring SzMoveAndDecode(MVE mve);
+	wstring SzDecodeMv(MVE mve, bool fPretty);
+	bool FMvApcAmbiguous(const VMVE& vmve, MVE mve) const;
+	bool FMvApcRankAmbiguous(const VMVE& vmve, MVE mve) const;
+	bool FMvApcFileAmbiguous(const VMVE& vmve, MVE mve) const;
+	string SzFlattenMvSz(const wstring& wsz) const;
+	wstring SzDecodeMvPost(MVE mve) const;
 
 	/* 
 	 *	parsing moves 

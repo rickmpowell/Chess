@@ -291,7 +291,7 @@ ERR GA::ParseAndProcessMove(const string& szMove)
 	const char* pch = szMove.c_str();
 	if (bdg.ParseMve(pch, mve) == errEndOfFile)
 		return errEndOfFile;
-	pprocpgn->ProcessMvu(mve);
+	pprocpgn->ProcessMv(mve);
 	return errNone;
 }
 
@@ -343,9 +343,9 @@ PROCPGN::PROCPGN(GA& ga) : ga(ga)
 }
 
 
-ERR PROCPGNOPEN::ProcessMvu(MVU mvu)
+ERR PROCPGNOPEN::ProcessMv(MVE mve)
 {
-	ga.bdg.MakeMvu(mvu);
+	ga.bdg.MakeMv(mve);
 	return errNone;
 }
 

@@ -74,7 +74,7 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), 
 	    dxySquare(80.0f), dxyBorder(2.0f), dxyMargin(50.0f), dxyOutline(4.0f), dyLabel(0), angle(0.0f),
-		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr), fClickClick(false), mvuHilite(mvuNil)
+		sqDragInit(sqNil), sqHover(sqNil), sqDragHilite(sqNil), panoDrag(nullptr), fClickClick(false), mveHilite(mveNil)
 {
 }
 
@@ -149,15 +149,15 @@ void UIBD::StartGame(void)
  * 
  *	Throws an exception if the move is not valid.
  */
-void UIBD::MakeMvu(MVU mvu, SPMV spmv)
+void UIBD::MakeMv(MVE mve, SPMV spmv)
 {
-	if (!FInVmveDrag(mvu.sqFrom(), mvu.sqTo(), mvu))
+	if (!FInVmveDrag(mve.sqFrom(), mve.sqTo(), mve))
 		throw 1;
 
 	if (FSpmvAnimate(spmv))
-		AnimateMvu(mvu, DframeFromSpmv(spmv));
-	uiga.ga.bdg.MakeMvu(mvu);
-	SetMoveHilite(mvu);
+		AnimateMv(mve, DframeFromSpmv(spmv));
+	uiga.ga.bdg.MakeMv(mve);
+	SetMoveHilite(mve);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
@@ -165,14 +165,14 @@ void UIBD::MakeMvu(MVU mvu, SPMV spmv)
 }
 
 
-void UIBD::UndoMvu(SPMV spmv)
+void UIBD::UndoMv(SPMV spmv)
 {
 	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imveCurLast >= 0) {
 		MVE mve = uiga.ga.bdg.vmveGame[uiga.ga.bdg.imveCurLast];
 		AnimateSqToSq(mve.sqTo(), mve.sqFrom(), DframeFromSpmv(spmv));
 	}
-	uiga.ga.bdg.UndoMvu();
-	SetMoveHilite(mvuNil);
+	uiga.ga.bdg.UndoMv();
+	SetMoveHilite(mveNil);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGs(gsPlaying);
 	if (spmv != spmvHidden)
@@ -180,14 +180,14 @@ void UIBD::UndoMvu(SPMV spmv)
 }
 
 
-void UIBD::RedoMvu(SPMV spmv)
+void UIBD::RedoMv(SPMV spmv)
 {
 	if (FSpmvAnimate(spmv) && uiga.ga.bdg.imveCurLast < uiga.ga.bdg.vmveGame.size()) {
 		MVE mve = uiga.ga.bdg.vmveGame[uiga.ga.bdg.imveCurLast+1];
-		AnimateMvu(mve, DframeFromSpmv(spmv));
+		AnimateMv(mve, DframeFromSpmv(spmv));
 	}
-	uiga.ga.bdg.RedoMvu();
-	SetMoveHilite(mvuNil);
+	uiga.ga.bdg.RedoMv();
+	SetMoveHilite(mveNil);
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
@@ -195,9 +195,9 @@ void UIBD::RedoMvu(SPMV spmv)
 }
 
 
-void UIBD::SetMoveHilite(MVU mvu)
+void UIBD::SetMoveHilite(MVE mve)
 {
-	mvuHilite = mvu;
+	mveHilite = mve;
 }
 
 
@@ -297,10 +297,10 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 			RC rcSq = RcFromSq(sq);
 			if ((rank + file) % 2 == 0)
 				FillRc(rcSq, pbrText);
-			MVU mvu;
-			if (FHoverSq(sqDragInit.fIsNil() ? sqHover : sqDragInit, sq, mvu))
-				DrawHoverMove(mvu);
-			if (!mvuHilite.fIsNil() && (mvuHilite.sqFrom() == sq || mvuHilite.sqTo() == sq)) {
+			MVE mve;
+			if (FHoverSq(sqDragInit.fIsNil() ? sqHover : sqDragInit, sq, mve))
+				DrawHoverMove(mve);
+			if (!mveHilite.fIsNil() && (mveHilite.sqFrom() == sq || mveHilite.sqTo() == sq)) {
 				OPACITYBR opacitybr(pbrBlack, (rank+file) % 2 ? opacityBoardMoveHilite : 0.2f);
 				COLORBRS colorbrs(pbrBlack, coBoardMoveHilite);
 				FillRc(rcSq, pbrBlack);
@@ -424,11 +424,11 @@ void UIBD::SetDragHiliteSq(SQ sq)
  *	Returns true if the square is the destination of move that originates in the
  *	tracking square sqHover. Returns the move itself in mv. 
  */
-bool UIBD::FHoverSq(SQ sqFrom, SQ sq, MVU& mvu)
+bool UIBD::FHoverSq(SQ sqFrom, SQ sq, MVE& mve)
 {
 	if (sqFrom.fIsNil() || !(uiga.ga.bdg.FGsPlaying() || uiga.ga.bdg.FGsNotStarted()))
 		return false;
-	return FInVmveDrag(sqFrom, sq, mvu);
+	return FInVmveDrag(sqFrom, sq, mve);
 }
 
 
@@ -439,12 +439,12 @@ bool UIBD::FHoverSq(SQ sqFrom, SQ sq, MVU& mvu)
  *
  *	We draw a circle over every square you can move to, and an X over captures.
  */
-void UIBD::DrawHoverMove(MVU mvu)
+void UIBD::DrawHoverMove(MVE mve)
 {
 	OPACITYBR opacityBrSav(pbrBlack, 0.33f);
 
-	RC rc = RcFromSq(mvu.sqTo());
-	if (!uiga.ga.bdg.FMvuIsCapture(mvu)) {
+	RC rc = RcFromSq(mve.sqTo());
+	if (!uiga.ga.bdg.FMvIsCapture(mve)) {
 		/* moving to an empty square - draw a circle */
 		ELL ell(rc.PtCenter(), dxySquare / 5);
 		FillEll(ell, pbrBlack);
@@ -506,9 +506,9 @@ void UIBD::DrawPc(UI* pui, const RC& rcPc, float opacity, PC pc)
 }
 
 
-void UIBD::AnimateMvu(MVU mvu, unsigned dframe)
+void UIBD::AnimateMv(MVE mve, unsigned dframe)
 {
-	AnimateSqToSq(mvu.sqFrom(), mvu.sqTo(), dframe);
+	AnimateSqToSq(mve.sqFrom(), mve.sqTo(), dframe);
 }
 
 
@@ -703,8 +703,8 @@ HTBD UIBD::HtbdHitTest(const PT& pt, SQ* psq) const
 bool UIBD::FMoveablePc(SQ sq) const
 {
 	assert(uiga.ga.bdg.CpcFromSq(sq) == uiga.ga.bdg.cpcToMove);
-	MVU mvu;
-	return FInVmveDrag(sq, sqNil, mvu);
+	MVE mve;
+	return FInVmveDrag(sq, sqNil, mve);
 }
 
 
@@ -776,7 +776,7 @@ void UIBD::EndLeftDrag(const PT& pt, bool fClick)
 			}
 			else {
 				if (FInVmveDrag(sqFrom, sqTo, mve))
-					uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMvu(mve, spmvFast);
+					uiga.ga.PplFromCpc(uiga.ga.bdg.cpcToMove)->ReceiveMv(mve, spmvFast);
 			}
 		}
 	}
@@ -797,9 +797,9 @@ void UIBD::LeftDrag(const PT& pt)
 		EndLeftDrag(pt, false);
 		return;
 	}
-	MVU mvu;
+	MVE mve;
 	SetDragHiliteSq(uiga.FInBoardSetup() ||
-			FInVmveDrag(sqDragInit, sq, mvu) ? sq : sqNil);
+			FInVmveDrag(sqDragInit, sq, mve) ? sq : sqNil);
 	ptDragCur = pt;
 	InvalOutsideRc(rcDragPc);
 	rcDragPc = RcGetDrag();
@@ -930,11 +930,11 @@ SQ UIBD::SqToNearestMove(SQ sqFrom, PT ptHit) const
  *	matches just the source square; if sqFrom is true searches for first move
  *	that matches the destination square.
  */
-bool UIBD::FInVmveDrag(SQ sqFrom, SQ sqTo, MVU& mvu) const
+bool UIBD::FInVmveDrag(SQ sqFrom, SQ sqTo, MVE& mve) const
 {
-	for (const MVE& mve : vmveDrag) {
-		if ((sqFrom.fIsNil() || mve.sqFrom() == sqFrom) && (sqTo.fIsNil() || mve.sqTo() == sqTo)) {
-			mvu = (MVU)mve;
+	for (const MVE& mveDrag : vmveDrag) {
+		if ((sqFrom.fIsNil() || mveDrag.sqFrom() == sqFrom) && (sqTo.fIsNil() || mveDrag.sqTo() == sqTo)) {
+			mve = mveDrag;
 			return true;
 		}
 	}

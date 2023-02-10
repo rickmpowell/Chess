@@ -441,12 +441,12 @@ void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 }
 
 
-void UIGA::MakeMvu(MVU mvu, SPMV spmvMove)
+void UIGA::MakeMv(MVE mve, SPMV spmvMove)
 {
 	DWORD msec = app.MsecMessage();
 	PauseClock(ga.bdg.cpcToMove, msec);
 	StartClock(~ga.bdg.cpcToMove, msec);
-	uibd.MakeMvu(mvu, spmvMove);
+	uibd.MakeMv(mve, spmvMove);
 	if (!ga.bdg.FGsPlaying())
 		EndGame(spmvMove);
 	if (spmvMove != spmvHidden) {
@@ -456,12 +456,12 @@ void UIGA::MakeMvu(MVU mvu, SPMV spmvMove)
 }
 
 
-/*	UIGA::UndoMvu
+/*	UIGA::UndoMv
  *
  *	Moves the current move pointer back one through the move list and undoes
  *	the last move on the game board.
  */
-void UIGA::UndoMvu(SPMV spmv)
+void UIGA::UndoMv(SPMV spmv)
 {
 	MoveToImv(ga.bdg.imveCurLast - 1, spmv);
 }
@@ -472,7 +472,7 @@ void UIGA::UndoMvu(SPMV spmv)
  *	Moves the current move pointer forward through the move list and remakes
  *	the next move on the game board.
  */
-void UIGA::RedoMvu(SPMV spmv)
+void UIGA::RedoMv(SPMV spmv)
 {
 	MoveToImv(ga.bdg.imveCurLast + 1, spmv);
 }
@@ -493,9 +493,9 @@ void UIGA::MoveToImv(int imv, SPMV spmv)
 			spmv = spmvAnimateVeryFast;
 	}
 	while (ga.bdg.imveCurLast > imv)
-		uibd.UndoMvu(spmv);
+		uibd.UndoMv(spmv);
 	while (ga.bdg.imveCurLast < imv)
-		uibd.RedoMvu(spmv);
+		uibd.RedoMv(spmv);
 	if (spmv != spmvHidden)
 		uiml.Layout();	// in case game over state changed
 	uiml.SetSel(ga.bdg.imveCurLast, spmv);
@@ -508,22 +508,22 @@ void UIGA::MoveToImv(int imv, SPMV spmv)
  *	play is sent in mv, which may be nil. spmv is the speed of the 
  *	animation to use on the board.
  */
-void UIGA::Play(MVU mvu, SPMV spmv)
+void UIGA::Play(MVE mve, SPMV spmv)
 {
 	fInPlay = true;
 	InitLog(2);
 	LogOpen(L"Game", L"", lgfBold);
 	StartGame(spmvAnimate);
 
-	if (!mvu.fIsNil())
-		MakeMvu(mvu, spmv);
+	if (!mve.fIsNil())
+		MakeMv(mve, spmv);
 
 	do {
 		SPMV spmv = spmvAnimate;
-		mvu = ga.PplToMove()->MvuGetNext(spmv);
-		if (mvu.fIsNil())
+		mve = ga.PplToMove()->MveGetNext(spmv);
+		if (mve.fIsNil())
 			break;
-		MakeMvu(mvu, spmv);
+		MakeMv(mve, spmv);
 		ga.SavePGNFile(papp->SzAppDataPath() + L"\\current.pgn");
 	} while (ga.bdg.FGsPlaying());
 
