@@ -42,7 +42,7 @@ const ColorF coStaticText(0, 0, 0);
 /*  board colors */
 
 const ColorF coBoardDark(0.42f, 0.54f, 0.32f);
-const ColorF coBoardLight(1.0f, 0.99f, 0.95f);
+const ColorF coBoardLight(1.0f, 0.98f, 0.95f);
 const ColorF coBoardBWDark(0.5f, 0.5, 0.5f);
 const ColorF coBoardBWLight(0.9f, 0.9f, 0.9f);
 const ColorF coBoardMoveHilite(1.0f, 0.5f, 0);
