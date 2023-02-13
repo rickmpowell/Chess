@@ -603,6 +603,11 @@ void UIPCP::HiliteSq(SQ sq)
 }
 
 
+bool UIPCP::FEnabledCmd(int cmd) const
+{
+	return true;
+}
+
 wstring UIPCP::SzTipFromCmd(int cmd) const
 {
 	switch (cmd) {
