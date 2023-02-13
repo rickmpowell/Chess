@@ -142,13 +142,14 @@ public:
 
 
 PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
-		ttm(IfReleaseElse(ttmSmart, ttmConstDepth)),
+		//ttm(IfReleaseElse(ttmSmart, ttmConstDepth)),
+		ttm(ttmSmart),
 #ifndef NOSTATS
 		cmveTotalEval(0), 
 #endif
 		cYield(0)
 {
-	fecoMaterial = 1*fecoScale;
+	fecoMaterial = fecoScale;
 	fecoMobility = 3*fecoScale;	/* this is small because Material already includes
 								   some mobility in the piece-square tables */
 	fecoKingSafety = 10*fecoScale;
@@ -415,7 +416,7 @@ public:
  */
 
 
-VMVES::VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept : VMVE(), pplai(pplai)
+VMVES::VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept : VMVE(), pplai(pplai), pmveNext(begin())
 {
 	bdg.GenVmve(*this, gg);
 	Reset(bdg);
@@ -424,7 +425,7 @@ VMVES::VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept : VMVE(), pplai(pplai)
 
 void VMVES::Reset(BDG& bdg) noexcept
 {
-	imveNext = 0;
+	pmveNext = begin();
 	cmvLegal = 0;
 }
 
@@ -437,8 +438,8 @@ void VMVES::Reset(BDG& bdg) noexcept
  */
 bool VMVES::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
-	while (imveNext < cmve()) {
-		pmve = &(*this)[imveNext++];
+	while (pmveNext < end()) {
+		pmve = &*pmveNext++;
 		bdg.MakeMv(*pmve);
 		if (!bdg.FInCheck(~bdg.cpcToMove)) {
 			cmvLegal++;
@@ -503,7 +504,7 @@ void VMVESS::Reset(BDG& bdg) noexcept
 {
 	VMVES::Reset(bdg);
 	tscCur = tscPrincipalVar;
-	PrepTscCur(bdg, 0);
+	PrepTscCur(bdg, begin());
 }
 
 
@@ -521,22 +522,23 @@ void VMVESS::Reset(BDG& bdg) noexcept
  * 
  *	We lazy evaluate any moves that aren't found in the transposition table. 
  */
-bool VMVESS::FMakeMveNext(BDG& bdg, MVE*& pmveNext) noexcept
+bool VMVESS::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
-	while (imveNext < cmve()) {
+	while (pmveNext < end()) {
 
 		/* swap the best move into the next mve to return */
 
 		MVE* pmveBest;
-		for ( ; (pmveBest = PmveBestFromTscCur(imveNext)) == nullptr; 
-				tscCur++, PrepTscCur(bdg, imveNext))
+		for ( ; (pmveBest = PmveBestFromTscCur(pmveNext)) == nullptr; 
+				tscCur++, PrepTscCur(bdg, pmveNext))
 			;
-		pmveNext = &(*this)[imveNext++];
+		pmve = &*pmveNext;
 		swap(*pmveNext, *pmveBest);
+		pmveNext++;
 
 		/* make sure move is legal */
 
-		bdg.MakeMv(*pmveNext);
+		bdg.MakeMv(*pmve);
 		if (!bdg.FInCheck(~bdg.cpcToMove)) {
 			cmvLegal++;
 			return true;
@@ -552,13 +554,13 @@ bool VMVESS::FMakeMveNext(BDG& bdg, MVE*& pmveNext) noexcept
  *	Finds the best move from the movelist that matches the current score type
  *	that we're enumerating. Returns nullptr if no matches.
  */
-MVE* VMVESS::PmveBestFromTscCur(int imveFirst) noexcept
+MVE* VMVESS::PmveBestFromTscCur(VMVE::it pmveFirst) noexcept
 {
 	MVE* pmveBest = nullptr; 
-	for (int imveBest = imveFirst; imveBest < cmve(); imveBest++) {
-		if ((*this)[imveBest].tsc() == tscCur && 
-				(pmveBest == nullptr || (*this)[imveBest].ev > pmveBest->ev))
-			pmveBest = &(*this)[imveBest];
+	for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
+		if (pmve->tsc() == tscCur &&
+				(pmveBest == nullptr || pmve->ev > pmveBest->ev))
+			pmveBest = &(*pmve);
 	}
 	return pmveBest;
 }
@@ -574,7 +576,7 @@ MVE* VMVESS::PmveBestFromTscCur(int imveFirst) noexcept
  *	move in the transposition table that was fully evaluated, (3) captures, and
  *	and (4) everything else.
  */
-void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
+void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 {
 	switch (tscCur) {
 	case tscPrincipalVar:
@@ -585,14 +587,13 @@ void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
 		   subsequent passes */
 		XEV* pxev = pplai->xt.Find(bdg, 0);
 		MVE mvePV = pxev && pxev->tev() == tevEqual ? MVE(pxev->mvu()) : mveNil;
-		for (int imve = imveFirst; imve < cmve(); imve++) {
-			MVE& mve = (*this)[imve];
-			assert(!mve.fIsNil());
-			mve.SetTsc(tscNil);
-			if (mvePV == mve) {
+		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
+			assert(!pmve->fIsNil());
+			pmve->SetTsc(tscNil);
+			if (mvePV == *pmve) {
 				assert(pxev != nullptr);
-				mve.SetTsc(tscPrincipalVar);
-				mve.ev = -pxev->ev();
+				pmve->SetTsc(tscPrincipalVar);
+				pmve->ev = -pxev->ev();
 			}
 		}
 		break;
@@ -601,16 +602,15 @@ void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
 	case tscXTable:
 	{
 		/* get the eval of any move that has an entry in the tranposition table */
-		for (int imve = imveFirst; imve < cmve(); imve++) {
-			MVE& mve = (*this)[imve];
-			assert(mve.tsc() == tscNil);	// should all be marked nil by tscPrincipalVar pass
-			bdg.MakeMvSq(mve);
+		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
+			assert(pmve->tsc() == tscNil);	// should all be marked nil by tscPrincipalVar pass
+			bdg.MakeMvSq(*pmve);
 			XEV* pxev = pplai->xt.Find(bdg, 0);
 			if (pxev && pxev->tev() == tevEqual) {
-				mve.SetTsc(tscXTable);
-				mve.ev = -pxev->ev();
+				pmve->SetTsc(tscXTable);
+				pmve->ev = -pxev->ev();
 			}
-			bdg.UndoMvSq(mve);
+			bdg.UndoMvSq(*pmve);
 		}
 		break;
 	}
@@ -619,15 +619,14 @@ void VMVESS::PrepTscCur(BDG& bdg, int imveFirst) noexcept
 	case tscEvOther:
 	{
 		/* the remainder of the moves need to compute an actual board score */
-		for (int imve = imveFirst; imve < cmve(); imve++) {
-			MVE& mve = (*this)[imve];
-			assert(mve.tsc() == tscNil);
-			if (tscCur == tscEvCapture && !mve.fIsCapture())
+		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
+			assert(pmve->tsc() == tscNil);
+			if (tscCur == tscEvCapture && !pmve->fIsCapture())
 				continue;
-			bdg.MakeMvSq(mve);
-			mve.SetTsc(tscCur);
-			mve.ev = -pplai->EvBdgStatic(bdg, mve, false);
-			bdg.UndoMvSq(mve);
+			bdg.MakeMvSq(*pmve);
+			pmve->SetTsc(tscCur);
+			pmve->ev = -pplai->EvBdgStatic(bdg, *pmve, false);
+			bdg.UndoMvSq(*pmve);
 		}
 		break;
 	}
@@ -800,7 +799,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 		
 	VMVESQ vmvesq(bdg, this, ggPseudo);
 	stbfQuiescent.AddGen(1);
-	for (MVE* pmve; vmvesq.FMakeMveNext(bdg, pmve); ) {
+	for (MVE* pmve = nullptr; vmvesq.FMakeMveNext(bdg, pmve); ) {
 		pmve->ev = -EvBdgQuiescent(bdg, *pmve, -ab, depth + 1, ts);
 		vmvesq.UndoMv(bdg);
 		if (FPrune(pmve, mveBest, ab, depthLim))
@@ -1097,16 +1096,21 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 	tpMoveFirst = high_resolution_clock::now();
 	
 	switch (ttm) {
+	default:
+		break;
 	case ttmSmart:
 		if (!ga.prule->FUntimed()) {
 			dmsecFlag = ga.DmsecRemaining(bdg.cpcToMove);
-			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, ga.NmvFromImv(bdg.imveCurLast));
+			int nmvCur = ga.bdg.vmveGame.NmvFromImv(bdg.imveCurLast);
+			int nmvFlag = ga.prule->TmiFromNmv(nmvCur).nmvLast;
+			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, nmvCur);
 			/* number of moves left in the game based on total material on the board;
 			   yeah, I know I know, really lame */
-			int cmvDen = WInterpolate(EvMaterialTotal(bdg), 200, 7800, 10, 50);
-			dmsecDeadline = dmsecFlag / cmvDen;
-			if (dmsecDeadline + dmsecMove < dmsecFlag)
-				dmsecDeadline += dmsecMove;
+			int dnmv = WInterpolate(EvMaterialTotal(bdg), 200, 7800, 10, 50);
+			if (nmvFlag > 0)
+				dnmv = min(dnmv, nmvFlag - nmvCur + 1);
+			assert(dnmv > 0);
+			dmsecDeadline = min(dmsecFlag/dnmv + dmsecMove, dmsecFlag);
 			dmsecDeadline = min(dmsecDeadline, mpleveldmsec[level]);
 			LogData(wjoin(L"Time target:", SzCommaFromLong(dmsecDeadline), L"ms"));
 			break;
@@ -1116,8 +1120,6 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 		[[fallthrough]];
 	case ttmTimePerMove:
 		dmsecDeadline = mpleveldmsec[level];
-		break;
-	default:
 		break;
 	}
 }

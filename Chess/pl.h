@@ -84,7 +84,7 @@ class PLAI;
 class VMVES : public VMVE
 {
 public:
-	int imveNext;
+	VMVE::it pmveNext;
 	int cmvLegal;
 	PLAI* pplai;
 
@@ -116,8 +116,8 @@ public:
 	void Reset(BDG& bdg) noexcept;
 
 private:
-	MVE* PmveBestFromTscCur(int imveFirst) noexcept;
-	void PrepTscCur(BDG& bdg, int imveFirst) noexcept;
+	MVE* PmveBestFromTscCur(VMVE::it pmveFirst) noexcept;
+	void PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept;
 };
 
 

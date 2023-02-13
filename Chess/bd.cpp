@@ -1189,12 +1189,15 @@ void BDG::InitGame(const wchar_t* szFEN)
 	InitFENEnPassant(sz);
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
+	/* TODO: is this the halfmove clock? */
+	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
 }
 
 
 void BDG::InitGame(void)
 {
 	vmveGame.clear();
+	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
 	imveCurLast = -1;
 	imvePawnOrTakeLast = -1;
 	SetGs(gsNotStarted);
@@ -1353,6 +1356,14 @@ wstring BDG::SzMoveAndDecode(MVE mve)
 		sz += FIsCheckMate(~cpc) ? '#' : '+';
 	return sz;
 }
+
+
+int BDG::NmvNextFromCpc(CPC cpc) const
+{
+	return vmveGame.NmvFromImv(vmveGame.size() + (cpcToMove != cpc));
+}
+
+
 
 
 /*	BDG::UndoMv

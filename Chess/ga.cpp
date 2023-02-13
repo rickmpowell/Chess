@@ -104,28 +104,6 @@ void GA::EndGame(void)
 }
 
 
-int GA::NmvNextFromCpc(CPC cpc) const
-{
-	return NmvFromImv((int)bdg.vmveGame.size() + (bdg.cpcToMove != cpc));
-}
-
-bool GA::FImvIsWhite(int imv) const
-{
-	return ((imv + FImvFirstIsBlack()) & 1) == 0;
-}
-
-bool GA::FImvFirstIsBlack(void) const
-{
-	return bdgInit.cpcToMove == cpcBlack;
-}
-
-int GA::NmvFromImv(int imv) const
-{
-	return 1 + (imv + FImvFirstIsBlack()) / 2;
-}
-
-
-
 void GA::SetTimeRemaining(CPC cpc, DWORD dmsec) noexcept
 {
 	mpcpcdmsec[cpc] = dmsec;

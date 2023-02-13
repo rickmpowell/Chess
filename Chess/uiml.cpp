@@ -437,7 +437,7 @@ ColorF UICLOCK::CoText(void) const
 
 void UICLOCK::Draw(const RC& rcUpdate)
 {
-	RC rcTime = DrawTimeControls(Ga().NmvNextFromCpc(cpc));
+	RC rcTime = DrawTimeControls(Ga().bdg.NmvNextFromCpc(cpc));
 
 	/* break down time into parts */
 
@@ -792,9 +792,9 @@ void UIML::Draw(const RC& rcUpdate)
  */
 RC UIML::RcFromImv(int imv) const
 {
-	int nmv = Ga().NmvFromImv(imv);
+	int nmv = Ga().bdg.vmveGame.NmvFromImv(imv);
 	float y = RcContent().top + 4.0f + (nmv-1)*dyList;
-	return RcFromCol(y, 1 + !Ga().FImvIsWhite(imv));
+	return RcFromCol(y, 1 + !Ga().bdg.vmveGame.FImvIsWhite(imv));
 }
 
 
@@ -807,13 +807,13 @@ void UIML::DrawContent(const RC& rcCont)
 {
 	GA& ga(Ga());
 	float yCont = RcContent().top + 4.0f;
-	if (ga.FImvFirstIsBlack())
+	if (ga.bdg.vmveGame.FImvFirstIsBlack())
 		DrawMoveNumber(RcFromCol(yCont, 0), 1);
 	BDG bdgT(ga.bdgInit);
 	for (int imve = 0; imve < ga.bdg.vmveGame.size(); imve++) {
 		MVE mve = ga.bdg.vmveGame[imve];
-		if (ga.FImvIsWhite(imve)) {
-			int nmv = ga.NmvFromImv(imve);
+		if (ga.bdg.vmveGame.FImvIsWhite(imve)) {
+			int nmv = ga.bdg.vmveGame.NmvFromImv(imve);
 			RC rc = RcFromCol(yCont + (nmv-1) * dyList, 0);
 			DrawMoveNumber(rc, nmv);
 		}
@@ -965,7 +965,7 @@ HTML UIML::HtmlHitTest(const PT& pt, int* pimv)
 		imv = li * 2;
 	else if (pt.x < mpcoldx[0] + mpcoldx[1] + mpcoldx[2])
 		imv = li * 2 + 1;
-	if (Ga().FImvFirstIsBlack())
+	if (Ga().bdg.vmveGame.FImvFirstIsBlack())
 		imv--;
 	if (imv < 0)
 		return htmlEmptyBefore;

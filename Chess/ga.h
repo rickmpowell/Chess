@@ -165,16 +165,6 @@ public:
 	DWORD DmsecRemaining(CPC cpc) const noexcept;
 
 	/*
-	 *	Helpers for dealing with move numbers given a move index, which is complicated
-	 *	by board positions that are set up with black to move
-	 */
-
-	int NmvNextFromCpc(CPC cpc) const;
-	bool FImvIsWhite(int imv) const;
-	bool FImvFirstIsBlack(void) const;
-	int NmvFromImv(int imv) const;
-
-	/*
 	 *	Deserializing 
 	 */
 

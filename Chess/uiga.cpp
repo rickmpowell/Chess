@@ -358,7 +358,7 @@ void UIGA::InitGame(void)
 }
 
 
-/*	UIGA::StartGame
+/*	UIGA::`
  *
  *	Starts the game going, which includes turning on the clocks
  */
@@ -433,7 +433,7 @@ void UIGA::PauseClock(CPC cpc, DWORD msecCur)
 	if (ga.prule->FUntimed())
 		return;
 	mpcpcdmsecClock[cpc] -= msecCur - msecLast;
-	int nmvThis = ga.NmvFromImv(ga.bdg.imveCurLast+1);
+	int nmvThis = ga.bdg.vmveGame.NmvFromImv(ga.bdg.imveCurLast+1);
 	mpcpcdmsecClock[cpc] +=
 		ga.prule->DmsecAddMove(cpc, nmvThis) + ga.prule->DmsecAddBlock(cpc, nmvThis+1);
 	ga.SetTimeRemaining(cpc, mpcpcdmsecClock[cpc]);

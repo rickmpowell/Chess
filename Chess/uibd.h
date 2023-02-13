@@ -300,6 +300,7 @@ public:
 	virtual void Layout(void);
 	virtual void DispatchCmd(int cmd);
 	virtual wstring SzTipFromCmd(int cmd) const;
+	virtual bool FEnabledCmd(int cmd) const;
 	virtual ColorF CoBack(void) const { return coBoardBWLight; }
 
 	RC RcFromApc(APC apc) const;

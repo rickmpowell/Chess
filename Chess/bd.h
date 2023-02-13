@@ -593,6 +593,27 @@ string to_string(TKMV tkmv);
 
 /*
  *
+ *	VMVEML class
+ * 
+ *	Movelist, which just encapsulates some useful move list functionality
+ *
+ */
+
+
+class VMVEML : public T_VMVE<1024>
+{
+	int dimveFirst;
+public:
+	VMVEML(void) : dimveFirst(0) { }
+	void SetDimveFirst(int dimveFirstNew) { dimveFirst = dimveFirstNew; }
+	bool FImvFirstIsBlack(void) const { return dimveFirst & 1; }
+	bool FImvIsWhite(int imve) const { return ((imve + FImvFirstIsBlack()) & 1) == 0; }
+	int NmvFromImv(int imve) const { return 1 + (imve + dimveFirst) / 2; }
+};
+
+
+/*
+ *
  *	BDG class
  * 
  *	The game board, which is the regular board along with the move history and other
@@ -605,7 +626,7 @@ class BDG : public BD
 {
 public:
 	GS gs;
-	T_VMVE<1024> vmveGame;		/* the game moves that resulted in bd board state */
+	VMVEML vmveGame;		/* the game moves that resulted in bd board state */
 	int imveCurLast;		/* position of current last made move, -1 before first move; may be 
 							   less than vmvGame.size after Undo/Redo */
 	int imvePawnOrTakeLast;	/* index of last pawn or capture move (used for 50-move draw
@@ -665,6 +686,7 @@ public:
 	bool FMvApcFileAmbiguous(const VMVE& vmve, MVE mve) const;
 	string SzFlattenMvSz(const wstring& wsz) const;
 	wstring SzDecodeMvPost(MVE mve) const;
+	int NmvNextFromCpc(CPC cpc) const;
 
 	/* 
 	 *	parsing moves 

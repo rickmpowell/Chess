@@ -125,14 +125,14 @@ void GA::SerializeMoveList(ostream& os)
 	if (bdg.vmveGame.size() > 0) {
 		/* first move needs some special handling to put leading "..." on move lists
 		   when black was the first to move */
-		WriteSzLine80(os, szLine, FImvFirstIsBlack()  ? "1... " : "1. ");
+		WriteSzLine80(os, szLine, bdg.vmveGame.FImvFirstIsBlack()  ? "1... " : "1. ");
 		SerializeMove(os, szLine, bdgSav, bdg.vmveGame[0]);
 		for (int imve = 1; imve < bdg.vmveGame.size(); imve++) {
 			MVE mve = bdg.vmveGame[imve];
 			if (mve.fIsNil())
 				continue;
-			if (FImvIsWhite(imve))
-				WriteSzLine80(os, szLine, to_string(NmvFromImv(imve)) + ". ");
+			if (bdg.vmveGame.FImvIsWhite(imve))
+				WriteSzLine80(os, szLine, to_string(bdg.vmveGame.NmvFromImv(imve)) + ". ");
 			SerializeMove(os, szLine, bdgSav, mve);
 		}
 	}

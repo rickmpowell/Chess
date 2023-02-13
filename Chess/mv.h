@@ -58,17 +58,17 @@ protected:
 		unused1 : 1;
 public:
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(void) noexcept { *(uint16_t*)this = 0; }
+	__forceinline MV(void) noexcept { *(uint16_t*)this = 0; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MV(uint16_t u) noexcept { *(uint16_t*)this = u; }
-	inline MV(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
-	inline operator uint16_t() const noexcept { return *(uint16_t*)this; }
+	__forceinline MV(uint16_t u) noexcept { *(uint16_t*)this = u; }
+	__forceinline MV(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
+	__forceinline operator uint16_t() const noexcept { return *(uint16_t*)this; }
 
-	inline SQ sqFrom(void) const noexcept { return usqFrom; }
-	inline SQ sqTo(void) const noexcept { return usqTo; }
-	inline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
-	inline void SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); }
-	inline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
+	__forceinline SQ sqFrom(void) const noexcept { return usqFrom; }
+	__forceinline SQ sqTo(void) const noexcept { return usqTo; }
+	__forceinline APC apcPromote(void) const noexcept { return static_cast<APC>(uapcPromote); }
+	__forceinline void SetApcPromote(APC apc) noexcept { uapcPromote = static_cast<uint16_t>(apc); }
+	__forceinline bool fIsNil(void) const noexcept { return usqFrom == 0 && usqTo == 0; }
 };
 
 static_assert(sizeof(MV) == sizeof(uint16_t));
@@ -87,14 +87,14 @@ protected:
 public:
 
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVU(void) noexcept { *(uint32_t*)this = 0; }
+	__forceinline MVU(void) noexcept { *(uint32_t*)this = 0; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVU(uint32_t u) noexcept { *(uint32_t*)this = u; }
+	__forceinline MVU(uint32_t u) noexcept { *(uint32_t*)this = u; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
-	inline MVU(MV mv) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mv; }
-	inline operator uint32_t() const noexcept { return *(uint32_t*)this; }
+	__forceinline MVU(MV mv) noexcept { *(uint32_t*)this = 0; *(uint16_t*)this = *(uint16_t*)&mv; }
+	__forceinline operator uint32_t() const noexcept { return *(uint32_t*)this; }
 
-	inline MVU(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
+	__forceinline MVU(SQ sqFrom, SQ sqTo, PC pcMove) noexcept
 	{
 		assert(pcMove.apc() != apcNull);
 		*(uint32_t*)this = 0;	// initialize everything else to 0
@@ -103,13 +103,13 @@ public:
 		usqTo = sqTo;
 	}
 
-	inline void SetPcMove(PC pcMove) noexcept { upcMove = pcMove; }
-	inline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
-	inline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
-	inline PC pcMove(void) const noexcept { return PC(upcMove); }
-	inline void SetCapture(APC apc) noexcept { uapcCapt = static_cast<uint16_t>(apc); }
+	__forceinline void SetPcMove(PC pcMove) noexcept { upcMove = pcMove; }
+	__forceinline APC apcMove(void) const noexcept { return PC(upcMove).apc(); }
+	__forceinline CPC cpcMove(void) const noexcept { return PC(upcMove).cpc(); }
+	__forceinline PC pcMove(void) const noexcept { return PC(upcMove); }
+	__forceinline void SetCapture(APC apc) noexcept { uapcCapt = static_cast<uint16_t>(apc); }
 
-	inline void SetCsEp(int cs, SQ sqEnPassant) noexcept
+	__forceinline void SetCsEp(int cs, SQ sqEnPassant) noexcept
 	{
 		ucs = cs;
 		ufEnPassant = !sqEnPassant.fIsNil();
@@ -117,15 +117,15 @@ public:
 			ufileEnPassant = sqEnPassant.file();
 	}
 
-	inline int csPrev(void) const noexcept { return ucs; }
-	inline int fileEpPrev(void) const noexcept { return ufileEnPassant; }
-	inline bool fEpPrev(void) const noexcept { return ufEnPassant; }
-	inline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
-	inline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
-	inline bool operator==(const MVU& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
-	inline bool operator!=(const MVU& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
-	inline bool operator==(const MV& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
-	inline bool operator!=(const MV& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }
+	__forceinline int csPrev(void) const noexcept { return ucs; }
+	__forceinline int fileEpPrev(void) const noexcept { return ufileEnPassant; }
+	__forceinline bool fEpPrev(void) const noexcept { return ufEnPassant; }
+	__forceinline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
+	__forceinline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
+	__forceinline bool operator==(const MVU& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
+	__forceinline bool operator!=(const MVU& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
+	__forceinline bool operator==(const MV& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
+	__forceinline bool operator!=(const MV& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }
 };
 
 static_assert(sizeof(MVU) == sizeof(uint32_t));
@@ -194,13 +194,13 @@ enum TSC : int {
 	tscEvOther = 3
 };
 
-inline TSC& operator++(TSC& tsc)
+__forceinline TSC& operator++(TSC& tsc)
 {
 	tsc = static_cast<TSC>(tsc + 1);
 	return tsc;
 }
 
-inline TSC operator++(TSC& tsc, int)
+__forceinline TSC operator++(TSC& tsc, int)
 {
 	TSC tscT = tsc;
 	tsc = static_cast<TSC>(tsc + 1);
@@ -231,33 +231,33 @@ public:
 	uint16_t utsc;	// score type, used by ai search to enumerate good moves first for alpha-beta
 
 #pragma warning(suppress:26495)	
-	inline MVE(void) noexcept { *(uint64_t*)this = (uint32_t)mvuNil; }
+	__forceinline MVE(void) noexcept { *(uint64_t*)this = (uint32_t)mvuNil; }
 #pragma warning(suppress:26495)	
-	inline MVE(MVU mvu) noexcept { *(uint64_t*)this = (uint32_t)mvu; }
-	MVE(MVU mvu, EV ev) noexcept : MVU(mvu), ev(ev), utsc(0) { }
+	__forceinline MVE(MVU mvu) noexcept { *(uint64_t*)this = (uint32_t)mvu; }
+	__forceinline MVE(MVU mvu, EV ev) noexcept : MVU(mvu), ev(ev), utsc(0) { }
 #pragma warning(suppress:26495)	 
-	MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
+	__forceinline MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
 #pragma warning(suppress:26495)	
-	MVE(SQ sqFrom, SQ sqTo, PC pcMove) noexcept {
+	__forceinline MVE(SQ sqFrom, SQ sqTo, PC pcMove) noexcept {
 		*(uint64_t*)this = 0;
 		usqFrom = sqFrom;
 		usqTo = sqTo;
 		upcMove = pcMove;
 	}
 
-	inline operator uint64_t() const noexcept { return *(uint64_t*)this; }
-	inline operator MVU() const noexcept { return *(uint32_t*)this; }
+	__forceinline operator uint64_t() const noexcept { return *(uint64_t*)this; }
+	__forceinline operator MVU() const noexcept { return *(uint32_t*)this; }
 
 	/* comparison operations work on the eval */
 
-	inline bool operator>(const MVE& mve) const noexcept { return utsc > mve.utsc || (utsc == mve.utsc && ev > mve.ev); }
-	inline bool operator<(const MVE& mve) const noexcept { return utsc < mve.utsc || (utsc == mve.utsc && ev < mve.ev); }
-	inline bool operator>=(const MVE& mve) const noexcept { return !(*this < mve); }
-	inline bool operator<=(const MVE& mve) const noexcept { return !(*this > mve); }
+	__forceinline bool operator>(const MVE& mve) const noexcept { return utsc > mve.utsc || (utsc == mve.utsc && ev > mve.ev); }
+	__forceinline bool operator<(const MVE& mve) const noexcept { return utsc < mve.utsc || (utsc == mve.utsc && ev < mve.ev); }
+	__forceinline bool operator>=(const MVE& mve) const noexcept { return !(*this < mve); }
+	__forceinline bool operator<=(const MVE& mve) const noexcept { return !(*this > mve); }
 
-	inline void SetTsc(TSC tsc) noexcept { utsc = static_cast<uint16_t>(tsc); }
-	inline TSC tsc() const noexcept { return static_cast<TSC>(utsc); }
-	inline void SetMvu(MVU mvu) noexcept { *(MVU*)this = mvu; }
+	__forceinline void SetTsc(TSC tsc) noexcept { utsc = static_cast<uint16_t>(tsc); }
+	__forceinline TSC tsc() const noexcept { return static_cast<TSC>(utsc); }
+	__forceinline void SetMvu(MVU mvu) noexcept { *(MVU*)this = mvu; }
 };
 
 static_assert(sizeof(MVE) == sizeof(uint64_t));
@@ -431,7 +431,7 @@ public:
 
 	/* iterator and const iterator for the arrays */
 
-	class iterator {
+	class it {
 		T_VMVE* pvmve;
 		int imve;
 	public:
@@ -441,28 +441,28 @@ public:
 		using reference = MVE&;
 		using iterator_category = random_access_iterator_tag;
 
-		inline iterator(T_VMVE* pvmve, difference_type imve) noexcept : pvmve(pvmve), imve(imve) { }
-		inline iterator(const iterator& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
-		inline iterator& operator=(const iterator& it) noexcept { pvmve = it.pvmve; imve = it.imve; return *this; }
-		inline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
-		inline reference operator*() const noexcept { return (*pvmve)[imve]; }
-		inline pointer operator->() const noexcept { return &(*pvmve)[imve]; }
-		inline iterator& operator++() noexcept { imve++; return *this; }
-		inline iterator operator++(int) noexcept { int imveT = imve; imve++; return iterator(pvmve, imveT); }
-		inline iterator& operator--() noexcept { imve--; return *this; }
-		inline iterator operator--(int) noexcept { int imveT = imve; imve--; return iterator(pvmve, imveT); }
-		inline iterator operator+(difference_type dimve) const noexcept { return iterator(pvmve, imve + dimve); }
-		inline iterator operator-(difference_type dimve) const noexcept { return iterator(pvmve, imve - dimve); }
-		inline iterator& operator+=(difference_type dimve) noexcept { imve += dimve; return *this; }
-		inline iterator& operator-=(difference_type dimve) noexcept { imve -= dimve; return *this; }
-		friend inline iterator operator+(difference_type dimve, iterator const& it) { return iterator(it.pvmve, dimve + it.imve); }
-		inline difference_type operator-(const iterator& it) const noexcept { return imve - it.imve; }
-		inline bool operator==(const iterator& it) const noexcept { return imve == it.imve; }
-		inline bool operator!=(const iterator& it) const noexcept { return imve != it.imve; }
-		inline bool operator<(const iterator& it) const noexcept { return imve < it.imve; }
+		__forceinline it(T_VMVE* pvmve, difference_type imve) noexcept : pvmve(pvmve), imve(imve) { }
+		__forceinline it(const it& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
+		__forceinline it& operator=(const it& it) noexcept { pvmve = it.pvmve; imve = it.imve; return *this; }
+		__forceinline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
+		__forceinline reference operator*() const noexcept { return (*pvmve)[imve]; }
+		__forceinline pointer operator->() const noexcept { return &(*pvmve)[imve]; }
+		__forceinline it& operator++() noexcept { imve++; return *this; }
+		__forceinline it operator++(int) noexcept { int imveT = imve; imve++; return it(pvmve, imveT); }
+		__forceinline it& operator--() noexcept { imve--; return *this; }
+		__forceinline it operator--(int) noexcept { int imveT = imve; imve--; return it(pvmve, imveT); }
+		__forceinline it operator+(difference_type dimve) const noexcept { return it(pvmve, imve + dimve); }
+		__forceinline it operator-(difference_type dimve) const noexcept { return it(pvmve, imve - dimve); }
+		__forceinline it& operator+=(difference_type dimve) noexcept { imve += dimve; return *this; }
+		__forceinline it& operator-=(difference_type dimve) noexcept { imve -= dimve; return *this; }
+		friend __forceinline it operator+(difference_type dimve, it const& it) { return it(it.pvmve, dimve + it.imve); }
+		__forceinline difference_type operator-(const it& it) const noexcept { return imve - it.imve; }
+		__forceinline bool operator==(const it& it) const noexcept { return imve == it.imve; }
+		__forceinline bool operator!=(const it& it) const noexcept { return imve != it.imve; }
+		__forceinline bool operator<(const it& it) const noexcept { return imve < it.imve; }
 	};
 
-	class citerator {
+	class itc {
 		const T_VMVE* pvmve;
 		int imve;
 	public:
@@ -470,38 +470,34 @@ public:
 		using value_type = MVE;
 		using pointer = const MVE*;
 		using reference = const MVE&;
-		typedef random_access_iterator_tag iterator_category;
+		using iterator_category = random_access_iterator_tag;;
 
-		inline citerator(const T_VMVE* pvmve, int imve) noexcept : pvmve(pvmve), imve(imve) { }
-		inline citerator(const citerator& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
-		//		inline citerator operator=(const citerator& cit) noexcept { pvmve = cit.pvmve; imve = cit.imve; return *this; }
-
-		inline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
-		inline reference operator*() const noexcept { return (*pvmve)[imve]; }
-		inline pointer operator->() const noexcept { return &(*pvmve)[imve]; }
-
-		inline citerator operator++() noexcept { imve++; return *this; }
-		inline citerator operator++(int) noexcept { citerator cit = *this; imve++; return cit; }
-		inline citerator operator--() noexcept { imve--; return *this; }
-		inline citerator operator--(int) noexcept { citerator it = *this; imve--; return it; }
-
-		inline citerator operator+(difference_type dimve) const noexcept { return citerator(pvmve, imve + dimve); }
-		inline citerator operator-(difference_type dimve) const noexcept { return citerator(pvmve, imve - dimve); }
-		inline citerator operator+=(difference_type dimve) noexcept { imve += dimve; return *this; }
-		inline citerator operator-=(difference_type dimve) noexcept { imve -= dimve; return *this; }
-		friend inline citerator operator+(difference_type dimve, const citerator& cit) { return citerator(cit.pvmve, dimve + cit.imve); }
-		inline difference_type operator-(const citerator& cit) const noexcept { return imve - cit.imve; }
-
-		inline bool operator==(const citerator& cit) const noexcept { return imve == cit.imve; }
-		inline bool operator!=(const citerator& cit) const noexcept { return imve != cit.imve; }
-		inline bool operator<(const citerator& cit) const noexcept { return imve < cit.imve; }
+		__forceinline itc(const T_VMVE* pvmve, int imve) noexcept : pvmve(pvmve), imve(imve) { }
+		__forceinline itc(const itc& it) noexcept : pvmve(it.pvmve), imve(it.imve) { }
+		//		__forceinline itc operator=(const itc& it) noexcept { pvmve = it.pvmve; imve = it.imve; return *this; }
+		__forceinline reference operator[](difference_type dimve) const noexcept { return (*pvmve)[imve + dimve]; }
+		__forceinline reference operator*() const noexcept { return (*pvmve)[imve]; }
+		__forceinline pointer operator->() const noexcept { return &(*pvmve)[imve]; }
+		__forceinline itc operator++() noexcept { imve++; return *this; }
+		__forceinline itc operator++(int) noexcept { itc it = *this; imve++; return it; }
+		__forceinline itc operator--() noexcept { imve--; return *this; }
+		__forceinline itc operator--(int) noexcept { itc it = *this; imve--; return it; }
+		__forceinline itc operator+(difference_type dimve) const noexcept { return itc(pvmve, imve + dimve); }
+		__forceinline itc operator-(difference_type dimve) const noexcept { return itc(pvmve, imve - dimve); }
+		__forceinline itc operator+=(difference_type dimve) noexcept { imve += dimve; return *this; }
+		__forceinline itc operator-=(difference_type dimve) noexcept { imve -= dimve; return *this; }
+		friend inline itc operator+(difference_type dimve, const itc& it) { return itc(it.pvmve, dimve + it.imve); }
+		__forceinline difference_type operator-(const itc& it) const noexcept { return imve - it.imve; }
+		__forceinline bool operator==(const itc& it) const noexcept { return imve == it.imve; }
+		__forceinline bool operator!=(const itc& it) const noexcept { return imve != it.imve; }
+		__forceinline bool operator<(const itc& cit) const noexcept { return imve < it.imve; }
 	};
 
-	inline int size(void) const noexcept { return cmve(); }
-	inline iterator begin(void) noexcept { return iterator(this, 0); }
-	inline iterator end(void) noexcept { return iterator(this, size()); }
-	inline citerator begin(void) const noexcept { return citerator(this, 0); }
-	inline citerator end(void) const noexcept { return citerator(this, size()); }
+	__forceinline int size(void) const noexcept { return cmve(); }
+	__forceinline it begin(void) noexcept { return it(this, 0); }
+	__forceinline it end(void) noexcept { return it(this, size()); }
+	__forceinline itc begin(void) const noexcept { return itc(this, 0); }
+	__forceinline itc end(void) const noexcept { return itc(this, size()); }
 
 
 #ifdef OVERFLOW_VMVE
@@ -552,7 +548,7 @@ public:
 #endif
 
 
-	inline void insert(int imve, const MVE& mve) noexcept
+	void insert(int imve, const MVE& mve) noexcept
 	{
 		assert(FValid());
 #ifdef OVERFLOW_VMVE
@@ -600,7 +596,7 @@ public:
 	}
 
 
-	void clear(void) noexcept
+	__forceinline void clear(void) noexcept
 	{
 #ifdef OVERFLOW_VMVE
 		if (pvmveOverflow) {
@@ -612,5 +608,10 @@ public:
 	}
 };
 
+
+/*	
+ *	VMVE is a maximum 256-move list, which is enough to hold the worst-case movegen
+ *	number of moves.
+ */
 
 typedef T_VMVE<256> VMVE;
