@@ -358,7 +358,7 @@ void UIGA::InitGame(void)
 }
 
 
-/*	UIGA::`
+/*	UIGA::StartGame
  *
  *	Starts the game going, which includes turning on the clocks
  */

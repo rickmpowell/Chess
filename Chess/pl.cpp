@@ -149,7 +149,7 @@ PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0),
 #endif
 		cYield(0)
 {
-	fecoMaterial = fecoScale;
+	fecoMaterial = 1*fecoScale;
 	fecoMobility = 3*fecoScale;	/* this is small because Material already includes
 								   some mobility in the piece-square tables */
 	fecoKingSafety = 10*fecoScale;
