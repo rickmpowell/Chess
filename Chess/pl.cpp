@@ -1101,8 +1101,8 @@ void PLAI::InitTimeMan(BDG& bdg) noexcept
 	case ttmSmart:
 		if (!ga.prule->FUntimed()) {
 			dmsecFlag = ga.DmsecRemaining(bdg.cpcToMove);
-			int nmvCur = ga.bdg.vmveGame.NmvFromImv(bdg.imveCurLast);
-			int nmvFlag = ga.prule->TmiFromNmv(nmvCur).nmvLast;
+			int nmvCur = ga.bdg.vmveGame.NmvFromImv(bdg.imveCurLast+1);	/* move number of the move we're about to make */
+			int nmvFlag = ga.prule->TmiFromNmv(nmvCur).nmvLast;	/* move number we must make before we flag */
 			DWORD dmsecMove = ga.prule->DmsecAddMove(bdg.cpcToMove, nmvCur);
 			/* number of moves left in the game based on total material on the board;
 			   yeah, I know I know, really lame */

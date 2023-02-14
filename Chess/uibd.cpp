@@ -134,12 +134,14 @@ void UIBD::Layout(void)
 void UIBD::InitGame(void)
 {
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	SetMoveHilite(mveNil);
 }
 
 
 void UIBD::StartGame(void)
 {
 	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	SetMoveHilite(mveNil);
 }
 
 
