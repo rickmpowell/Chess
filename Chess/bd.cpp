@@ -1632,10 +1632,10 @@ wstring SzFromMv(MV mv)
 
 RULE::RULE(void) : cmvRepeatDraw(3)
 {
-	//vtmi.push_back(TMI(0, -1, msecMin*30, msecSec*3));	/* 30min and 3sec is TCEC early time control */
-	vtmi.push_back(TMI(1, 40, msecMin * 100, 0));
-	vtmi.push_back(TMI(41, 60, msecMin * 50, 0));
-	vtmi.push_back(TMI(61, -1, msecMin * 15, msecSec * 30));
+	vtmi.push_back(TMI(1, -1, msecMin * 30, msecSec * 3));	/* 30min and 3sec is TCEC early time control */
+//	vtmi.push_back(TMI(1, 40, msecMin * 100, 0));
+//	vtmi.push_back(TMI(41, 60, msecMin * 50, 0));
+//	vtmi.push_back(TMI(61, -1, msecMin * 15, msecSec * 30));
 }
 
 
@@ -1665,19 +1665,23 @@ int RULE::CtmiTotal(void) const
 	return (int)vtmi.size();
 }
 
-int RULE::ItmiFromNmv(int nmv) const
+const TMI& RULE::TmiFromNmv(int nmv) const
 {
-	for (int itmi = 0; itmi < vtmi.size(); itmi++) {
-		if (nmv >= vtmi[itmi].nmvFirst && nmv <= vtmi[itmi].nmvLast)
-			return itmi;
+	assert(!FUntimed());
+	for (vector<TMI>::const_iterator ptmi = vtmi.begin(); ptmi < vtmi.end(); ++ptmi) {
+		if (ptmi->FContainsNmv(nmv))
+			return *ptmi;
 	}
-	return (int)vtmi.size();
+	return vtmi.back();
 }
 
-TMI RULE::TmiFromItmi(int itmi) const
+
+const TMI& RULE::TmiFromItmi(int itmi) const
 {
+	assert(!FUntimed());
 	return vtmi[itmi];
 }
+
 
 /*	RULE::FUntimed
  *

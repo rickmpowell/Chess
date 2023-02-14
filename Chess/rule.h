@@ -62,9 +62,8 @@ public:
 	int CmvRepeatDraw(void) const;
 	void SetGameTime(CPC cpc, DWORD dsec);
 	int CtmiTotal(void) const;
-	int ItmiFromNmv(int nmv) const;
-	TMI TmiFromItmi(int itmi) const;
-	TMI TmiFromNmv(int nmv) const { return TmiFromItmi(ItmiFromNmv(nmv)); }
+	const TMI& TmiFromItmi(int itmi) const;
+	const TMI& TmiFromNmv(int nmv) const;
 
 	wstring SzTimeControlTitle(void) const;
 	wstring SzTimeControlSummary(void) const;
