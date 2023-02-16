@@ -328,6 +328,7 @@ public:
 	inline void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
 	inline void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
 	inline void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
+	inline MVE MveFromMv(MV mv) const noexcept { return MVE(mv.sqFrom(), mv.sqTo(), PcFromSq(mv.sqFrom())); }
 
 	/*
 	 *	checking squares for attack
