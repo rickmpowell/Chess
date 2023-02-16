@@ -701,7 +701,7 @@ MVE PLAI::MveGetNext(SPMV& spmv) noexcept
 
 	MVE mveBest;
 	AB ab(-evInf, evInf);
-	int depthLim = 4;
+	int depthLim = 2;
 	do {
 		mveBest = MVE(mvuNil, -evInf);
 		stbfMain.Init(); stbfQuiescent.Init();
