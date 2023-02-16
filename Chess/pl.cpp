@@ -142,8 +142,8 @@ public:
 
 
 PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
-		//ttm(IfReleaseElse(ttmSmart, ttmConstDepth)),
-		ttm(ttmSmart),
+		ttm(IfReleaseElse(ttmSmart, ttmConstDepth)),
+		//ttm(ttmSmart),
 #ifndef NOSTATS
 		cmveTotalEval(0), 
 #endif
@@ -309,10 +309,10 @@ public:
 
 	inline bool FExpandLog(const MVE& mve) const noexcept
 	{
+		if (mve.fIsNil())
+			return false;
 		if (amv[imvExpand] != mvAll) {
-			if (mve.sqFrom() != amv[imvExpand].sqFrom() ||
-					mve.sqTo() != amv[imvExpand].sqTo() ||
-					mve.apcPromote() != amv[imvExpand].apcPromote())
+			if (mve != amv[imvExpand])
 				return false;
 		}
 		imvExpand++;
@@ -701,7 +701,7 @@ MVE PLAI::MveGetNext(SPMV& spmv) noexcept
 
 	MVE mveBest;
 	AB ab(-evInf, evInf);
-	int depthLim = 1;
+	int depthLim = 4;
 	do {
 		mveBest = MVE(mvuNil, -evInf);
 		stbfMain.Init(); stbfQuiescent.Init();
@@ -791,7 +791,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 
 	AB ab = abInit;
 	mveBest = MVE(mvuNil, EvBdgStatic(bdg, mvePrev));
-	SaveXt(bdg, mveBest, AB(-evInf, evInf), 0);
+//	SaveXt(bdg, mveBest, AB(-evInf, evInf), 0);
 	if (FPrune(&mveBest, mveBest, ab, depthLim))
 		return mveBest.ev;
 
@@ -808,7 +808,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 	TestForMates(bdg, vmvesq, mveBest, depth);
 
 Done:
-	SaveXt(bdg, mveBest, abInit, 0);
+//	SaveXt(bdg, mveBest, abInit, 0);
 	return mveBest.ev;
 }
 

@@ -437,6 +437,9 @@ ColorF UICLOCK::CoText(void) const
 
 void UICLOCK::Draw(const RC& rcUpdate)
 {
+	if (Ga().prule->FUntimed())
+		return;
+
 	RC rcTime = DrawTimeControls(Ga().bdg.NmvNextFromCpc(cpc));
 
 	/* break down time into parts */

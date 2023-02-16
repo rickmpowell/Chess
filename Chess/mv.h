@@ -122,8 +122,9 @@ public:
 	__forceinline bool fEpPrev(void) const noexcept { return ufEnPassant; }
 	__forceinline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
 	__forceinline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
-	__forceinline bool operator==(const MVU& mv) const noexcept { return *(uint32_t*)this == (uint32_t)mv; }
-	__forceinline bool operator!=(const MVU& mv) const noexcept { return *(uint32_t*)this != (uint32_t)mv; }
+	/* beware! - comparison operators only work on the MV part of the MVE */
+	__forceinline bool operator==(const MVU& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
+	__forceinline bool operator!=(const MVU& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }
 	__forceinline bool operator==(const MV& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
 	__forceinline bool operator!=(const MV& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }
 };

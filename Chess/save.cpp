@@ -362,6 +362,8 @@ string BDG::SzFlattenMvSz(const wstring& wsz) const
  */
 wstring BDG::SzDecodeMvPost(MVE mve) const
 {
+	if (mve.fIsNil())
+		return L"--";
 	SQ sqFrom = mve.sqFrom();
 	SQ sqTo = mve.sqTo();
 	wstring sz;

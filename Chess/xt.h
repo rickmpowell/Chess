@@ -233,6 +233,8 @@ public:
 	__forceinline XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int depth) noexcept
 	{
 		assert(mve.ev != evInf && mve.ev != -evInf);
+		assert(!mve.fIsNil());
+		assert(tev != tevNull);
 #ifndef NOSTATS
 		cxevSave++;
 #endif
@@ -276,7 +278,7 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as depth. Returns nullptr if no such entry exists.
 	 */
-	__forceinline /*__declspec(noinline)*/ XEV* Find(const BDG& bdg, int depth) noexcept
+	__forceinline XEV* Find(const BDG& bdg, int depth) noexcept
 	{
 #ifndef NOSTATS
 		cxevProbe++;
