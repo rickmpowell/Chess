@@ -1771,9 +1771,10 @@ wstring RULE::SzTimeControlTitle(void) const
 
 wstring RULE::SzTimeControlSummary(void) const
 {
-	wstring sz = SzSummaryFromTmi(vtmi[0]);
-	for (int itmi = 1; itmi < vtmi.size(); itmi++)
-		sz += L", " + SzSummaryFromTmi(vtmi[itmi]);
+	vector<TMI>::const_iterator ptmi = vtmi.begin();
+	wstring sz = SzSummaryFromTmi(*ptmi++);
+	for ( ; ptmi < vtmi.end(); ++ptmi)
+		sz += L", " + SzSummaryFromTmi(*ptmi);
 	return sz;
 }
 
