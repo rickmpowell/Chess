@@ -31,20 +31,20 @@ enum APC : int {
 	Bishop2 = 7	// only used for draw detection computation to keep track of bishop square color
 };
 
-inline APC& operator++(APC& apc)
+__forceinline APC& operator++(APC& apc)
 {
 	apc = static_cast<APC>(apc + 1);
 	return apc;
 }
 
-inline APC operator++(APC& apc, int)
+__forceinline APC operator++(APC& apc, int)
 {
 	APC apcT = apc;
 	apc = static_cast<APC>(apc + 1);
 	return apcT;
 }
 
-inline APC& operator+=(APC& apc, int dapc)
+__forceinline APC& operator+=(APC& apc, int dapc)
 {
 	apc = static_cast<APC>(static_cast<int>(apc) + dapc);
 	return apc;
@@ -64,13 +64,13 @@ class PC
 {
 	uint8_t upc;
 public:
-	PC(uint8_t upc) noexcept : upc(upc) { }
-	PC(CPC cpc, APC apc) noexcept : upc((static_cast<uint8_t>(cpc) << 3) | static_cast<uint8_t>(apc)) { }
-	APC apc(void) const noexcept { return static_cast<APC>(upc & 7); }
-	CPC cpc(void) const noexcept { return static_cast<CPC>((upc >> 3) & 1); }
-	inline operator uint8_t() const noexcept { return upc; }
-	inline PC& operator++() { upc++; return *this; }
-	inline PC operator++(int) { uint8_t upcT = upc++; return PC(upcT); }
+	__forceinline PC(uint8_t upc) noexcept : upc(upc) { }
+	__forceinline PC(CPC cpc, APC apc) noexcept : upc((static_cast<uint8_t>(cpc) << 3) | static_cast<uint8_t>(apc)) { }
+	__forceinline APC apc(void) const noexcept { return static_cast<APC>(upc & 7); }
+	__forceinline CPC cpc(void) const noexcept { return static_cast<CPC>((upc >> 3) & 1); }
+	__forceinline operator uint8_t() const noexcept { return upc; }
+	__forceinline PC& operator++() { upc++; return *this; }
+	__forceinline PC operator++(int) { uint8_t upcT = upc++; return PC(upcT); }
 };
 
 const uint8_t pcMax = 2 * 8;
