@@ -63,45 +63,45 @@ class SQ
 {
 	uint8_t usq;
 public:
-	inline SQ(void) noexcept : usq(0xc0) { }
-	inline SQ(uint8_t usq) noexcept : usq(usq) { }
-	inline SQ(int rank, int file) noexcept : usq((rank << 3) | file) { }
-	inline int rank(void) const noexcept { assert(!fIsNil()); return (usq >> 3) & 7; }
-	inline int file(void) const noexcept { assert(!fIsNil()); return usq & 7; }
-	inline void SetRank(int rank) noexcept { usq = (usq & 7) | (rank << 3); }
-	inline void SetFile(int file) noexcept { usq = (usq & 0x38) | file; }
-	inline uint64_t fgrf(void) const noexcept { assert(usq < 64); return 1ULL << usq; }
-	inline operator uint8_t() const noexcept { return usq; }
-	inline bool fIsNil(void) const noexcept { return usq == 0xc0; }
+	__forceinline SQ(void) noexcept : usq(0xc0) { }
+	__forceinline SQ(uint8_t usq) noexcept : usq(usq) { }
+	__forceinline SQ(int rank, int file) noexcept : usq((rank << 3) | file) { }
+	__forceinline int rank(void) const noexcept { assert(!fIsNil()); return (usq >> 3) & 7; }
+	__forceinline int file(void) const noexcept { assert(!fIsNil()); return usq & 7; }
+	__forceinline void SetRank(int rank) noexcept { usq = (usq & 7) | (rank << 3); }
+	__forceinline void SetFile(int file) noexcept { usq = (usq & 0x38) | file; }
+	__forceinline uint64_t fgrf(void) const noexcept { assert(usq < 64); return 1ULL << usq; }
+	__forceinline operator uint8_t() const noexcept { return usq; }
+	__forceinline bool fIsNil(void) const noexcept { return usq == 0xc0; }
 
-	inline SQ& operator+=(int dsq) noexcept
+	__forceinline SQ& operator+=(int dsq) noexcept
 	{
 		usq += dsq;
 		return *this;
 	}
 
-	inline SQ operator+(int dsq) const noexcept
+	__forceinline SQ operator+(int dsq) const noexcept
 	{
 		return SQ(usq + dsq);
 	}
 
-	inline SQ operator++(int) noexcept
+	__forceinline SQ operator++(int) noexcept
 	{
 		uint8_t usqT = usq++;
 		return SQ(usqT);
 	}
 
-	inline SQ operator-(int dsq) const noexcept
+	__forceinline SQ operator-(int dsq) const noexcept
 	{
 		return SQ((uint8_t)(usq - dsq));
 	}
 
-	inline int operator-(const SQ& sq) const noexcept
+	__forceinline int operator-(const SQ& sq) const noexcept
 	{
 		return (int)usq - (int)sq.usq;
 	}
 
-	inline SQ sqFlip(void) noexcept
+	__forceinline SQ sqFlip(void) noexcept
 	{
 		return SQ(rankMax - 1 - rank(), file());
 	}
@@ -214,18 +214,18 @@ enum CPC : int {
 	cpcMax = 2
 };
 
-inline CPC operator~(CPC cpc)
+__forceinline CPC operator~(CPC cpc)
 {
 	return static_cast<CPC>(cpc ^ 1);
 }
 
-inline CPC& operator++(CPC& cpc)
+__forceinline CPC& operator++(CPC& cpc)
 {
 	cpc = static_cast<CPC>(cpc + 1);
 	return cpc;
 }
 
-inline CPC operator++(CPC& cpc, int)
+__forceinline CPC operator++(CPC& cpc, int)
 {
 	CPC cpcT = cpc;
 	cpc = static_cast<CPC>(cpc + 1);
@@ -275,50 +275,50 @@ class BB
 public:
 	uint64_t grf;
 
-	inline BB(void) noexcept : grf(0) { }
-	inline BB(uint64_t grf) noexcept : grf(grf) { }
-	inline BB(SQ sq) noexcept : grf(sq.fgrf()) { }
-	inline BB& clear(void) noexcept { grf = 0; return *this; }
+	__forceinline BB(void) noexcept : grf(0) { }
+	__forceinline BB(uint64_t grf) noexcept : grf(grf) { }
+	__forceinline BB(SQ sq) noexcept : grf(sq.fgrf()) { }
+	__forceinline BB& clear(void) noexcept { grf = 0; return *this; }
 	
 	/* standard  bit opereations */
 
-	inline BB operator|(BB bb) const noexcept { return BB(grf | bb.grf); }
-	inline BB& operator|=(BB bb) noexcept { grf |= bb.grf; return *this; }
-	inline BB operator&(BB bb) const noexcept { return BB(grf & bb.grf); }
-	inline BB& operator&=(BB bb) noexcept { grf &= bb.grf; return *this; }
-	inline BB operator^(BB bb) const noexcept { return BB(grf ^ bb.grf); }
-	inline BB& operator^=(BB bb) noexcept { grf ^= bb.grf; return *this; }
-	inline BB operator~(void) const noexcept { return BB(~grf); }
+	__forceinline BB operator|(BB bb) const noexcept { return BB(grf | bb.grf); }
+	__forceinline BB& operator|=(BB bb) noexcept { grf |= bb.grf; return *this; }
+	__forceinline BB operator&(BB bb) const noexcept { return BB(grf & bb.grf); }
+	__forceinline BB& operator&=(BB bb) noexcept { grf &= bb.grf; return *this; }
+	__forceinline BB operator^(BB bb) const noexcept { return BB(grf ^ bb.grf); }
+	__forceinline BB& operator^=(BB bb) noexcept { grf ^= bb.grf; return *this; }
+	__forceinline BB operator~(void) const noexcept { return BB(~grf); }
 
 	/* addition is same as "or", subtraction clears bits */
 
-	inline BB operator+(BB bb) const noexcept { return BB(grf | bb.grf); }
-	inline BB& operator+=(BB bb) noexcept { grf |= bb.grf; return *this; }
-	inline BB operator-(BB bb) const noexcept { return BB(grf & ~bb.grf); }
-	inline BB& operator-=(BB bb) noexcept { grf &= ~bb.grf; return *this; }
+	__forceinline BB operator+(BB bb) const noexcept { return BB(grf | bb.grf); }
+	__forceinline BB& operator+=(BB bb) noexcept { grf |= bb.grf; return *this; }
+	__forceinline BB operator-(BB bb) const noexcept { return BB(grf & ~bb.grf); }
+	__forceinline BB& operator-=(BB bb) noexcept { grf &= ~bb.grf; return *this; }
 
 	/* standard shifts */
 
-	inline BB operator<<(int dsq) const noexcept { return BB(grf << dsq); }
-	inline BB& operator<<=(int dsq) noexcept { grf <<= dsq; return *this; }
-	inline BB operator>>(int dsq) const noexcept { return BB(grf >> dsq); }
-	inline BB& operator>>=(int dsq) noexcept { grf >>= dsq; return *this; }
+	__forceinline BB operator<<(int dsq) const noexcept { return BB(grf << dsq); }
+	__forceinline BB& operator<<=(int dsq) noexcept { grf <<= dsq; return *this; }
+	__forceinline BB operator>>(int dsq) const noexcept { return BB(grf >> dsq); }
+	__forceinline BB& operator>>=(int dsq) noexcept { grf >>= dsq; return *this; }
 
 	/* comparisons */
 
-	inline bool operator==(const BB& bb) const noexcept { return grf == bb.grf; }
-	inline bool operator!=(const BB& bb) const noexcept { return grf != bb.grf; }
-	inline operator bool() const noexcept { return grf != 0; }
-	inline bool operator!() const noexcept { return grf == 0; }
+	__forceinline bool operator==(const BB& bb) const noexcept { return grf == bb.grf; }
+	__forceinline bool operator!=(const BB& bb) const noexcept { return grf != bb.grf; }
+	__forceinline operator bool() const noexcept { return grf != 0; }
+	__forceinline bool operator!() const noexcept { return grf == 0; }
 
 	/* information and extraction, square count, lowest and highest bit, removing 
 	   lowest square, and testing for a square */
 
-	inline int csq(void) const noexcept { return popcount(grf); }
-	inline SQ sqLow(void) const noexcept { assert(grf); return SQ(bitscan(grf)); }
-	inline SQ sqHigh(void) const noexcept { assert(grf); return SQ(bitscanRev(grf)); }
-	inline void ClearLow(void) noexcept { grf &= grf - 1; }
-	inline bool fSet(SQ sq) const noexcept { return (grf & sq.fgrf()) != 0; }
+	__forceinline int csq(void) const noexcept { return (int)__popcnt64(grf); }
+	__forceinline SQ sqLow(void) const noexcept { assert(grf); DWORD sq; _BitScanForward64(&sq, grf); return (uint8_t)sq; }
+	__forceinline SQ sqHigh(void) const noexcept { assert(grf); DWORD sq; _BitScanReverse64(&sq, grf); return (uint8_t)sq; }
+	__forceinline void ClearLow(void) noexcept { grf &= grf - 1; }
+	__forceinline bool fSet(SQ sq) const noexcept { return (grf & sq.fgrf()) != 0; }
 };
 
 
@@ -369,14 +369,14 @@ const BB bbBlackQueenCastleEmpty(0b011100000000000000000000000000000000000000000
  */
 
 
-inline BB BbEastOne(const BB& bb) noexcept { return (bb - bbFileH) << 1; }
-inline BB BbEastTwo(const BB& bb) noexcept { return (bb - bbFileGH) << 2; }
-inline BB BbWestOne(const BB& bb) noexcept { return (bb - bbFileA) >> 1; }
-inline BB BbWestTwo(const BB& bb) noexcept { return (bb - bbFileAB) >> 2; }
-inline BB BbNorthOne(const BB& bb) noexcept { return bb << 8; }
-inline BB BbNorthTwo(const BB& bb) noexcept { return bb << 16; }
-inline BB BbSouthOne(const BB& bb) noexcept { return bb >> 8; }
-inline BB BbSouthTwo(const BB& bb) noexcept { return bb >> 16; }
+__forceinline BB BbEastOne(const BB& bb) noexcept { return (bb - bbFileH) << 1; }
+__forceinline BB BbEastTwo(const BB& bb) noexcept { return (bb - bbFileGH) << 2; }
+__forceinline BB BbWestOne(const BB& bb) noexcept { return (bb - bbFileA) >> 1; }
+__forceinline BB BbWestTwo(const BB& bb) noexcept { return (bb - bbFileAB) >> 2; }
+__forceinline BB BbNorthOne(const BB& bb) noexcept { return bb << 8; }
+__forceinline BB BbNorthTwo(const BB& bb) noexcept { return bb << 16; }
+__forceinline BB BbSouthOne(const BB& bb) noexcept { return bb >> 8; }
+__forceinline BB BbSouthTwo(const BB& bb) noexcept { return bb >> 16; }
 
 
 /*
@@ -401,13 +401,13 @@ enum DIR {
 	dirMax = 8
 };
 
-inline DIR& operator++(DIR& dir)
+__forceinline DIR& operator++(DIR& dir)
 {
 	dir = static_cast<DIR>(dir + 1);
 	return dir;
 }
 
-inline DIR operator++(DIR& dir, int)
+__forceinline DIR operator++(DIR& dir, int)
 {
 	DIR dirT = dir;
 	dir = static_cast<DIR>(dir + 1);
@@ -419,7 +419,7 @@ inline DIR operator++(DIR& dir, int)
  *	Computes the DIR directon from the rank and file directions, which should
  *	only be, -1, 0, or +1.
  */
-inline DIR DirFromDrankDfile(int drank, int dfile) noexcept
+__forceinline DIR DirFromDrankDfile(int drank, int dfile) noexcept
 {
 	assert(in_range(drank, -1, 1));
 	assert(in_range(dfile, -1, 1));
@@ -429,7 +429,7 @@ inline DIR DirFromDrankDfile(int drank, int dfile) noexcept
 	return (DIR)dir;
 }
 
-inline int DrankFromDir(DIR dir) noexcept
+__forceinline int DrankFromDir(DIR dir) noexcept
 {
 	if (dir >= dirEast)
 		return ((int)dir + 1) / 3 - 1;
@@ -437,7 +437,7 @@ inline int DrankFromDir(DIR dir) noexcept
 		return (int)dir / 3 - 1;
 }
 
-inline int DfileFromDir(DIR dir) noexcept
+__forceinline int DfileFromDir(DIR dir) noexcept
 {
 	if (dir >= dirEast)
 		return ((int)dir + 1) % 3 - 1;
@@ -466,17 +466,17 @@ public:
 	MPBB(void);
 	
 	/* given a direction and a square, returns squares we attack in that direction */
-	inline BB BbSlideTo(SQ sq, DIR dir) const noexcept { assert(sq < 64); return mpsqdirbbSlide[sq][dir];}
+	__forceinline BB BbSlideTo(SQ sq, DIR dir) const noexcept { assert(sq < 64); return mpsqdirbbSlide[sq][dir];}
 	
 	/* quick collection of squares a king can move to */
-	inline BB BbKingTo(SQ sq) const noexcept { return mpsqbbKing[sq]; }
+	__forceinline BB BbKingTo(SQ sq) const noexcept { return mpsqbbKing[sq]; }
 
 	/* quick collection of squares a knight can move to */
-	inline BB BbKnightTo(uint8_t sq) const noexcept { return mpsqbbKnight[sq]; }
+	__forceinline BB BbKnightTo(uint8_t sq) const noexcept { return mpsqbbKnight[sq]; }
 
 	/* the 3-wide pawn alley in front of a pawn, used to determine if the pawn is a
 	   a passed pawn or not */
-	inline BB BbPassedPawnAlley(uint8_t sq, CPC cpc) const noexcept { return mpsqbbPassedPawnAlley[sq-8][static_cast<int>(cpc)]; }
+	__forceinline BB BbPassedPawnAlley(uint8_t sq, CPC cpc) const noexcept { return mpsqbbPassedPawnAlley[sq-8][static_cast<int>(cpc)]; }
 };
 
 /* we compute a global of these for movegen and eval to use */
