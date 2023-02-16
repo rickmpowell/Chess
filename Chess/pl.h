@@ -326,6 +326,7 @@ inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<int>(ts1) &
 
 
 class STBF {
+#ifndef NOSTATS
 public:
 	unsigned long long cmveNode;
 	unsigned long long cmveGen;
@@ -352,6 +353,14 @@ public:
 		*pch = 0;
 		return wstring(sz);
 	}
+#else
+public:
+	inline void Init(void) noexcept { }
+	inline STBF& operator+=(STBF& stbf) noexcept { return *this; }
+	__forceinline void AddGen(int cmve) noexcept { }
+	__forceinline void AddNode(int cmve) noexcept { }
+	__forceinline operator wstring() noexcept { return L""; }
+#endif
 };
 
 
@@ -404,10 +413,11 @@ protected:
 	/* logging statistics */
 	time_point<high_resolution_clock> tpStart;
 	size_t cmveTotalEval;
+#endif
 	STBF stbfTotal;
 	STBF stbfMain;
 	STBF stbfQuiescent;
-#endif
+
 
 public:
 	PLAI(GA& ga);
@@ -446,7 +456,8 @@ protected:
 	
 	/* eval */
 
-	virtual EV EvBdgStatic(BDG& bdg, MVE mve, bool fFull) noexcept;
+	virtual EV EvBdgScore(BDG& bdg, MVE mvePrev) noexcept;
+	virtual EV EvBdgStatic(BDG& bdg, MVE mve) noexcept;
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
 	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	virtual void InitWeightTables(void);

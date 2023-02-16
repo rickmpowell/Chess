@@ -586,7 +586,7 @@ void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 		   it, go ahead and reset all the other moves to nil so we re-score them on
 		   subsequent passes */
 		XEV* pxev = pplai->xt.Find(bdg, 0);
-		MVE mvePV = pxev && pxev->tev() == tevEqual ? MVE(pxev->mvu()) : mveNil;
+		MVE mvePV = pxev && pxev->tev() == tevEqual ? bdg.MveFromMv(pxev->mv()) : mveNil;
 		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
 			assert(!pmve->fIsNil());
 			pmve->SetTsc(tscNil);
@@ -625,7 +625,7 @@ void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 				continue;
 			bdg.MakeMvSq(*pmve);
 			pmve->SetTsc(tscCur);
-			pmve->ev = -pplai->EvBdgStatic(bdg, *pmve, false);
+			pmve->ev = -pplai->EvBdgScore(bdg, *pmve);
 			bdg.UndoMvSq(*pmve);
 		}
 		break;
@@ -790,7 +790,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 	   and check if we're already in a pruning situation */
 
 	AB ab = abInit;
-	mveBest = MVE(mvuNil, EvBdgStatic(bdg, mvePrev, true));
+	mveBest = MVE(mvuNil, EvBdgStatic(bdg, mvePrev));
 	SaveXt(bdg, mveBest, AB(-evInf, evInf), 0);
 	if (FPrune(&mveBest, mveBest, ab, depthLim))
 		return mveBest.ev;
@@ -883,7 +883,7 @@ bool PLAI::FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int depth) noexcept
 		break;
 	}
 	
-	mveBest.SetMvu(pxev->mvu());
+	mveBest.SetMvu(bdg.MveFromMv(pxev->mv()));
 	return true;
 }
 
@@ -1278,29 +1278,46 @@ EV PLAI::EvBdgAttackDefend(BDG& bdg, MVE mvePrev) const noexcept
 }
 
 
+/*	PLAI::EvBdgScore
+ *
+ *	Scores the board in an efficient way, for alpha-beta pre-sorting
+ */
+EV PLAI::EvBdgScore(BDG& bdg, MVE mvePrev) noexcept
+{
+	EV evMaterial = 0, evTempo = 0;
+
+	if (fecoMaterial)
+		evMaterial = EvFromPst(bdg) + EvBdgAttackDefend(bdg, mvePrev);
+	if (fecoTempo)
+		evTempo = EvTempo(bdg);
+
+	EV ev = (fecoMaterial * evMaterial +
+			 fecoTempo * evTempo +
+			 fecoScale/2) / fecoScale;
+
+	return ev;
+}
+
+
 /*	PLAI::EvBdgStatic
  *
  *	Evaluates the board from the point of view of the color with the 
  *	move. Previous move is in mvevPrev, which should be pre-populated 
  *	with the legal move list for the player with the move.
  * 
- *	fFull is true for full, potentially slow, evaluation. 
  */
-EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev, bool fFull) noexcept
+EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev) noexcept
 {
 	EV evMaterial = 0, evMobility = 0, evKingSafety = 0, evPawnStructure = 0;
 	EV evTempo = 0, evRandom = 0;
 
-	if (fecoMaterial) {
+	if (fecoMaterial)
 		evMaterial = EvFromPst(bdg);
-		if (!fFull)
-			evMaterial += EvBdgAttackDefend(bdg, mvePrev);
-	}
 	if (fecoRandom) {
 		/* if we want randomness in the board eval, we need it to be stable randomness,
-		 * so we use the Zobrist hash of the board and xor it with a random number we
-		 * generate at the start of search and use that to generate our random number
-		 * within the range */
+		   so we use the Zobrist hash of the board and xor it with a random number we
+		   generate at the start of search and use that to generate our random number
+		   within the range */
 		uint64_t habdT = (bdg.habd ^ habdRand);
 		evRandom = (EV)(habdT % (fecoRandom * 2 + 1)) - fecoRandom; /* +/- fecoRandom */
 	}
@@ -1312,22 +1329,20 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev, bool fFull) noexcept
 	EV evPawnToMove, evPawnDef;
 	EV evKingToMove, evKingDef;
 	static VMVE vmveSelf, vmvePrev;
-	if (fFull) {
-		if (fecoMobility) {
-			bdg.GenVmveColor(vmvePrev, bdg.cpcToMove);
-			bdg.GenVmveColor(vmveSelf, ~bdg.cpcToMove);
-			evMobility = vmvePrev.cmve() - vmveSelf.cmve();
-		}
-		if (fecoKingSafety) {
-			evKingToMove = EvBdgKingSafety(bdg, bdg.cpcToMove);
-			evKingDef = EvBdgKingSafety(bdg, ~bdg.cpcToMove);
-			evKingSafety = evKingToMove - evKingDef;
-		}
-		if (fecoPawnStructure) {
-			evPawnToMove = EvBdgPawnStructure(bdg, bdg.cpcToMove);
-			evPawnDef = EvBdgPawnStructure(bdg, ~bdg.cpcToMove);
-			evPawnStructure = evPawnToMove - evPawnDef;
-		}
+	if (fecoMobility) {
+		bdg.GenVmveColor(vmvePrev, bdg.cpcToMove);
+		bdg.GenVmveColor(vmveSelf, ~bdg.cpcToMove);
+		evMobility = vmvePrev.cmve() - vmveSelf.cmve();
+	}
+	if (fecoKingSafety) {
+		evKingToMove = EvBdgKingSafety(bdg, bdg.cpcToMove);
+		evKingDef = EvBdgKingSafety(bdg, ~bdg.cpcToMove);
+		evKingSafety = evKingToMove - evKingDef;
+	}
+	if (fecoPawnStructure) {
+		evPawnToMove = EvBdgPawnStructure(bdg, bdg.cpcToMove);
+		evPawnDef = EvBdgPawnStructure(bdg, ~bdg.cpcToMove);
+		evPawnStructure = evPawnToMove - evPawnDef;
 	}
 	
 	EV ev = (fecoMaterial * evMaterial +
@@ -1338,29 +1353,27 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev, bool fFull) noexcept
 			evRandom +
 		fecoScale/2) / fecoScale;
 
-	if (fFull) {
 #ifndef NOSTATS
-		cmveTotalEval++;
+	cmveTotalEval++;
 #endif
 #ifdef EVALSTATS
-		LogData(bdg.cpcToMove == cpcWhite ? L"White" : L"Black");
-		if (fecoMaterial)
-			LogData(wjoin(L"Material", SzFromEv(evMaterial)));
-		if (fecoMobility)
-			LogData(wjoin(L"Mobility", vmvePrev.cmve(), L"-", vmveSelf.cmve()));
-		if (fecoKingSafety)
-			LogData(wjoin(L"King Safety", evKingToMove, L"-", evKingDef));
-		if (fecoPawnStructure)
-			LogData(wjoin(L"Pawn Structure", evPawnToMove, L"-", evPawnDef));
-		if (fecoTempo)
-			LogData(wjoin(L"Tempo", SzFromEv(evTempo)));
-		if (fecoRandom)
-			LogData(wjoin(L"Random", SzFromEv(evRandom / fecoScale)));
-		LogData(wjoin(L"Total", SzFromEv(ev)));
+	LogData(bdg.cpcToMove == cpcWhite ? L"White" : L"Black");
+	if (fecoMaterial)
+		LogData(wjoin(L"Material", SzFromEv(evMaterial)));
+	if (fecoMobility)
+		LogData(wjoin(L"Mobility", vmvePrev.cmve(), L"-", vmveSelf.cmve()));
+	if (fecoKingSafety)
+		LogData(wjoin(L"King Safety", evKingToMove, L"-", evKingDef));
+	if (fecoPawnStructure)
+		LogData(wjoin(L"Pawn Structure", evPawnToMove, L"-", evPawnDef));
+	if (fecoTempo)
+		LogData(wjoin(L"Tempo", SzFromEv(evTempo)));
+	if (fecoRandom)
+		LogData(wjoin(L"Random", SzFromEv(evRandom / fecoScale)));
+	LogData(wjoin(L"Total", SzFromEv(ev)));
 #else
-		LogData(wjoin(SzFromCpc(bdg.cpcToMove), L"eval:", SzFromEv(ev)));
+	LogData(wjoin(SzFromCpc(bdg.cpcToMove), L"eval:", SzFromEv(ev)));
 #endif
-	}
 
 	return ev;
 }

@@ -50,11 +50,12 @@ __forceinline bool operator<(TEV tev1, TEV tev2) noexcept { return crunch(tev1) 
  * 
  */
 
+#pragma pack(push, 1)
 class XEV
 {
 private:
 	uint64_t uhabd;
-	uint32_t umvu;
+	uint16_t umv;
 	uint32_t utev : 2,
 		udepth : 7,
 		uage : 5,
@@ -74,23 +75,20 @@ public:
 	__forceinline void SetDepth(int depth) noexcept { udepth = (unsigned)depth; }
 	__forceinline bool FMatchHabd(HABD habd) const noexcept { return uhabd == habd; }
 	__forceinline void SetHabd(HABD habd) noexcept { uhabd = habd; }
-	__forceinline void SetMvu(MVU mvu) noexcept { this->umvu = mvu; }
-	__forceinline MVU mvu(void) const noexcept { return umvu; }
+	__forceinline void SetMv(MV mv) noexcept { this->umv = mv; }
+	__forceinline MV mv(void) const noexcept { return umv; }
 	__forceinline void SetAge(unsigned age) noexcept { this->uage = age; }
 	__forceinline unsigned age(void) const noexcept { return uage; }
-	__forceinline void Save(HABD habd, EV ev, TEV tev, int depth, MVU mvu, unsigned age) noexcept {
+	__forceinline void Save(HABD habd, EV ev, TEV tev, int depth, MV mv, unsigned age) noexcept {
 		SetHabd(habd);
 		SetEv(ev);
 		SetTev(tev);
 		SetDepth(depth);
-		SetMvu(mvu);
+		SetMv(mv);
 		SetAge(age);
 	}
-
 };
-
-
-static_assert(sizeof(XEV) == 16);
+#pragma pack(pop)
 
 
 /*
@@ -103,10 +101,12 @@ static_assert(sizeof(XEV) == 16);
  */
 
 
-struct XEV2 {
+#pragma pack(push, 1)
+__declspec(align(2)) struct XEV2 {
 	XEV xevDeep;
 	XEV xevNew;
 };
+#pragma pack(pop)
 
 
 /*
@@ -125,8 +125,7 @@ class XT
 {
 	XEV2* axev2;
 public:
-	const uint32_t cxev2Max = 1UL << /*23*/ 16;
-	static_assert(sizeof(XEV2) == (1 << 5));
+	const uint32_t cxev2Max = 1UL << 19;
 	const uint32_t cxev2MaxMask = cxev2Max - 1;
 	const uint32_t cxevMax = cxev2Max * 2;
 	const unsigned ageMax = 2;
