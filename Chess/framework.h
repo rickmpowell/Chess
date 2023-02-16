@@ -815,7 +815,7 @@ const wchar_t chBlackPawn = L'\x265f';
  *	Returns the "population count" of the 64-bit number. Population count is the number
  *	of 1 bits in the 64-bit word.
  */
-inline int popcount(uint64_t grf) noexcept
+__forceinline int popcount(uint64_t grf) noexcept
 {
 	return (int)__popcnt64(grf);
 }
@@ -829,7 +829,7 @@ inline int popcount(uint64_t grf) noexcept
  *	Does not work on 0.
  */
 
-inline int bitscan(uint64_t grf) noexcept
+__forceinline int bitscan(uint64_t grf) noexcept
 {
 	assert(grf);
 	unsigned long shf;
@@ -837,7 +837,7 @@ inline int bitscan(uint64_t grf) noexcept
 	return shf;
 }
 
-inline int bitscanRev(uint64_t grf) noexcept
+__forceinline int bitscanRev(uint64_t grf) noexcept
 {
 	assert(grf);
 	unsigned long shf;
