@@ -106,13 +106,16 @@ struct LG
 		vplgChild.push_back(plg);
 	}
 
+	bool FIsLastSibling(void) {
+		if (plgParent == nullptr)
+			return true;
+		return this == plgParent->vplgChild.back();
+	}
+
 	~LG()
 	{
-		while (vplgChild.size() > 0) {
-			LG* plg = vplgChild.back();
-			vplgChild.pop_back();
-			delete plg;
-		}
+		for (; !vplgChild.empty(); vplgChild.pop_back())
+			delete vplgChild.back();
 	}
 };
 

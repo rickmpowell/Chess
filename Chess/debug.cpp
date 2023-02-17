@@ -305,9 +305,8 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 	assert(depth <= DepthLog());
 
 	if (!plgCur->vplgChild.empty() && plgCur->vplgChild.back()->lgt == lgtTemp) {
-		LG* plg = plgCur->vplgChild.back();
+		delete plgCur->vplgChild.back();
 		plgCur->vplgChild.pop_back();
-		delete plg;
 	}
 	
 	RC rcCont = RcContent();
@@ -381,9 +380,13 @@ void UIDB::ComputeLgPos(LG* plg)
 			plg->dyLineClose = 0;
 		else
 			plg->dyLineClose = dyLine;
-		/* block height must be recomputed for this and all parent blocks */
-		for (LG* plgWalk = plg; plgWalk; plgWalk = plgWalk->plgParent)
+		/* block height must be recomputed for this and all parent blocks - we don't have to relayout
+		   sibling items here because we only *append* items to the log, so only the last sibling
+		   can ever change. */
+		for (LG* plgWalk = plg; plgWalk; plgWalk = plgWalk->plgParent) {
 			plgWalk->dyBlock = DyBlock(plgWalk);
+			assert(plgWalk->FIsLastSibling());
+		}
 	}
 
 	/* figure out position of this item */
@@ -432,11 +435,8 @@ LG* UIDB::PlgPrev(const LG* plg) const
  */
 void UIDB::ClearLog(void) noexcept
 {
-	while (lgRoot.vplgChild.size()) {
-		LG* plg = lgRoot.vplgChild.back();
-		lgRoot.vplgChild.pop_back();
-		delete plg;
-	}
+	for ( ; !lgRoot.vplgChild.empty(); lgRoot.vplgChild.pop_back())
+		delete lgRoot.vplgChild.back();
 	UpdateContSize(SIZ(0, 0));
 	FMakeVis(RcContent().top, RcContent().left);
 }

@@ -1,3 +1,4 @@
+  When changing log depth, need to re-layout the window
   Add UI to expand/collapse log entries
   Optimize log to redraw minimally - Open/Close combo, Temp, and first/last line
   Scroll-wheeling over UIML during test redraws movelist in wrong place

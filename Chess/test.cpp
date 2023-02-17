@@ -87,7 +87,7 @@ void TEST::Add(TEST* ptest)
 
 void TEST::Clear(void)
 {
-	for (; vptest.size() > 0; vptest.pop_back())
+	for (; !vptest.empty(); vptest.pop_back())
 		delete vptest.back();
 }
 

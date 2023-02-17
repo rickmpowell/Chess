@@ -98,11 +98,8 @@ VCMD::VCMD(void)
 
 VCMD::~VCMD(void)
 {
-	while (size() > 0) {
-		CMD* pcmd = back();
-		pop_back();
-		delete pcmd;
-	}
+	for (; !empty(); pop_back())
+		delete back();
 }
 
 

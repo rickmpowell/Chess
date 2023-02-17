@@ -181,8 +181,8 @@ UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent),
 
 UI::~UI(void) 
 {
-	while (vpuiChild.size() > 0)
-		delete vpuiChild[0];
+	for (; !vpuiChild.empty(); vpuiChild.pop_back())
+		delete vpuiChild.back();
 	if (puiParent) {
 		puiParent->RemoveChild(this);
 		puiParent = nullptr;
@@ -206,13 +206,7 @@ void UI::AddChild(UI* puiChild)
  */
 void UI::RemoveChild(UI* puiChild) 
 {
-	unsigned ipuiTo = 0, ipuiFrom;
-	for (ipuiFrom = 0; ipuiFrom < vpuiChild.size(); ipuiFrom++) {
-		if (vpuiChild[ipuiFrom] != puiChild)
-			vpuiChild[ipuiTo++] = vpuiChild[ipuiFrom];
-	}
-	assert(ipuiTo < ipuiFrom);
-	vpuiChild.resize(ipuiTo);
+	vpuiChild.resize(remove(vpuiChild.begin(), vpuiChild.end(), puiChild) - vpuiChild.begin());
 }
 
 
@@ -224,29 +218,22 @@ UI* UI::PuiPrevSib(void) const
 {
 	if (puiParent == nullptr)
 		return nullptr;
-	UI* puiPrev = nullptr;
-	for (UI* pui : puiParent->vpuiChild) {
-		if (pui == this)
-			return puiPrev;
-		puiPrev = pui;
-	}
-	assert(false);
-	return nullptr;
+	vector<UI*>::const_iterator itpui = find(puiParent->vpuiChild.begin(), puiParent->vpuiChild.end(), this);
+	return itpui == puiParent->vpuiChild.begin() ? nullptr : *(itpui - 1);
 }
 
 
 /*	UI::PuiNextSib
  *
- *	Gets the next sibling window of the given UI element.
+ *	Gets the next sibling window of the given UI element. Returns null if no more
+ *	siblings.
  */
 UI* UI::PuiNextSib(void) const
 {
 	if (puiParent == nullptr)
 		return nullptr;
-	for (int64_t ipui = 0; ipui < (int64_t)puiParent->vpuiChild.size() - 1; ipui++)
-		if (puiParent->vpuiChild[ipui] == this)
-			return puiParent->vpuiChild[ipui + 1];
-	return nullptr;
+	vector<UI*>::const_iterator itpui = find(puiParent->vpuiChild.begin(), puiParent->vpuiChild.end(), this);
+	return itpui == puiParent->vpuiChild.end() ? nullptr : *(itpui + 1);
 }
 
 

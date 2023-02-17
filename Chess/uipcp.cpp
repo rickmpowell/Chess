@@ -479,11 +479,8 @@ UIPCP::~UIPCP(void)
 		delete it->second;
 		mpapcpuiapc[it->first] = nullptr;
 	}
-	while (vpuisetfen.size() > 0) {
-		UISETFEN* puisetfen = vpuisetfen.back();
-		vpuisetfen.pop_back();
-		delete puisetfen;
-	}
+	for (; !vpuisetfen.empty(); vpuisetfen.pop_back())
+		delete vpuisetfen.back();
 }
 
 
