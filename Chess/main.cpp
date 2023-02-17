@@ -539,9 +539,9 @@ void APP::ClearLog(void) noexcept
     puiga->uidb.ClearLog();
 }
 
-void APP::InitLog(int depth) noexcept
+void APP::InitLog(void) noexcept
 {
-    puiga->uidb.InitLog(depth);
+    puiga->uidb.InitLog();
 }
 
 bool APP::FDepthLog(LGT lgt, int& depth) noexcept
@@ -559,10 +559,16 @@ int APP::DepthLog(void) const noexcept
     return puiga->uidb.DepthLog();
 }
 
-void APP::SetDepthLog(int depth) noexcept
+void APP::SetDepthShow(int depth) noexcept
 {
-    puiga->uidb.SetDepthLog(depth);
+    puiga->uidb.SetDepthShow(depth);
 }
+
+int APP::DepthShow(void) const noexcept
+{
+    return puiga->uidb.DepthShow();
+}
+
 
 /*  
  *
@@ -992,8 +998,8 @@ public:
 
         ClearLog();
         LogOpen(L"AI Speed Test", L"", lgfBold);
-        int depthSav = DepthLog();
-        SetDepthLog(2);
+        int depthSav = DepthShow();
+        SetDepthShow(2);
 
         app.puiga->StartGame(spmvFast);
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
@@ -1012,7 +1018,7 @@ public:
         microseconds us = duration_cast<microseconds>(dtp);
         float sp = (float)us.count() / 1000.0f;
 
-        SetDepthLog(depthSav);
+        SetDepthShow(depthSav);
         LogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         LogClose(L"AI Speed Test", L"", lgfBold);
 
@@ -1487,8 +1493,8 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.puiga->uidb.DepthLog();
-        app.puiga->uidb.SetDepthLog(depth + 1);
+        int depth = app.puiga->uidb.DepthShow();
+        app.puiga->uidb.SetDepthShow(depth + 1);
         app.puiga->uidb.Redraw();
         return 1;
     }
@@ -1516,10 +1522,10 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.puiga->uidb.DepthLog();
+        int depth = app.puiga->uidb.DepthShow();
         if (depth > 1)
             depth--;
-        app.puiga->uidb.SetDepthLog(depth);
+        app.puiga->uidb.SetDepthShow(depth);
         app.puiga->uidb.Redraw();
         return 1;
     }
@@ -1530,6 +1536,44 @@ public:
     }
 };
 
+
+class CMDFILELOGDEPTHUP : public CMD
+{
+public:
+    CMDFILELOGDEPTHUP(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        int depth = app.puiga->uidb.DepthFile();
+        app.puiga->uidb.SetDepthFile(depth + 1);
+        app.puiga->uidb.Redraw();
+        return 1;
+    }
+
+    virtual int IdsTip(void) const
+    {
+        return idsTipLogFileDepthUp;
+    }
+};
+
+class CMDFILELOGDEPTHDOWN : public CMD
+{
+public:
+    CMDFILELOGDEPTHDOWN(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        int depth = app.puiga->uidb.DepthFile();
+        app.puiga->uidb.SetDepthFile(depth - 1);
+        app.puiga->uidb.Redraw();
+        return 1;
+    }
+
+    virtual int IdsTip(void) const
+    {
+        return idsTipLogFileDepthDown;
+    }
+};
 
 /*
  *
@@ -1713,6 +1757,8 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDDEBUGPANEL(*this, cmdDebugPanel));
     vcmd.Add(new CMDLOGDEPTHUP(*this, cmdLogDepthUp));
     vcmd.Add(new CMDLOGDEPTHDOWN(*this, cmdLogDepthDown));
+    vcmd.Add(new CMDFILELOGDEPTHUP(*this, cmdLogFileDepthUp));
+    vcmd.Add(new CMDFILELOGDEPTHDOWN(*this, cmdLogFileDepthDown));
     vcmd.Add(new CMDLOGFILETOGGLE(*this, cmdLogFileToggle));
     vcmd.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUp));
     vcmd.Add(new CMDPLAYERLVL(*this, cmdPlayerLvlUpBlack));

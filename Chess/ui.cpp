@@ -1514,7 +1514,7 @@ SIZ BTNIMG::SizImg(void) const
 
 
 STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent),  
-		ptxStatic(nullptr), pbrsStatic(nullptr), szText(sz)
+		ptxStatic(nullptr), pbrsStatic(nullptr), szText(sz), dyFont(20.0f)
 {
 }
 
@@ -1527,7 +1527,7 @@ void STATIC::CreateRsrc(void)
 	App().pdc->CreateSolidColorBrush(coStaticText, &pbrsStatic);
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		20.0f, L"",
+		dyFont, L"",
 		&ptxStatic);
 }
 
@@ -1536,6 +1536,14 @@ void STATIC::DiscardRsrc(void)
 {
 	SafeRelease(&ptxStatic);
 	SafeRelease(&pbrsStatic);
+}
+
+
+void STATIC::SetTextSize(float dyFontNew)
+{
+	dyFont = dyFontNew;
+	DiscardRsrc();
+	CreateRsrc();
 }
 
 
@@ -1551,14 +1559,19 @@ wstring STATIC::SzText(void) const
 }
 
 
+void STATIC::Erase(const RC& rcUpdate, bool fParentDrawn)
+{
+	TransparentErase(rcUpdate, fParentDrawn);
+}
+
+
 void STATIC::Draw(const RC& rcUpdate)
 {
 	CreateRsrc();
-	RC rcChar(PT(0, 0), SizFromSz(SzText(), ptxStatic));
+	RC rcText(PT(0, 0), SizFromSz(SzText(), ptxStatic));
 	RC rcTo = RcInterior();
-	rcChar += rcTo.PtCenter();
-	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
-	DrawSzCenter(SzText(), ptxStatic, rcTo, pbrsStatic);
+	rcText += rcTo.PtCenter() - rcText.PtCenter();;
+	DrawSzCenter(SzText(), ptxStatic, rcText, pbrsStatic);
 }
 
 

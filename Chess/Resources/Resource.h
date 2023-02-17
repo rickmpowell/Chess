@@ -27,8 +27,10 @@
 #define idsClosePanel			22
 #define idsMenuTest             23
 #define idsMenuStopTest         24
+#define idsTipLogFileDepthUp    25
+#define idsTipLogFileDepthDown  26
 
-/*
+ /*
  *	Dialog definitions
  */
 
@@ -99,7 +101,9 @@
 #define cmdClockTest_60_30_15	43
 #define cmdClockTest_20			44
 #define cmdShowDrawTest         45
-#define cmdMax					46
+#define cmdLogFileDepthUp       46
+#define cmdLogFileDepthDown     47
+#define cmdMax					48
 
 /*
  *	icons

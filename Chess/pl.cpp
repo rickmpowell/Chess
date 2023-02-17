@@ -282,10 +282,10 @@ public:
 		LOGSEARCH(pl, bdg), AIBREAK(pl, mvePrev, depth),
 		mvePrev(mvePrev), mveBest(mveBest), abInit(abInit), depthLogSav(0), imvExpandSav(0)
 	{
-		depthLogSav = DepthLog();
+		depthLogSav = DepthShow();
 		imvExpandSav = imvExpand;
 		if (FExpandLog(mvePrev))
-			SetDepthLog(depthLogSav + 1);
+			SetDepthShow(depthLogSav + 1);
 		int depthLog;
 		if (!papp->FDepthLog(lgtOpen, depthLog))
 			pl.PumpMsg(false);
@@ -303,7 +303,7 @@ public:
 	inline ~LOGMVE() noexcept
 	{
 		LogClose(bdg.SzDecodeMvPost(mvePrev), wjoin(SzFromEv(mveBest.ev), SzEvt()), LgfEvt());
-		SetDepthLog(depthLogSav);
+		SetDepthShow(depthLogSav);
 		imvExpand = imvExpandSav;
 	}
 

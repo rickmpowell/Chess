@@ -372,12 +372,15 @@ protected:
 	TX* ptxStatic;
 	BRS* pbrsStatic;
 	wstring szText;
+	float dyFont;
 
 public:
 	STATIC(UI* puiParent, const wstring& sz);
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
+	void SetTextSize(float dyFontNew);
 
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
 
 	virtual wstring SzText(void) const;

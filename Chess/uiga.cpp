@@ -511,7 +511,7 @@ void UIGA::MoveToImv(int imv, SPMV spmv)
 void UIGA::Play(MVE mve, SPMV spmv)
 {
 	fInPlay = true;
-	InitLog(2);
+	InitLog();
 	LogOpen(L"Game", L"", lgfBold);
 	StartGame(spmvAnimate);
 

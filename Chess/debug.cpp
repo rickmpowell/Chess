@@ -22,14 +22,13 @@ bool fValidate = true;
  */
 
 
-SPINDEPTH::SPINDEPTH(UIBBDBLOG* puiParent) : SPIN(puiParent, cmdLogDepthUp, cmdLogDepthDown), 
-		uiga(puiParent->uidb.uiga)
+SPINDEPTH::SPINDEPTH(UIBBDBLOG* puiParent, int& depth, int cmdUp, int cmdDown) : SPIN(puiParent, cmdUp, cmdDown), depth(depth) 
 {
 }
 
 wstring SPINDEPTH::SzValue(void) const
 {
-	return to_wstring(uiga.uidb.DepthLog());
+	return to_wstring(depth);
 }
 
 
@@ -42,8 +41,7 @@ wstring SPINDEPTH::SzValue(void) const
  */
 
 
-UIBBDB::UIBBDB(UIDB* puiParent) : UIBB(puiParent), 
-	btnTest(this, cmdTest, L'\x2713')
+UIBBDB::UIBBDB(UIDB* puiParent) : UIBB(puiParent), btnTest(this, cmdTest, L'\x2713')
 {
 }
 
@@ -66,8 +64,12 @@ void UIBBDB::Layout(void)
 
 
 UIBBDBLOG::UIBBDBLOG(UIDB* puiParent) : UIBB(puiParent), uidb(*puiParent),
-		btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk), spindepth(this)
+		spindepth(this, puiParent->depthShow, cmdLogDepthUp, cmdLogDepthDown), 
+		staticFile(this, L"Log file:"), 
+		btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk), 
+		spindepthFile(this, puiParent->depthFile, cmdLogFileDepthUp, cmdLogFileDepthDown)
 {
+	staticFile.SetTextSize(16.0f);
 }
 
 
@@ -75,8 +77,11 @@ void UIBBDBLOG::Layout(void)
 {
 	RC rc = RcInterior().Inflate(-2.0f, -2.0f);
 	rc.right = rc.left;
-	AdjustBtnRcBounds(&btnLogOnOff, rc, rc.DyHeight());
 	AdjustBtnRcBounds(&spindepth, rc, 40.0f);
+	rc.right += 20.0f;
+	AdjustBtnRcBounds(&staticFile, rc, 60.0f);
+	AdjustBtnRcBounds(&btnLogOnOff, rc, rc.DyHeight());
+	AdjustBtnRcBounds(&spindepthFile, rc, 40.0f);
 }
 
 
@@ -91,7 +96,7 @@ void UIBBDBLOG::Layout(void)
 
 UIDB::UIDB(UIGA& uiga) : UIPS(uiga), uibbdb(this), uibbdblog(this), 
 		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyLine(12.0f),
-		depthCur(0), depthShowSet(-1), depthShowDefault(2), posLog(nullptr)
+		depthCur(0), depthFile(2), depthShow(2), posLog(nullptr)
 {
 }
 
@@ -183,7 +188,7 @@ void UIDB::Draw(const RC& rcUpdate)
  */
 void UIDB::DrawContent(const RC& rcCont)
 {
-	if (vlgentry.size() == 0)
+	if (lgRoot.vplgChild.size() == 0)
 		return;
 
 	RC rc = RcContent();
@@ -191,30 +196,30 @@ void UIDB::DrawContent(const RC& rcCont)
 	rc.right = rc.left + 1000.0f;
 	
 	size_t ilgentryFirst = IlgentryFromY((int)RcView().top);
-	rc.top = RcContent().top + vlgentry[ilgentryFirst].dyTop;
+	rc.top = RcContent().top + lgRoot.vplgChild[ilgentryFirst]->dyTop;
 
-	for (size_t ilgentry = ilgentryFirst; ilgentry < vlgentry.size() && rc.top < RcView().bottom; ilgentry++) {
-		LGENTRY& lgentry = vlgentry[ilgentry];
+	for (size_t ilgentry = ilgentryFirst; ilgentry < lgRoot.vplgChild.size() && rc.top < RcView().bottom; ilgentry++) {
+		LG& lg = *lgRoot.vplgChild[ilgentry];
 
 		/* 0 heights are those that were combined into another line */
 		
-		if (lgentry.dyHeight == 0)
+		if (lg.dyHeight == 0)
 			continue;
 		
 		/* get string and formatting */
 
 		wstring sz;
-		if (lgentry.tag.sz.size() > 0)
-			sz = lgentry.tag.sz + L" ";
-		sz += lgentry.szData;
+		if (lg.tag.sz.size() > 0)
+			sz = lg.tag.sz + L" ";
+		sz += lg.szData;
 		rc.bottom = rc.top + dyLine;
-		LGF lgf = lgentry.lgf;
+		LGF lgf = lg.lgf;
 
 		/* if matching open and close are next to each other, then combine them to a single line */
 
-		if (ilgentry + 1 < vlgentry.size() && FCombineLogEntries(lgentry, vlgentry[ilgentry+1])) {
-			sz += wstring(L" ") + vlgentry[ilgentry+1].szData;
-			lgf = vlgentry[ilgentry + 1].lgf;
+		if (ilgentry + 1 < lgRoot.vplgChild.size() && FCombineLogEntries(lg, *lgRoot.vplgChild[ilgentry+1])) {
+			sz += wstring(L" ") + lgRoot.vplgChild[ilgentry+1]->szData;
+			lgf = lgRoot.vplgChild[ilgentry + 1]->lgf;
 		}
 
 		TX* ptx;
@@ -225,7 +230,7 @@ void UIDB::DrawContent(const RC& rcCont)
 		default: ptx = ptxLog; break;
 		}
 		DrawSz(sz, ptx, 
-			RC(rc.left+12.0f*lgentry.depth, rc.top, rc.right, rc.bottom), 
+			RC(rc.left+12.0f*lg.depth, rc.top, rc.right, rc.bottom), 
 			pbrText);
 		rc.top = rc.bottom;
 	}
@@ -240,20 +245,20 @@ void UIDB::DrawContent(const RC& rcCont)
 size_t UIDB::IlgentryFromY(int y) const
 {
 	float yContentTop = RcContent().top;
-	if (vlgentry.size() == 0)
+	if (lgRoot.vplgChild.size() == 0)
 		return 0;
 	size_t ilgentryFirst = 0; 
-	size_t ilgentryLast = vlgentry.size()-1;
-	if (y < yContentTop + vlgentry[ilgentryFirst].dyTop)
+	size_t ilgentryLast = lgRoot.vplgChild.size()-1;
+	if (y < yContentTop + lgRoot.vplgChild[ilgentryFirst]->dyTop)
 		return ilgentryFirst;
-	if (y >= yContentTop + vlgentry[ilgentryLast].dyTop + vlgentry[ilgentryLast].dyHeight)
+	if (y >= yContentTop + lgRoot.vplgChild[ilgentryLast]->dyTop + lgRoot.vplgChild[ilgentryLast]->dyHeight)
 		return ilgentryLast;
 
 	for (;;) {
 		size_t ilgentryMid = (ilgentryFirst + ilgentryLast) / 2;
-		if (y < yContentTop + vlgentry[ilgentryMid].dyTop)
+		if (y < yContentTop + lgRoot.vplgChild[ilgentryMid]->dyTop)
 			ilgentryLast = ilgentryMid-1;
-		else if (y >= yContentTop + vlgentry[ilgentryMid].dyTop + vlgentry[ilgentryMid].dyHeight)
+		else if (y >= yContentTop + lgRoot.vplgChild[ilgentryMid]->dyTop + lgRoot.vplgChild[ilgentryMid]->dyHeight)
 			ilgentryFirst = ilgentryMid+1;
 		else
 			return ilgentryMid;
@@ -266,12 +271,12 @@ size_t UIDB::IlgentryFromY(int y) const
  *	Returns true if the two log entries should be combined into a single line. Basically, if they
  *	are the corresponding open/close of the same tag.
  */
-bool UIDB::FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const noexcept
+bool UIDB::FCombineLogEntries(const LG& lg1, const LG& lg2) const noexcept
 {
-	if (lgentry2.lgt == lgtTemp)
+	if (lg2.lgt == lgtTemp)
 		return true;
-	if (lgentry1.lgt == lgtOpen && lgentry2.lgt == lgtClose &&  
-			lgentry1.depth == lgentry2.depth && lgentry1.tag.sz == lgentry2.tag.sz)
+	if (lg1.lgt == lgtOpen && lg2.lgt == lgtClose &&  
+			lg1.depth == lg2.depth && lg1.tag.sz == lg2.tag.sz)
 		return true;
 	return false;
 }
@@ -312,37 +317,46 @@ bool UIDB::FDepthLog(LGT lgt, int& depth) noexcept
  */
 void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
-	LGENTRY lgentry(lgt, lgf, depth, tag, szData);
+	LG lg(lgt, lgf, depth, tag, szData);
 
 	assert(depth <= DepthLog());
 
-	if (vlgentry.size() > 0 && vlgentry.back().lgt == lgtTemp)
-		vlgentry.pop_back();
+	if (lgRoot.vplgChild.size() > 0 && lgRoot.vplgChild.back()->lgt == lgtTemp) {
+		LG* plg = lgRoot.vplgChild.back();
+		lgRoot.vplgChild.pop_back();
+		delete plg;
+	}
 	
-	if (vlgentry.size() > 0 && FCombineLogEntries(vlgentry.back(), lgentry))
-		lgentry.dyHeight = 0;
-	else
-		lgentry.dyHeight = dyLine;
-	if (vlgentry.size() == 0)
-		lgentry.dyTop = 0;
-	else
-		lgentry.dyTop = vlgentry.back().dyTop + vlgentry.back().dyHeight;
+	/* compute the top and height of the item */
 
-	if (posLog && lgentry.lgt != lgtTemp) {
-		*posLog << string(4 * (int64_t)lgentry.depth, ' ');
-		if (lgentry.tag.sz.size() > 0) {
-			*posLog << SzFlattenWsz(lgentry.tag.sz);
+	if ((lgRoot.vplgChild.size() > 0 && FCombineLogEntries(*lgRoot.vplgChild.back(), lg)) || lg.depth > DepthShow())
+		lg.dyHeight = 0;
+	else
+		lg.dyHeight = dyLine;
+	if (lgRoot.vplgChild.size() == 0)
+		lg.dyTop = 0;
+	else
+		lg.dyTop = lgRoot.vplgChild.back()->dyTop + lgRoot.vplgChild.back()->dyHeight;
+
+	/* logging a file */
+
+	if (posLog && lg.lgt != lgtTemp) {
+		*posLog << string(4 * (int64_t)lg.depth, ' ');
+		if (lg.tag.sz.size() > 0) {
+			*posLog << SzFlattenWsz(lg.tag.sz);
 			*posLog << ' ';
 		}
-		*posLog << SzFlattenWsz(lgentry.szData);
+		*posLog << SzFlattenWsz(lg.szData);
 		*posLog << endl;
 	}
-	vlgentry.push_back(lgentry);
+	lgRoot.AddChild(new LG(lg));
 
-	float dyBot = lgentry.dyTop + lgentry.dyHeight;
-	UpdateContSize(SIZ(RcContent().DxWidth(), dyBot));
-	FMakeVis(RcContent().top + dyBot, lgentry.dyHeight);
-	Redraw();
+	if (lg.depth <= DepthShow()) {
+		float dyBot = lg.dyTop + lg.dyHeight;
+		UpdateContSize(SIZ(RcContent().DxWidth(), dyBot));
+		FMakeVis(RcContent().top + dyBot, lg.dyHeight);
+		Redraw();
+	}
 }
 
 
@@ -352,56 +366,56 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
  */
 void UIDB::ClearLog(void) noexcept
 {
-	vlgentry.clear();
+	while (lgRoot.vplgChild.size()) {
+		LG* plg = lgRoot.vplgChild.back();
+		lgRoot.vplgChild.pop_back();
+		delete plg;
+	}
 	UpdateContSize(SIZ(0, 0));
 	FMakeVis(RcContent().top, RcContent().left);
 }
 
 
-/*	UIDB::SetDepthLog
+/*	UIDB::SetDepthShow
  *
  *	User-set depth of the log that we show/save. If this value is not set, then
  *	the default log depth is used.
  */
-void UIDB::SetDepthLog(int depth) noexcept
+void UIDB::SetDepthShow(int depth) noexcept
 {
-	depthShowSet = depth;
+	depthShow = max(0, depth);
 }
 
 
-/*	UIDB::SetDepthLogDefault
- *
- *	Sets the default log depth, which is the log depth we use if no depth is set
- *	by SetDepthLog.
- */
-void UIDB::SetDepthLogDefault(int depth) noexcept
+void UIDB::SetDepthFile(int depth) noexcept
 {
-	depthShowDefault = depth;
+	depthFile = max(0, depth);
 }
 
-
-void UIDB::InitLog(int depth) noexcept
+void UIDB::InitLog(void) noexcept
 {
 	ClearLog();
-	if (depth < 0)
-		depth = -1;
-	SetDepthLogDefault(depth);
 	Redraw();
 }
 
 
 /*	UIDB::DepthLog
  *
- *	Returns the depth we're currently logging to. The depth is whatever has been
- *	set by SetDepthLog, or, if SetDepthLog has never been called, the default log
- *	depth.
+ *	Returns the depth we're currently logging to. 
  */
 int UIDB::DepthLog(void) const noexcept
 {
-	if (depthShowSet == -1)
-		return depthShowDefault;
-	else
-		return depthShowSet;
+	return max(depthShow, depthFile);
+}
+
+int UIDB::DepthShow(void) const noexcept
+{
+	return depthShow;
+}
+
+int UIDB::DepthFile(void) const noexcept
+{
+	return depthFile;
 }
 
 

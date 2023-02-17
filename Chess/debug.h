@@ -25,9 +25,9 @@ class UIBBDBLOG;
 
 class SPINDEPTH : public SPIN
 {
-	UIGA& uiga;
+	int& depth;
 public:
-	SPINDEPTH(UIBBDBLOG* puiParent);
+	SPINDEPTH(UIBBDBLOG* puiParent, int& depth, int cmdUp, int cmdDown);
 	virtual wstring SzValue(void) const;
 };
 
@@ -52,8 +52,10 @@ class UIBBDBLOG : public UIBB
 {
 	UIDB& uidb;
 	friend class SPINDEPTH;
-	BTNIMG btnLogOnOff;
 	SPINDEPTH spindepth;
+	STATIC staticFile;
+	BTNIMG btnLogOnOff;
+	SPINDEPTH spindepthFile;
 public:
 	UIBBDBLOG(UIDB* puiParent);
 	virtual void Layout(void);
@@ -62,7 +64,7 @@ public:
 
 /*
  *
- *	LGENTRY structure
+ *	LG structure
  * 
  *	A single log entry. Logs are heirarchical, with open/close elements and data elements.
  *	Individual entries are tag/value pairs.
@@ -70,7 +72,7 @@ public:
  */
 
 
-struct LGENTRY
+struct LG
 {
 	LGT lgt;
 	LGF lgf;
@@ -79,10 +81,30 @@ struct LGENTRY
 	int depth;
 	float dyTop;	// position of the line relative to rcCont
 	float dyHeight;
+	LG* plgParent;
+	vector <LG*> vplgChild;
 
-	LGENTRY(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : 
-		lgt(lgt), lgf(lgf), tag(tag), szData(szData), depth(depth), dyTop(0.0f), dyHeight(10.0f)
+	LG(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : 
+		plgParent(nullptr), lgt(lgt), lgf(lgf), tag(tag), szData(szData), depth(depth), dyTop(0.0f), dyHeight(10.0f)
 	{
+	}
+
+	LG(void) : plgParent(nullptr), lgt(lgtTemp), lgf(lgfNormal), tag(L""), szData(L""), depth(0), dyTop(0), dyHeight(0)
+	{
+	}
+
+	void AddChild(LG* plg) {
+		plg->plgParent = this;
+		vplgChild.push_back(plg);
+	}
+
+	~LG()
+	{
+		while (vplgChild.size() > 0) {
+			LG* plg = vplgChild.back();
+			vplgChild.pop_back();
+			delete plg;
+		}
 	}
 };
 
@@ -99,18 +121,19 @@ struct LGENTRY
 class UIDB : public UIPS
 {
 	friend class SPINDEPTH;
+	friend class UIBBDBLOG;
 
 	UIBBDB uibbdb;
 	UIBBDBLOG uibbdblog;
-	vector<LGENTRY> vlgentry;
+	LG lgRoot;;
 	TX* ptxLog;
 	TX* ptxLogBold;
 	TX* ptxLogItalic;
 	TX* ptxLogBoldItalic;
 	float dyLine;
 	int depthCur;
-	int depthShowSet;
-	int depthShowDefault;
+	int depthShow;
+	int depthFile;
 	ofstream* posLog;
 public:
 	UIDB(UIGA& uiga);
@@ -128,12 +151,14 @@ public:
 
 	bool FDepthLog(LGT lgt, int& depth) noexcept; 
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
-	bool FCombineLogEntries(const LGENTRY& lgentry1, const LGENTRY& lgentry2) const noexcept;
-	void InitLog(int depth) noexcept;
+	bool FCombineLogEntries(const LG& lg1, const LG& lg2) const noexcept;
+	void InitLog(void) noexcept;
 	void ClearLog(void) noexcept;
-	void SetDepthLog(int depth) noexcept;
-	void SetDepthLogDefault(int depth) noexcept;
 	int DepthLog(void) const noexcept;
+	int DepthShow(void) const noexcept;
+	int DepthFile(void) const noexcept;
+	void SetDepthShow(int depth) noexcept;
+	void SetDepthFile(int depth) noexcept;
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const noexcept;
 };

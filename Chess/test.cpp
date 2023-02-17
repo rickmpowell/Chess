@@ -880,7 +880,7 @@ void UIGA::Test(void)
 	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
 
 	fInTest = true;
-	InitLog(3);
+	InitLog();
 	testRoot.RunAll();
 	fInTest = false;
 }

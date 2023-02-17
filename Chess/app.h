@@ -286,11 +286,12 @@ public:
 	 */
 
 	void ClearLog(void) noexcept;
-	void InitLog(int depth) noexcept;
+	void InitLog(void) noexcept;
 	inline bool FDepthLog(LGT lgt, int& depth) noexcept;
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
 	inline int DepthLog(void) const noexcept;
-	inline void SetDepthLog(int depth) noexcept;
+	inline int DepthShow(void) const noexcept;
+	inline void SetDepthShow(int depth) noexcept;
 
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam);
 };
@@ -332,9 +333,9 @@ public:
 };
 
 
-inline void InitLog(int depth)
+inline void InitLog(void)
 {
-	papp->InitLog(depth);
+	papp->InitLog();
 }
 
 inline void ClearLog(void)
@@ -342,15 +343,21 @@ inline void ClearLog(void)
 	papp->ClearLog();
 }
 
-inline void SetDepthLog(int depth) noexcept
+inline void SetDepthShow(int depth) noexcept
 {
-	papp->SetDepthLog(depth);
+	papp->SetDepthShow(depth);
 }
 
 inline int DepthLog(void) noexcept
 {
 	return papp->DepthLog();
 }
+
+inline int DepthShow(void) noexcept
+{
+	return papp->DepthShow();
+}
+
 
 /* these are done with macros to avoid computation of the string arguments if 
    we're not actually logging */
