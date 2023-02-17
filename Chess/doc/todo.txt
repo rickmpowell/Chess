@@ -1,3 +1,5 @@
+  Add UI to expand/collapse log entries
+  Optimize log to redraw minimally - Open/Close combo, Temp, and first/last line
   Scroll-wheeling over UIML during test redraws movelist in wrong place
   Turn off clocks during test, turn back on when done
   Use gray scale everywhere in board edit mode
@@ -52,9 +54,7 @@
   Move gen: Use magic bitboards for attack squares
   Log: Need a fancy search log that displays candidate move list
   Log: Should we hash tags?
-  Log: File logging and UIDB logging need to have their own depth
   Log: when hovering over log entries with FEN attributes, hover a mini-board
-  Log: make the logs collapsible
   UI: Add a new game panel
   UI: try to pixel align as many borders as possible
   UI: Move as many drawing objects into classes as possible
@@ -66,7 +66,6 @@
   Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
   Use UCI (universal chess interface) to communicate to UI from AI
-  UIDB: Add support for multi-line log entries in db panel
   Add ability to load FEN files
   ML: Scrollbar thumb isn't resizing when move list gets long enough to have a thumb
   ML: If text in move list gets too small, replace icons with letters
@@ -86,6 +85,9 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Log: make the logs collapsible
+* Log: File logging and UIDB logging need to have their own depth
+* UIDB: Add support for multi-line log entries in db panel
 * We're sometimes asserting in uiml Draw() when running test and alt-tabbing away and back
 * Make VMVE a template and make generated move lists and game move lists with separate sizes
 * When tests running, change Test menu item text to "Stop Test" and change tooltip on test button

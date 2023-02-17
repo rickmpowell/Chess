@@ -772,6 +772,8 @@ inline wstring wjoin(Args const&... args)
 	using std::to_wstring;
 	int unpack[]{ 0, (sz += to_wstring(args) + L" ", 0)... };
 	static_cast<void>(unpack);
+	sz.erase(sz.find_last_not_of(' ') + 1);
+	sz.erase(0, sz.find_first_not_of(' '));
 	return sz;
 }
 

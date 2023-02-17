@@ -225,7 +225,7 @@ void PLAI::EndMoveLog(void)
 	duration dtp = tpEnd - tpStart;
 	milliseconds ms = duration_cast<milliseconds>(dtp);
 	LogData(wjoin(L"Time:", SzCommaFromLong(ms.count()), L"ms"));
-	LogData(wjoin(L"Speed:", to_wstring((int)round((float)stbfTotal.cmveNode / (float)ms.count())), L"kn/sec"));
+	LogData(wjoin(L"Speed:", (int)round((float)stbfTotal.cmveNode / (float)ms.count()), L"kn/sec"));
 	LogData(wjoin(L"Branch factor:", (wstring)stbfTotal));
 #endif
 	LogClose(L"", L"", lgfNormal);

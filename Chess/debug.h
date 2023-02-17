@@ -75,21 +75,29 @@ public:
 struct LG
 {
 	LGT lgt;
-	LGF lgf;
-	TAG tag;
-	wstring szData;
+	LGF lgfOpen, lgfClose;
+	TAG tagOpen, tagClose;
+	wstring szDataOpen, szDataClose;
 	int depth;
-	float dyTop;	// position of the line relative to rcCont
-	float dyHeight;
+	float yTop;	// position of the line relative to rcCont
+	float dyLineOpen, dyLineClose;	// height of open line
+	float dyBlock;	// height of entire subblock, including open children
 	LG* plgParent;
 	vector <LG*> vplgChild;
 
-	LG(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : 
-		plgParent(nullptr), lgt(lgt), lgf(lgf), tag(tag), szData(szData), depth(depth), dyTop(0.0f), dyHeight(10.0f)
+	LG(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : plgParent(nullptr), 
+		lgt(lgt), lgfOpen(lgf), lgfClose(lgfNormal), 
+		tagOpen(tag), tagClose(L""), szDataOpen(szData), szDataClose(L""),
+		depth(depth), 
+		yTop(0), dyLineOpen(10), dyLineClose(0), dyBlock(0)
 	{
 	}
 
-	LG(void) : plgParent(nullptr), lgt(lgtTemp), lgf(lgfNormal), tag(L""), szData(L""), depth(0), dyTop(0), dyHeight(0)
+	LG(void) : plgParent(nullptr), 
+		lgt(lgtTemp), lgfOpen(lgfNormal), lgfClose(lgfNormal), 
+		tagOpen(L""), tagClose(L""), szDataOpen(L""), szDataClose(L""),
+		depth(0), 
+		yTop(0), dyLineOpen(0), dyLineClose(0), dyBlock(0)
 	{
 	}
 
@@ -125,7 +133,8 @@ class UIDB : public UIPS
 
 	UIBBDB uibbdb;
 	UIBBDBLOG uibbdblog;
-	LG lgRoot;;
+	LG lgRoot;
+	LG* plgCur;
 	TX* ptxLog;
 	TX* ptxLogBold;
 	TX* ptxLogItalic;
@@ -147,11 +156,17 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	virtual void DrawContent(const RC& rcCont);
 	virtual float DyLine(void) const;
-	size_t IlgentryFromY(int y) const;
 
 	bool FDepthLog(LGT lgt, int& depth) noexcept; 
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
-	bool FCombineLogEntries(const LG& lg1, const LG& lg2) const noexcept;
+	void ComputeLgPos(LG* plg);
+	LG* PlgPrev(const LG* plg) const;
+	float DyBlock(LG* plg) const;
+	void DrawLg(LG& lg);
+	void DrawItem(const wstring& sz, int depth, LGF lgf, RC rc);
+	RC RcOfLgOpen(const LG& lg) const;
+	RC RcOfLgClose(const LG& lg) const;
+
 	void InitLog(void) noexcept;
 	void ClearLog(void) noexcept;
 	int DepthLog(void) const noexcept;

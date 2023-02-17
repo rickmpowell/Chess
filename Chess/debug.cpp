@@ -96,7 +96,7 @@ void UIBBDBLOG::Layout(void)
 
 UIDB::UIDB(UIGA& uiga) : UIPS(uiga), uibbdb(this), uibbdblog(this), 
 		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyLine(12.0f),
-		depthCur(0), depthFile(2), depthShow(2), posLog(nullptr)
+		plgCur(&lgRoot), depthCur(0), depthFile(2), depthShow(2), posLog(nullptr)
 {
 }
 
@@ -188,97 +188,82 @@ void UIDB::Draw(const RC& rcUpdate)
  */
 void UIDB::DrawContent(const RC& rcCont)
 {
-	if (lgRoot.vplgChild.size() == 0)
+	if (lgRoot.vplgChild.empty())
 		return;
 
-	RC rc = RcContent();
-	rc.left += 4.0f;
-	rc.right = rc.left + 1000.0f;
-	
-	size_t ilgentryFirst = IlgentryFromY((int)RcView().top);
-	rc.top = RcContent().top + lgRoot.vplgChild[ilgentryFirst]->dyTop;
+	for (LG* plgChild : lgRoot.vplgChild)
+		DrawLg(*plgChild);
+}
 
-	for (size_t ilgentry = ilgentryFirst; ilgentry < lgRoot.vplgChild.size() && rc.top < RcView().bottom; ilgentry++) {
-		LG& lg = *lgRoot.vplgChild[ilgentry];
 
-		/* 0 heights are those that were combined into another line */
-		
-		if (lg.dyHeight == 0)
-			continue;
-		
-		/* get string and formatting */
+void UIDB::DrawLg(LG& lg)
+{
+	if (lg.depth > DepthShow() || lg.dyLineOpen == 0)
+		return;
 
-		wstring sz;
-		if (lg.tag.sz.size() > 0)
-			sz = lg.tag.sz + L" ";
-		sz += lg.szData;
-		rc.bottom = rc.top + dyLine;
-		LGF lgf = lg.lgf;
+	/* if open with immediate close, combine into a single line, otherwise draw everythign we've
+	   received */
 
-		/* if matching open and close are next to each other, then combine them to a single line */
-
-		if (ilgentry + 1 < lgRoot.vplgChild.size() && FCombineLogEntries(lg, *lgRoot.vplgChild[ilgentry+1])) {
-			sz += wstring(L" ") + lgRoot.vplgChild[ilgentry+1]->szData;
-			lgf = lgRoot.vplgChild[ilgentry + 1]->lgf;
+	if (lg.vplgChild.empty()) {
+		if (lg.lgt == lgtOpen)
+			DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
+		else {
+			if (lg.tagOpen.sz == lg.tagClose.sz)
+				DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, RcOfLgOpen(lg));
+			else {
+				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
+				DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, RcOfLgClose(lg));
+			}
 		}
-
-		TX* ptx;
-		switch (lgf) {
-		case lgfItalic: ptx = ptxLogItalic; break;
-		case lgfBold: ptx = ptxLogBold; break;
-		case lgfBoldItalic: ptx = ptxLogBoldItalic; break;
-		default: ptx = ptxLog; break;
-		}
-		DrawSz(sz, ptx, 
-			RC(rc.left+12.0f*lg.depth, rc.top, rc.right, rc.bottom), 
-			pbrText);
-		rc.top = rc.bottom;
+	}
+	else {
+		DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
+		for (LG* plgChild : lg.vplgChild)
+			DrawLg(*plgChild);
+		if (lg.lgt == lgtClose)
+			DrawItem(wjoin(lg.tagClose.sz, lg.szDataClose), lg.depth, lg.lgfClose, RcOfLgClose(lg));
 	}
 }
 
 
-/*	UIDB::IlgentryFromY
- *
- *	Finds the log entry in the content area that is located at the vertical location y, which 
- *	is in UIDB coordinates
- */
-size_t UIDB::IlgentryFromY(int y) const
+RC UIDB::RcOfLgOpen(const LG& lg) const
 {
-	float yContentTop = RcContent().top;
-	if (lgRoot.vplgChild.size() == 0)
-		return 0;
-	size_t ilgentryFirst = 0; 
-	size_t ilgentryLast = lgRoot.vplgChild.size()-1;
-	if (y < yContentTop + lgRoot.vplgChild[ilgentryFirst]->dyTop)
-		return ilgentryFirst;
-	if (y >= yContentTop + lgRoot.vplgChild[ilgentryLast]->dyTop + lgRoot.vplgChild[ilgentryLast]->dyHeight)
-		return ilgentryLast;
+	RC rc = RcContent();
+	rc.top += 4.0f + lg.yTop;
+	rc.bottom = rc.top + lg.dyLineOpen;
+	rc.right = rc.left + 1000.0f;
+	return rc;
+}
 
-	for (;;) {
-		size_t ilgentryMid = (ilgentryFirst + ilgentryLast) / 2;
-		if (y < yContentTop + lgRoot.vplgChild[ilgentryMid]->dyTop)
-			ilgentryLast = ilgentryMid-1;
-		else if (y >= yContentTop + lgRoot.vplgChild[ilgentryMid]->dyTop + lgRoot.vplgChild[ilgentryMid]->dyHeight)
-			ilgentryFirst = ilgentryMid+1;
-		else
-			return ilgentryMid;
-	}	
+RC UIDB::RcOfLgClose(const LG& lg) const
+{
+	RC rc = RcContent();
+	rc.bottom = rc.top + 4.0f + lg.yTop + lg.dyBlock;
+	rc.top = rc.bottom - lg.dyLineClose;
+	rc.right = rc.left + 1000.0f;
+	return rc;
 }
 
 
-/*	UIDB::FCombineLogEntries
- *
- *	Returns true if the two log entries should be combined into a single line. Basically, if they
- *	are the corresponding open/close of the same tag.
- */
-bool UIDB::FCombineLogEntries(const LG& lg1, const LG& lg2) const noexcept
+void UIDB::DrawItem(const wstring& sz, int depth, LGF lgf, RC rc)
 {
-	if (lg2.lgt == lgtTemp)
-		return true;
-	if (lg1.lgt == lgtOpen && lg2.lgt == lgtClose &&  
-			lg1.depth == lg2.depth && lg1.tag.sz == lg2.tag.sz)
-		return true;
-	return false;
+	TX* ptx;
+	switch (lgf) {
+	case lgfItalic: 
+		ptx = ptxLogItalic; 
+		break;
+	case lgfBold: 
+		ptx = ptxLogBold; 
+		break;
+	case lgfBoldItalic: 
+		ptx = ptxLogBoldItalic; 
+		break;
+	default: 
+		ptx = ptxLog; 
+		break;
+	}
+	rc.left += 12.0f * depth;
+	DrawSz(sz, ptx, rc, pbrText);
 }
 
 
@@ -317,46 +302,127 @@ bool UIDB::FDepthLog(LGT lgt, int& depth) noexcept
  */
 void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
 {
-	LG lg(lgt, lgf, depth, tag, szData);
-
 	assert(depth <= DepthLog());
 
-	if (lgRoot.vplgChild.size() > 0 && lgRoot.vplgChild.back()->lgt == lgtTemp) {
-		LG* plg = lgRoot.vplgChild.back();
-		lgRoot.vplgChild.pop_back();
+	if (!plgCur->vplgChild.empty() && plgCur->vplgChild.back()->lgt == lgtTemp) {
+		LG* plg = plgCur->vplgChild.back();
+		plgCur->vplgChild.pop_back();
 		delete plg;
 	}
 	
-	/* compute the top and height of the item */
+	RC rcCont = RcContent();
+	float yContTop = rcCont.top;
+	LG* plgNew = nullptr;
+	switch (lgt) {
+	case lgtOpen:
+		plgNew = new LG(lgt, lgf, depth, tag, szData);
+		plgCur->AddChild(plgNew);
+		plgCur = plgCur->vplgChild.back();
+		goto RedrawNew;
+	
+	case lgtClose:
+		plgCur->lgt = lgt;
+		plgCur->lgfClose = lgf;
+		plgCur->tagClose = tag;
+		plgCur->szDataClose = szData;
+		ComputeLgPos(plgCur);
+		plgCur = plgCur->plgParent;	
+		if (depth <= DepthShow()) {
+			UpdateContSize(SIZ(rcCont.DxWidth(), plgCur->yTop + plgCur->dyBlock));
+			FMakeVis(yContTop + plgCur->yTop + plgCur->dyBlock - plgCur->dyLineClose, plgCur->dyLineClose);
+			Redraw();
+		}
+		break;
 
-	if ((lgRoot.vplgChild.size() > 0 && FCombineLogEntries(*lgRoot.vplgChild.back(), lg)) || lg.depth > DepthShow())
-		lg.dyHeight = 0;
-	else
-		lg.dyHeight = dyLine;
-	if (lgRoot.vplgChild.size() == 0)
-		lg.dyTop = 0;
-	else
-		lg.dyTop = lgRoot.vplgChild.back()->dyTop + lgRoot.vplgChild.back()->dyHeight;
+	default:
+		plgNew = new LG(lgt, lgf, depth, tag, szData);
+		plgCur->AddChild(plgNew);
+RedrawNew:
+		ComputeLgPos(plgNew);
+		if (depth <= DepthShow()) {
+			UpdateContSize(SIZ(rcCont.DxWidth(), plgNew->yTop + plgNew->dyBlock));
+			FMakeVis(yContTop + plgNew->yTop, plgNew->dyLineOpen);
+			Redraw();
+		}
+		break;
+	}
 
 	/* logging a file */
 
-	if (posLog && lg.lgt != lgtTemp) {
-		*posLog << string(4 * (int64_t)lg.depth, ' ');
-		if (lg.tag.sz.size() > 0) {
-			*posLog << SzFlattenWsz(lg.tag.sz);
+	if (posLog && lgt != lgtTemp) {
+		*posLog << string(4 * depth, ' ');
+		if (!tag.sz.empty()) {
+			*posLog << SzFlattenWsz(tag.sz);
 			*posLog << ' ';
 		}
-		*posLog << SzFlattenWsz(lg.szData);
+		*posLog << SzFlattenWsz(szData);
 		*posLog << endl;
 	}
-	lgRoot.AddChild(new LG(lg));
+}
 
-	if (lg.depth <= DepthShow()) {
-		float dyBot = lg.dyTop + lg.dyHeight;
-		UpdateContSize(SIZ(RcContent().DxWidth(), dyBot));
-		FMakeVis(RcContent().top + dyBot, lg.dyHeight);
-		Redraw();
+
+/*	UIDB::ComputeLgPos
+ *
+ *	Comptes the position and size of every item that may need to change after the
+ *	given item was added to the log tree.
+ */
+void UIDB::ComputeLgPos(LG* plg)
+{
+	/* compute heights of lines and blocks */
+
+	if (plg->depth > DepthShow()) {
+		plg->dyLineOpen = 0;
+		plg->dyLineClose = 0;
+		plg->dyBlock = 0;
 	}
+	else {
+		plg->dyLineOpen = dyLine;
+		if (plg->lgt != lgtClose || (plg->vplgChild.empty() && plg->tagOpen.sz == plg->tagClose.sz))
+			plg->dyLineClose = 0;
+		else
+			plg->dyLineClose = dyLine;
+		/* block height must be recomputed for this and all parent blocks */
+		for (LG* plgWalk = plg; plgWalk; plgWalk = plgWalk->plgParent)
+			plgWalk->dyBlock = DyBlock(plgWalk);
+	}
+
+	/* figure out position of this item */
+
+	LG* plgPrev = PlgPrev(plg);
+	if (plgPrev == nullptr)
+		plg->yTop = 0;
+	else if (plgPrev->lgt == lgtClose)
+		plg->yTop = plgPrev->yTop + plgPrev->dyBlock;
+	else
+		plg->yTop = plgPrev->yTop + plgPrev->dyLineOpen;
+}
+
+
+float UIDB::DyBlock(LG* plg) const
+{
+	float dy = plg->dyLineOpen;
+	for (LG* plgChild : plg->vplgChild)
+		dy += plgChild->dyBlock;
+	dy += plg->dyLineClose;
+	return dy;
+}
+
+
+LG* UIDB::PlgPrev(const LG* plg) const
+{
+	LG* plgParent = plg->plgParent;
+	if (plgParent == nullptr)
+		return nullptr;
+	LG* plgPrev = nullptr;
+	for (LG* plgSib : plgParent->vplgChild) {
+		if (plgSib == plg)
+			break;
+		plgPrev = plgSib;
+	}
+	if (plgPrev == nullptr)
+		return plgParent;
+	else
+		return plgPrev;
 }
 
 
