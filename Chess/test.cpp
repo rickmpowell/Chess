@@ -887,11 +887,13 @@ void UIGA::Test(void)
 
 
 /*
- *
  * 
  *	UIDT screen panel
  * 
- *	Drawing test panel, for testing rendering primitives in the UI object
+ *	Drawing test panel, for testing rendering primitives in the UI object. This is just
+ *	a test canvas to experiment with various drawing primitives and see exactly what
+ *	they do. Any code left here is left over from some previous test. Feel free to 
+ *	remove, replace, or rewrite.
  * 
  */
 
