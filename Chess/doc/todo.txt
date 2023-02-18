@@ -1,3 +1,4 @@
+  Add disabled support to static controls and hook up to the Log File: label in the UIDB
   When changing log depth, need to re-layout the window
   Add UI to expand/collapse log entries
   Optimize log to redraw minimally - Open/Close combo, Temp, and first/last line

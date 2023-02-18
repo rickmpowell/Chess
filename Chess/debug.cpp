@@ -217,7 +217,10 @@ void UIDB::DrawLg(LG& lg)
 		}
 	}
 	else {
-		DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
+		wstring szData = lg.szDataOpen;
+		if (!lg.vplgChild.empty() && lg.vplgChild[0]->lgt == lgtTemp)
+			szData += lg.vplgChild[0]->szDataOpen;
+		DrawItem(wjoin(lg.tagOpen.sz, szData), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
 		for (LG* plgChild : lg.vplgChild)
 			DrawLg(*plgChild);
 		if (lg.lgt == lgtClose)
@@ -369,7 +372,7 @@ void UIDB::ComputeLgPos(LG* plg)
 {
 	/* compute heights of lines and blocks */
 
-	if (plg->depth > DepthShow()) {
+	if (plg->depth > DepthShow() || plg->lgt == lgtTemp) {
 		plg->dyLineOpen = 0;
 		plg->dyLineClose = 0;
 		plg->dyBlock = 0;
