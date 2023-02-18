@@ -411,7 +411,7 @@ public:
 		PROCPGNGA procpgngaSav(uiga.ga, new PROCPGNTESTUNDO(uiga.ga));
 		ISTKPGN istkpgn(is);
 		for (int igame = 0; ; igame++) {
-			LogTemp(wstring(L"Game ") + to_wstring(igame + 1));
+			LogTemp(wjoin(L"Game ", igame + 1));
 			if (uiga.ga.DeserializeGame(istkpgn) != errNone)
 				break;
 			UndoFullGame();
@@ -512,7 +512,7 @@ public:
 		istkpgn.SetSzStream(szFileBase);
 		int igame = 0;
 		do {
-			LogTemp(wstring(L"Game ") + to_wstring(++igame));
+			LogTemp(wjoin(L"Game ", ++igame));
 			err = uiga.ga.DeserializeGame(istkpgn);
 		} while (err == errNone);
 	}
