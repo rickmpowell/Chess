@@ -643,8 +643,9 @@ public:
 	 */
 
 	static const wchar_t szFENInit[];
-	void InitGame(const wchar_t* szFEN);
 	void InitGame(void);
+	void SetFen(const wchar_t* szFEN);
+
 
 	/*
 	 *	making moves 

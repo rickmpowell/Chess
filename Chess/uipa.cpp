@@ -235,7 +235,7 @@ bool UIPS::FMakeVis(float y, float dy)
 		return false;
 	sbarVert.SetRange(rcCont.top, rcCont.bottom);
 	Layout();
-	Redraw();
+	RedrawContent();
 	return true;
 }
 
@@ -249,8 +249,8 @@ void UIPS::Draw(const RC& rcUpdate)
 	/* just redraw the entire content area clipped to the view */
 	APP& app = App();
 	app.pdc->PushAxisAlignedClip(RcGlobalFromLocal(rcView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	FillRcBack(rcView);
-	DrawContent(rcCont);
+	FillRcBack(rcUpdate);
+	DrawContent(rcUpdate);
 	app.pdc->PopAxisAlignedClip();
 }
 
@@ -262,6 +262,12 @@ void UIPS::Draw(const RC& rcUpdate)
  */
 void UIPS::DrawContent(const RC& rc)
 {
+}
+
+
+void UIPS::RedrawContent(void)
+{
+	Redraw(rcView, true);
 }
 
 
@@ -623,17 +629,15 @@ ColorF UIBB::CoBack(void) const
  * 
  */
 
-UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnClose(this, cmdClosePanel, L"\x2713 Done"), szTitle(szTitle)
+UITITLE::UITITLE(UIP* puipParent, const wstring& szTitle) : UI(puipParent), btnclose(this, cmdClosePanel, L"\x2713 Done"), szTitle(szTitle)
 {
-	btnClose.SetCoText(coWhite);
-	btnClose.SetCoBack(coBlack);
 }
 
 
 void UITITLE::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
-	rc.right = btnClose.RcBounds().left;
+	rc.right = btnclose.RcBounds().left;
 	rc.left += 12.0f;
 	rc.top += 2.0f;
 	DrawSz(szTitle, ptxText, rc);
@@ -643,8 +647,8 @@ void UITITLE::Draw(const RC& rcUpdate)
 void UITITLE::Layout(void)
 {
 	RC rc = RcInterior();
-	rc.left = rc.right - btnClose.DxWidth() - 20.0f;
-	btnClose.SetBounds(rc);
+	rc.left = rc.right - btnclose.DxWidth() - 20.0f;
+	btnclose.SetBounds(rc);
 }
 
 

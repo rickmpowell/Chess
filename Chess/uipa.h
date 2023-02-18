@@ -124,6 +124,7 @@ public:
 		
 	virtual void Draw(const RC& rcUpdate);
 	virtual void DrawContent(const RC& rc);
+	void RedrawContent(void);
 
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);
@@ -177,6 +178,19 @@ public:
 };
 
 
+class BTNCLOSE : public BTNTEXT
+{
+public:
+	BTNCLOSE(UI* puiParent, int icmd, const wstring& sz) : BTNTEXT(puiParent, icmd, sz) { }
+	
+	virtual ColorF CoText(void) const
+	{
+		return FEnabledCmd(cmd) ?
+			CoBlend(coWhite, coBtnHilite, (float)(fHilite + fTrack) / 2.0f) :
+			coBtnDisabled;
+	}
+};
+
 
 /*
  *
@@ -190,7 +204,7 @@ public:
 class UITITLE : public UI
 {
 	wstring szTitle;
-	BTNTEXT btnClose;
+	BTNCLOSE btnclose;
 public:
 	UITITLE(UIP* puipParent, const wstring& szTitle);
 	virtual void Layout(void);

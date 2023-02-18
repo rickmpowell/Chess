@@ -87,6 +87,8 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Board edit mode close button is black instead of white
+* Interrupt the AI after first move, then restart the AI asserts in UIML
 * Log: make the logs collapsible
 * Log: File logging and UIDB logging need to have their own depth
 * UIDB: Add support for multi-line log entries in db panel

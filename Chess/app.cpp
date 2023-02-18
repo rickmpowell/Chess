@@ -387,3 +387,10 @@ void* CLIPB::PGetData(int cf)
 	return PLock();
 }
 
+
+ColorF CoBlend(ColorF co1, ColorF co2, float pct)
+{
+	return ColorF(co1.r * (1.0f - pct) + co2.r * pct,
+				  co1.g * (1.0f - pct) + co2.g * pct,
+				  co1.b * (1.0f - pct) + co2.b * pct);
+}

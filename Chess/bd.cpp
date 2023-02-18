@@ -1164,7 +1164,8 @@ BDG::BDG(void) noexcept : gs(gsPlaying), imveCurLast(-1), imvePawnOrTakeLast(-1)
  */
 BDG::BDG(const wchar_t* szFEN)
 {
-	InitGame(szFEN);
+	InitGame();
+	SetFen(szFEN);
 }
 
 
@@ -1174,12 +1175,21 @@ BDG::BDG(const BDG& bdg) noexcept : BD(bdg), gs(bdg.gs), vmveGame(bdg.vmveGame),
 }
 
 
+void BDG::InitGame(void)
+{
+	vmveGame.clear();
+	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
+	imveCurLast = -1;
+	imvePawnOrTakeLast = -1;
+	SetGs(gsNotStarted);
+}
+
+
 const wchar_t BDG::szFENInit[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-void BDG::InitGame(const wchar_t* szFEN)
-{
-	InitGame();
 
+void BDG::SetFen(const wchar_t* szFEN)
+{
 	if (szFEN == nullptr)
 		szFEN = szFENInit;
 	const wchar_t* sz = szFEN;
@@ -1191,16 +1201,6 @@ void BDG::InitGame(const wchar_t* szFEN)
 	InitFENFullmoveCounter(sz);
 	/* TODO: is this the halfmove clock? */
 	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
-}
-
-
-void BDG::InitGame(void)
-{
-	vmveGame.clear();
-	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
-	imveCurLast = -1;
-	imvePawnOrTakeLast = -1;
-	SetGs(gsNotStarted);
 }
 
 

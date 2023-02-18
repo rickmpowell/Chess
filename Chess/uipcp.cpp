@@ -567,7 +567,8 @@ void UIPCP::DispatchCmd(int cmd)
 	case cmdSetBoardInit:
 		for (UISETFEN* puisetfen : vpuisetfen)
 			if (puisetfen->cmd == cmd) {
-				uiga.ga.bdg.InitGame(puisetfen->szFen.c_str());
+				uiga.ga.bdg.InitGame();
+				uiga.ga.bdg.SetFen(puisetfen->szFen.c_str());
 				break;
 			}
 		break;

@@ -79,10 +79,12 @@ void GA::SetRule(RULE* prule)
 void GA::InitGame(const wchar_t* szFEN, RULE* prule)
 {
 	SetRule(prule);
-	bdg.InitGame(szFEN);
+	bdg.InitGame();
+	bdg.SetFen(szFEN);
 	bdgInit = bdg;
 	tpStart = system_clock::now();
 }
+
 
 void GA::InitGame(void)
 {
@@ -94,10 +96,10 @@ void GA::InitGame(void)
 
 void GA::StartGame(void)
 {
+	InitGame();
 	bdg.SetGs(gsPlaying);
-	bdgInit = bdg;
-	tpStart = system_clock::now();
 }
+
 
 void GA::EndGame(void)
 {

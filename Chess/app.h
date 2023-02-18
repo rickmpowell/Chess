@@ -378,3 +378,11 @@ inline void Log(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szDa
 {
 	papp->AddLog(lgt, lgf, depth, tag, szData);
 }
+
+
+/*
+ *	Some utility functions
+ */
+
+
+ColorF CoBlend(ColorF co1, ColorF co2, float pct);

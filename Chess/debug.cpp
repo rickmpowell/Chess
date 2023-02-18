@@ -332,7 +332,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 		if (depth <= DepthShow()) {
 			UpdateContSize(SIZ(rcCont.DxWidth(), plgCur->yTop + plgCur->dyBlock));
 			FMakeVis(yContTop + plgCur->yTop + plgCur->dyBlock - plgCur->dyLineClose, plgCur->dyLineClose);
-			Redraw();
+			RedrawContent();
 		}
 		break;
 
@@ -344,7 +344,7 @@ RedrawNew:
 		if (depth <= DepthShow()) {
 			UpdateContSize(SIZ(rcCont.DxWidth(), plgNew->yTop + plgNew->dyBlock));
 			FMakeVis(yContTop + plgNew->yTop, plgNew->dyLineOpen);
-			Redraw();
+			RedrawContent();
 		}
 		break;
 	}
