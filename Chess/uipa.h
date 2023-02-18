@@ -119,12 +119,15 @@ public:
 	RC RcView(void) const;
 	RC RcContent(void) const;
 	void UpdateContSize(const SIZ& siz);
+	void UpdateContHeight(float dyNew);
+
 	void AdjustRcView(const RC& rc);
 	virtual float DyLine(void) const;
 		
 	virtual void Draw(const RC& rcUpdate);
-	virtual void DrawContent(const RC& rc);
+	virtual void DrawContent(const RC& rcUpdate);
 	void RedrawContent(void);
+	void RedrawContent(const RC& rcUpdate);
 
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);

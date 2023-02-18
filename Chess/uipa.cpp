@@ -157,6 +157,18 @@ void UIPS::UpdateContSize(const SIZ& siz)
 	rcCont.right = rcCont.left + siz.width;
 	sbarVert.SetRange(rcCont.top, rcCont.bottom);
 	UIPS::Layout();
+	sbarVert.Redraw();
+}
+
+
+void UIPS::UpdateContHeight(float dyNew)
+{
+	if (rcCont.bottom == rcCont.top + dyNew)
+		return;
+	rcCont.bottom = rcCont.top + dyNew;
+	sbarVert.SetRange(rcCont.top, rcCont.bottom);
+	UIPS::Layout();
+	sbarVert.Redraw();
 }
 
 
@@ -249,8 +261,9 @@ void UIPS::Draw(const RC& rcUpdate)
 	/* just redraw the entire content area clipped to the view */
 	APP& app = App();
 	app.pdc->PushAxisAlignedClip(RcGlobalFromLocal(rcView), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	FillRcBack(rcUpdate);
-	DrawContent(rcUpdate);
+	RC rc = rcUpdate & rcView;
+	FillRcBack(rc);
+	DrawContent(rc);
 	app.pdc->PopAxisAlignedClip();
 }
 
@@ -260,7 +273,7 @@ void UIPS::Draw(const RC& rcUpdate)
  *	Virutal function for drawing the actual content area. This should be overriden
  *	by all implementations to provide the actual drawing code.
  */
-void UIPS::DrawContent(const RC& rc)
+void UIPS::DrawContent(const RC& rcUpdate)
 {
 }
 
@@ -268,6 +281,13 @@ void UIPS::DrawContent(const RC& rc)
 void UIPS::RedrawContent(void)
 {
 	Redraw(rcView, true);
+	sbarVert.Redraw();
+}
+
+void UIPS::RedrawContent(const RC& rcUpdate)
+{
+	Redraw(rcView & rcUpdate, true);
+	sbarVert.Redraw();
 }
 
 
@@ -378,7 +398,7 @@ void SBAR::Draw(const RC& rcUpdate)
 
 /*	SBAR::SetRange
  *
- *	Sets the content area range of the scrollbar
+ *	Sets the content area range of the scrollbar. Does not redraw.
  */
 void SBAR::SetRange(float yTop, float yBot)
 {

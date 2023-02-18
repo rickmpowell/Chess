@@ -136,16 +136,13 @@ class UIDB : public UIPS
 
 	UIBBDB uibbdb;
 	UIBBDBLOG uibbdblog;
-	LG lgRoot;
-	LG* plgCur;
+	LG lgRoot, *plgCur;		// the logging data and location we're logging into
 	TX* ptxLog;
 	TX* ptxLogBold;
 	TX* ptxLogItalic;
 	TX* ptxLogBoldItalic;
 	float dyLine;
-	int depthCur;
-	int depthShow;
-	int depthFile;
+	int depthCur, depthShow, depthFile;
 	ofstream* posLog;
 public:
 	UIDB(UIGA& uiga);
@@ -153,26 +150,63 @@ public:
 	virtual void CreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
+	/* UI layout and drawing */
+
+public:
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
-
 	virtual void Draw(const RC& rcUpdate);
-	virtual void DrawContent(const RC& rcCont);
+	virtual void DrawContent(const RC& rcUpdate);
 	virtual float DyLine(void) const;
+private:
+	void DrawLg(LG& lg, float yTop, float yBot);
+	void DrawItem(const wstring& sz, int depth, LGF lgf, RC rc);
 
-	bool FDepthLog(LGT lgt, int& depth) noexcept; 
+	/*	adding log entries and recomputing layout information */
+
+public:
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
-	void ComputeLgPos(LG* plg);
+private:
+	float DyComputeLgPos(LG* plg);
 	LG* PlgPrev(const LG* plg) const;
 	float DyBlock(LG* plg) const;
-	void DrawLg(LG& lg);
-	void DrawItem(const wstring& sz, int depth, LGF lgf, RC rc);
-	RC RcOfLgOpen(const LG& lg) const;
-	RC RcOfLgClose(const LG& lg) const;
+	bool FRcOfLgOpen(const LG& lg, RC& rc, float yTop, float yBot) const;
+	bool FRcOfLgClose(const LG& lg, RC& rc, float yTop, float yBot) const;
 
+	/* the rest of the public logging interface */
+
+public:
 	void InitLog(void) noexcept;
 	void ClearLog(void) noexcept;
-	int DepthLog(void) const noexcept;
+	
+	/*	UIDB::DepthLog
+	 *
+	 *	Returns the depth we're currently logging to.
+	 */
+	__forceinline int DepthLog(void) const noexcept
+	{
+		return max(depthShow, depthFile);
+	}
+
+	/*	UIDB::FDepthLog
+	 *
+	 *	Returns true if the item should be logged. Keeps track of the depth of our
+	 *	structured log in the Open/Close. This function is used as an optimization
+	 *	so we don't construct logging data if the data isn't going to be logged.
+	 *
+	 *	Speed of FDepthLog is critical to overall AI speed.
+	 */
+	__forceinline bool FDepthLog(LGT lgt, int& depth) noexcept
+	{
+		if (lgt == lgtClose)
+			depthCur--;
+		assert(depthCur >= 0);
+		depth = depthCur;
+		if (lgt == lgtOpen)
+			depthCur++;
+		return depth <= DepthLog();
+	}
+
 	int DepthShow(void) const noexcept;
 	int DepthFile(void) const noexcept;
 	void SetDepthShow(int depth) noexcept;

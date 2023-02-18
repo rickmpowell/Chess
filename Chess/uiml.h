@@ -207,7 +207,7 @@ public:
 	void ShowClocks(bool fTimed);
 	
 	virtual void Draw(const RC& rcUpdate);
-	virtual void DrawContent(const RC& rcCont);
+	virtual void DrawContent(const RC& rcUpdate);
 
 	void DrawAndMakeMv(const RC& rc, BDG& bdg, MVE mve);
 	void DrawMoveNumber(const RC& rc, int imv);

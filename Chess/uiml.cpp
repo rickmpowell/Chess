@@ -806,7 +806,7 @@ RC UIML::RcFromImv(int imv) const
  *	Draws the content of the scrollable part of the move list screen
  *	panel.
  */
-void UIML::DrawContent(const RC& rcCont)
+void UIML::DrawContent(const RC& rcUpdate)
 {
 	GA& ga(Ga());
 	float yCont = RcContent().top + 4.0f;

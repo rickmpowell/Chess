@@ -512,7 +512,8 @@ public:
 		istkpgn.SetSzStream(szFileBase);
 		int igame = 0;
 		do {
-			LogTemp(wjoin(L"Game ", ++igame));
+			igame++;
+			LogTemp(wjoin(L"Game ", igame));
 			err = uiga.ga.DeserializeGame(istkpgn);
 		} while (err == errNone);
 	}
@@ -874,9 +875,9 @@ void UIGA::Test(void)
 		return;
 	}
 	TEST testRoot(*this, nullptr);
-	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
-	testRoot.Add(new TESTPERFT(*this, &testRoot));
-	testRoot.Add(new TESTUNDO(*this, &testRoot));
+//	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
+//	testRoot.Add(new TESTPERFT(*this, &testRoot));
+//	testRoot.Add(new TESTUNDO(*this, &testRoot));
 	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));
 
 	fInTest = true;

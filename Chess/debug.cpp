@@ -186,65 +186,87 @@ void UIDB::Draw(const RC& rcUpdate)
  *
  *	Displays the content area of the debug UI element, which is the log information
  */
-void UIDB::DrawContent(const RC& rcCont)
+void UIDB::DrawContent(const RC& rcUpdate)
 {
 	if (lgRoot.vplgChild.empty())
 		return;
 
 	for (LG* plgChild : lgRoot.vplgChild)
-		DrawLg(*plgChild);
+		DrawLg(*plgChild, rcUpdate.top, rcUpdate.bottom);
 }
 
+bool FRangesOverlap(float fl1First, float fl1Lim, float fl2First, float fl2Lim)
+{
+	assert(fl1First <= fl1Lim && fl2First <= fl2Lim);
+	return !(fl2Lim <= fl1First || fl2First >= fl1Lim);
+}
 
-void UIDB::DrawLg(LG& lg)
+/*	DrawLg
+ *
+ *	Draws the log block rooted at lg, constrained by the bounds yTop and yBot, which are in
+ *	local view coordinates.
+ */
+void UIDB::DrawLg(LG& lg, float yTop, float yBot)
 {
 	if (lg.depth > DepthShow() || lg.dyLineOpen == 0)
 		return;
+	float yLgTop = RcContent().top + 4.0f + lg.yTop;
+	if (!FRangesOverlap(yLgTop, yLgTop + lg.dyBlock, yTop, yBot))
+		return;
 
-	/* if open with immediate close, combine into a single line, otherwise draw everythign we've
-	   received */
+	/* if an open with immediate close, we may combine into a single line, otherwise draw everythign 
+	   we've received. */
 
+	RC rc;
 	if (lg.vplgChild.empty()) {
-		if (lg.lgt == lgtOpen)
-			DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
-		else {
-			if (lg.tagOpen.sz == lg.tagClose.sz)
-				DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, RcOfLgOpen(lg));
-			else {
-				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
-				DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, RcOfLgClose(lg));
-			}
+		if (FRcOfLgOpen(lg, rc, yTop, yBot)) {
+			if (lg.lgt == lgtOpen || lg.tagOpen.sz != lg.tagClose.sz)
+				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.depth, lg.lgfOpen, rc);
+			else 
+				DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
 		}
+		if (lg.lgt == lgtClose && lg.tagOpen.sz != lg.tagClose.sz && FRcOfLgClose(lg, rc, yTop, yBot))
+			DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
 	}
 	else {
-		wstring szData = lg.szDataOpen;
-		if (!lg.vplgChild.empty() && lg.vplgChild[0]->lgt == lgtTemp)
-			szData += lg.vplgChild[0]->szDataOpen;
-		DrawItem(wjoin(lg.tagOpen.sz, szData), lg.depth, lg.lgfOpen, RcOfLgOpen(lg));
+		if (FRcOfLgOpen(lg, rc, yTop, yBot))
+			DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.depth, lg.lgfOpen, rc);
 		for (LG* plgChild : lg.vplgChild)
-			DrawLg(*plgChild);
-		if (lg.lgt == lgtClose)
-			DrawItem(wjoin(lg.tagClose.sz, lg.szDataClose), lg.depth, lg.lgfClose, RcOfLgClose(lg));
+			DrawLg(*plgChild, yTop, yBot);
+		if (lg.lgt == lgtClose && FRcOfLgClose(lg, rc, yTop, yBot))
+			DrawItem(wjoin(lg.tagClose.sz, lg.szDataClose), lg.depth, lg.lgfClose, rc);
 	}
 }
 
 
-RC UIDB::RcOfLgOpen(const LG& lg) const
+/*	UIDB::FRcOfLgOpen
+ *
+ *	Returns the rectangle we draw open log items into. This also works for leaf nodes.
+ *	The Rectangle is returned in local view coordinates. Returns false if the rectangle
+ *	is not visible in the range
+ */
+bool UIDB::FRcOfLgOpen(const LG& lg, RC& rc, float yTop, float yBot) const
 {
-	RC rc = RcContent();
+	rc = RcContent();
 	rc.top += 4.0f + lg.yTop;
 	rc.bottom = rc.top + lg.dyLineOpen;
 	rc.right = rc.left + 1000.0f;
-	return rc;
+	return FRangesOverlap(rc.top, rc.bottom, yTop, yBot);
 }
 
-RC UIDB::RcOfLgClose(const LG& lg) const
+
+/*	UIDB::FRcOfLogClose
+ *
+ *	For closed log nodes, returns the rectangle of the close text, in local view
+ *	coordinates. Returns false if the rectrangel is not visible in the range.
+ */
+bool UIDB::FRcOfLgClose(const LG& lg, RC& rc, float yTop, float yBot) const
 {
-	RC rc = RcContent();
+	rc = RcContent();
 	rc.bottom = rc.top + 4.0f + lg.yTop + lg.dyBlock;
 	rc.top = rc.bottom - lg.dyLineClose;
 	rc.right = rc.left + 1000.0f;
-	return rc;
+	return FRangesOverlap(rc.top, rc.bottom, yTop, yBot);
 }
 
 
@@ -276,24 +298,6 @@ float UIDB::DyLine(void) const
 }
 
 
-/*	UIDB::FDepthLog
- *
- *	Returns true if the item should be logged. Keeps track of the depth of our
- *	structured log in the Open/Close. This function is used as an optimization
- *	so we don't construct logging data if the data isn't going to be logged.
- */
-bool UIDB::FDepthLog(LGT lgt, int& depth) noexcept
-{
-	if (lgt == lgtClose)
-		depthCur--;
-	assert(depthCur >= 0);
-	depth = depthCur;
-	if (lgt == lgtOpen)
-		depthCur++;
-	return depth <= DepthLog();
-}
-
-
 /*	UIDB::AddLog
  *
  *	Adds a log entry to the log. lgt is the type (open, close, or data), lgf is formatting,
@@ -307,82 +311,72 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 {
 	assert(depth <= DepthLog());
 
-	if (!plgCur->vplgChild.empty() && plgCur->vplgChild.back()->lgt == lgtTemp) {
-		delete plgCur->vplgChild.back();
-		plgCur->vplgChild.pop_back();
-	}
-	
-	RC rcCont = RcContent();
-	float yContTop = rcCont.top + 4.0f;
-	LG* plgNew = nullptr;
+	LG* plgUpdate = plgCur;
+
 	switch (lgt) {
-	case lgtOpen:
-		plgNew = new LG(lgt, lgf, depth, tag, szData);
-		plgCur->AddChild(plgNew);
-		plgCur = plgCur->vplgChild.back();
-		goto RedrawNew;
-	
+	case lgtTemp:
+		plgCur->tagOpen[L"TEMP"] = szData;
+		break;
 	case lgtClose:
 		plgCur->lgt = lgt;
 		plgCur->lgfClose = lgf;
 		plgCur->tagClose = tag;
 		plgCur->szDataClose = szData;
-		ComputeLgPos(plgCur);
-		plgCur = plgCur->plgParent;	
-		if (depth <= DepthShow()) {
-			UpdateContSize(SIZ(rcCont.DxWidth(), plgCur->yTop + plgCur->dyBlock));
-			FMakeVis(yContTop + plgCur->yTop + plgCur->dyBlock - plgCur->dyLineClose, plgCur->dyLineClose);
-			RedrawContent();
-		}
+		plgCur = plgCur->plgParent;
 		break;
-
 	default:
-		plgNew = new LG(lgt, lgf, depth, tag, szData);
-		plgCur->AddChild(plgNew);
-RedrawNew:
-		ComputeLgPos(plgNew);
-		if (depth <= DepthShow()) {
-			UpdateContSize(SIZ(rcCont.DxWidth(), plgNew->yTop + plgNew->dyBlock));
-			FMakeVis(yContTop + plgNew->yTop, plgNew->dyLineOpen);
-			RedrawContent();
-		}
+		plgUpdate = new LG(lgt, lgf, depth, tag, szData);
+		plgCur->AddChild(plgUpdate);
+		if (lgt == lgtOpen)
+			plgCur = plgUpdate;
 		break;
 	}
 
-	/* logging a file */
+	/* relayout and redraw - we go to some effort to do minimum redraw here */
 
-	if (posLog && lgt != lgtTemp) {
+	float dyLast = DyComputeLgPos(plgUpdate);
+	if (depth <= DepthShow()) {
+		float yBot = plgUpdate->yTop + plgUpdate->dyBlock;
+		UpdateContHeight(yBot);
+		RC rc = RC(0, yBot - dyLast, RcView().DxWidth(), yBot).Offset(0, RcContent().top + 4.0f);;
+		if (!FMakeVis(rc.top, rc.DyHeight()))
+			RedrawContent(rc);
+	}
+
+	/* logging to file */
+
+	if (posLog && depth <= DepthFile()) {
 		*posLog << string(4 * depth, ' ');
-		if (!tag.sz.empty()) {
-			*posLog << SzFlattenWsz(tag.sz);
-			*posLog << ' ';
-		}
-		*posLog << SzFlattenWsz(szData);
-		*posLog << endl;
+		if (!tag.sz.empty())
+			*posLog << SzFlattenWsz(tag.sz) << ' ';
+		*posLog << SzFlattenWsz(szData) << endl;
 	}
 }
 
 
-/*	UIDB::ComputeLgPos
+/*	UIDB::DyComputeLgPos
  *
  *	Comptes the position and size of every item that may need to change after the
  *	given item was added to the log tree.
+ * 
+ *	Returns the height of last itme added, or zero if the item is hidden.
  */
-void UIDB::ComputeLgPos(LG* plg)
+float UIDB::DyComputeLgPos(LG* plg)
 {
 	/* compute heights of lines and blocks */
 
-	if (plg->depth > DepthShow() || plg->lgt == lgtTemp) {
+	float dyLast = 0;;
+	if (plg->depth > DepthShow()) {
 		plg->dyLineOpen = 0;
 		plg->dyLineClose = 0;
 		plg->dyBlock = 0;
 	}
 	else {
-		plg->dyLineOpen = dyLine;
+		dyLast = plg->dyLineOpen = dyLine;
 		if (plg->lgt != lgtClose || (plg->vplgChild.empty() && plg->tagOpen.sz == plg->tagClose.sz))
 			plg->dyLineClose = 0;
 		else
-			plg->dyLineClose = dyLine;
+			dyLast = plg->dyLineClose = dyLine;
 		/* block height must be recomputed for this and all parent blocks - we don't have to relayout
 		   sibling items here because we only *append* items to the log, so only the last sibling
 		   can ever change. */
@@ -401,6 +395,7 @@ void UIDB::ComputeLgPos(LG* plg)
 		plg->yTop = plgPrev->yTop + plgPrev->dyBlock;
 	else
 		plg->yTop = plgPrev->yTop + plgPrev->dyLineOpen;
+	return dyLast;
 }
 
 
@@ -461,6 +456,7 @@ void UIDB::SetDepthFile(int depth) noexcept
 	depthFile = max(0, depth);
 }
 
+
 void UIDB::InitLog(void) noexcept
 {
 	ClearLog();
@@ -468,19 +464,11 @@ void UIDB::InitLog(void) noexcept
 }
 
 
-/*	UIDB::DepthLog
- *
- *	Returns the depth we're currently logging to. 
- */
-int UIDB::DepthLog(void) const noexcept
-{
-	return max(depthShow, depthFile);
-}
-
 int UIDB::DepthShow(void) const noexcept
 {
 	return depthShow;
 }
+
 
 int UIDB::DepthFile(void) const noexcept
 {

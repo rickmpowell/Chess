@@ -125,35 +125,19 @@ enum LGF : int {
 
 struct ATTR
 {
-	wstring name;
-	wstring val;
+	wstring name, val;
 
-	ATTR(const wstring& name, const wstring& val) : name(name), val(val) {
-	}
+	ATTR(const wstring& name, const wstring& val) : name(name), val(val) { }
 };
 
 
-struct TAG
+struct TAG : public map<wstring, wstring>
 {
 	wstring sz;
-	map<wstring, wstring> mpnameval;
 
-	TAG(const wchar_t* sz) : sz(wstring(sz)) {
-	}
-
-	TAG(const wstring& sz) : sz(sz) {
-	}
-
-	TAG(const wstring sz, const ATTR& attr) : sz(sz)
-	{
-		mpnameval[attr.name] = attr.val;
-	}
-
-	TAG(const wstring& sz, const ATTR aattr[], int cattr) : sz(sz)
-	{
-		for (int iattr = 0; iattr < cattr; iattr++)
-			mpnameval[aattr[iattr].name] = aattr[iattr].val;
-	}
+	TAG(const wchar_t* sz) : sz(wstring(sz)) { }
+	TAG(const wstring& sz) : sz(sz) { }
+	TAG(const wstring& sz, const ATTR& attr) : sz(sz) { (*this)[attr.name] = attr.val; }
 };
 
 
