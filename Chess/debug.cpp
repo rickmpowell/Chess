@@ -313,7 +313,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 	}
 	
 	RC rcCont = RcContent();
-	float yContTop = rcCont.top;
+	float yContTop = rcCont.top + 4.0f;
 	LG* plgNew = nullptr;
 	switch (lgt) {
 	case lgtOpen:
