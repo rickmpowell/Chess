@@ -621,7 +621,7 @@ void UICLOCK::DrawFlag(void) const
 
 
 UIML::UIML(UIGA& uiga) : UIPS(uiga),  
-		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.5f), dyList(0), dyListBaseline(0), imveSel(0),
+		ptxList(nullptr), ptxPiece(nullptr), dxCellMarg(4.0f), dyCellMarg(0.0f), dyList(0), dyListBaseline(0), imveSel(0),
 		uiplWhite(*this, uiga, cpcWhite), uiplBlack(*this, uiga, cpcBlack), 
 		uiclockWhite(*this, cpcWhite), uiclockBlack(*this, cpcBlack), uigc(*this)
 {
@@ -654,7 +654,7 @@ void UIML::CreateRsrc(void)
 									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
 									 &ptxList);
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20.0f, L"",
+									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 21.0f, L"",
 									 &ptxPiece);
 }
 
