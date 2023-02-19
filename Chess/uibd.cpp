@@ -41,18 +41,17 @@ PT aptCross[] = {
 
 
 
-void UIBD::CreateRsrc(void)
+bool UIBD::FCreateRsrc(void)
 {
 	if (ptxLabel)
-		return;
+		return false;
 
 	App().pdc->CreateSolidColorBrush(coAnnotation, &pbrAnnotation);
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		dxySquare/4.0f, L"",
-		&ptxLabel);
+	ptxLabel = PtxCreate(dxySquare/4.0f, false, false);
 	pbmpPieces = PbmpFromPngRes(idbPieces);
 	pgeomCross = PgeomCreate(aptCross, CArray(aptCross));
+
+	return true;
 }
 
 void UIBD::DiscardRsrc(void)
@@ -94,8 +93,6 @@ UIBD::~UIBD(void)
  */
 void UIBD::Layout(void)
 {
-	DiscardRsrc();
-
 	rcSquares = RcInterior();
 
 	dxySquare = roundf(rcSquares.DxWidth() / 9.5f);
@@ -114,7 +111,6 @@ void UIBD::Layout(void)
 		rcSquares.Inflate(-dxy, -dxy);
 	}
 	
-	CreateRsrc();
 	dyLabel = SizFromSz(L"8", ptxLabel).height;
 
 	/* position the rotation button */
@@ -646,7 +642,7 @@ void UIBD::FlipBoard(CPC cpcNew)
 		uiga.Redraw();
 	angle = 0.0f;
 	cpcPointOfView = cpcNew;
-	uiga.Layout();
+	uiga.Relayout();
 	uiga.Redraw();
 
 	for (UI* pui : vpuiChild)

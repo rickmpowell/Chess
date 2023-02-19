@@ -73,7 +73,7 @@ public:
 public:
 	UIBD(UIGA& uiga);
 	~UIBD(void);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
 	void InitGame(void);

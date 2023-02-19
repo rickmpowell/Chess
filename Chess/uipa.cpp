@@ -53,6 +53,7 @@ void UIP::AdjustUIRcBounds(UI& ui, RC& rc, bool fTop)
 {
 	if (!ui.FVisible())
 		return;
+	ui.EnsureRsrc(false);
 	SIZ siz = ui.SizLayoutPreferred();
 	assert(siz.height > 0.0f);
 	if (fTop) {
@@ -119,7 +120,7 @@ void UIPS::SetContent(const RC& rcCont)
 {
 	this->rcCont = rcCont;
 	sbarVert.SetRange(rcCont.top, rcCont.bottom);
-	UIPS::Layout();
+	UIPS::Layout();	// force the scrollbar to update
 }
 
 
@@ -226,7 +227,7 @@ void UIPS::ScrollTo(float yTopNew)
 	float dy = yTopNew - rcCont.top;
 	rcCont.Offset(0, dy);
 	sbarVert.SetRange(rcCont.top, rcCont.bottom);
-	Layout();
+	Relayout();
 	Redraw();
 }
 
@@ -246,7 +247,7 @@ bool UIPS::FMakeVis(float y, float dy)
 	else
 		return false;
 	sbarVert.SetRange(rcCont.top, rcCont.bottom);
-	Layout();
+	Relayout();
 	RedrawContent();
 	return true;
 }

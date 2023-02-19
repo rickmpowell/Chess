@@ -42,8 +42,8 @@ class UIGA : public UI
 
 public:
 	static TX* ptxDesktop;
-	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
+	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcStatic(void);
 
 	GA& ga;
 	APP& app;

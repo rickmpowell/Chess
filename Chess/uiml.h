@@ -49,8 +49,7 @@ private:
 
 public:
 	UIPL(UI& uiParent, UIGA& uiga, CPC cpc);
-	virtual void CreateRsrc(void);
-	virtual void DiscardRsrc(void);
+	virtual void ComputeMetrics(bool fStatic);
 
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
@@ -88,10 +87,8 @@ protected:
 	static TX* ptxClockNote;
 	static TX* ptxClockNoteBold;
 public:
-	static void CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
-	virtual void CreateRsrc(void);
-	virtual void DiscardRsrc(void);
+	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcStatic(void);
 
 public:
 	UICLOCK(UIML& uiml, CPC cpc);
@@ -135,7 +132,7 @@ protected:
 	TX* ptxScore;
 
 public:
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
 public:
@@ -196,8 +193,9 @@ public:
 	UIML(UIGA& uiga);
 	~UIML(void);
 
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
+	virtual void ComputeMetrics(bool fStatic);
 
 	void InitGame(void);
 	void EndGame(void);

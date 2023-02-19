@@ -16,21 +16,20 @@
 TX* UIGA::ptxDesktop;
 
 
-void UIGA::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+bool UIGA::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxDesktop)
-		return;
+		return false;
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 							   40.0f, L"",
 							   &ptxDesktop);
-	UI::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+	return true;
 }
 
 
-void UIGA::DiscardRsrcClass(void)
+void UIGA::DiscardRsrcStatic(void)
 {
-	UI::DiscardRsrcClass();
 	SafeRelease(&ptxDesktop);
 }
 
@@ -92,15 +91,19 @@ APP& UIGA::App(void) const
 
 void UIGA::BeginDraw(void)
 {
-	app.CreateRsrc();
+	app.FCreateRsrc();
+	if (APP::FCreateRsrcStatic(app.pdc, app.pfactd2, app.pfactdwr, app.pfactwic))
+		EnsureRsrc(true);
 	app.pdc->BeginDraw();
 }
 
 
 void UIGA::EndDraw(void)
 {
-	if (app.pdc->EndDraw() == D2DERR_RECREATE_TARGET)
-		app.DiscardRsrc();
+	if (app.pdc->EndDraw() == D2DERR_RECREATE_TARGET) {
+		APP::DiscardRsrcStatic();
+		DiscardAllRsrc();
+	}
 	PresentSwch();
 }
 
@@ -373,7 +376,7 @@ void UIGA::StartGame(SPMV spmv)
 	tidClock = StartTimer(this, 10);
 	msecLast = app.MsecMessage();
 	StartClock(ga.bdg.cpcToMove, app.MsecMessage());
-	uiml.Layout();
+	uiml.Relayout();
 	uiml.Redraw();
 }
 
@@ -497,7 +500,7 @@ void UIGA::MoveToImv(int imv, SPMV spmv)
 	while (ga.bdg.imveCurLast < imv)
 		uibd.RedoMv(spmv);
 	if (spmv != spmvHidden)
-		uiml.Layout();	// in case game over state changed
+		uiml.Relayout();	// in case game over state changed
 	uiml.SetSel(ga.bdg.imveCurLast, spmv);
 }
 

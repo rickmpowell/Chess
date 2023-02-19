@@ -232,10 +232,12 @@ public:
 	int Error(const wstring& szMsg, int mb);
 	int Error(const string& szMsg, int mb);
 
+	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcStatic(void);
 private:
-	void CreateRsrc(void);
+	bool FCreateRsrc(void);
 	void DiscardRsrc(void);
-	void CreateRsrcSize(void);
+	bool FCreateRsrcSize(void);
 	void DiscardRsrcSize(void);
 
 	void InitCmdList(void);

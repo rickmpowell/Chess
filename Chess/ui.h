@@ -97,11 +97,11 @@ protected:
 	static wchar_t szFontFamily[];
 
 public:
-	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
+	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcStatic(void);
 	GEOM* PgeomCreate(const PT apt[], int cpt) const;
 	BMP* PbmpFromPngRes(int idb);
-	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic);
+	TX* PtxCreate(float dyHeight, bool fBold, bool fItalic) const;
 
 protected:
 	UI* puiParent;
@@ -140,6 +140,7 @@ public:
 	void OffsetBounds(float dx, float dy);
 	void Show(bool fShow);
 	void ShowAll(bool fShow);
+	void Relayout(void);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
 
@@ -214,8 +215,11 @@ public:
 	virtual void PresentSwch(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
+	void EnsureRsrc(bool fStatic);
+	virtual void ComputeMetrics(bool fStatic);
+	void DiscardAllRsrc(void);
 
 	/* drawing primitives */
 
@@ -240,7 +244,6 @@ public:
 	SIZ SizFromAch(const wchar_t* ach, int cch, TX* ptx, float dx = 1.0e6f, float dy = 1.0e6f) const;
 	void DrawSzFit(const wstring& sz, TX* ptx, const RC& rc, BR* pbr = nullptr) const;
 	void DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, float dyBaseline, BR* pbrText = nullptr) const;
-
 
 	void DrawBmp(const RC& rcTo, BMP* pbmp, const RC& rcFrom, float opacity = 1.0f) const;
 	void FillGeom(GEOM* pgeom, PT ptOffset, SIZ sizScale, BR* pbr = nullptr) const;
@@ -293,8 +296,8 @@ protected:
 	static TX* ptxButton;
 	static BRS* pbrsButton;
 public:
-	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
+	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcStatic(void);
 
 public:
 	BTNCH(UI* puiParent, int cmd, wchar_t ch);
@@ -311,8 +314,8 @@ class BTNTEXT : public BTNCH
 protected:
 	static TX* ptxButton;
 public:
-	static void CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcClass(void);
+	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
+	static void DiscardRsrcStatic(void);
 public:
 	wstring szText;
 public:
@@ -331,7 +334,7 @@ public:
 	~BTNIMG(void);
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	SIZ SizImg(void) const;
 };
@@ -376,7 +379,7 @@ protected:
 
 public:
 	STATIC(UI* puiParent, const wstring& sz);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	void SetTextSize(float dyFontNew);
 
@@ -407,7 +410,7 @@ protected:
 
 public:
 	SPIN(UI* puiParent, int cmdUp, int cmdDown);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	virtual void Layout(void);
 
@@ -416,24 +419,3 @@ public:
 	virtual wstring SzValue(void) const = 0;
 };
 
-
-/*
- *
- *	CYCLE control
- * 
- *	Displays a value that cycles through on mouse clicks
- * 
- */
-
-
-class CYCLE : public BTN
-{
-public:
-	CYCLE(UI* puiParent, int cmdCycle);
-	virtual void CreateRsrc(void);
-	virtual void DiscardRsrc(void);
-	virtual void Layout(void);
-
-	virtual void Draw(const RC& rcUpdate);
-	virtual wstring SzValue(void) const = 0;
-};

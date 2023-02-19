@@ -111,16 +111,17 @@ UIDB::~UIDB()
 }
 
 
-void UIDB::CreateRsrc(void)
+bool UIDB::FCreateRsrc(void)
 {
 	if (ptxLog)
-		return;
+		return false;
+
 	ptxLog = PtxCreate(12.0f, false, false);
 	ptxLogBold = PtxCreate(12.0f, true, false);
 	ptxLogItalic = PtxCreate(12.0f, false, true);
 	ptxLogBoldItalic = PtxCreate(12.0f, true, true);
-	dyLine = SizFromSz(L"0", ptxLog).height;
-	UI::CreateRsrc();
+
+	return true;
 }
 
 
@@ -130,7 +131,12 @@ void UIDB::DiscardRsrc(void)
 	SafeRelease(&ptxLogBold);
 	SafeRelease(&ptxLogItalic);
 	SafeRelease(&ptxLogBoldItalic);
-	UI::DiscardRsrc();
+}
+
+void UIDB::ComputeMetrics(bool fStatic)
+{
+	if (!fStatic)
+		dyLine = SizFromSz(L"0", ptxLog).height;
 }
 
 

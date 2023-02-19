@@ -147,8 +147,9 @@ class UIDB : public UIPS
 public:
 	UIDB(UIGA& uiga);
 	~UIDB(void);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
+	virtual void ComputeMetrics(bool fStatic);
 
 	/* UI layout and drawing */
 
@@ -232,7 +233,7 @@ class UIDT : public UIP
 	TX* ptxTest2;
 public:
 	UIDT(UIGA& uiga);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void ReleaseRsrc(void);
 	virtual void Draw(const RC& rcUpdate);
 	void AdvanceDrawSz(const wstring& sz, TX* ptx, RC& rc);

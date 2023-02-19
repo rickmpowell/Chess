@@ -22,11 +22,14 @@ UIICON::~UIICON(void)
 }
 
 
-void UIICON::CreateRsrc(void)
+bool UIICON::FCreateRsrc(void)
 {
 	if (pbmp)
-		return;
+		return false;
+
 	pbmp = PbmpFromPngRes(idb);
+
+	return true;
 }
 
 

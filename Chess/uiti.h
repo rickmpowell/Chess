@@ -20,7 +20,7 @@ class UIICON : public UI
 public:
 	UIICON(UI* puiParent, int idb);
 	~UIICON(void);
-	virtual void CreateRsrc(void);
+	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
 	virtual void Draw(const RC& rcUpdate);

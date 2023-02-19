@@ -28,10 +28,11 @@ TX* UI::ptxListBold;
 TX* UI::ptxTip;
 
 
-void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+bool UI::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (pbrBack)
-		return;
+		return false;
+
 	pdc->CreateSolidColorBrush(coStdBack, &pbrBack);
 	pdc->CreateSolidColorBrush(coScrollBack, &pbrScrollBack);
 	pdc->CreateSolidColorBrush(coGridLine, &pbrGridLine);
@@ -41,32 +42,31 @@ void UI::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* p
 	pdc->CreateSolidColorBrush(coBlack, &pbrBlack);
 
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		16.0f, L"",
-		&ptxText);
+							   DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   16.0f, L"",
+							   &ptxText);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		16.0f, L"",
-		&ptxTextBold);
+							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   16.0f, L"",
+							   &ptxTextBold);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxList);
+							   DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   12.0f, L"",
+							   &ptxList);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxListBold);
+							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   12.0f, L"",
+							   &ptxListBold);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		13.0f, L"",
-		&ptxTip);
+							   DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
+							   13.0f, L"",
+							   &ptxTip);
 
-	BTNCH::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-	BTNTEXT::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
+	return true;
 }
 
 
-void UI::DiscardRsrcClass(void)
+void UI::DiscardRsrcStatic(void)
 {
 	SafeRelease(&pbrBack);
 	SafeRelease(&pbrScrollBack);
@@ -144,14 +144,15 @@ BMP* UI::PbmpFromPngRes(int idb)
 }
 
 
-TX* UI::PtxCreate(float dyHeight, bool fBold, bool fItalic)
+TX* UI::PtxCreate(float dyHeight, bool fBold, bool fItalic) const
 {
 	TX* ptx = nullptr;
 	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		fBold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
-		fItalic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
-		DWRITE_FONT_STRETCH_NORMAL,
-		dyHeight, L"", &ptx);
+									 fBold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
+									 fItalic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
+									 DWRITE_FONT_STRETCH_NORMAL,
+									 dyHeight, L"", 
+									 &ptx);
 	return ptx;
 }
 
@@ -237,22 +238,46 @@ UI* UI::PuiNextSib(void) const
 }
 
 
-void UI::CreateRsrc(void)
+bool UI::FCreateRsrc(void)
 {
-	for (UI* puiChild : vpuiChild)
-		puiChild->CreateRsrc();
+	return false;
 }
 
 
 void UI::DiscardRsrc(void)
 {
-	for (UI* puiChild : vpuiChild)
-		puiChild->DiscardRsrc();
+}
+
+
+void UI::DiscardAllRsrc(void)
+{
+	DiscardRsrc();
+	for (UI*& pui : vpuiChild)
+		pui->DiscardAllRsrc();
+}
+
+
+void UI::EnsureRsrc(bool fStatic)
+{
+	if (fStatic || FCreateRsrc())
+		ComputeMetrics(fStatic);
+	for (UI*& pui : vpuiChild)
+		pui->EnsureRsrc(fStatic);
+}
+
+void UI::ComputeMetrics(bool fStatic)
+{
 }
 
 
 void UI::Layout(void)
 {
+}
+
+void UI::Relayout(void)
+{
+	EnsureRsrc(false);
+	Layout();
 }
 
 
@@ -309,7 +334,7 @@ void UI::SetBounds(const RC& rcNew)
 	rcBounds.right = rcBounds.left + rc.DxWidth();
 	rcBounds.bottom = rcBounds.top + rc.DyHeight();
 	OffsetBounds(rc.left - rcBounds.left, rc.top - rcBounds.top);
-	Layout();
+	Relayout();
 }
 
 
@@ -323,7 +348,7 @@ void UI::Resize(const PT& ptNew)
 		return;
 	rcBounds.right = rcBounds.left + ptNew.x;
 	rcBounds.bottom = rcBounds.top + ptNew.y;
-	Layout();
+	Relayout();
 }
 
 
@@ -365,11 +390,11 @@ void UI::Show(bool fVisNew)
 		return;
 	fVisible = fVisNew;
 	if (puiParent) {
-		puiParent->Layout();
+		puiParent->Relayout();
 		puiParent->Redraw();
 	}
 	else {
-		Layout();
+		Relayout();
 		Redraw();
 	}
 }
@@ -691,11 +716,15 @@ void UI::RedrawWithChildren(const RC& rcUpdate, bool fParentDrawn)
 void UI::RedrawNoChildren(const RC& rc, bool fParentDrawn)
 {
 	App().pdc->PushAxisAlignedClip(rc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-	RC rcDraw = RcLocalFromGlobal(rc);
+	
+	EnsureRsrc(false);
 	COLORBRS colorbrsBack(pbrBack, CoBack());
 	COLORBRS colorbrsText(pbrText, CoText());
+	
+	RC rcDraw = RcLocalFromGlobal(rc);
 	Erase(rcDraw, fParentDrawn);
 	Draw(rcDraw);
+	
 	App().pdc->PopAxisAlignedClip();
 }
 
@@ -1104,12 +1133,7 @@ void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, floa
 	for (float dyFont = ptxBase->GetFontSize() - 1.0f; dyFont > 6.0f; dyFont--) {
 		SafeRelease(&play);
 		SafeRelease(&ptx);
-		if (App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-										 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-										 dyFont, L"", 
-										 &ptx) != S_OK)
-			throw 1;
-
+		ptx = PtxCreate(dyFont, false, false);
 		if (App().pfactdwr->CreateTextLayout(sz.c_str(), (UINT32)sz.size(),
 											 ptx,
 											 rcGlobal.DxWidth(), rcGlobal.DyHeight(),
@@ -1308,20 +1332,22 @@ wstring BTN::SzTip(void) const
 TX* BTNCH::ptxButton;
 BRS* BTNCH::pbrsButton;
 
-void BTNCH::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+bool BTNCH::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxButton)
-		return;
+		return false;
 
 	pdc->CreateSolidColorBrush(coBtnText, &pbrsButton);
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		20.0f, L"",
 		&ptxButton);
+	
+	return true;
 }
 
 
-void BTNCH::DiscardRsrcClass(void)
+void BTNCH::DiscardRsrcStatic(void)
 {
 	SafeRelease(&ptxButton);
 	SafeRelease(&pbrsButton);
@@ -1333,10 +1359,8 @@ BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
 }
 
 
-
 void BTNCH::Draw(const RC& rcUpdate)
 {
-	CreateRsrc();
 	wchar_t sz[2];
 	sz[0] = ch;
 	sz[1] = 0;
@@ -1357,7 +1381,6 @@ void BTNCH::Erase(const RC& rcUpdate, bool fParentDrawn)
 
 float BTNCH::DxWidth(void)
 {
-	CreateRsrc();
 	wchar_t szText[2];
 	szText[0] = ch;
 	szText[1] = 0;
@@ -1376,19 +1399,21 @@ float BTNCH::DxWidth(void)
 
 TX* BTNTEXT::ptxButton;
 
-void BTNTEXT::CreateRsrcClass(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+bool BTNTEXT::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxButton)
-		return;
+		return false;
 
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 		12.0f, L"",
 		&ptxButton);
+
+	return true;
 }
 
 
-void BTNTEXT::DiscardRsrcClass(void)
+void BTNTEXT::DiscardRsrcStatic(void)
 {
 	SafeRelease(&ptxButton);
 }
@@ -1401,7 +1426,6 @@ BTNTEXT::BTNTEXT(UI* puiParent, int cmd, const wstring& sz) : BTNCH(puiParent, c
 
 void BTNTEXT::Draw(const RC& rcUpdate)
 {
-	CreateRsrc();
 	RC rcText(PT(0, 0), SizFromSz(szText, ptxButton));
 	RC rcTo = RcInterior();
 	COLORBRS colorbrsSav(pbrsButton, CoText());
@@ -1412,7 +1436,6 @@ void BTNTEXT::Draw(const RC& rcUpdate)
 
 float BTNTEXT::DxWidth(void)
 {
-	CreateRsrc();
 	return SizFromSz(szText, ptxButton).width;
 }
 
@@ -1444,7 +1467,6 @@ void BTNIMG::Erase(const RC& rcUpdate, bool fParentDrawn)
 
 void BTNIMG::Draw(const RC& rcUpdate)
 {
-	CreateRsrc();
 	DC* pdc = App().pdc;
 	AADC aadcSav(pdc, D2D1_ANTIALIAS_MODE_ALIASED);
 	RC rcTo = RcInterior();
@@ -1464,11 +1486,14 @@ void BTNIMG::Draw(const RC& rcUpdate)
 }
 
 
-void BTNIMG::CreateRsrc(void)
+bool BTNIMG::FCreateRsrc(void)
 {
 	if (pbmp)
-		return;
+		return false;
+
 	pbmp = PbmpFromPngRes(idb);
+
+	return true;
 }
 
 
@@ -1499,16 +1524,15 @@ STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent),
 }
 
 
-void STATIC::CreateRsrc(void)
+bool STATIC::FCreateRsrc(void)
 {
 	if (ptxStatic)
-		return;
+		return false;
 
 	App().pdc->CreateSolidColorBrush(coStaticText, &pbrsStatic);
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		dyFont, L"",
-		&ptxStatic);
+	ptxStatic = PtxCreate(dyFont, false, false);
+	
+	return true;
 }
 
 
@@ -1523,7 +1547,6 @@ void STATIC::SetTextSize(float dyFontNew)
 {
 	dyFont = dyFontNew;
 	DiscardRsrc();
-	CreateRsrc();
 }
 
 
@@ -1547,7 +1570,6 @@ void STATIC::Erase(const RC& rcUpdate, bool fParentDrawn)
 
 void STATIC::Draw(const RC& rcUpdate)
 {
-	CreateRsrc();
 	RC rcText(PT(0, 0), SizFromSz(SzText(), ptxStatic));
 	RC rcTo = RcInterior();
 	rcText += rcTo.PtCenter() - rcText.PtCenter();;
@@ -1598,15 +1620,14 @@ SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), ptxSpin
 }
 
 
-void SPIN::CreateRsrc(void)
+bool SPIN::FCreateRsrc(void)
 {
 	if (ptxSpin)
-		return;
+		return false;
 
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-									 14.0f, L"",
-									 &ptxSpin);
+	ptxSpin = PtxCreate(14.0, false, false);
+
+	return true;
 }
 
 

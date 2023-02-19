@@ -905,18 +905,15 @@ UIDT::UIDT(UIGA& uiga) : UIP(uiga), ptxTest(nullptr), ptxTest2(nullptr)
 }
 
 
-void UIDT::CreateRsrc(void)
+bool UIDT::FCreateRsrc(void)
 {
 	if (ptxTest)
-		return;
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-									 DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-									 30.0f, L"",
-									 &ptxTest);
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-									 DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-									 20.0f, L"",
-									 &ptxTest2);
+		return false;
+
+	ptxTest = PtxCreate(30.0f, false, false);
+	ptxTest2 = PtxCreate(20.0f, false, false);
+	
+	return true;
 }
 
 void UIDT::ReleaseRsrc(void)

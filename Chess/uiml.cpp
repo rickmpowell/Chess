@@ -53,19 +53,14 @@ UIPL::UIPL(UI& uiParent, UIGA& uiga, CPC cpc) : UI(&uiParent), uiga(uiga), cpc(c
 		spinlvl(this, cmdPlayerLvlUp+cpc, cmdPlayerLvlDown+cpc), 
 		fChooser(false), iinfoplHit(-1), dyLine(8.0f)
 {
+	ComputeMetrics(true);
 }
 
 
-void UIPL::CreateRsrc(void)
+void UIPL::ComputeMetrics(bool fStatic)
 {
-	UI::CreateRsrc();
-	dyLine = SizFromSz(L"Ag", ptxText).height + 2 * 6.0f;
-}
-
-
-void UIPL::DiscardRsrc(void)
-{
-	UI::DiscardRsrc();
+	if (fStatic)
+		dyLine = SizFromSz(L"Ag", ptxText).height + 2 * 6.0f;
 }
 
 
@@ -186,7 +181,7 @@ void UIPL::EndLeftDrag(const PT& pt, bool fClick)
 			Ga().SetPl(cpc, ainfopl.PplFactory(Ga(), iinfopl));
 	}
 	fChooser = !fChooser;
-	puiParent->Layout();
+	puiParent->Relayout();
 	puiParent->Redraw();
 }
 
@@ -212,14 +207,14 @@ UIGC::UIGC(UIML& uiml) : UI(&uiml), uiga(uiml.uiga),
 }
 
 
-void UIGC::CreateRsrc(void)
+bool UIGC::FCreateRsrc(void)
 {
-	UI::CreateRsrc();
 	if (ptxScore)
-		return;
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 18.0f, L"",
-		&ptxScore);
+		return false;
+
+	ptxScore = PtxCreate(18.0f, true, false);
+	
+	return true;
 }
 
 
@@ -361,10 +356,11 @@ TX* UICLOCK::ptxClockNote;
 TX* UICLOCK::ptxClockNoteBold;
 
 
-void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+bool UICLOCK::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
 	if (ptxClock)
-		return;
+		return false;
+
 	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
 							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 
 							   40.0f, L"",
@@ -377,10 +373,11 @@ void UICLOCK::CreateRsrcClass(DC* pdc, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
 							   12.0f, L"",
 							   &ptxClockNoteBold);
+	return true;
 }
 
 
-void UICLOCK::DiscardRsrcClass(void)
+void UICLOCK::DiscardRsrcStatic(void)
 {
 	SafeRelease(&ptxClock);
 	SafeRelease(&ptxClockNote);
@@ -390,19 +387,6 @@ void UICLOCK::DiscardRsrcClass(void)
 
 UICLOCK::UICLOCK(UIML& uiml, CPC cpc) : UI(&uiml), uiga(uiml.uiga), cpc(cpc), fFlag(false)
 {
-}
-
-void UICLOCK::CreateRsrc(void)
-{
-	UI::CreateRsrc();
-	APP& app = App();
-	CreateRsrcClass(app.pdc, app.pfactdwr, app.pfactwic);
-}
-
-void UICLOCK::DiscardRsrc(void)
-{
-	UI::DiscardRsrc();
-	DiscardRsrcClass();
 }
 
 SIZ UICLOCK::SizLayoutPreferred(void)
@@ -637,25 +621,20 @@ UIML::~UIML(void)
 }
 
 
-/*	UIML::CreateRsrc
+/*	UIML::FCreateRsrc
  *
  *	Creates the drawing resources for displaying the move list screen
  *	panel. 
  */
-void UIML::CreateRsrc(void)
+bool UIML::FCreateRsrc(void)
 {
-	UI::CreateRsrc();
 	if (ptxList)
-		return;
+		return false;
 
-	/* fonts */
-
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 17.0f, L"",
-									 &ptxList);
-	App().pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-									 DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 21.0f, L"",
-									 &ptxPiece);
+	ptxList = PtxCreate(17.0f, false, false);
+	ptxPiece = PtxCreate(21.0f, false, false);
+	
+	return true;
 }
 
 
@@ -665,9 +644,19 @@ void UIML::CreateRsrc(void)
  */
 void UIML::DiscardRsrc(void)
 {
-	UI::DiscardRsrc();
 	SafeRelease(&ptxList);
 	SafeRelease(&ptxPiece);
+}
+
+
+void UIML::ComputeMetrics(bool fStatic)
+{
+	if (!fStatic) {
+		SIZ sizText = SizFromSz(L"f" L"\x00d7" L"g6" L"\x202f" L"e.p.+", ptxList);
+		SIZ sizPiece = SizFromSz(L"\x2654", ptxPiece);
+		dyList = max(sizText.height, sizPiece.height) + 2*dyCellMarg;
+		dyListBaseline = DyBaselineSz(L"\x2654", ptxPiece);
+	}
 }
 
 
@@ -927,7 +916,7 @@ void UIML::ShowClocks(bool fTimed)
  */
 void UIML::EndGame(void)
 {
-	Layout();
+	Relayout();
 	Redraw();
 }
 

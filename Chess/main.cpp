@@ -23,7 +23,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
 {
     try {
         papp = new APP(hinst, sw);
-        return papp->MessagePump();
+        int err = papp->MessagePump();
+        APP::DiscardRsrcStatic();
+        return err;
     }
     catch (int err) {
         ::MessageBoxW(nullptr,
@@ -113,9 +115,10 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     if (!hwnd)
         throw 1;    // BUG: cleanup haccel
  
-    CreateRsrc();
+    FCreateRsrc();
+    APP::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+
     puiga = new UIGA(*this, *pga);
-    puiga->CreateRsrc();
     pga->SetUiga(puiga);
     puiga->InitGame(nullptr, nullptr);
     puiga->uipvt.Show(false);
@@ -183,44 +186,64 @@ int APP::Error(const string& szMsg, int mb)
 }
 
 
-void APP::CreateRsrc(void)
+bool APP::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
-    if (pdc == nullptr) {
-
-        D3D_FEATURE_LEVEL afld3[] = {
-            D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
-            D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
-        };
-        ID3D11Device* pdevd3T;
-        ID3D11DeviceContext* pdcd3T;
-        D3D_FEATURE_LEVEL flRet;
-        D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
-                          afld3, CArray(afld3), D3D11_SDK_VERSION,
-                          &pdevd3T, &flRet, &pdcd3T);
-        if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
-            throw 1;
-        pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
-        IDXGIDevice* pdevDxgi;
-        if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
-            throw 1;
-        pfactd2->CreateDevice(pdevDxgi, &pdevd2);
-        pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdc);
-        SafeRelease(&pdevDxgi);
-        SafeRelease(&pdevd3T);
-        SafeRelease(&pdcd3T);
-    }
-
-    CreateRsrcSize();
-    UIGA::CreateRsrcClass(pdc, pfactd2, pfactdwr, pfactwic);
-    if (puiga)
-        puiga->CreateRsrc();
+    bool fChange = false;
+    fChange |= UIGA::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+    fChange |= UI::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+    fChange |= UICLOCK::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+    fChange |= BTNCH::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+    fChange |= BTNTEXT::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+    return fChange;
 }
 
 
-void APP::CreateRsrcSize(void)
+void APP::DiscardRsrcStatic(void)
+{
+    UIGA::DiscardRsrcStatic();
+    UI::DiscardRsrcStatic();
+    UICLOCK::DiscardRsrcStatic();
+    BTNCH::DiscardRsrcStatic();
+    BTNTEXT::DiscardRsrcStatic();
+}
+
+
+bool APP::FCreateRsrc(void)
+{
+    if (pdc)
+        return false;
+
+    D3D_FEATURE_LEVEL afld3[] = {
+        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
+    };
+    ID3D11Device* pdevd3T;
+    ID3D11DeviceContext* pdcd3T;
+    D3D_FEATURE_LEVEL flRet;
+    D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
+                        afld3, CArray(afld3), D3D11_SDK_VERSION,
+                        &pdevd3T, &flRet, &pdcd3T);
+    if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
+        throw 1;
+    pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
+    IDXGIDevice* pdevDxgi;
+    if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
+        throw 1;
+    pfactd2->CreateDevice(pdevDxgi, &pdevd2);
+    pdevd2->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &pdc);
+    SafeRelease(&pdevDxgi);
+    SafeRelease(&pdevd3T);
+    SafeRelease(&pdcd3T);
+
+    FCreateRsrcSize();
+    return true;
+}
+
+
+bool APP::FCreateRsrcSize(void)
 {
     if (pswch)
-        return;
+        return false;
 
     IDXGIDevice* pdevDxgi;
     if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
@@ -258,6 +281,8 @@ void APP::CreateRsrcSize(void)
     SafeRelease(&pfactDxgi);
     SafeRelease(&padaptDxgi);
     SafeRelease(&pdevDxgi);
+
+    return true;
 }
 
 
@@ -270,8 +295,7 @@ void APP::DiscardRsrcSize(void)
 
 void APP::DiscardRsrc(void)
 {
-    puiga->DiscardRsrc();
-    UIGA::DiscardRsrcClass();
+    DiscardRsrcSize();
     SafeRelease(&pdc);
     SafeRelease(&pdevd3);
     SafeRelease(&pdcd3);
@@ -356,9 +380,9 @@ void APP::DispatchTimer(TID tid, DWORD msec)
  */
 void APP::OnDestroy(void)
 {
-    DiscardRsrcSize();
+    DiscardRsrc();
     if (puiga)
-    puiga->ShowAll(false);
+        puiga->ShowAll(false);
 }
 
 
@@ -370,7 +394,7 @@ void APP::OnDestroy(void)
 void APP::OnSize(UINT dx, UINT dy)
 {
     DiscardRsrcSize();
-    CreateRsrc();
+    FCreateRsrcSize();
     if (puiga)
         puiga->Resize(PT((float)dx, (float)dy));
 }
@@ -629,7 +653,7 @@ public:
     virtual int Execute(void)
     {
         app.puiga->InitGame(nullptr, nullptr);
-        app.puiga->Layout();
+        app.puiga->Relayout();
         app.puiga->Redraw();
         return 1;
     }
@@ -994,7 +1018,7 @@ public:
         app.puiga->ga.prule->SetGameTime(cpcWhite, 0);
         app.puiga->ga.prule->SetGameTime(cpcBlack, 0);
         app.puiga->uiml.ShowClocks(false);
-        app.puiga->Layout();
+        app.puiga->Relayout();
 
         ClearLog();
         LogOpen(L"AI Speed Test", L"", lgfBold);
@@ -1669,7 +1693,7 @@ public:
         /* force clocks to update */
         app.puiga->InitClocks();
         app.puiga->uibd.InitGame();
-        app.puiga->uiml.Layout();
+        app.puiga->uiml.Relayout();
         app.puiga->uiml.InitGame();
         app.puiga->Redraw();
 
