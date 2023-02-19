@@ -74,11 +74,11 @@ void UIGA::Draw(const RC& rcUpdate)
 
 void UIGA::InvalRc(const RC& rc, bool fErase) const
 {
-	RECT rect;
-	rect.left = (int)floor(rc.left - rcBounds.left);
-	rect.top = (int)floor(rc.top - rcBounds.top);
-	rect.right = (int)ceil(rc.right - rcBounds.left);
-	rect.bottom = (int)ceil(rc.bottom - rcBounds.top);
+	RECT rect = {
+		(int)floor(rc.left - rcBounds.left),
+		(int)floor(rc.top - rcBounds.top),
+		(int)ceil(rc.right - rcBounds.left),
+		(int)ceil(rc.bottom - rcBounds.top) };
 	::InvalidateRect(app.hwnd, &rect, fErase);
 }
 

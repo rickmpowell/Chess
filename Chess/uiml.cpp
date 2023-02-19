@@ -439,8 +439,8 @@ void UICLOCK::Draw(const RC& rcUpdate)
 
 	/* convert into text */
 
-	wchar_t sz[20], * pch;
-	pch = sz;
+	wchar_t sz[20] = { 0 };
+	wchar_t *pch = sz;
 	pch = PchDecodeInt(hr, pch);
 	*pch++ = chColon;
 	*pch++ = L'0' + min / 10;
@@ -550,7 +550,8 @@ wchar_t* UICLOCK::PchDecodeDmsec(DWORD dmsec, wchar_t* pch) const
 
 void UICLOCK::DrawTmi(const TMI& tmi, RC rc, int nmvSel) const
 {
-	wchar_t sz[32], * pch = sz;
+	wchar_t sz[32] = { 0 };
+	wchar_t* pch = sz;
 
 	pch = PchDecodeDmsec(tmi.dmsec, pch);
 	if (tmi.dmsecMove) {
@@ -928,7 +929,8 @@ void UIML::EndGame(void)
  */
 void UIML::UpdateContSize(void)
 {
-	float dy = (uiga.ga.bdg.vmveGame.size()+1) / 2 * dyList;
+	int nmv = (uiga.ga.bdg.vmveGame.size() + 1) / 2;
+	float dy = nmv * dyList;
 	if (dy == 0)
 		dy = dyList;
 	UIPS::UpdateContSize(SIZ(RcContent().DxWidth(), 4.0f + dy));
@@ -937,7 +939,8 @@ void UIML::UpdateContSize(void)
 
 bool UIML::FMakeVis(int imv)
 {
-	return UIPS::FMakeVis(RcContent().top + 4.0f + (imv / 2) * dyList, dyList);
+	int nmv = imv / 2;
+	return UIPS::FMakeVis(RcContent().top + 4.0f + nmv * dyList, dyList);
 }
 
 HTML UIML::HtmlHitTest(const PT& pt, int* pimv)

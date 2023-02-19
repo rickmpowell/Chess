@@ -117,11 +117,10 @@ public:
 	inline operator string() const noexcept
 	{
 		if (fIsNil())
-			return "<nil>";
-		char sz[3];
-		sz[0] = 'a' + file();
-		sz[1] = '1' + rank();
-		sz[2] = 0;
+			return "--";
+		char sz[3] = "a1";
+		sz[0] += file();
+		sz[1] += rank();
 		return string(sz);
 	}
 

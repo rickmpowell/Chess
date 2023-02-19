@@ -1361,9 +1361,7 @@ BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
 
 void BTNCH::Draw(const RC& rcUpdate)
 {
-	wchar_t sz[2];
-	sz[0] = ch;
-	sz[1] = 0;
+	wchar_t sz[2] = { ch, 0 };
 	RC rcChar(PT(0, 0), SizFromSz(sz, ptxButton));
 	RC rcTo = RcInterior();
 	COLORBRS colorbrsSav(pbrsButton, CoText());
@@ -1381,9 +1379,7 @@ void BTNCH::Erase(const RC& rcUpdate, bool fParentDrawn)
 
 float BTNCH::DxWidth(void)
 {
-	wchar_t szText[2];
-	szText[0] = ch;
-	szText[1] = 0;
+	wchar_t szText[2] = { ch, 0 };
 	return SizFromSz(szText, ptxButton).width;
 }
 
