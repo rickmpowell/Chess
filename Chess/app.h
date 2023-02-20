@@ -113,7 +113,8 @@ enum LGT : int {
 	lgtOpen,
 	lgtClose,
 	lgtData,
-	lgtTemp
+	lgtTemp,
+	lgtNil
 };
 
 enum LGF : int {

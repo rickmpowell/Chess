@@ -94,9 +94,9 @@ struct LG
 	}
 
 	LG(void) : plgParent(nullptr), 
-		lgt(lgtTemp), lgfOpen(lgfNormal), lgfClose(lgfNormal), 
+		lgt(lgtNil), lgfOpen(lgfNormal), lgfClose(lgfNormal), 
 		tagOpen(L""), tagClose(L""), szDataOpen(L""), szDataClose(L""),
-		depth(0), 
+		depth(-1), 
 		yTop(0), dyLineOpen(0), dyLineClose(0), dyBlock(0)
 	{
 	}
@@ -168,11 +168,14 @@ private:
 public:
 	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
 private:
-	float DyComputeLgPos(LG* plg);
+	float DyComputeLgPos(LG& lg);
 	LG* PlgPrev(const LG* plg) const;
-	float DyBlock(LG* plg) const;
+	float DyBlock(LG& lg) const;
 	bool FRcOfLgOpen(const LG& lg, RC& rc, float yTop, float yBot) const;
 	bool FRcOfLgClose(const LG& lg, RC& rc, float yTop, float yBot) const;
+	void FullRelayoutLg(LG& lg, float& yTop);
+	bool FLgAnyChildVisible(const LG& lg) const;
+	bool FCollapsedLg(const LG& lg) const;
 
 	/* the rest of the public logging interface */
 
@@ -214,6 +217,7 @@ public:
 	void SetDepthFile(int depth) noexcept;
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const noexcept;
+	void RelayoutLog(void);
 };
 
 

@@ -1519,7 +1519,7 @@ public:
     {
         int depth = app.puiga->uidb.DepthShow();
         app.puiga->uidb.SetDepthShow(depth + 1);
-        app.puiga->uidb.Redraw();
+        app.puiga->uidb.RelayoutLog();
         return 1;
     }
 
@@ -1551,6 +1551,7 @@ public:
             depth--;
         app.puiga->uidb.SetDepthShow(depth);
         app.puiga->uidb.Redraw();
+        app.puiga->uidb.RelayoutLog();
         return 1;
     }
 

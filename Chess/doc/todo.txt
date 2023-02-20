@@ -1,7 +1,6 @@
   Do "glowing edges" for last move highlight on UIBD
   Color icons for icon buttons, hover variants
   Add disabled support to static controls and hook up to the Log File: label in the UIDB
-  When changing log depth, need to re-layout the window
   Add UI to expand/collapse log entries
   Scroll-wheeling over UIML during test redraws movelist in wrong place
   Turn off clocks during test, turn back on when done
@@ -88,6 +87,7 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* When changing log depth, need to re-layout the window
 * Rework the whole create/release resource stuff
 * Optimize log to redraw minimally - Open/Close combo, Temp, and first/last line
 * Board edit mode close button is black instead of white

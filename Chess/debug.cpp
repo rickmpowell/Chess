@@ -224,14 +224,14 @@ void UIDB::DrawLg(LG& lg, float yTop, float yBot)
 	   we've received. */
 
 	RC rc;
-	if (lg.vplgChild.empty()) {
+	if (!FLgAnyChildVisible(lg)) {
 		if (FRcOfLgOpen(lg, rc, yTop, yBot)) {
-			if (lg.lgt == lgtOpen || lg.tagOpen.sz != lg.tagClose.sz)
+			if (lg.lgt == lgtClose && FCollapsedLg(lg))
+				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
+			else
 				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.depth, lg.lgfOpen, rc);
-			else 
-				DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
 		}
-		if (lg.lgt == lgtClose && lg.tagOpen.sz != lg.tagClose.sz && FRcOfLgClose(lg, rc, yTop, yBot))
+		if (lg.lgt == lgtClose && !FCollapsedLg(lg) && FRcOfLgClose(lg, rc, yTop, yBot))
 			DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
 	}
 	else {
@@ -319,6 +319,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 
 	LG* plgUpdate = plgCur;
 
+	assert(lgt != lgtNil);
 	switch (lgt) {
 	case lgtTemp:
 		plgCur->tagOpen[L"TEMP"] = szData;
@@ -340,7 +341,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 
 	/* relayout and redraw - we go to some effort to do minimum redraw here */
 
-	float dyLast = DyComputeLgPos(plgUpdate);
+	float dyLast = DyComputeLgPos(*plgUpdate);
 	if (depth <= DepthShow()) {
 		float yBot = plgUpdate->yTop + plgUpdate->dyBlock;
 		UpdateContHeight(yBot);
@@ -367,50 +368,56 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
  * 
  *	Returns the height of last itme added, or zero if the item is hidden.
  */
-float UIDB::DyComputeLgPos(LG* plg)
+float UIDB::DyComputeLgPos(LG& lg)
 {
 	/* compute heights of lines and blocks */
 
-	float dyLast = 0;;
-	if (plg->depth > DepthShow()) {
-		plg->dyLineOpen = 0;
-		plg->dyLineClose = 0;
-		plg->dyBlock = 0;
-	}
-	else {
-		dyLast = plg->dyLineOpen = dyLine;
-		if (plg->lgt != lgtClose || (plg->vplgChild.empty() && plg->tagOpen.sz == plg->tagClose.sz))
-			plg->dyLineClose = 0;
-		else
-			dyLast = plg->dyLineClose = dyLine;
+	float dyLast = 0;
+	lg.dyLineOpen = lg.dyLineClose = 0;
+	lg.dyBlock = 0;
+	if (lg.depth <= DepthShow() && lg.lgt != lgtNil) {
+		dyLast = lg.dyLineOpen = dyLine;
+		if (lg.lgt == lgtClose && !FCollapsedLg(lg))
+			dyLast = lg.dyLineClose = dyLine;
 		/* block height must be recomputed for this and all parent blocks - we don't have to relayout
-		   sibling items here because we only *append* items to the log, so only the last sibling
-		   can ever change. */
-		for (LG* plgWalk = plg; plgWalk; plgWalk = plgWalk->plgParent) {
-			plgWalk->dyBlock = DyBlock(plgWalk);
+			sibling items here because we only *append* items to the log, so only the last sibling
+			can ever change. */
+		for (LG* plgWalk = &lg; plgWalk; plgWalk = plgWalk->plgParent) {
+			plgWalk->dyBlock = DyBlock(*plgWalk);
 			assert(plgWalk->FIsLastSibling());
 		}
 	}
 
 	/* figure out position of this item */
 
-	LG* plgPrev = PlgPrev(plg);
-	if (plgPrev == nullptr)
-		plg->yTop = 0;
-	else if (plgPrev->lgt == lgtClose)
-		plg->yTop = plgPrev->yTop + plgPrev->dyBlock;
-	else
-		plg->yTop = plgPrev->yTop + plgPrev->dyLineOpen;
+	lg.yTop = 0;
+	LG* plgPrev = PlgPrev(&lg);
+	if (plgPrev) {
+		switch (plgPrev->lgt) {
+		default:
+			break;
+		case lgtClose:
+			lg.yTop = plgPrev->yTop + plgPrev->dyBlock;
+			break;
+		case lgtOpen:
+		case lgtData:
+			lg.yTop = plgPrev->yTop + plgPrev->dyLineOpen;
+			break;
+		}
+	}
+
+	/* we're done! */
+
 	return dyLast;
 }
 
 
-float UIDB::DyBlock(LG* plg) const
+float UIDB::DyBlock(LG& lg) const
 {
-	float dy = plg->dyLineOpen;
-	for (LG* plgChild : plg->vplgChild)
+	float dy = lg.dyLineOpen;
+	for (LG* plgChild : lg.vplgChild)
 		dy += plgChild->dyBlock;
-	dy += plg->dyLineClose;
+	dy += lg.dyLineClose;
 	return dy;
 }
 
@@ -433,6 +440,48 @@ LG* UIDB::PlgPrev(const LG* plg) const
 }
 
 
+void UIDB::RelayoutLog(void)
+{
+	/* TODO: try to scroll to keep the current visible area on the screen */
+	lgRoot.yTop = 0;
+	FullRelayoutLg(lgRoot, lgRoot.yTop);
+	UpdateContHeight(lgRoot.dyBlock);
+	if (!FMakeVis(RcContent().top, RcContent().left))
+		RedrawContent();
+}
+
+
+void UIDB::FullRelayoutLg(LG& lg, float& yTop)
+{
+	lg.yTop = yTop;
+	lg.dyLineOpen = lg.dyLineClose = 0;
+	if (lg.depth <= DepthShow()) {
+		lg.dyLineOpen = dyLine;
+		if (lg.lgt == lgtClose && !FCollapsedLg(lg))
+			lg.dyLineClose = dyLine;
+	}
+	yTop += lg.dyLineOpen;
+	for (LG* plg : lg.vplgChild)
+		FullRelayoutLg(*plg, yTop);
+	lg.dyBlock = DyBlock(lg);
+	yTop += lg.dyLineClose;
+}
+
+
+bool UIDB::FLgAnyChildVisible(const LG& lg) const
+{
+	return !lg.vplgChild.empty() && lg.depth+1 <= DepthShow();
+}
+
+
+bool UIDB::FCollapsedLg(const LG& lg) const
+{
+	if (FLgAnyChildVisible(lg))
+		return false;
+	return lg.tagOpen.sz == lg.tagClose.sz;
+}
+
+
 /*	UIDB::ClearLog
  *
  *	Clears the current log
@@ -441,8 +490,9 @@ void UIDB::ClearLog(void) noexcept
 {
 	for ( ; !lgRoot.vplgChild.empty(); lgRoot.vplgChild.pop_back())
 		delete lgRoot.vplgChild.back();
-	UpdateContSize(SIZ(0, 0));
-	FMakeVis(RcContent().top, RcContent().left);
+	lgRoot.yTop = 0;
+	UpdateContHeight(0);
+	FMakeVis(RcContent().top, dyLine);
 }
 
 

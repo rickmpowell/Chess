@@ -236,7 +236,7 @@ void UIPS::ScrollTo(float yTopNew)
  *
  *	Makes the position y of height dy in the content area visible within the view
  *	rectangle. Returns true if we had to scroll to make the iteme visible, false if
- *	the item was already visible
+ *	the item was already visible. y should be in view coordinates.
  */
 bool UIPS::FMakeVis(float y, float dy)
 {
