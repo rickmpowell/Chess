@@ -75,15 +75,13 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
 
     /* register the window class */
 
-    WNDCLASSEXW wcex;
+    WNDCLASSEXW wcex = { 0 };
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc = APP::WndProc;
-    wcex.cbClsExtra = 0;
     wcex.cbWndExtra = sizeof(this);
     wcex.hInstance = hinst;
     wcex.hIcon = ::LoadIcon(hinst, MAKEINTRESOURCE(idiApp));
-    wcex.hCursor = nullptr;
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(idmApp);
     wcex.lpszClassName = szWndClassMain;
@@ -167,9 +165,7 @@ DWORD APP::MsecMessage(void)
 POINT APP::PtMessage(void)
 {
     DWORD dw = ::GetMessagePos();
-    POINT pt;
-    pt.x = GET_X_LPARAM(dw);
-    pt.y = GET_Y_LPARAM(dw);
+    POINT pt = { GET_X_LPARAM(dw), GET_Y_LPARAM(dw) };
     ::ScreenToClient(hwnd, &pt);
     return pt;
 }
@@ -217,16 +213,16 @@ bool APP::FCreateRsrc(void)
         D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
         D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
     };
-    ID3D11Device* pdevd3T;
-    ID3D11DeviceContext* pdcd3T;
-    D3D_FEATURE_LEVEL flRet;
+    ID3D11Device* pdevd3T = nullptr;
+    ID3D11DeviceContext* pdcd3T = nullptr;
+    D3D_FEATURE_LEVEL flRet = D3D_FEATURE_LEVEL_1_0_CORE;
     D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, 
                         afld3, CArray(afld3), D3D11_SDK_VERSION,
                         &pdevd3T, &flRet, &pdcd3T);
     if (pdevd3T->QueryInterface(__uuidof(ID3D11Device1), (void**)&pdevd3) != S_OK)
         throw 1;
     pdcd3T->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&pdcd3);
-    IDXGIDevice* pdevDxgi;
+    IDXGIDevice* pdevDxgi = nullptr;
     if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
         throw 1;
     pfactd2->CreateDevice(pdevDxgi, &pdevd2);
@@ -245,14 +241,13 @@ bool APP::FCreateRsrcSize(void)
     if (pswch)
         return false;
 
-    IDXGIDevice* pdevDxgi;
+    IDXGIDevice* pdevDxgi = nullptr;
     if (pdevd3->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdevDxgi) != S_OK)
         throw 1;
 
-    IDXGIAdapter* padaptDxgi;
+    IDXGIAdapter* padaptDxgi = nullptr;
     pdevDxgi->GetAdapter(&padaptDxgi);
-    IDXGIFactory2* pfactDxgi;
-
+    IDXGIFactory2* pfactDxgi = nullptr;
     if (padaptDxgi->GetParent(IID_PPV_ARGS(&pfactDxgi)) != S_OK)
         throw 1;
 
@@ -316,13 +311,24 @@ wstring APP::SzLoad(int ids) const
  *  Returns a path to the app data directory, which is where we save log files
  *  and the like. Ensures that the directory exists.
  * 
- *  The path will be something like C:\Users\[Name]\AppData\Local\Chess
+ *  The path will be something like C:\Users\[Name]\AppData\Local\SQ\Chess
  */
-wstring APP::SzAppDataPath(void) const
+wstring APP::SzAppDataPath(void)
 {
     wchar_t szPath[1024];
     ::SHGetFolderPath(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, szPath);
-    return wstring(szPath) + L"\\" + L"SQ" + L"\\" + L"Chess";
+    wstring szAppData(szPath);
+    szAppData += L"\\" L"SQ";
+    EnsureDirectory(szAppData);
+    szAppData += L"\\" L"Chess";
+    EnsureDirectory(szAppData);
+    return szAppData;
+}
+
+
+void APP::EnsureDirectory(const wstring& szDir)
+{
+    ::CreateDirectoryW(szDir.c_str(), NULL);
 }
 
 
@@ -1935,7 +1941,7 @@ LRESULT CALLBACK APP::WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam)
  */
 string SzFlattenWsz(const wstring& wsz)
 {
-    char sz[1024];
+    char sz[1024] = "";
     int cch = min((int)wsz.length(), sizeof(sz) - 1);
     sz[::WideCharToMultiByte(CP_ACP, 0, wsz.c_str(), cch, sz, sizeof(sz), nullptr, nullptr)] = 0;
     return sz;
@@ -1972,7 +1978,7 @@ wstring SzCommaFromLong(int long long w)
 
     /* break the number into groups of 3 */
 
-    int aw[20];
+    int aw[20] = { 0 };
     int iw;
     for (iw = 0; w; w /= 1000)
         aw[iw++] = w % 1000;

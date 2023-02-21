@@ -60,7 +60,8 @@ private:
 		udepth : 7,
 		uage : 5,
 		uevBiased : 15,
-		unused : 3;
+		ufVisited : 1,
+		unused : 2;
 public:
 
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
@@ -79,6 +80,8 @@ public:
 	__forceinline MV mv(void) const noexcept { return umv; }
 	__forceinline void SetAge(unsigned age) noexcept { this->uage = age; }
 	__forceinline unsigned age(void) const noexcept { return uage; }
+	__forceinline void SetFVisited(bool fVisitedNew) noexcept { this->ufVisited = static_cast<unsigned>(fVisitedNew); }
+	__forceinline bool fVisited(void) const noexcept { return ufVisited; }
 	__forceinline void Save(HABD habd, EV ev, TEV tev, int depth, MV mv, unsigned age) noexcept {
 		SetHabd(habd);
 		SetEv(ev);

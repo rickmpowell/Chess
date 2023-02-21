@@ -152,8 +152,10 @@ class BD;
 class GENHABD
 {
 private:
+	static const uint64_t ahabdRandom[781];
+	int ihabdRandom;
 	HABD ahabdPiece[sqMax][pcMax];
-	HABD ahabdCastle[16];
+	HABD ahabdCastle[16];	
 	HABD ahabdEnPassant[8];
 	HABD habdMove;
 

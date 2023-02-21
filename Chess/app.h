@@ -228,7 +228,8 @@ public:
 	POINT PtMessage(void);
 
 	wstring SzLoad(int ids) const;
-	wstring SzAppDataPath(void) const;
+	wstring SzAppDataPath(void);
+	void EnsureDirectory(const wstring& szDir);
 
 	int Error(const wstring& szMsg, int mb);
 	int Error(const string& szMsg, int mb);

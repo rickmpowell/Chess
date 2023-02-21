@@ -1,3 +1,8 @@
+  Find out why we're not finding right move for first position in arsan21.epd
+  Need to close log file on ... something
+  Light up floppy disk icon when logging is saving to file
+  Support EPD test files
+  When expanding/collapsing log, try to keep window scrolled to the same location
   Do "glowing edges" for last move highlight on UIBD
   Color icons for icon buttons, hover variants
   Add disabled support to static controls and hook up to the Log File: label in the UIDB

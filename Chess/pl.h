@@ -228,7 +228,7 @@ public:
 	/*	AB::AbAspiration
 	 *
 	 *	Returns a narrow alpha-beta window centered on the given evaluation. This
-	 *	is the beginning window for the aspiration window optimization.
+	 *	is the beginning window for the aspiration window search optimization.
 	 */
 	inline AB AbAspiration(EV ev, EV dev) const noexcept {
 		return AB(max(ev - dev, -evInf), min(ev + dev, evInf));
@@ -343,7 +343,7 @@ public:
 		if (cmveGen == 0)
 			return wstring(L"/0");
 		int w100 = (int)round(100.0 * (double)cmveNode / (double)cmveGen);
-		wchar_t sz[12], * pch = sz;
+		wchar_t sz[12] = L"", * pch = sz;
 		int wInt = w100 / 100;
 		pch = PchDecodeInt(wInt, pch);
 		w100 = w100 % 100;
@@ -452,7 +452,7 @@ protected:
 	virtual bool FBeforeDeadline(int depthLim) noexcept;
 	SINT SintTimeMan(void) const noexcept;
 	EV EvMaterialTotal(BDG& bdg) const noexcept;
-	long long DmsecMoveSoFar(void) const noexcept;
+	DWORD DmsecMoveSoFar(void) const noexcept;
 	
 	/* eval */
 
@@ -479,6 +479,9 @@ protected:
 	
 	void StartMoveLog(void);
 	void EndMoveLog(void);
+	void LogPv(BDG& bdg);
+	void BuildPvSz(BDG& bdg, wstring& sz);
+
 };
 
 

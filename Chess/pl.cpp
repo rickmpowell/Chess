@@ -44,7 +44,7 @@ PL::~PL(void)
 wstring SzPercent(uint64_t wNum, uint64_t wDen)
 {
 	assert(wNum <= wDen);
-	wchar_t sz[20], *pch = sz;
+	wchar_t sz[20] = L"", *pch = sz;
 	if (wDen == 0)
 		return wstring(L"/0");
 	unsigned w1000 = (unsigned)((1000 * wNum) / wDen);
@@ -115,7 +115,7 @@ public:
 		if (pl.pvmvBreak == nullptr || pl.imvBreakLast < depth - 2)
 			return;
 
-		if ((MV)mve != (*pl.pvmvBreak)[depth - 1])
+		if (mve != (*pl.pvmvBreak)[depth - 1])
 			return;
 
 		pl.imvBreakLast++;
@@ -232,6 +232,32 @@ void PLAI::EndMoveLog(void)
 }
 
 
+void PLAI::BuildPvSz(BDG& bdg, wstring& sz)
+{
+	XEV* pxev = xt.Find(bdg, 0);
+	if (pxev == nullptr || pxev->fVisited())
+		return;
+	MVE mve = bdg.MveFromMv(pxev->mv());
+	sz += L" " + SzFromMv(mve);
+	if (mve.fIsNil())
+		return;
+	pxev->SetFVisited(true);
+	bdg.MakeMv(mve);
+	BuildPvSz(bdg, sz);
+	bdg.UndoMv();
+	pxev->SetFVisited(false);
+}
+
+
+void PLAI::LogPv(BDG& bdg)
+{
+	wstring sz;
+	BuildPvSz(bdg, sz);
+	LogData(sz);
+}
+
+
+
 /*
  *
  *	LOGMVE
@@ -255,12 +281,12 @@ class LOGSEARCH
 {
 protected:
 	PLAI& pl;
-	const BDG& bdg;
+	BDG& bdg;
 	wstring szData;
 	PRR prr;
 
 public:
-	inline LOGSEARCH(PLAI& pl, const BDG& bdg) noexcept : pl(pl), bdg(bdg), prr(prrNone) { }
+	inline LOGSEARCH(PLAI& pl, BDG& bdg) noexcept : pl(pl), bdg(bdg), prr(prrNone) { }
 	inline void SetData(const wstring& szNew) noexcept { szData = szNew; }
 	inline void SetReason(PRR prr) { this->prr = prr; }
 };
@@ -277,8 +303,9 @@ class LOGMVE : public LOGSEARCH, public AIBREAK
 	static MV amv[20];
 
 public:
-	inline LOGMVE(PLAI& pl, const BDG& bdg,
-				  const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int depth, wchar_t chType = L' ') noexcept :
+	inline LOGMVE(PLAI& pl, BDG& bdg,
+				  const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int depth, 
+				  wchar_t chType = L' ') noexcept :
 		LOGSEARCH(pl, bdg), AIBREAK(pl, mvePrev, depth),
 		mvePrev(mvePrev), mveBest(mveBest), abInit(abInit), depthLogSav(0), imvExpandSav(0)
 	{
@@ -343,7 +370,7 @@ public:
 class LOGMVES : public LOGMVE
 {
 public:
-	inline LOGMVES(PLAI& pl, const BDG& bdg,
+	inline LOGMVES(PLAI& pl, BDG& bdg,
 				   const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int depth) noexcept :
 		LOGMVE(pl, bdg, mvePrev, mveBest, abInit, depth, L' ')
 	{
@@ -354,9 +381,19 @@ public:
 class LOGMVEQ : public LOGMVE
 {
 public:
-	inline LOGMVEQ(PLAI& pl, const BDG& bdg,
+	inline LOGMVEQ(PLAI& pl, BDG& bdg,
 				   const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int depth) noexcept :
 		LOGMVE(pl, bdg, mvePrev, mveBest, abInit, depth, L'Q')
+	{
+	}
+};
+
+
+class LOGMVESTATIC : public LOGMVE
+{
+public:
+	inline LOGMVESTATIC(PLAI& pl, BDG& bdg, const MVE& mve, const AB& abInit) noexcept :
+		LOGMVE(pl, bdg, mve, mve, abInit, 0, L'S')
 	{
 	}
 };
@@ -391,7 +428,7 @@ class LOGITD : public LOGSEARCH
 {
 	const MVE& mveBest;
 public:
-	LOGITD(PLAI& pl, const BDG& bdg, const MVE& mveBest, AB ab, int depth) noexcept : 
+	LOGITD(PLAI& pl, BDG& bdg, const MVE& mveBest, AB ab, int depth) noexcept : 
 			LOGSEARCH(pl, bdg), mveBest(mveBest)
 	{
 		LogOpen(L"Depth", wjoin(depth, ab), lgfNormal);
@@ -403,6 +440,7 @@ public:
 								 bdg.SzDecodeMvPost(mveBest),
 								 SzFromEv(mveBest.ev)), 
 				 lgfNormal);
+		pl.LogPv(bdg);
 	}
 };
 
@@ -586,14 +624,18 @@ void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 		   it, go ahead and reset all the other moves to nil so we re-score them on
 		   subsequent passes */
 		XEV* pxev = pplai->xt.Find(bdg, 0);
-		MVE mvePV = pxev && pxev->tev() == tevEqual ? bdg.MveFromMv(pxev->mv()) : mveNil;
+		MVE mvePV;
+		if (pxev && pxev->tev() == tevEqual) {
+			mvePV = bdg.MveFromMv(pxev->mv());
+			mvePV.ev = -pxev->ev();
+		}
 		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
 			assert(!pmve->fIsNil());
 			pmve->SetTsc(tscNil);
 			if (mvePV == *pmve) {
 				assert(pxev != nullptr);
 				pmve->SetTsc(tscPrincipalVar);
-				pmve->ev = -pxev->ev();
+				pmve->ev = mvePV.ev;
 			}
 		}
 		break;
@@ -711,11 +753,47 @@ MVE PLAI::MveGetNext(SPMV& spmv) noexcept
 		FSearchMveBest(bdg, vmvess, mveBest, ab, 0, depthLim, tsAll);
 		SaveXt(bdg, mveBest, ab, depthLim);
 		stbfTotal += stbfMain;
-	} while (!vmvess.FOnlyOneMove(mveBestOverall) && FDeepen(mveBest, ab, depthLim) && 
+	} while (!vmvess.FOnlyOneMove(mveBestOverall) && 
+			 FDeepen(mveBest, ab, depthLim) && 
 			 FBeforeDeadline(depthLim));
 
 	EndMoveLog();
 	return mveBestOverall;
+}
+
+
+/*	PLAI::FSearchMveBest
+ *
+ *	Finds the best move for the given board and sorted movelist, using the given
+ *	alpha-beta window and search depth. Returns true the search should be pruned.
+ *
+ *	Handles the principal value search optimization.
+ */
+bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept
+{
+	/* do first move (probably a PV move) with full a-b window */
+
+	MVE* pmve;
+	if (!vmvess.FMakeMveNext(bdg, pmve))
+		return false;
+	pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
+	vmvess.UndoMv(bdg);
+	if (FPrune(pmve, mveBest, ab, depthLim))
+		return true;
+
+	/* subsequent moves get the PV pre-search optimization which uses an
+	   ultra-narrow window. We pray that narrow window quickly fails low;
+	   if we don't, redo the search with the full window */
+
+	while (vmvess.FMakeMveNext(bdg, pmve)) {
+		pmve->ev = -EvBdgSearch(bdg, *pmve, -ab.AbNull(), depth + 1, depthLim, ts);
+		if (!(pmve->ev < ab))
+			pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
+		vmvess.UndoMv(bdg);
+		if (FPrune(pmve, mveBest, ab, depthLim))
+			return true;
+	}
+	return false;
 }
 
 
@@ -750,7 +828,6 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, int dep
 		return mveBest.ev;	
 	/*
 	mveBest = MVE(mvNil, EvBdgStatic(bdg, mvePrev.mv, true));
-	SaveXt(bdg, mveBest, AB(-evInf, evInf), 0);
 	if (FTryFutility(bdg, mveBest, abInit, depth, depthLim, ts))
 		return mveBest.ev;
 	*/
@@ -791,7 +868,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 
 	AB ab = abInit;
 	mveBest = MVE(mvuNil, EvBdgStatic(bdg, mvePrev));
-//	SaveXt(bdg, mveBest, AB(-evInf, evInf), 0);
+	{ LOGMVESTATIC logmvestatic(*this, bdg, mveBest, ab); }
 	if (FPrune(&mveBest, mveBest, ab, depthLim))
 		return mveBest.ev;
 
@@ -808,44 +885,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 	TestForMates(bdg, vmvesq, mveBest, depth);
 
 Done:
-//	SaveXt(bdg, mveBest, abInit, 0);
 	return mveBest.ev;
-}
-
-
-/*	PLAI::FSearchMveBest
- *
- *	Finds the best move for the given board and sorted movelist, using the given
- *	alpha-beta window and search depth. Returns true the search should be pruned.
- *
- *	Handles the principal value search optimization, which tries to bail out of
- *	non-PV searches quickly by doing a quick null-window search on the PV valuation.
- */
-bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept
-{
-	/* do first move (probably a PV move) with full a-b window */
-	
-	MVE* pmve;
-	if (!vmvess.FMakeMveNext(bdg, pmve))
-		return false;
-	pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
-	vmvess.UndoMv(bdg);
-	if (FPrune(pmve, mveBest, ab, depthLim))
-		return true;
-
-	/* subsequent moves get the PV pre-search optimization which uses an 
-	   ultra-narrow window. We pray that narrow window quickly fails low; 
-	   if we don't, redo the search with the full window */
-
-	while (vmvess.FMakeMveNext(bdg, pmve)) {
-		pmve->ev = -EvBdgSearch(bdg, *pmve, -ab.AbNull(), depth + 1, depthLim, ts);
-		if (!(pmve->ev < ab))
-			pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
-		vmvess.UndoMv(bdg);
-		if (FPrune(pmve, mveBest, ab, depthLim))
-			return true;
-	}
-	return false;
 }
 
 
@@ -1035,7 +1075,7 @@ void PLAI::TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int depth) const n
  *	sometimes we increase the depth, other times we widen the aspiration window.
  *
  *	Returns true if we successfully progressed the depth/window; returns false if we 
- *	should we stop the search, which happens on an abort/interrupt, or a forced mate.
+ *	should stop the search, which happens on an abort/interrupt, or a forced mate.
  */
 bool PLAI::FDeepen(MVE mveBest, AB& ab, int& depth) noexcept
 {
@@ -1166,12 +1206,12 @@ bool PLAI::FBeforeDeadline(int depthLim) noexcept
 	return false;
 }
 
-long long PLAI::DmsecMoveSoFar(void) const noexcept
+DWORD PLAI::DmsecMoveSoFar(void) const noexcept
 {
 	time_point<high_resolution_clock> tp = high_resolution_clock::now();
 	duration dtp = tp - tpMoveFirst;
 	milliseconds dmsec = duration_cast<milliseconds>(dtp);
-	return dmsec.count();
+	return (DWORD)dmsec.count();
 }
 
 
@@ -1200,7 +1240,7 @@ SINT PLAI::SintTimeMan(void) const noexcept
 	/* the deadline is just a suggestion - we'll actually abort the search if we go
 	   50% beyond it */
 
-	long long dmsec = DmsecMoveSoFar();
+	DWORD dmsec = DmsecMoveSoFar();
 	if (dmsec > dmsecDeadline + dmsecDeadline / 2)
 		return sintTimedOut;
 
