@@ -153,7 +153,7 @@ void UIGA::Layout(void)
 	rc = rcBoard;
 	rc.top = rc.bottom + dxyMargin;
 	rc.bottom = rcBounds.bottom - dxyMargin;
-	rc.right = rc.left + 1080.0f;
+	rc.right = rc.left + 1200.0f;
 	uipcp.SetBounds(rc);
 
 	/* move list panel */

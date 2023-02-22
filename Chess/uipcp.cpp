@@ -22,17 +22,26 @@ enum {
 	cmdSetSquare = 4,
 	cmdClearSquare = 5,
 	cmdToggleToMove = 6,
-	cmdToggleCsBase = 7,
+	cmdSetEpdFen = 7,
+	cmdOpenEpdFile = 8,
+	/* castle states or-together these values, so these commands actually take up 16
+	   total slots */
+	cmdToggleCsBase = 9,
 	cmdToggleCsWhiteKing = cmdToggleCsBase + csWhiteKing,
 	cmdToggleCsWhiteQueen = cmdToggleCsBase + csWhiteQueen,
 	cmdToggleCsBlackKing = cmdToggleCsBase + csBlackKing,
 	cmdToggleCsBlackQueen = cmdToggleCsBase + csBlackQueen,
-	cmdNextUnused = 16
+	cmdToggleCsMost = cmdToggleCsBase + (csWhiteKing|csWhiteQueen|csBlackKing|csBlackQueen),
+	cmdNextUnused = 25
 };
+
+static_assert(cmdNextUnused == cmdToggleCsMost + 1);
 
 
 CHKCS::CHKCS(UI* puiParent, UIPCP& uipcp, int cmd) : BTN(puiParent, cmd), uipcp(uipcp)
 {
+	SetCoText(coBlack);
+	SetCoBack(coWhite);
 }
 
 
@@ -40,12 +49,12 @@ void CHKCS::Draw(const RC& rcUpdate)
 {
 	RC rc = RcInterior();
 	rc.Inflate(-2, -2);
-	FillRc(rc, pbrBlack);
+	FillRc(rc, pbrText);
 	rc.Inflate(-1, -1);
-	FillRc(rc, pbrWhite);
+	FillRc(rc, pbrBack);
 
 	if (uipcp.uiga.ga.bdg.csCur & (cmd - cmdToggleCsBase))
-		DrawSzCenter(L"\x2713", ptxList, RcInterior(), pbrBlack);
+		DrawSzCenter(L"\x2713", ptxList, RcInterior(), pbrText);
 }
 
 void CHKCS::Erase(const RC& rcUpdate, bool fParentDrawn)
@@ -333,6 +342,7 @@ UICASTLESTATE::UICASTLESTATE(UIPCP& uipcp) : UI(&uipcp), uipcp(uipcp)
 	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsWhiteQueen));
 	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsBlackKing));
 	vpchkcs.push_back(new CHKCS(this, uipcp, cmdToggleCsBlackQueen));
+	SetCoText(coBlack);
 }
 
 void UICASTLESTATE::Layout(void)
@@ -382,7 +392,7 @@ void UICASTLESTATE::Erase(const RC& rcUpdate, bool fParentDrawn)
  */
 
 
-UISETFEN::UISETFEN(UIPCP& uipcp, int cmd, const wstring& szFen) : BTN(&uipcp, cmd), szFen(szFen)
+UISETFEN::UISETFEN(UI* pui, int cmd, const wstring& szFen) : BTN(pui, cmd), szFen(szFen)
 {
 }
 
@@ -448,6 +458,48 @@ void UIFEN::Erase(const RC& rcUpdate, bool fParentErase)
 
 /*
  *
+ *	UIEPD control container
+ *
+ */
+
+
+UIEPD::UIEPD(UIPCP& uipcp, const wstring& szFile) : UI(&uipcp), uipcp(uipcp),
+	szFile(szFile),
+	uisetfen(this, cmdSetEpdFen, L"r1bq1r1k/p1pnbpp1/1p2p3/6p1/3PB3/5N2/PPPQ1PPP/2KR3R w - -"), 
+	btnFile(this, cmdOpenEpdFile, szFile)
+{
+}
+
+
+void UIEPD::Erase(const RC& rcUpdate, bool fParentDrawn)
+{
+	TransparentErase(rcUpdate, fParentDrawn);
+}
+
+
+void UIEPD::Draw(const RC& rcUpdate)
+{
+}
+
+
+void UIEPD::Layout(void)
+{
+	RC rcInt = RcInterior();
+
+	RC rc = rcInt;
+	rc.bottom -= 8.0f;
+	rc.top = rc.bottom - 20.0f;
+	btnFile.SetBounds(rc);
+	
+	rc = RC(0, 0, rc.top, rc.top);
+	rc.Offset(rcInt.XCenter()-rc.XCenter(), 0);
+	rc.Inflate(-15, -15);
+	uisetfen.SetBounds(rc);
+}
+
+
+/*
+ *
  *	UIPCP
  *
  *	The top-level piece panel
@@ -457,15 +509,15 @@ void UIFEN::Erase(const RC& rcUpdate, bool fParentErase)
 
 UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), 
 			uititle(this, L"Setup Board: Move Pieces and Drag onto Board. Press 'Done' When Finished."), 
-			uidragdel(*this), uicpctomove(*this), uicastlestate(*this), uifen(*this), cpcShow(cpcWhite), 
-			sqDrop(sqNil), apcDrop(apcNull)
+			uidragdel(*this), uicpctomove(*this), uicastlestate(*this), uifen(*this), uiepd(*this, L"arsan21.epd"),
+			cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
 		mpcpcpuicpc[cpc] = new UICPC(this, (int)cmdSetBoardWhite+cpc);
 	for (APC apc = apcPawn; apc < apcMax; ++apc)
 		mpapcpuiapc[apc] = new UIDRAGAPC(*this, apc);
-	vpuisetfen.push_back(new UISETFEN(*this, cmdSetBoardInit, BDG::szFENInit));
-	vpuisetfen.push_back(new UISETFEN(*this, cmdSetBoardEmpty, L"8/8/8/8/8/8/8/8 w - - 0 1"));
+	vpuisetfen.push_back(new UISETFEN(this, cmdSetBoardInit, BDG::szFENInit));
+	vpuisetfen.push_back(new UISETFEN(this, cmdSetBoardEmpty, L"8/8/8/8/8/8/8/8 w - - 0 1"));
 }
 
 
@@ -534,8 +586,10 @@ void UIPCP::Layout(void)
 	/* full board shortcuts */
 
 	rc = RC(rc.right + 32.0f, rcDrags.top, rc.right+28.0f+rcDrags.DyHeight(), rcDrags.bottom);
+	float xLast = rc.left;
 	for (UISETFEN* puisetfen : vpuisetfen) {
 		puisetfen->SetBounds(rc);
+		xLast = rc.right;
 		rc.Offset(rc.DxWidth()+12.0f, 0);
 	}
 
@@ -545,8 +599,18 @@ void UIPCP::Layout(void)
 
 	rc = rcUnused;
 	rc.bottom = rc.top + 30.0f;
+	rc.right = xLast;
 	rc.Inflate(-12.0f, 0);
 	uifen.SetBounds(rc);
+
+	/* EPD chooser */
+
+	rc = RcInterior();
+	rc.top += 24.0f;
+	rc.left = xLast + 20.0f;
+	rc.bottom -= 12.0f;
+	rc.right -= 12.0f;
+	uiepd.SetBounds(rc);
 }
 
 
@@ -571,6 +635,10 @@ void UIPCP::DispatchCmd(int cmd)
 				uiga.ga.bdg.SetFen(puisetfen->szFen.c_str());
 				break;
 			}
+		break;
+	case cmdSetEpdFen:
+		uiga.ga.bdg.InitGame();
+		uiga.ga.bdg.SetFen(uiepd.uisetfen.szFen.c_str());
 		break;
 	case cmdSetSquare:
 		uibd.Ga().bdg.SetSq(sqDrop, PC(cpcShow, apcDrop));

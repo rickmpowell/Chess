@@ -29,6 +29,8 @@
 #define idsMenuStopTest         24
 #define idsTipLogFileDepthUp    25
 #define idsTipLogFileDepthDown  26
+#define idsValidationOn         27
+#define idsValidationOff        28
 
  /*
  *	Dialog definitions
@@ -103,7 +105,9 @@
 #define cmdShowDrawTest         45
 #define cmdLogFileDepthUp       46
 #define cmdLogFileDepthDown     47
-#define cmdMax					48
+#define cmdMakeNullMove         48
+#define cmdToggleValidation     49
+#define cmdMax					50
 
 /*
  *	icons

@@ -139,6 +139,16 @@ public:
 class UIPCP;
 
 
+
+/*
+ *
+ *	UICPC control
+ * 
+ *	Piece color picker
+ * 
+ */
+
+
 class UICPC : public BTN
 {
 public:
@@ -147,6 +157,16 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	virtual ColorF CoBack(void) const { return coBlack; }
 };
+
+
+
+/*
+ *
+ *	UIDRAGPCP control
+ * 
+ *	Base class for draggable controls int he board setup panel
+ * 
+ */
 
 
 class UIDRAGPCP : public UI
@@ -173,6 +193,16 @@ public:
 };
 
 
+
+/*
+ *
+ *	UIDRAGAPC
+ * 
+ *	Draggable chess piece control for the board setup panel
+ * 
+ */
+
+
 class UIDRAGAPC : public UIDRAGPCP
 {
 	APC apc;
@@ -182,6 +212,15 @@ public:
 	virtual void DrawInterior(UI* pui, const RC& rc);
 	virtual void Drop(SQ sq);
 };
+
+
+/*
+ *
+ *	UIDRAGDEL control
+ * 
+ *	Draggable delete piece icon on the board setup panel
+ * 
+ */
 
 
 class UIDRAGDEL : public UIDRAGPCP
@@ -194,6 +233,15 @@ public:
 };
 
 
+/*
+ *
+ *	UICPCTOMOVE control
+ * 
+ *	Color to be moved control in the board setup panel.
+ * 
+ */
+
+
 class UICPCTOMOVE : public BTN
 {
 	UIPCP& uipcp;
@@ -204,6 +252,15 @@ public:
 };
 
 
+/*
+ *
+ *	CHKCS control
+ * 
+ *	Check boxes for the castle state in the board setup panel
+ *
+ */
+
+
 class CHKCS : public BTN
 {
 	UIPCP& uipcp;
@@ -212,6 +269,16 @@ public:
 	virtual void Draw(const RC& rcUpdate);
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 };
+
+
+/*
+ *
+ *	UICASTLESTATE control
+ * 
+ *	Container control for the group of castle state checkboxes in the board setup
+ *	panel.
+ *
+ */
 
 
 class UICASTLESTATE : public UI
@@ -230,6 +297,8 @@ public:
  *
  *	UIFEN
  *
+ *	The FEN edit box in the board setup panel. Currently this is just static
+ * 
  */
 
 
@@ -244,17 +313,54 @@ public:
 };
 
 
+/*
+ *
+ *	UISETFEN control
+ * 
+ *	The mini-board picker button control in the board setup panel. They hold a FEN string,
+ *	which is used to make a mini-board
+ * 
+ */
+
+
 class UISETFEN : public BTN
 {
 public:
 	wstring szFen;
 public:
-	UISETFEN(UIPCP& uipcp, int cmd, const wstring& szFen);
+	UISETFEN(UI* pui, int cmd, const wstring& szFen);
 
 	virtual void Draw(const RC& rcUpdate);
 	RC RcFromSq(SQ sq) const;
 	virtual ColorF CoText(void) const { return coBoardBWDark; }
 	virtual ColorF CoBack(void) const { return coBoardBWLight; }
+};
+
+
+/*
+ *
+ *	UIEPD container control
+ * 
+ *	A UI element that contains the various pieces for implementing an EPD file enumerator
+ *	and picker. 
+ *
+ */
+
+
+class UIEPD : public UI
+{
+	friend class UIPCP;
+	
+	UIPCP& uipcp;
+	wstring szFile;
+	UISETFEN uisetfen;
+	BTNTEXT btnFile;
+public:
+	UIEPD(UIPCP& uipcp, const wstring& szFile);
+
+	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
+	virtual void Draw(const RC& rcUpdate);
+	virtual void Layout(void);
 };
 
 
@@ -288,6 +394,7 @@ class UIPCP : public UIP
 	UICPCTOMOVE uicpctomove;
 	UICASTLESTATE uicastlestate;
 	vector<UISETFEN*> vpuisetfen;
+	UIEPD uiepd;
 	UIFEN uifen;
 	CPC cpcShow;
 	SQ sqDrop;

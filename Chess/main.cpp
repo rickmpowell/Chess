@@ -1415,6 +1415,30 @@ ERR PROCPGNPASTE::ProcessMv(MVE mve)
 
 /*
  *
+ *  CMDMAKENULLMOVE
+ * 
+ *  Makes the null move on the current board..
+ *
+ */
+
+
+class CMDMAKENULLMOVE : public CMD
+{
+public:
+    CMDMAKENULLMOVE(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        GA& ga = *app.pga;
+        if (ga.bdg.FGsPlaying())
+            ga.PplToMove()->ReceiveMv(mveNil, spmvAnimate);
+        return 1;
+    }
+};
+
+
+/*
+ *
  *  CMDSETUPBOARD command
  * 
  *  Toggles the board setup panels. The desktop enters a special mode where we're not
@@ -1635,6 +1659,34 @@ public:
 
 /*
  *
+ *  CMDTOGGLEVALIDATION
+ *
+ *  Toggles saving the debug validation state, which speeds up the debug
+ *  version by a tonil.
+ *
+ */
+
+
+class CMDTOGGLEVALIDATION : public CMD
+{
+public:
+    CMDTOGGLEVALIDATION(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        fValidate = !fValidate;
+        return 1;
+    }
+
+    virtual int IdsMenu(void) const
+    {
+        return fValidate ? idsValidationOff : idsValidationOn;
+    }
+};
+
+
+/*
+ *
  *  CMDLINKUCI command
  *
  *  Attach as an engine to a UCI GUI. THis is probably a temporary command.
@@ -1816,6 +1868,8 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_60_30_15, 60, -1));
     vcmd.Add(new CMDTIMECONTROL(*this, cmdClockTest_20, 20, 0));
     vcmd.Add(new CMDSHOWDRAWTEST(*this, cmdShowDrawTest));
+    vcmd.Add(new CMDMAKENULLMOVE(*this, cmdMakeNullMove));
+    vcmd.Add(new CMDTOGGLEVALIDATION(*this, cmdToggleValidation));
 }
 
 

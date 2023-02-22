@@ -10,7 +10,7 @@
 #include "uiga.h"
 #include "resources/Resource.h"
 
-bool fValidate = true;
+bool fValidate = false;
 
 
 /*

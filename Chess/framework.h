@@ -66,9 +66,8 @@ using namespace chrono;
  */
 
 
-#ifndef NDEBUG
 extern bool fValidate;
-#endif
+
 //#define NOSTATS
 
 
