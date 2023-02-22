@@ -143,6 +143,7 @@ public:
 	void Relayout(void);
 	virtual void Layout(void);
 	virtual SIZ SizLayoutPreferred(void);
+	void BringToTop(void);
 
 	/* mouse interface */
 
@@ -158,6 +159,7 @@ public:
 	virtual void NoButtonDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void ScrollWheel(const PT& pt, int dwheel);
+	virtual void SetDefCursor(void);
 
 	/* keyboard interface */
 
@@ -284,7 +286,8 @@ public:
 	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
 	virtual void MouseHover(const PT& pt, MHT mht);
-	
+	virtual void SetDefCursor(void);
+
 	virtual wstring SzTip(void) const;
 };
 
@@ -320,6 +323,7 @@ public:
 	wstring szText;
 public:
 	BTNTEXT(UI* puiParent, int icmd, const wstring& sz);
+	void SetText(const wstring& szNew);
 	virtual void Draw(const RC& rcUpdate);
 	virtual float DxWidth(void);
 };
@@ -354,7 +358,7 @@ class BTNGEOM : public BTN
 	GEOM* pgeom;
 
 public:
-	BTNGEOM(UI* puiParent, int cmd, PT apt[], int cpt);
+	BTNGEOM(UI* puiParent, int cmd, const PT apt[], int cpt);
 	~BTNGEOM();
 	virtual void Draw(const RC& rcUpdate);
 };
@@ -400,13 +404,26 @@ public:
  * 
  */
 
+class BTNUP : public BTNGEOM
+{
+	static const PT aptUp[];
+public:
+	BTNUP(UI* puiParent, int cmd);
+};
+
+class BTNDOWN : public BTNGEOM
+{
+	static const PT aptDown[];
+public:
+	BTNDOWN(UI* puiParent, int cmd);
+};
 
 class SPIN : public UI
 {
 protected:
 	TX* ptxSpin;
-	BTNGEOM btngeomDown;
-	BTNGEOM btngeomUp;
+	BTNDOWN btndown;
+	BTNUP btnup;
 
 public:
 	SPIN(UI* puiParent, int cmdUp, int cmdDown);

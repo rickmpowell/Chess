@@ -87,7 +87,7 @@ public:
 	void ContinueScrollRepeat(void);
 	void EndScrollRepeat(void);
 	virtual void TickTimer(TID tid, UINT dtm);
-
+	virtual void SetDefCursor();
 };
 
 

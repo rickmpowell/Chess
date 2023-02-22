@@ -203,16 +203,6 @@ public:
 	ID2D1Bitmap1* pbmpBackBuf;
 	DC* pdc;
 
-	/* useful cursors */
-
-	HCURSOR hcurArrow;
-	HCURSOR hcurMove;
-	HCURSOR hcurNo;
-	HCURSOR hcurUpDown;
-	HCURSOR hcurHand;
-	HCURSOR hcurCrossHair;
-	HCURSOR hcurUp;
-
 	MCI mciLeftDown, mciRightDown;
 	
 	GA* pga;
@@ -248,6 +238,10 @@ private:
 	void Redraw(void);
 	void Redraw(RC rc);
 
+	/*	
+	 *	Window message handlers 
+	 */
+
 	void OnDestroy(void);
 	void OnPaint(void);
 	void OnSize(UINT dx, UINT dy);
@@ -264,9 +258,27 @@ private:
 	bool OnKeyUp(int vk);
 
 public:
+	
+	/*
+	 *	Timers
+	 */
+
 	TID StartTimer(DWORD dmsec);
 	void StopTimer(TID tid);
 	void DispatchTimer(TID tid, DWORD msec);
+	
+	/*
+	 *	Cursors
+	 */
+
+	void SetCursor(HCURSOR hcrs);
+	HCURSOR hcurArrow;
+	HCURSOR hcurMove;
+	HCURSOR hcurNo;
+	HCURSOR hcurUpDown;
+	HCURSOR hcurHand;
+	HCURSOR hcurCrossHair;
+	HCURSOR hcurUp;
 
 	/*
 	 *	Logging. For now, this just hard-coded to delegate to the debug panel,

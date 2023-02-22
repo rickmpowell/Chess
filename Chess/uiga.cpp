@@ -42,6 +42,7 @@ UIGA::UIGA(APP& app, GA& ga) :	UI(nullptr),
 								spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0), fInTest(false), fInterruptPumpMsg(false)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
+	uitip.BringToTop();
 }
 
 
@@ -237,6 +238,12 @@ void UIGA::RedrawCursor(const RC& rcUpdate)
 	if (!puiDrag)
 		return;
 	puiDrag->DrawCursor(this, rcUpdate);
+}
+
+
+void UIGA::SetDefCursor(void)
+{
+	App().SetCursor(App().hcurArrow);
 }
 
 

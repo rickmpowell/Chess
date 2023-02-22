@@ -31,6 +31,22 @@
 #define idsTipLogFileDepthDown  26
 #define idsValidationOn         27
 #define idsValidationOff        28
+#define idsTipSetBoardBlack     29
+#define idsTipSetBoardWhite     30
+#define idsTipSetBoardEmpty     31
+#define idsTipSetBoardInit      32
+#define idsTipClosePanel        33
+#define idsTipToggleToMove      34
+#define idsTipToggleCsBlackKing 35
+#define idsTipToggleCsBlackQueen 36
+#define idsTipToggleCsWhiteKing 37
+#define idsTipToggleCsWhiteQueen 38
+#define idsTipSetEpdFen         39
+#define idsTipOpenEpdFile       40
+#define idsTipNextEpdLine       41
+#define idsTipPrevEpdLine       42
+
+
 
  /*
  *	Dialog definitions

@@ -603,6 +603,13 @@ void SBAR::EndScrollRepeat(void)
 }
 
 
+void SBAR::SetDefCursor(void)
+{
+	App().SetCursor(App().hcurUpDown);
+}
+
+
+
 /*
  *
  *	UIBB

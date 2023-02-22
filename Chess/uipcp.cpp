@@ -12,6 +12,7 @@
 
 #include "uibd.h"
 #include "uiga.h"
+#include "Resources/Resource.h"
 
 
 enum {
@@ -24,15 +25,17 @@ enum {
 	cmdToggleToMove = 6,
 	cmdSetEpdFen = 7,
 	cmdOpenEpdFile = 8,
+	cmdNextEpdLine = 9,
+	cmdPrevEpdLine = 10,
 	/* castle states or-together these values, so these commands actually take up 16
 	   total slots */
-	cmdToggleCsBase = 9,
+	cmdToggleCsBase = 11,
 	cmdToggleCsWhiteKing = cmdToggleCsBase + csWhiteKing,
 	cmdToggleCsWhiteQueen = cmdToggleCsBase + csWhiteQueen,
 	cmdToggleCsBlackKing = cmdToggleCsBase + csBlackKing,
 	cmdToggleCsBlackQueen = cmdToggleCsBase + csBlackQueen,
 	cmdToggleCsMost = cmdToggleCsBase + (csWhiteKing|csWhiteQueen|csBlackKing|csBlackQueen),
-	cmdNextUnused = 25
+	cmdNextUnused = 27
 };
 
 static_assert(cmdNextUnused == cmdToggleCsMost + 1);
@@ -135,11 +138,6 @@ void UIDRAGPCP::LeftDrag(const PT& pt)
 }
 
 
-void UIDRAGPCP::MouseHover(const PT& pt, MHT mht)
-{
-}
-
-
 void UIDRAGPCP::Draw(const RC& rcUpdate)
 {
 	DrawInterior(this, RcInterior());
@@ -149,6 +147,12 @@ void UIDRAGPCP::Draw(const RC& rcUpdate)
 void UIDRAGPCP::Erase(const RC& rcUpdate, bool fParentDrawn)
 {
 	TransparentErase(rcUpdate, fParentDrawn);
+}
+
+
+void UIDRAGPCP::SetDefCursor(void)
+{
+	App().SetCursor(App().hcurHand);
 }
 
 
@@ -196,7 +200,6 @@ SQ UIDRAGPCP::SqHitTest(PT pt) const
 	}
 	return sqNil;
 }
-
 
 
 /*
@@ -397,6 +400,20 @@ UISETFEN::UISETFEN(UI* pui, int cmd, const wstring& szFen) : BTN(pui, cmd), szFe
 }
 
 
+void UISETFEN::SetSzFen(const wstring& sz)
+{
+	szFen = sz;
+	Redraw();
+}
+
+
+void UISETFEN::SetSzEpd(const wstring& sz)
+{
+	szFen = sz;
+	Redraw();
+}
+
+
 RC UISETFEN::RcFromSq(SQ sq) const
 {
 	RC rc = RcInterior();
@@ -458,16 +475,71 @@ void UIFEN::Erase(const RC& rcUpdate, bool fParentErase)
 
 /*
  *
+ *	BTNFILE control
+ * 
+ */
+
+BTNFILE::BTNFILE(UI* puiParent, int cmd, const wstring& szPath) : BTNTEXT(puiParent, cmd, L"")
+{
+	SetFile(szPath);
+}
+
+
+void BTNFILE::SetFile(const wstring& szNew)
+{
+	size_t cchPath = szNew.rfind(L"\\");
+	if (cchPath == -1)
+		SetText(szNew);
+	else
+		SetText(szNew.substr(cchPath+1));
+}
+
+
+/*
+ *
  *	UIEPD control container
  *
  */
 
 
 UIEPD::UIEPD(UIPCP& uipcp, const wstring& szFile) : UI(&uipcp), uipcp(uipcp),
-	szFile(szFile),
+	szFile(szFile), iliCur(0),
 	uisetfen(this, cmdSetEpdFen, L"r1bq1r1k/p1pnbpp1/1p2p3/6p1/3PB3/5N2/PPPQ1PPP/2KR3R w - -"), 
-	btnFile(this, cmdOpenEpdFile, szFile)
+	btndown(this, cmdPrevEpdLine), btnup(this, cmdNextEpdLine),
+	btnfile(this, cmdOpenEpdFile, szFile)
 {
+	SetLine(1);
+}
+
+
+void UIEPD::SetLine(int ili)
+{
+	if (ili < 0)
+		ili = 0;
+
+	ifstream is(szFile, ifstream::in);
+	if (is.bad()) {
+		btnfile.SetFile(L"(not found)");
+		return;
+	}
+	wstring szLine = SzFindLine(is, iliCur);
+	if (szLine.empty()) {
+		uisetfen.SetSzFen(BDG::szFENInit);
+		return;
+	}
+
+	uisetfen.SetSzEpd(szLine);
+	iliCur = ili;
+}
+
+
+wstring UIEPD::SzFindLine(ifstream& is, int iliFind)
+{
+	string sz;
+	for (int ili = 0; getline(is, sz); ili++)
+		if (ili == iliFind)
+			return WszWidenSz(sz);
+	return L"";
 }
 
 
@@ -489,12 +561,22 @@ void UIEPD::Layout(void)
 	RC rc = rcInt;
 	rc.bottom -= 8.0f;
 	rc.top = rc.bottom - 20.0f;
-	btnFile.SetBounds(rc);
+	btnfile.SetBounds(rc);
 	
-	rc = RC(0, 0, rc.top, rc.top);
-	rc.Offset(rcInt.XCenter()-rc.XCenter(), 0);
-	rc.Inflate(-15, -15);
-	uisetfen.SetBounds(rc);
+	RC rcBoard(0, 0, rc.top, rc.top);
+	rcBoard.Offset(rcInt.XCenter()-rcBoard.XCenter(), 0);
+	rcBoard.Inflate(-15, -15);
+	uisetfen.SetBounds(rcBoard);
+
+	rc = rcBoard;
+	rc.right = rcBoard.left - 6.0f;
+	rc.left = rc.right - 20.0f;
+	btndown.SetBounds(rc);
+
+	rc = rcBoard;
+	rc.left = rcBoard.right + 6.0f;
+	rc.right = rc.left + 20.0f;
+	btnup.SetBounds(rc);
 }
 
 
@@ -509,7 +591,7 @@ void UIEPD::Layout(void)
 
 UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd), 
 			uititle(this, L"Setup Board: Move Pieces and Drag onto Board. Press 'Done' When Finished."), 
-			uidragdel(*this), uicpctomove(*this), uicastlestate(*this), uifen(*this), uiepd(*this, L"arsan21.epd"),
+			uidragdel(*this), uicpctomove(*this), uicastlestate(*this), uifen(*this), uiepd(*this, L"C:\\Users\\rickp\\source\\repos\\Chess\\Chess\\Test\\arsan21.epd"),
 			cpcShow(cpcWhite), sqDrop(sqNil), apcDrop(apcNull)
 {
 	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
@@ -655,6 +737,12 @@ void UIPCP::DispatchCmd(int cmd)
 	case cmdToggleCsBlackKing:
 		uibd.Ga().bdg.ToggleCsCur(cmd - cmdToggleCsBase);
 		break;
+	case cmdNextEpdLine:
+		uiepd.SetLine(uiepd.iliCur+1);
+		break;
+	case cmdPrevEpdLine:
+		uiepd.SetLine(uiepd.iliCur-1);
+		break;
 	default:
 		break;
 	}
@@ -676,30 +764,27 @@ bool UIPCP::FEnabledCmd(int cmd) const
 
 wstring UIPCP::SzTipFromCmd(int cmd) const
 {
+	int ids = -1;
 	switch (cmd) {
-	case cmdSetBoardBlack:
-		return L"Place Black Pieces";
-	case cmdSetBoardWhite:
-		return L"Place White Pieces";
-	case cmdSetBoardEmpty:
-		return L"Make Empty Board";
-	case cmdSetBoardInit:
-		return L"Starting Position";
-	case cmdClosePanel:
-		return L"Exit Board Edit Mode";
-	case cmdToggleToMove:
-		return L"Switch Player to Move";
-	case cmdToggleCsBlackKing:
-		return L"Black King-Side Castle";
-	case cmdToggleCsBlackQueen:
-		return L"Black Queen-Side Castle";
-	case cmdToggleCsWhiteKing:
-		return L"White King-Side Castle";
-	case cmdToggleCsWhiteQueen:
-		return L"White Queen-Side Castle";
-	default:
-		return L"";
+	case cmdSetBoardBlack: ids = idsTipSetBoardBlack; break;
+	case cmdSetBoardWhite: ids = idsTipSetBoardWhite; break;
+	case cmdSetBoardEmpty: ids = idsTipSetBoardEmpty; break;
+	case cmdSetBoardInit: ids = idsTipSetBoardInit; break;
+	case cmdClosePanel: ids = idsTipClosePanel; break;
+	case cmdToggleToMove: ids = idsTipToggleToMove; break;
+	case cmdToggleCsBlackKing: ids = idsTipToggleCsBlackKing; break;
+	case cmdToggleCsBlackQueen: ids = idsTipToggleCsBlackQueen; break;
+	case cmdToggleCsWhiteKing: ids = idsTipToggleCsWhiteKing; break;
+	case cmdToggleCsWhiteQueen: ids = idsTipToggleCsWhiteQueen; break;
+	case cmdSetEpdFen: ids = idsTipSetEpdFen; break;
+	case cmdOpenEpdFile: ids = idsTipOpenEpdFile; break;
+	case cmdNextEpdLine: ids = idsTipNextEpdLine; break;
+	case cmdPrevEpdLine: ids = idsTipPrevEpdLine; break;
+		break;
 	}
+	if (ids == -1)
+		return L"";
+	return App().SzLoad(ids);
 }
 
 

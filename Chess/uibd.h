@@ -182,7 +182,6 @@ public:
 	virtual void StartLeftDrag(const PT& pt);
 	virtual void EndLeftDrag(const PT& pt, bool fClick);
 	virtual void LeftDrag(const PT& pt);
-	virtual void MouseHover(const PT& pt, MHT mht);
 	virtual void Draw(const RC& rcUpdate);
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
@@ -190,6 +189,7 @@ public:
 	virtual void Drop(SQ sq) = 0;
 	RC RcDrag(const PT& pt) const;
 	SQ SqHitTest(PT pt) const;
+	virtual void SetDefCursor(void);
 };
 
 
@@ -329,11 +329,31 @@ public:
 	wstring szFen;
 public:
 	UISETFEN(UI* pui, int cmd, const wstring& szFen);
+	void SetSzFen(const wstring& sz);
+	void SetSzEpd(const wstring& sz);
 
 	virtual void Draw(const RC& rcUpdate);
 	RC RcFromSq(SQ sq) const;
 	virtual ColorF CoText(void) const { return coBoardBWDark; }
 	virtual ColorF CoBack(void) const { return coBoardBWLight; }
+};
+
+
+/*
+ *
+ *	BTNFILE
+ *
+ *	A button that displays a filename, designed to be clicked on and bring up an Open
+ *	dialog.
+ * 
+ */
+
+
+class BTNFILE : public BTNTEXT
+{
+public:
+	BTNFILE(UI* puiParent, int cmd, const wstring& szPath);
+	void SetFile(const wstring& szNew);
 };
 
 
@@ -354,9 +374,16 @@ class UIEPD : public UI
 	UIPCP& uipcp;
 	wstring szFile;
 	UISETFEN uisetfen;
-	BTNTEXT btnFile;
+	BTNUP btnup;
+	BTNDOWN btndown;
+	BTNFILE btnfile;
+	int iliCur;
+
 public:
 	UIEPD(UIPCP& uipcp, const wstring& szFile);
+	void SetLine(int ili);
+
+	wstring SzFindLine(ifstream& ifs, int ili);
 
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);

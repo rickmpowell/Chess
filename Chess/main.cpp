@@ -352,6 +352,18 @@ void APP::Redraw(RC rc)
 }
 
 
+/*  APP::SetCursor
+ *
+ *  Just a logical place to put the cursor API. Should probably rethink this and put it somewhere
+ *  else.
+ */
+
+void APP::SetCursor(HCURSOR hcrs)
+{
+    ::SetCursor(hcrs);
+}
+
+
 /*  APP::StartTimer
  *
  *  Creates a timer that goes every dmsec milliseconds.
@@ -1550,6 +1562,7 @@ public:
         int depth = app.puiga->uidb.DepthShow();
         app.puiga->uidb.SetDepthShow(depth + 1);
         app.puiga->uidb.RelayoutLog();
+        app.puiga->uidb.Redraw();
         return 1;
     }
 
@@ -1576,12 +1589,10 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.puiga->uidb.DepthShow();
-        if (depth > 1)
-            depth--;
+        int depth = max(0, app.puiga->uidb.DepthShow() - 1);
         app.puiga->uidb.SetDepthShow(depth);
-        app.puiga->uidb.Redraw();
         app.puiga->uidb.RelayoutLog();
+        app.puiga->uidb.Redraw();
         return 1;
     }
 

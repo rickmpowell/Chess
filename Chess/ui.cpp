@@ -13,7 +13,7 @@
  *	UI static drawing objects
  */
 
-wchar_t UI::szFontFamily[] = L"Verdana Pro";
+wchar_t UI::szFontFamily[] = L"Verdana";
 BRS* UI::pbrBack;
 BRS* UI::pbrScrollBack;
 BRS* UI::pbrGridLine;
@@ -407,6 +407,26 @@ void UI::ShowAll(bool fVisNew)
 	Show(fVisNew);
 }
 
+
+/*	UI::BringToTop
+ *
+ *	Sends the window to the top of the parent window's z-order, where the top is the end of
+ *	the parent's child UI list
+ */
+void UI::BringToTop(void)
+{
+	if (puiParent == nullptr)
+		return;
+	
+	/* find the item in the child list and rotate it to the end */
+
+	vector<UI*>::iterator ppui = find(puiParent->vpuiChild.begin(), puiParent->vpuiChild.end(), this);
+	assert(ppui != puiParent->vpuiChild.end());
+	if (*ppui != puiParent->vpuiChild.back())
+		rotate(ppui, ppui + 1, puiParent->vpuiChild.end());
+}
+
+
 /*	UI::PuiFromPt
  *
  *	Returns the UI element the point is over. Point is in global coordinates.
@@ -459,10 +479,19 @@ void UI::NoButtonDrag(const PT& pt)
 
 void UI::MouseHover(const PT& pt, MHT mht)
 {
+	SetDefCursor();
 }
 
 void UI::ScrollWheel(const PT& pt, int dwheel)
 {
+}
+
+void UI::SetDefCursor(void)
+{
+	if (puiParent)
+		puiParent->SetDefCursor();
+	else
+		App().SetCursor(App().hcurNo);
 }
 
 
@@ -1312,14 +1341,22 @@ void BTN::MouseHover(const PT& pt, MHT mht)
 {
 	if (!FEnabledCmd(cmd))
 		return;
-	if (mht == mhtEnter) {
-		Hilite(true);
-		ShowTip(this, true);
-	}
-	else if (mht == mhtExit) {
+	if (mht == mhtExit) {
 		Hilite(false);
 		ShowTip(this, false);
 	}
+	else {
+		SetDefCursor();
+		if (mht == mhtEnter) {
+			Hilite(true);
+			ShowTip(this, true);
+		}
+	}
+}
+
+void BTN::SetDefCursor(void)
+{
+	App().SetCursor(App().hcurHand);
 }
 
 
@@ -1417,6 +1454,12 @@ void BTNTEXT::DiscardRsrcStatic(void)
 
 BTNTEXT::BTNTEXT(UI* puiParent, int cmd, const wstring& sz) : BTNCH(puiParent, cmd, ' '), szText(sz)
 {
+}
+
+
+void BTNTEXT::SetText(const wstring& szNew)
+{
+	szText = szNew;
 }
 
 
@@ -1582,7 +1625,7 @@ void STATIC::Draw(const RC& rcUpdate)
  */
 
 
-BTNGEOM::BTNGEOM(UI* puiParent, int cmd, PT apt[], int cpt) : BTN(puiParent, cmd), pgeom(nullptr)
+BTNGEOM::BTNGEOM(UI* puiParent, int cmd, const PT apt[], int cpt) : BTN(puiParent, cmd), pgeom(nullptr)
 {
 	pgeom = PgeomCreate(apt, cpt);
 }
@@ -1602,15 +1645,38 @@ void BTNGEOM::Draw(const RC& rcUpdate)
 
 /*
  *
+ *	BTNSPIN
+ * 
+ *	Spin buttons
+ * 
+ */
+
+
+
+/*
+ *
  *	SPIN ui control
  * 
  */
-static PT aptLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
-static PT aptRight[3] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
+
+static const PT aptRight[] = { {-0.5, 0.75f}, {-0.5f, -0.75f}, {0.5f, 0.0f} };
+
+BTNUP::BTNUP(UI* puiParent, int cmd) : BTNGEOM(puiParent, cmd, aptRight, CArray(aptRight))
+{
+}
 
 
-SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), ptxSpin(nullptr),
-		btngeomDown(this, cmdDown, aptLeft, 3), btngeomUp(this, cmdUp, aptRight, 3)
+static const PT aptLeft[3] = { {0.5f, 0.75f}, {0.5f, -0.75f}, {-0.5f, 0.0f} };
+
+BTNDOWN::BTNDOWN(UI* puiParent, int cmd) : BTNGEOM(puiParent, cmd, aptLeft, CArray(aptLeft))
+{
+}
+
+
+
+SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), 
+		ptxSpin(nullptr),
+		btndown(this, cmdDown), btnup(this, cmdUp)
 		
 {
 }
@@ -1644,10 +1710,10 @@ void SPIN::Layout(void)
 	float dxyScale = RcInterior().DyHeight() / 2.0f;
 	RC rc = RcInterior();
 	rc.right = rc.left + dxyScale;
-	btngeomDown.SetBounds(rc);
+	btndown.SetBounds(rc);
 	rc = RcInterior();
 	rc.left = rc.right - dxyScale;
-	btngeomUp.SetBounds(rc);
+	btnup.SetBounds(rc);
 }
 
 
@@ -1657,6 +1723,6 @@ void SPIN::Draw(const RC& rcUpdate)
 	SIZ siz = SizFromSz(szValue, ptxSpin);
 	RC rc = RcInterior();
 	rc.Offset(PT(0, (rc.DyHeight() - siz.height) / 2));
-	COLORBRS colorbrs(pbrText, btngeomDown.CoText());
+	COLORBRS colorbrs(pbrText, btndown.CoText());
 	DrawSzCenter(szValue, ptxSpin, rc);
 }
