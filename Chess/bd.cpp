@@ -1535,7 +1535,7 @@ void BDG::MakeMv(MVE& mve) noexcept
 	MakeMvSq(mve);
 	if (++imveCurLast == vmveGame.size())
 		vmveGame.push_back(mve);
-	else if (mve != vmveGame[imveCurLast]) {
+	else {
 		vmveGame[imveCurLast] = mve;
 		vmveGame.resize(imveCurLast + 1);
 	}
