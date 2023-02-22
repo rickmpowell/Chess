@@ -13,7 +13,7 @@
  *	UI static drawing objects
  */
 
-wchar_t UI::szFontFamily[] = L"Arial";
+wchar_t UI::szFontFamily[] = L"Verdana Pro";
 BRS* UI::pbrBack;
 BRS* UI::pbrScrollBack;
 BRS* UI::pbrGridLine;
