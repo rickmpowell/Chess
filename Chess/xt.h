@@ -236,7 +236,6 @@ public:
 	__forceinline XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int depth) noexcept
 	{
 		assert(mve.ev != evInf && mve.ev != -evInf);
-		assert(!mve.fIsNil());
 		assert(tev != tevNull);
 #ifndef NOSTATS
 		cxevSave++;
