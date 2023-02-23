@@ -144,3 +144,7 @@
 #define idbSqChessLogo		6
 #define idbAiLogo			7
 #define idbHumanLogo		8
+#define idbDocument         9
+
+
+/* eof */

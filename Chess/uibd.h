@@ -102,7 +102,7 @@ public:
 	void DrawDragHilite(void);
 	void DrawGameState(void);
 
-	void DrawPc(UI* pui, const RC& rc, float opacity, PC pc);
+	void DrawPc(UI& ui, const RC& rc, float opacity, PC pc);
 	void AnimateMv(MVE mve, unsigned dframe);
 	void AnimateSqToSq(SQ sqFrom, SQ sqTo, unsigned dframe);
 	void HiliteLegalMoves(SQ sq);
@@ -333,9 +333,13 @@ public:
 	void SetSzEpd(const wstring& sz);
 
 	virtual void Draw(const RC& rcUpdate);
-	RC RcFromSq(SQ sq) const;
+	void DrawBdg(UI& ui, BDG& bdg, const RC& rcBox);
+	RC RcFromSq(const RC& rcBox, SQ sq) const;
 	virtual ColorF CoText(void) const { return coBoardBWDark; }
 	virtual ColorF CoBack(void) const { return coBoardBWLight; }
+
+	virtual SIZ SizOfTip(UITIP& uitip) const;
+	virtual void DrawTip(UITIP& uitip);
 };
 
 

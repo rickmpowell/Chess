@@ -185,11 +185,8 @@ int APP::Error(const string& szMsg, int mb)
 bool APP::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
 {
     bool fChange = false;
-    fChange |= UIGA::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
     fChange |= UI::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
     fChange |= UICLOCK::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
-    fChange |= BTNCH::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
-    fChange |= BTNTEXT::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
     return fChange;
 }
 

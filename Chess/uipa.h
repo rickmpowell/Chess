@@ -142,28 +142,6 @@ public:
 
 /*
  *
- *	UITIP class
- *
- *	Tooltip user interface item
- *
- */
-
-
-class UITIP : public UI
-{
-protected:
-	UI* puiOwner;
-
-public:
-	UITIP(UI* puiParent);
-	virtual void Draw(const RC& rcUpdate);
-	virtual ColorF CoBack(void) const { return coTipBack; }
-	void AttachOwner(UI* pui);
-};
-
-
-/*
- *
  *	UIBB
  * 
  *	Button bar

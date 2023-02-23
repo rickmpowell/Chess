@@ -414,9 +414,9 @@ void UISETFEN::SetSzEpd(const wstring& sz)
 }
 
 
-RC UISETFEN::RcFromSq(SQ sq) const
+RC UISETFEN::RcFromSq(const RC& rcBox, SQ sq) const
 {
-	RC rc = RcInterior();
+	RC rc(rcBox);
 	float dx = rc.DxWidth() / 8;
 	float dy = rc.DyHeight() / 8;
 	rc.left += sq.file() * dx;
@@ -432,19 +432,54 @@ void UISETFEN::Draw(const RC& rcUpdate)
 	/* create a little dummy board with the FEN string */
 
 	BDG bdg(szFen.c_str());
+	DrawBdg(*this, bdg, RcInterior());
+}
+
+
+void UISETFEN::DrawBdg(UI& ui, BDG& bdg, const RC& rcBox)
+{
+	OPACITYBR opacitybr(pbrText, 0.4f);
 	for (int rank = 0; rank < rankMax; rank++) {
 		for (int file = 0; file < fileMax; file++) {
 			SQ sq(rank, file);
-			RC rc(RcFromSq(sq));
+			RC rc(RcFromSq(rcBox, sq));
 			if (((rank + file) & 1) == 0)
-				FillRc(rc, pbrText);
+				ui.FillRc(rc, pbrText);
 			if (!bdg.FIsEmpty(sq)) {
 				CPC cpc = bdg.CpcFromSq(sq);
-				rc.Inflate(-1.5, -1.5);
-				FillRc(rc, cpc == cpcWhite ? pbrWhite : pbrBlack);
+				if (rc.DxWidth() < 10) {
+					ELL ell(rc.PtCenter(), rc.DxWidth() / 2.0f - 0.6f);
+					ui.FillEll(ell, pbrBlack);
+					ell.radiusX -= 0.5f;
+					ell.radiusY -= 0.5f;
+					ui.FillEll(ell, cpc == cpcWhite ? pbrWhite : pbrBlack);
+				}
+				else if (rc.DxWidth() < 20) {
+					ELL ell(rc.PtCenter(), rc.DxWidth() / 2.0f - 2.0f);
+					ui.FillEll(ell, pbrBlack);
+					ell.radiusX -= 1;
+					ell.radiusY -= 1;
+					ui.FillEll(ell, cpc == cpcWhite ? pbrWhite : pbrBlack);
+				}
+				else {
+					Ga().puiga->uibd.DrawPc(ui, rc, 1.0f, bdg.PcFromSq(sq));
+				}
 			}
 		}
 	}
+}
+
+
+SIZ UISETFEN::SizOfTip(UITIP& uitip) const
+{
+	return SIZ(240, 240);
+}
+
+void UISETFEN::DrawTip(UITIP& uitip)
+{
+	BDG bdg(szFen.c_str());
+	RC rcBox = uitip.RcInterior().Inflate(-5, -5);
+	DrawBdg(uitip, bdg, rcBox);
 }
 
 
@@ -482,6 +517,7 @@ void UIFEN::Erase(const RC& rcUpdate, bool fParentErase)
 BTNFILE::BTNFILE(UI* puiParent, int cmd, const wstring& szPath) : BTNTEXT(puiParent, cmd, L"")
 {
 	SetFile(szPath);
+	SetTextSize(16.0f);
 }
 
 
@@ -559,13 +595,13 @@ void UIEPD::Layout(void)
 	RC rcInt = RcInterior();
 
 	RC rc = rcInt;
-	rc.bottom -= 8.0f;
-	rc.top = rc.bottom - 20.0f;
+	rc.bottom -= 4.0f;
+	rc.top = rc.bottom - 24.0f;
 	btnfile.SetBounds(rc);
 	
 	RC rcBoard(0, 0, rc.top, rc.top);
 	rcBoard.Offset(rcInt.XCenter()-rcBoard.XCenter(), 0);
-	rcBoard.Inflate(-15, -15);
+	rcBoard.Inflate(-14, -14);
 	uisetfen.SetBounds(rcBoard);
 
 	rc = rcBoard;

@@ -621,6 +621,36 @@ wstring UI::SzTipFromCmd(int cmd) const
 }
 
 
+/*	UI::SizOfTip
+ *
+ *	Returns the size of the tip rectangle for the given tip. This is the default
+ *	behavior, which is a simple, single line of text.
+ */
+SIZ UI::SizOfTip(UITIP& uitip) const
+{
+	wstring szTip = SzTip();
+	SIZ sizTip = uitip.SizFromSz(szTip, ptxTip);
+	sizTip.height += 8.0f;
+	sizTip.width += 16.0f;
+	return sizTip;
+}
+
+
+/*	UI::DrawTip
+ *
+ *	Draws the tip on the tip UI element. Default implementation just draws the
+ *	text on the tip.
+ */
+void UI::DrawTip(UITIP& uitip)
+{
+	wstring sz = SzTip();
+	if (sz.empty())
+		return;
+	RC rc = uitip.RcInterior();
+	uitip.DrawSz(sz, ptxTip, rc.Inflate(-6.0f, -4.0f));
+}
+
+
 /*	UI::RcParentFromLocal
  *
  *	Converts a rectangle from local coordinates to parent coordinates
@@ -711,6 +741,11 @@ PT UI::PtLocalFromUiLocal(const UI* pui, const PT& pt) const
 }
 
 
+/*	UI::PtGlobalFromUiLocal
+ *
+ *	Converts local coordinates relative to pui into global coordinates. Note that
+ *	this ignores the this object.
+ */
 PT UI::PtGlobalFromUiLocal(const UI* pui, const PT& pt) const
 {
 	return PT(pt.x + pui->rcBounds.left, pt.y + pui->rcBounds.top);
@@ -734,7 +769,6 @@ void UI::RedrawWithChildren(const RC& rcUpdate, bool fParentDrawn)
 	for (UI* pui : vpuiChild)
 		pui->RedrawWithChildren(rc, true);
 }
-
 
 
 /*	UI::RedrawNoChildren
@@ -1272,6 +1306,60 @@ void UI::FillRotateGeom(GEOM* pgeom, PT ptOffset, float dxyScale, float angle, C
 
 /*
  *
+ *	UITIP class implementation
+ *
+ *	Tooltip user interface item
+ *
+ */
+
+
+UITIP::UITIP(UI* puiParent) : UI(puiParent, false), puiOwner(nullptr)
+{
+}
+
+
+void UITIP::Draw(const RC& rcUpdate)
+{
+	RC rc = RcInterior();
+	FillRc(rc, pbrBlack);
+	rc.Inflate(-1.0, -1.0);
+	FillRcBack(rc);
+	if (puiOwner)
+		puiOwner->DrawTip(*this);
+}
+
+
+/*	UITIP::AttachOwner
+ *
+ *	Attach the tip UI elemennt to the specified UI element. Positions the tip UI near
+ *	the owner.
+ */
+void UITIP::AttachOwner(UI* pui)
+{
+	puiOwner = pui;
+	if (!puiOwner)
+		return;
+	RC rcOwner = puiOwner->RcInterior();
+	rcOwner = puiOwner->RcGlobalFromLocal(rcOwner);
+
+	SIZ sizTip = puiOwner->SizOfTip(*this);
+
+	RC rcTip = RC(PT(rcOwner.XCenter(), rcOwner.top - sizTip.height - 1.0f), sizTip);
+	RC rcDesk = puiParent->RcInterior();
+	if (rcTip.top < rcDesk.top)
+		rcTip.Offset(PT(0.0f, sizTip.height + rcOwner.DyHeight() + 1.0f));
+	if (rcTip.left < rcDesk.left)
+		rcTip.Offset(PT(sizTip.width + rcOwner.DxWidth() + 1.0f, 0.0f));
+	if (rcTip.bottom > rcDesk.bottom)
+		rcTip.Offset(PT(0.0f, -(sizTip.height + rcOwner.DyHeight() + 1.0f)));
+	if (rcTip.right > rcDesk.right)
+		rcTip.Offset(PT(-(sizTip.width + rcOwner.DxWidth() + 1.0f), 0.0f));
+	SetBounds(rcTip);
+}
+
+
+/*
+ *
  *	BTN classes
  * 
  */
@@ -1354,6 +1442,7 @@ void BTN::MouseHover(const PT& pt, MHT mht)
 	}
 }
 
+
 void BTN::SetDefCursor(void)
 {
 	App().SetCursor(App().hcurHand);
@@ -1366,33 +1455,30 @@ wstring BTN::SzTip(void) const
 }
 
 
-TX* BTNCH::ptxButton;
-BRS* BTNCH::pbrsButton;
+BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch), dyFont(20.0f), ptxButton(nullptr)
+{
+}
 
-bool BTNCH::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
+
+bool BTNCH::FCreateRsrc(void)
 {
 	if (ptxButton)
 		return false;
-
-	pdc->CreateSolidColorBrush(coBtnText, &pbrsButton);
-	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		20.0f, L"",
-		&ptxButton);
-	
+	ptxButton = PtxCreate(dyFont, false, false);
 	return true;
 }
 
 
-void BTNCH::DiscardRsrcStatic(void)
+void BTNCH::DiscardRsrc(void)
 {
 	SafeRelease(&ptxButton);
-	SafeRelease(&pbrsButton);
 }
 
 
-BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch)
+void BTNCH::SetTextSize(float dyNew)
 {
+	dyFont = dyNew;
+	DiscardRsrc();
 }
 
 
@@ -1400,11 +1486,8 @@ void BTNCH::Draw(const RC& rcUpdate)
 {
 	wchar_t sz[2] = { ch, 0 };
 	RC rcChar(PT(0, 0), SizFromSz(sz, ptxButton));
-	RC rcTo = RcInterior();
-	COLORBRS colorbrsSav(pbrsButton, CoText());
-	rcChar += rcTo.PtCenter();
-	rcChar.Offset(-rcChar.DxWidth() / 2.0f, -rcChar.DyHeight() / 2.0f);
-	DrawSzCenter(sz, ptxButton, rcChar, pbrsButton);
+	rcChar += RcInterior().PtCenter() - rcChar.PtCenter();
+	DrawSzCenter(sz, ptxButton, rcChar);
 }
 
 
@@ -1430,30 +1513,9 @@ float BTNCH::DxWidth(void)
  */
 
 
-TX* BTNTEXT::ptxButton;
-
-bool BTNTEXT::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (ptxButton)
-		return false;
-
-	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-		DWRITE_FONT_WEIGHT_THIN, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-		12.0f, L"",
-		&ptxButton);
-
-	return true;
-}
-
-
-void BTNTEXT::DiscardRsrcStatic(void)
-{
-	SafeRelease(&ptxButton);
-}
-
-
 BTNTEXT::BTNTEXT(UI* puiParent, int cmd, const wstring& sz) : BTNCH(puiParent, cmd, ' '), szText(sz)
 {
+	SetTextSize(12.0f);
 }
 
 
@@ -1467,9 +1529,8 @@ void BTNTEXT::Draw(const RC& rcUpdate)
 {
 	RC rcText(PT(0, 0), SizFromSz(szText, ptxButton));
 	RC rcTo = RcInterior();
-	COLORBRS colorbrsSav(pbrsButton, CoText());
 	rcText += rcTo.PtCenter() - rcText.PtCenter();
-	DrawSzCenter(szText, ptxButton, rcText, pbrsButton);
+	DrawSzCenter(szText, ptxButton, rcText);
 }
 
 
@@ -1558,7 +1619,7 @@ SIZ BTNIMG::SizImg(void) const
 
 
 STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent),  
-		ptxStatic(nullptr), pbrsStatic(nullptr), szText(sz), dyFont(20.0f)
+		ptxStatic(nullptr), szText(sz), dyFont(20.0f)
 {
 }
 
@@ -1567,18 +1628,19 @@ bool STATIC::FCreateRsrc(void)
 {
 	if (ptxStatic)
 		return false;
-
-	App().pdc->CreateSolidColorBrush(coStaticText, &pbrsStatic);
 	ptxStatic = PtxCreate(dyFont, false, false);
-	
 	return true;
 }
 
 
+ColorF STATIC::CoText(void) const
+{
+	return coStaticText;
+}
+
 void STATIC::DiscardRsrc(void)
 {
 	SafeRelease(&ptxStatic);
-	SafeRelease(&pbrsStatic);
 }
 
 
@@ -1612,7 +1674,7 @@ void STATIC::Draw(const RC& rcUpdate)
 	RC rcText(PT(0, 0), SizFromSz(SzText(), ptxStatic));
 	RC rcTo = RcInterior();
 	rcText += rcTo.PtCenter() - rcText.PtCenter();;
-	DrawSzCenter(SzText(), ptxStatic, rcText, pbrsStatic);
+	DrawSzCenter(SzText(), ptxStatic, rcText, pbrText);
 }
 
 
@@ -1652,7 +1714,6 @@ void BTNGEOM::Draw(const RC& rcUpdate)
  */
 
 
-
 /*
  *
  *	SPIN ui control
@@ -1673,11 +1734,9 @@ BTNDOWN::BTNDOWN(UI* puiParent, int cmd) : BTNGEOM(puiParent, cmd, aptLeft, CArr
 }
 
 
-
 SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true), 
 		ptxSpin(nullptr),
 		btndown(this, cmdDown), btnup(this, cmdUp)
-		
 {
 }
 
@@ -1686,9 +1745,7 @@ bool SPIN::FCreateRsrc(void)
 {
 	if (ptxSpin)
 		return false;
-
 	ptxSpin = PtxCreate(14.0, false, false);
-
 	return true;
 }
 

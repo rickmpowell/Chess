@@ -212,7 +212,6 @@ void UIBD::SetMoveHilite(MVE mve)
  */
 void UIBD::Draw(const RC& rcDraw)
 {
-	DC* pdc = App().pdc;
 	int rankFirst = (int)floor((rcDraw.top - rcSquares.top) / dxySquare);
 	float dy = (rcDraw.bottom - rcSquares.top) / dxySquare;
 	int rankLast = (int)floor(dy) - (int)(floor(dy) == dy);
@@ -233,15 +232,14 @@ void UIBD::Draw(const RC& rcDraw)
 		fileLast = fileMax - fileLast - 1;
 		swap(fileFirst, fileLast);
 	}
-
-	{
+	
+	DC* pdc = App().pdc;
 	TRANSDC transdc(pdc, Matrix3x2F::Rotation(angle, rcBounds.PtCenter()));
 	DrawMargins(rcDraw, rankFirst, rankLast, fileFirst, fileLast);
 	DrawSquares(rankFirst, rankLast, fileFirst, fileLast);
 	DrawDragHilite();
 	DrawAnnotations();
 	DrawGameState();
-	}
 }
 
 
@@ -315,7 +313,7 @@ void UIBD::DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast)
 void UIBD::DrawFileLabels(int fileFirst, int fileLast)
 {
 	assert(fileLast >= fileFirst);
-	wchar_t szLabel[2];
+	wchar_t szLabel[2] = { 0 };
 	szLabel[0] = L'a' + fileFirst;
 	szLabel[1] = 0;
 	float yTop = rcSquares.bottom + dxyBorder+dxyOutline + dxyBorder;
@@ -335,9 +333,8 @@ void UIBD::DrawFileLabels(int fileFirst, int fileLast)
 void UIBD::DrawRankLabels(int rankFirst, int rankLast)
 {
 	assert(rankLast >= rankFirst);
-	wchar_t szLabel[2];
-	szLabel[0] = L'1' + rankFirst;
-	szLabel[1] = 0;
+	wchar_t szLabel[2] = { 0, 0 };
+	szLabel[0] = '1' + rankFirst;
 	float dxLabel = SizFromSz(L"8", ptxLabel).width;
 	float dxRight = rcSquares.left - (dxyBorder + dxyOutline + dxyBorder) - dxLabel/2.0f;
 	float dxLeft = dxRight - dxLabel;
@@ -463,7 +460,7 @@ void UIBD::DrawPieceSq(SQ sq)
 	if (sq.fIsNil())
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-	DrawPc(this, RcFromSq(sq), opacity, uiga.ga.bdg.PcFromSq(sq));
+	DrawPc(*this, RcFromSq(sq), opacity, uiga.ga.bdg.PcFromSq(sq));
 }
 
 
@@ -485,7 +482,7 @@ RC UIBD::RcGetDrag(void)
  *
  *	Draws the chess piece on the UI element pui at rc.
  */
-void UIBD::DrawPc(UI* pui, const RC& rcPc, float opacity, PC pc)
+void UIBD::DrawPc(UI& ui, const RC& rcPc, float opacity, PC pc)
 {
 	if (pc.apc()  == apcNull)
 		return;
@@ -500,7 +497,7 @@ void UIBD::DrawPc(UI* pui, const RC& rcPc, float opacity, PC pc)
 	float dyPiece = siz.height / 2.0f;
 	float xPiece = mpapcxBitmap[pc.apc()] * dxPiece;
 	float yPiece = (int)pc.cpc() * dyPiece;
-	pui->DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
+	ui.DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
 }
 
 
@@ -988,5 +985,5 @@ void UIBD::DrawCursor(UI* pui, const RC& rcUpdate)
 	if (sqDragInit.fIsNil())
 		return;
 	PC pc = uiga.ga.bdg.PcFromSq(sqDragInit);
-	DrawPc(pui, pui->RcLocalFromUiLocal(this, rcDragPc), 1.0f, pc);
+	DrawPc(*pui, pui->RcLocalFromUiLocal(this, rcDragPc), 1.0f, pc);
 }

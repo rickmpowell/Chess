@@ -12,27 +12,6 @@
 #include "uiga.h"
 
 
-/* TODO: move this into the UIGA */
-TX* UIGA::ptxDesktop;
-
-
-bool UIGA::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic)
-{
-	if (ptxDesktop)
-		return false;
-	pfactdwr->CreateTextFormat(szFontFamily, nullptr,
-							   DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL,
-							   40.0f, L"",
-							   &ptxDesktop);
-	return true;
-}
-
-
-void UIGA::DiscardRsrcStatic(void)
-{
-	SafeRelease(&ptxDesktop);
-}
-
 
 UIGA::UIGA(APP& app, GA& ga) :	UI(nullptr),
 								app(app), ga(ga),
@@ -48,6 +27,21 @@ UIGA::UIGA(APP& app, GA& ga) :	UI(nullptr),
 
 UIGA::~UIGA()
 {
+}
+
+
+bool UIGA::FCreateRsrc(void)
+{
+	if (ptxDesktop)
+		return false;
+	ptxDesktop = PtxCreate(40.0f, true, false);
+	return true;
+}
+
+
+void UIGA::DiscardRsrc(void)
+{
+	SafeRelease(&ptxDesktop);
 }
 
 

@@ -78,6 +78,7 @@ enum {
  * 
  */
 
+class UITIP;
 
 class UI
 {
@@ -185,6 +186,8 @@ public:
 	virtual void ShowTip(UI* puiAttach, bool fShow);
 	virtual wstring SzTip(void) const;
 	virtual wstring SzTipFromCmd(int cmd) const;
+	virtual SIZ SizOfTip(UITIP& uitip) const;
+	virtual void DrawTip(UITIP& uitip);
 
 	/* coordinate transforms */
 
@@ -260,6 +263,28 @@ public:
 
 /*
  *
+ *	UITIP class
+ *
+ *	Tooltip user interface item
+ *
+ */
+
+
+class UITIP : public UI
+{
+protected:
+	UI* puiOwner;
+
+public:
+	UITIP(UI* puiParent);
+	virtual void Draw(const RC& rcUpdate);
+	virtual ColorF CoBack(void) const { return coTipBack; }
+	void AttachOwner(UI* pui);
+};
+
+
+/*
+ *
  *	BTN class
  * 
  *	A simple button UI element
@@ -296,14 +321,15 @@ class BTNCH : public BTN
 {
 	wchar_t ch;
 protected:
-	static TX* ptxButton;
-	static BRS* pbrsButton;
+	float dyFont;
+	TX* ptxButton;
 public:
-	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcStatic(void);
 
 public:
 	BTNCH(UI* puiParent, int cmd, wchar_t ch);
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	void SetTextSize(float dyFontNew);
 	virtual void Draw(const RC& rcUpdate);
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	void DrawText(const wstring& sz);
@@ -315,11 +341,6 @@ public:
 class BTNTEXT : public BTNCH
 {
 protected:
-	static TX* ptxButton;
-public:
-	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcStatic(void);
-public:
 	wstring szText;
 public:
 	BTNTEXT(UI* puiParent, int icmd, const wstring& sz);
@@ -377,7 +398,6 @@ class STATIC : public UI
 {
 protected:
 	TX* ptxStatic;
-	BRS* pbrsStatic;
 	wstring szText;
 	float dyFont;
 
@@ -385,6 +405,7 @@ public:
 	STATIC(UI* puiParent, const wstring& sz);
 	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
+	virtual ColorF CoText(void) const;
 	void SetTextSize(float dyFontNew);
 
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);

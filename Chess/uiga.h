@@ -39,12 +39,9 @@ class UIGA : public UI
 	friend class UIDB;
 	friend class UIPVT;
 	friend class UIPCP;
+	TX* ptxDesktop;
 
 public:
-	static TX* ptxDesktop;
-	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
-	static void DiscardRsrcStatic(void);
-
 	GA& ga;
 	APP& app;
 	UITI uiti;
@@ -78,6 +75,8 @@ public:
 	 *	Drawing
 	 */
 
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
 	virtual void Draw(const RC& rcUpdate);
 	virtual void PresentSwch(void) const;
 	virtual APP& App(void) const;

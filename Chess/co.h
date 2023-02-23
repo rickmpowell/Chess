@@ -16,6 +16,7 @@ const ColorF coWhite(1, 1, 1);
 const ColorF coRed(1, 0, 0);
 const ColorF coBlue(0, 0, 1);
 const ColorF coGreen(0.1f, 0.9f, 0.2f);
+const ColorF coLtGray(0.8f, 0.8f, 0.8f);
 
 /* default colors for UI elements */
 
