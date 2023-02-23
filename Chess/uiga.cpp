@@ -342,7 +342,7 @@ void UIGA::TickTimer(TID tid, DWORD msecCur)
  *
  *	Game is not started. Call StartGame to get the game moving.
  */
-void UIGA::InitGame(const wchar_t* szFEN, RULE* prule)
+void UIGA::InitGame(const char* szFEN, RULE* prule)
 {
 	ga.InitGame(szFEN, prule);
 	InitClocks();

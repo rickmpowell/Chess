@@ -1353,7 +1353,11 @@ public:
     {
         ostringstream os;
         app.pga->Serialize(os);
-        string sz = os.str();
+        return RenderSz(os.str());
+    }
+
+    int RenderSz(const string& sz)
+    {
         try {
             CLIPB clipb(app);
             clipb.Empty();
@@ -1364,6 +1368,27 @@ public:
             return err;
         }
         return 1;
+    }
+};
+
+
+/*
+ *
+ *  CMDCOPYFEN
+ * 
+ *  Copies a FEN string to the clipboard.
+ * 
+ */
+
+
+class CMDCOPYFEN : public CMDCOPY
+{
+public:
+    CMDCOPYFEN(APP& app, int icmd) : CMDCOPY(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        return RenderSz(app.pga->bdg.SzFEN());
     }
 };
 
@@ -1391,9 +1416,9 @@ public:
         CLIPB clipb(app);
         istringstream is;
         ISTKPGN istkpgn(is);
-        char* pch = (char*)clipb.PGetData(CF_TEXT);
-        if (app.pga->FIsPgnData(pch)) {
-            is.str(pch);
+        char* sz = (char*)clipb.PGetData(CF_TEXT);
+        if (app.pga->FIsPgnData(sz)) {
+            is.str(sz);
             PROCPGNGA procpgngaSav(*app.pga, new PROCPGNPASTE(*app.pga));
             try {
                 app.pga->Deserialize(istkpgn);
@@ -1403,7 +1428,7 @@ public:
             }
         }
         else {
-            app.puiga->InitGame(WszWidenSz(pch).c_str(), nullptr);
+            app.puiga->InitGame(sz, nullptr);
             app.puiga->Redraw();
         }
         return 1;
@@ -1878,6 +1903,7 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDSHOWDRAWTEST(*this, cmdShowDrawTest));
     vcmd.Add(new CMDMAKENULLMOVE(*this, cmdMakeNullMove));
     vcmd.Add(new CMDTOGGLEVALIDATION(*this, cmdToggleValidation));
+    vcmd.Add(new CMDCOPYFEN(*this, cmdCopyFen));
 }
 
 

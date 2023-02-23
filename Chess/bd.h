@@ -514,13 +514,13 @@ public:
 	 *	reading FEN strings 
 	 */
 
-	void InitFENPieces(const wchar_t*& szFEN);
+	void InitFENPieces(const char*& szFEN);
 	void AddPieceFEN(SQ sq, PC pc);
-	void InitFENSideToMove(const wchar_t*& sz);
-	void InitFENCastle(const wchar_t*& sz);
-	void InitFENEnPassant(const wchar_t*& sz);
-	void SkipToNonSpace(const wchar_t*& sz);
-	void SkipToSpace(const wchar_t*& sz);
+	void InitFENSideToMove(const char*& sz);
+	void InitFENCastle(const char*& sz);
+	void InitFENEnPassant(const char*& sz);
+	void SkipToNonSpace(const char*& sz);
+	void SkipToSpace(const char*& sz);
 
 	/*
 	 *	Game phase
@@ -637,16 +637,16 @@ public:
 
 public:
 	BDG(void) noexcept;
-	BDG(const wchar_t* szFEN);
+	BDG(const char* szFEN);
 	BDG(const BDG& bdg) noexcept;
 
 	/*
 	 *	Game control
 	 */
 
-	static const wchar_t szFENInit[];
+	static const char szFENInit[];
 	void InitGame(void);
-	void SetFen(const wchar_t* szFEN);
+	void SetFen(const char* szFEN);
 
 
 	/*
@@ -710,15 +710,16 @@ public:
 	 *	importing FEN strings 
 	 */
 
-	void InitFENHalfmoveClock(const wchar_t*& sz);
-	void InitFENFullmoveCounter(const wchar_t*& sz);
+	void InitFENHalfmoveClock(const char*& sz);
+	void InitFENFullmoveCounter(const char*& sz);
 
 	/* 
 	 *	exporting FEN strings 
 	 */
 
-	wstring SzFEN(void) const;
-	operator wstring() const { return SzFEN(); }
+	string SzFEN(void) const;
+	operator string() const { return SzFEN(); }
+	operator wstring() const { return WszWidenSz(SzFEN()); }
 };
 
 

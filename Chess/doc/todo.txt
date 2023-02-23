@@ -1,3 +1,4 @@
+  Convert FEN rendering to be in 8-bit ASCII instead of Unicode
   Do we need to call ReleaseRsrc in all destructors? 
   Make it more obvious that the EPD file button is clickable - add an icon?
   Should we have a line on the UIBD that displays information from EPD file?

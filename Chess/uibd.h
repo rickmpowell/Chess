@@ -326,11 +326,11 @@ public:
 class UISETFEN : public BTN
 {
 public:
-	wstring szFen;
+	string szFen;
 public:
-	UISETFEN(UI* pui, int cmd, const wstring& szFen);
-	void SetSzFen(const wstring& sz);
-	void SetSzEpd(const wstring& sz);
+	UISETFEN(UI* pui, int cmd, const string& szFen);
+	void SetSzFen(const string& sz);
+	void SetSzEpd(const string& sz);
 
 	virtual void Draw(const RC& rcUpdate);
 	void DrawBdg(UI& ui, BDG& bdg, const RC& rcBox);
@@ -387,7 +387,7 @@ public:
 	UIEPD(UIPCP& uipcp, const wstring& szFile);
 	void SetLine(int ili);
 
-	wstring SzFindLine(ifstream& ifs, int ili);
+	string SzFindLine(ifstream& ifs, int ili);
 
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);

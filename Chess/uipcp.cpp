@@ -395,19 +395,19 @@ void UICASTLESTATE::Erase(const RC& rcUpdate, bool fParentDrawn)
  */
 
 
-UISETFEN::UISETFEN(UI* pui, int cmd, const wstring& szFen) : BTN(pui, cmd), szFen(szFen)
+UISETFEN::UISETFEN(UI* pui, int cmd, const string& szFen) : BTN(pui, cmd), szFen(szFen)
 {
 }
 
 
-void UISETFEN::SetSzFen(const wstring& sz)
+void UISETFEN::SetSzFen(const string& sz)
 {
 	szFen = sz;
 	Redraw();
 }
 
 
-void UISETFEN::SetSzEpd(const wstring& sz)
+void UISETFEN::SetSzEpd(const string& sz)
 {
 	szFen = sz;
 	Redraw();
@@ -498,7 +498,7 @@ void UIFEN::Draw(const RC& rcUpdate)
 	FillRc(rc, pbrBlack);
 	FillRc(rc.Inflate(-1, -1), pbrWhite);
 	rc.Inflate(-6, -3);
-	DrawSz(uipcp.uiga.ga.bdg.SzFEN(), ptxTextBold, rc);
+	DrawSz((wstring)uipcp.uiga.ga.bdg, ptxTextBold, rc);
 }
 
 
@@ -540,7 +540,7 @@ void BTNFILE::SetFile(const wstring& szNew)
 
 UIEPD::UIEPD(UIPCP& uipcp, const wstring& szFile) : UI(&uipcp), uipcp(uipcp),
 	szFile(szFile), iliCur(0),
-	uisetfen(this, cmdSetEpdFen, L"r1bq1r1k/p1pnbpp1/1p2p3/6p1/3PB3/5N2/PPPQ1PPP/2KR3R w - -"), 
+	uisetfen(this, cmdSetEpdFen, "r1bq1r1k/p1pnbpp1/1p2p3/6p1/3PB3/5N2/PPPQ1PPP/2KR3R w - -"), 
 	btndown(this, cmdPrevEpdLine), btnup(this, cmdNextEpdLine),
 	btnfile(this, cmdOpenEpdFile, szFile)
 {
@@ -558,7 +558,7 @@ void UIEPD::SetLine(int ili)
 		btnfile.SetFile(L"(not found)");
 		return;
 	}
-	wstring szLine = SzFindLine(is, iliCur);
+	string szLine = SzFindLine(is, iliCur);
 	if (szLine.empty()) {
 		uisetfen.SetSzFen(BDG::szFENInit);
 		return;
@@ -569,13 +569,13 @@ void UIEPD::SetLine(int ili)
 }
 
 
-wstring UIEPD::SzFindLine(ifstream& is, int iliFind)
+string UIEPD::SzFindLine(ifstream& is, int iliFind)
 {
 	string sz;
 	for (int ili = 0; getline(is, sz); ili++)
 		if (ili == iliFind)
-			return WszWidenSz(sz);
-	return L"";
+			return sz;
+	return "";
 }
 
 
@@ -635,7 +635,7 @@ UIPCP::UIPCP(UIGA& uiga) : UIP(uiga), uibd(uiga.uibd),
 	for (APC apc = apcPawn; apc < apcMax; ++apc)
 		mpapcpuiapc[apc] = new UIDRAGAPC(*this, apc);
 	vpuisetfen.push_back(new UISETFEN(this, cmdSetBoardInit, BDG::szFENInit));
-	vpuisetfen.push_back(new UISETFEN(this, cmdSetBoardEmpty, L"8/8/8/8/8/8/8/8 w - - 0 1"));
+	vpuisetfen.push_back(new UISETFEN(this, cmdSetBoardEmpty, "8/8/8/8/8/8/8/8 w - - 0 1"));
 }
 
 

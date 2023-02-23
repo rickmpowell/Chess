@@ -51,7 +51,7 @@ void GA::SerializeHeaders(ostream& os)
 
 	/* FEN initial state */
 	/* TODO only save this if it's not the default starting position */
-	SerializeHeader(os, "FEN", bdgInit.SzFEN());
+	SerializeHeader(os, "FEN", (wstring)bdgInit);
 
 	wstring szResult;
 	if (FResultSz(bdg.gs, szResult))

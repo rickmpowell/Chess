@@ -127,7 +127,7 @@ public:
 	void Play(MVE mve, SPMV spmv);
 	void PumpMsg(void);
 
-	void InitGame(const wchar_t* szFEN, RULE* prule);
+	void InitGame(const char* szFEN, RULE* prule);
 	void InitGame(void);
 	void StartGame(SPMV spmv);
 	void EndGame(SPMV spmv);
@@ -146,6 +146,6 @@ public:
 
 	void Test(void);
 	void PerftTest(void);
-	void RunPerftTest(const wchar_t tag[], const wchar_t szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
+	void RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
 	uint64_t CmvPerftDivide(int depth);
 };

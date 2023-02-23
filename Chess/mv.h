@@ -122,6 +122,7 @@ public:
 	__forceinline bool fEpPrev(void) const noexcept { return ufEnPassant; }
 	__forceinline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
 	__forceinline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
+	__forceinline bool fIsCastle(void) const noexcept { return apcMove() == apcKing && abs(sqFrom().file() - sqTo().file()) > 1; }
 	/* beware! - comparison operators only work on the MV part of the MVE */
 	__forceinline bool operator==(const MVU& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
 	__forceinline bool operator!=(const MVU& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }

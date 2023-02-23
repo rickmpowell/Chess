@@ -76,7 +76,7 @@ void GA::SetRule(RULE* prule)
 }
 
 
-void GA::InitGame(const wchar_t* szFEN, RULE* prule)
+void GA::InitGame(const char* szFEN, RULE* prule)
 {
 	SetRule(prule);
 	bdg.InitGame();

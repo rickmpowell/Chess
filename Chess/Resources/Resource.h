@@ -123,7 +123,8 @@
 #define cmdLogFileDepthDown     47
 #define cmdMakeNullMove         48
 #define cmdToggleValidation     49
-#define cmdMax					50
+#define cmdCopyFen              50
+#define cmdMax					51
 
 /*
  *	icons

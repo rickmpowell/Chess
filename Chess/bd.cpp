@@ -424,7 +424,7 @@ bool BD::operator!=(const BD& bd) const noexcept
  *	table should start at szFEN. Returns the character after the last
  *	piece character, which will probably be the space character.
  */
-void BD::InitFENPieces(const wchar_t*& szFEN)
+void BD::InitFENPieces(const char*& szFEN)
 {
 	SetEmpty();
 
@@ -432,7 +432,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
 
 	int rank = rankMax - 1;
 	SQ sq = SQ(rank, 0);
-	const wchar_t* pch;
+	const char* pch;
 	for (pch = szFEN; *pch && !isspace(*pch); pch++) {
 		switch (*pch) {
 		case 'p': AddPieceFEN(sq++, PC(cpcBlack, apcPawn)); break;
@@ -456,7 +456,7 @@ void BD::InitFENPieces(const wchar_t*& szFEN)
 		case '6':
 		case '7':
 		case '8':
-			sq += *pch - L'0'; 
+			sq += *pch - '0'; 
 			break;
 		default:
 			/* TODO: illegal character in the string - report error */
@@ -482,11 +482,11 @@ void BD::AddPieceFEN(SQ sq, PC pc)
 }
 
 
-void BD::InitFENSideToMove(const wchar_t*& sz)
+void BD::InitFENSideToMove(const char*& sz)
 {
 	SkipToNonSpace(sz);
 	cpcToMove = cpcWhite;
-	for (; *sz && *sz != L' '; sz++) {
+	for (; *sz && *sz != ' '; sz++) {
 		switch (*sz) {
 		case 'w': break;
 		case 'b': ToggleToMove(); break;
@@ -498,21 +498,21 @@ Done:
 }
 
 
-void BD::SkipToSpace(const wchar_t*& sz)
+void BD::SkipToSpace(const char*& sz)
 {
 	while (*sz && !isspace(*sz))
 		sz++;
 }
 
 
-void BD::SkipToNonSpace(const wchar_t*& sz)
+void BD::SkipToNonSpace(const char*& sz)
 {
 	while (*sz && isspace(*sz))
 		sz++;
 }
 
 
-void BD::InitFENCastle(const wchar_t*& sz)
+void BD::InitFENCastle(const char*& sz)
 {
 	SkipToNonSpace(sz);
 	ClearCsCur(cpcWhite, csKing | csQueen);
@@ -532,14 +532,14 @@ Done:
 }
 
 
-void BD::InitFENEnPassant(const wchar_t*& sz)
+void BD::InitFENEnPassant(const char*& sz)
 {
 	SkipToNonSpace(sz);
 	SQ sq;
 	for (; *sz && !isspace(*sz); sz++) {
-		if (in_range(*sz, L'a', L'h'))
-			sq.SetFile(*sz - L'a');
-		else if (in_range(*sz, L'1', L'8'))
+		if (in_range(*sz, 'a', 'h'))
+			sq.SetFile(*sz - 'a');
+		else if (in_range(*sz, '1', '8'))
 			sq.SetRank(*sz - '1');
 		else if (*sz == '-')
 			sq = sqNil;
@@ -1379,7 +1379,7 @@ BDG::BDG(void) noexcept : gs(gsPlaying), imveCurLast(-1), imvePawnOrTakeLast(-1)
  *
  *	Constructor for initializing a board with a FEN board state string.
  */
-BDG::BDG(const wchar_t* szFEN)
+BDG::BDG(const char* szFEN)
 {
 	InitGame();
 	SetFen(szFEN);
@@ -1402,36 +1402,42 @@ void BDG::InitGame(void)
 }
 
 
-const wchar_t BDG::szFENInit[] = L"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const char BDG::szFENInit[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
-void BDG::SetFen(const wchar_t* szFEN)
+void BDG::SetFen(const char* szFEN)
 {
 	if (szFEN == nullptr)
 		szFEN = szFENInit;
-	const wchar_t* sz = szFEN;
+	const char* sz = szFEN;
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
 	InitFENCastle(sz);
 	InitFENEnPassant(sz);
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
-	/* TODO: is this the halfmove clock? */
 	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
 }
 
 
-void BDG::InitFENHalfmoveClock(const wchar_t*& sz)
+void BDG::InitFENHalfmoveClock(const char*& sz)
 {
 	SkipToNonSpace(sz);
 	SkipToSpace(sz);
 }
 
 
-void BDG::InitFENFullmoveCounter(const wchar_t*& sz)
+void BDG::InitFENFullmoveCounter(const char*& sz)
 {
 	SkipToNonSpace(sz);
-	SkipToSpace(sz);
+	if (*sz == '-') 
+		sz++;
+	else if (isdigit(*sz)) {
+		int nmv = *sz - '0';
+		for (sz++; isdigit(*sz); sz++)
+			nmv = 10*nmv + *sz - '0';
+		vmveGame.SetDimveFirst((nmv-1)*2 + (cpcToMove == cpcBlack));
+	}
 }
 
 
@@ -1439,9 +1445,9 @@ void BDG::InitFENFullmoveCounter(const wchar_t*& sz)
  *
  *	Returns the FEN string of the given board
  */
-wstring BDG::SzFEN(void) const
+string BDG::SzFEN(void) const
 {
-	wstring sz;
+	string sz;
 
 	/* write the squares and pieces */
 
@@ -1453,108 +1459,62 @@ wstring BDG::SzFEN(void) const
 				csqEmpty++;
 			else {
 				if (csqEmpty > 0) {
-					sz += to_wstring(csqEmpty);
+					sz += to_string(csqEmpty);
 					csqEmpty = 0;
 				}
-				wchar_t ch = L' ';
-				switch (ApcFromSq(sq)) {
-				case apcPawn: ch = L'P'; break;
-				case apcKnight: ch = L'N'; break;
-				case apcBishop: ch = L'B'; break;
-				case apcRook: ch = L'R'; break;
-				case apcQueen: ch = L'Q'; break;
-				case apcKing: ch = L'K'; break;
-				default: assert(false); break;
-				}
+				char ch = " PNBRQK"[ApcFromSq(sq)];
 				if (CpcFromSq(sq) == cpcBlack)
-					ch += L'a' - L'A';
+					ch += 'a' - 'A';
 				sz += ch;
 			}
 		}
 		if (csqEmpty > 0)
-			sz += to_wstring(csqEmpty);
-		sz += L'/';
+			sz += to_string(csqEmpty);
+		sz += '/';
 	}
 
 	/* piece to move */
 
-	sz += L' ';
-	sz += cpcToMove == cpcWhite ? L'w' : L'b';
+	sz += ' ';
+	sz += cpcToMove == cpcWhite ? 'w' : 'b';
 	
 	/* castling */
 
-	sz += L' ';
+	sz += ' ';
 	if (csCur == 0)
-		sz += L'-';
+		sz += '-';
 	else {
 		if (csCur & csWhiteKing)
-			sz += L'K';
+			sz += 'K';
 		if (csCur & csWhiteQueen)
-			sz += L'Q';
+			sz += 'Q';
 		if (csCur & csBlackKing)
-			sz += L'k';
+			sz += 'k';
 		if (csCur & csBlackQueen)
-			sz += L'q';
+			sz += 'q';
 	}
 
 	/* en passant */
 
-	sz += L' ';
+	sz += ' ';
 	if (sqEnPassant.fIsNil())
-		sz += L'-';
+		sz += '-';
 	else {
-		sz += (L'a' + sqEnPassant.file());
-		sz += (L'1' + sqEnPassant.rank());
+		sz += ('a' + sqEnPassant.file());
+		sz += ('1' + sqEnPassant.rank());
 	}
 
 	/* halfmove clock */
 
-	sz += L' ';
-	sz += to_wstring(imveCurLast - imvePawnOrTakeLast);
+	sz += ' ';
+	sz += to_string(imveCurLast - imvePawnOrTakeLast);
 
 	/* fullmove number */
 
-	sz += L' ';
-	sz += to_wstring(1 + imveCurLast/2);
+	sz += ' ';
+	sz += to_string(1 + imveCurLast/2);
 
 	return sz;
-}
-
-
-/*	BDG::MakeMv
- *
- *	Make a move on the board, and keeps the move list for the game. Caller is
- *	responsible for testing for game over.
- */
-void BDG::MakeMv(MVE& mve) noexcept
-{
-	assert(!mve.fIsNil());
-
-	/* make the move and save the move in the move list */
-
-	MakeMvSq(mve);
-	if (++imveCurLast == vmveGame.size())
-		vmveGame.push_back(mve);
-	else {
-		vmveGame[imveCurLast] = mve;
-		vmveGame.resize(imveCurLast + 1);
-	}
-
-	/* keep track of last pawn move or capture, which is used to detect draws */
-
-	if (mve.apcMove() == apcPawn || mve.fIsCapture())
-		imvePawnOrTakeLast = imveCurLast;
-}
-
-
-void BDG::MakeMvNull(void) noexcept
-{
-	MVE mve;
-	MakeMvNullSq(mve);
-	if (++imveCurLast == vmveGame.size())
-		vmveGame.push_back(mve);
-	else 
-		vmveGame[imveCurLast] = mve;
 }
 
 
@@ -1581,6 +1541,41 @@ int BDG::NmvNextFromCpc(CPC cpc) const
 }
 
 
+/*	BDG::MakeMv
+ *
+ *	Make a move on the board, and keeps the move list for the game. Caller is
+ *	responsible for testing for game over.
+ */
+void BDG::MakeMv(MVE& mve) noexcept
+{
+	assert(!mve.fIsNil());
+
+	/* make the move and save the move in the move list */
+
+	MakeMvSq(mve);
+	if (++imveCurLast == vmveGame.size())
+		vmveGame.push_back(mve);
+	else {
+		vmveGame[imveCurLast] = mve;
+		vmveGame.resize(imveCurLast + 1);
+	}
+
+	/* keep track of last pawn move or capture, which is used to detect draws */
+
+	if (mve.apcMove() == apcPawn || mve.fIsCapture() || mve.fIsCastle())
+		imvePawnOrTakeLast = imveCurLast;
+}
+
+
+void BDG::MakeMvNull(void) noexcept
+{
+	MVE mve;
+	MakeMvNullSq(mve);
+	if (++imveCurLast == vmveGame.size())
+		vmveGame.push_back(mve);
+	else 
+		vmveGame[imveCurLast] = mve;
+}
 
 
 /*	BDG::UndoMv
@@ -1596,7 +1591,8 @@ void BDG::UndoMv(void) noexcept
 		/* scan backwards looking for pawn moves or captures */
 		for (imvePawnOrTakeLast = imveCurLast-1; imvePawnOrTakeLast >= 0; imvePawnOrTakeLast--)
 			if (vmveGame[imvePawnOrTakeLast].apcMove() == apcPawn || 
-					vmveGame[imvePawnOrTakeLast].fIsCapture())
+					vmveGame[imvePawnOrTakeLast].fIsCapture() ||
+					vmveGame[imvePawnOrTakeLast].fIsCastle())
 				break;
 	}
 	UndoMvSq(vmveGame[imveCurLast--]);
@@ -1615,7 +1611,7 @@ void BDG::RedoMv(void) noexcept
 		return;
 	imveCurLast++;
 	MVE mve = vmveGame[imveCurLast];
-	if (mve.apcMove() == apcPawn || mve.fIsCapture())
+	if (mve.apcMove() == apcPawn || mve.fIsCapture() || mve.fIsCastle())
 		imvePawnOrTakeLast = imveCurLast;
 	MakeMvSq(mve);
 }
