@@ -69,17 +69,17 @@ public:
 
 public:
 	UIGA(APP& app, GA& ga);
-	~UIGA();
+	virtual ~UIGA();
+	virtual APP& App(void) const;
 
 	/*
 	 *	Drawing
 	 */
 
+	virtual void Draw(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
-	virtual void Draw(const RC& rcUpdate);
 	virtual void PresentSwch(void) const;
-	virtual APP& App(void) const;
 	virtual void BeginDraw(void);
 	virtual void EndDraw(void);
 	virtual void InvalRc(const RC& rc, bool fErase) const;
@@ -126,6 +126,10 @@ public:
 
 	void Play(MVE mve, SPMV spmv);
 	void PumpMsg(void);
+
+	/*
+	 *	Game control 
+	 */
 
 	void InitGame(const char* szFEN, RULE* prule);
 	void InitGame(void);

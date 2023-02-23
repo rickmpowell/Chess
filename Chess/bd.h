@@ -763,7 +763,6 @@ class TK
 	int tk;
 public:
 	TK(int tk);
-	virtual ~TK(void);
 	operator int() const;
 	virtual bool FIsString(void) const;
 	virtual bool FIsInteger(void) const;
@@ -777,7 +776,6 @@ class TKSZ : public TK
 public:
 	TKSZ(int tk, const string& sz);
 	TKSZ(int tk, const char* sz);
-	virtual ~TKSZ(void);
 	virtual bool FIsString(void) const;
 	virtual const string& sz(void) const;
 };

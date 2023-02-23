@@ -442,9 +442,9 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 
 ERR PROCPGNTESTUNDO::ProcessMv(MVE mve)
 {
-	BDG bdgInit = ga.bdg;
+	static BDG bdgInit = ga.bdg;
 	ga.bdg.MakeMv(mve);
-	BDG bdgNew = ga.bdg;
+	static BDG bdgNew = ga.bdg;
 	ga.bdg.UndoMv();
 	if (bdgInit != ga.bdg)
 		throw EXFAILTEST();
@@ -902,6 +902,12 @@ void UIGA::Test(void)
 UIDT::UIDT(UIGA& uiga) : UIP(uiga), ptxTest(nullptr), ptxTest2(nullptr)
 {
 	SetCoBack(coGridLine);
+}
+
+
+UIDT::~UIDT(void)
+{
+	DiscardRsrc();
 }
 
 

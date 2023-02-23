@@ -19,6 +19,7 @@ UIICON::UIICON(UI* puiParent, int idb) : UI(puiParent), idb(idb), pbmp(nullptr)
 
 UIICON::~UIICON(void)
 {
+	DiscardRsrc();
 }
 
 

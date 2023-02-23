@@ -1067,11 +1067,6 @@ TK::TK(int tk) : tk(tk)
 }
 
 
-TK::~TK(void)
-{
-}
-
-
 TK::operator int() const
 {
 	return tk;
@@ -1113,11 +1108,6 @@ TKSZ::TKSZ(int tk, const string& sz) : TK(tk), szToken(sz)
 TKSZ::TKSZ(int tk, const char* sz) : TK(tk)
 {
 	szToken = string(sz);
-}
-
-
-TKSZ::~TKSZ(void)
-{
 }
 
 

@@ -188,6 +188,7 @@ UI::~UI(void)
 		puiParent->RemoveChild(this);
 		puiParent = nullptr;
 	}
+	DiscardRsrc();
 }
 
 
@@ -1460,6 +1461,12 @@ BTNCH::BTNCH(UI* puiParent, int cmd, wchar_t ch) : BTN(puiParent, cmd), ch(ch), 
 }
 
 
+BTNCH::~BTNCH(void)
+{
+	DiscardRsrc();
+}
+
+
 bool BTNCH::FCreateRsrc(void)
 {
 	if (ptxButton)
@@ -1624,6 +1631,12 @@ STATIC::STATIC(UI* puiParent, const wstring& sz) : UI(puiParent),
 }
 
 
+STATIC::~STATIC(void)
+{
+	DiscardRsrc();
+}
+
+
 bool STATIC::FCreateRsrc(void)
 {
 	if (ptxStatic)
@@ -1738,6 +1751,12 @@ SPIN::SPIN(UI* puiParent, int cmdUp, int cmdDown) : UI(puiParent, true),
 		ptxSpin(nullptr),
 		btndown(this, cmdDown), btnup(this, cmdUp)
 {
+}
+
+
+SPIN::~SPIN(void)
+{
+	DiscardRsrc();
 }
 
 

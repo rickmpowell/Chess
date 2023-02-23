@@ -226,7 +226,6 @@ public:
 
 	static bool FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC* pfactwic);
 	static void DiscardRsrcStatic(void);
-private:
 	bool FCreateRsrc(void);
 	void DiscardRsrc(void);
 	bool FCreateRsrcSize(void);

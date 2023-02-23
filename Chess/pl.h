@@ -566,7 +566,6 @@ public:
 	vector <INFOPL> vinfopl;
 
 	AINFOPL(void);
-	~AINFOPL(void);
 	PL* PplFactory(GA& ga, int iinfopl) const;
 	int IdbFromInfopl(const INFOPL& infopl) const;
 };

@@ -144,21 +144,23 @@ class UIDB : public UIPS
 	float dyLine;
 	int depthCur, depthShow, depthFile;
 	ofstream* posLog;
+
 public:
 	UIDB(UIGA& uiga);
-	~UIDB(void);
+	virtual ~UIDB(void);
+
+	/* UI layout and drawing */
+
+	virtual void Layout(void);
+	virtual SIZ SizLayoutPreferred(void);
+	virtual float DyLine(void) const;
+
+	virtual void Draw(const RC& rcUpdate);
+	virtual void DrawContent(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 	virtual void ComputeMetrics(bool fStatic);
 
-	/* UI layout and drawing */
-
-public:
-	virtual void Layout(void);
-	virtual SIZ SizLayoutPreferred(void);
-	virtual void Draw(const RC& rcUpdate);
-	virtual void DrawContent(const RC& rcUpdate);
-	virtual float DyLine(void) const;
 private:
 	void DrawLg(LG& lg, float yTop, float yBot);
 	void DrawItem(const wstring& sz, int depth, LGF lgf, RC rc);
@@ -237,9 +239,11 @@ class UIDT : public UIP
 	TX* ptxTest2;
 public:
 	UIDT(UIGA& uiga);
+	virtual ~UIDT(void);
+	
+	virtual void Draw(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
 	virtual void ReleaseRsrc(void);
-	virtual void Draw(const RC& rcUpdate);
 	void AdvanceDrawSz(const wstring& sz, TX* ptx, RC& rc);
 	void AdvanceDrawSzFit(const wstring& sz, TX* ptx, RC& rc);
 	void AdvanceDrawSzBaseline(const wstring& sz, TX* ptx, RC& rc, float dyBaseline);

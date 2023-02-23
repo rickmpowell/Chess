@@ -1747,12 +1747,6 @@ AINFOPL::AINFOPL(void)
 	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Allain de Leon"));
 }
 
-
-AINFOPL::~AINFOPL(void) 
-{
-}
-
-
 /*	AINFOPL::PplFactory
  *
  *	Creates a player for the given game using the given player index. The

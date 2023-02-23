@@ -327,11 +327,14 @@ public:
 
 public:
 	BTNCH(UI* puiParent, int cmd, wchar_t ch);
-	virtual bool FCreateRsrc(void);
-	virtual void DiscardRsrc(void);
+	virtual ~BTNCH(void);
 	void SetTextSize(float dyFontNew);
+
 	virtual void Draw(const RC& rcUpdate);
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
+
 	void DrawText(const wstring& sz);
 	virtual float DxWidth(void);
 
@@ -356,7 +359,8 @@ class BTNIMG : public BTN
 	BMP* pbmp;
 public:
 	BTNIMG(UI* puiParent, int cmd, int idb);
-	~BTNIMG(void);
+	virtual ~BTNIMG(void);
+
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
@@ -380,7 +384,7 @@ class BTNGEOM : public BTN
 
 public:
 	BTNGEOM(UI* puiParent, int cmd, const PT apt[], int cpt);
-	~BTNGEOM();
+	virtual ~BTNGEOM();
 	virtual void Draw(const RC& rcUpdate);
 };
 
@@ -403,13 +407,15 @@ protected:
 
 public:
 	STATIC(UI* puiParent, const wstring& sz);
-	virtual bool FCreateRsrc(void);
-	virtual void DiscardRsrc(void);
-	virtual ColorF CoText(void) const;
+	virtual ~STATIC(void);
+
 	void SetTextSize(float dyFontNew);
 
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	virtual ColorF CoText(void) const;
 
 	virtual wstring SzText(void) const;
 	void SetText(const wstring& sz);
@@ -448,12 +454,14 @@ protected:
 
 public:
 	SPIN(UI* puiParent, int cmdUp, int cmdDown);
-	virtual bool FCreateRsrc(void);
-	virtual void DiscardRsrc(void);
+	virtual ~SPIN(void);
+	virtual wstring SzValue(void) const = 0;
+
 	virtual void Layout(void);
 
 	virtual void Erase(const RC& rcUpdate, bool fParentDrawn);
 	virtual void Draw(const RC& rcUpdate);
-	virtual wstring SzValue(void) const = 0;
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
 };
 

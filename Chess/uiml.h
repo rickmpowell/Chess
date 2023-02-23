@@ -132,15 +132,16 @@ protected:
 	TX* ptxScore;
 
 public:
+	UIGC(UIML& uiml);
+	virtual ~UIGC(void);
+
+	virtual void Layout(void);
+	virtual SIZ SizLayoutPreferred(void);
+
+	virtual void Draw(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
-
-public:
-	UIGC(UIML& uiml);
-	virtual void Draw(const RC& rcUpdate);
-	virtual void Layout(void);
 	virtual ColorF CoBack(void) const;
-	virtual SIZ SizLayoutPreferred(void);
 };
 
 
@@ -191,11 +192,7 @@ class UIML : public UIPS
 
 public:
 	UIML(UIGA& uiga);
-	~UIML(void);
-
-	virtual bool FCreateRsrc(void);
-	virtual void DiscardRsrc(void);
-	virtual void ComputeMetrics(bool fStatic);
+	virtual ~UIML(void);
 
 	void InitGame(void);
 	void EndGame(void);
@@ -206,6 +203,9 @@ public:
 	
 	virtual void Draw(const RC& rcUpdate);
 	virtual void DrawContent(const RC& rcUpdate);
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	virtual void ComputeMetrics(bool fStatic);
 
 	void DrawAndMakeMv(const RC& rc, BDG& bdg, MVE mve);
 	void DrawMoveNumber(const RC& rc, int imv);

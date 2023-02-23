@@ -19,11 +19,12 @@ class UIICON : public UI
 	BMP* pbmp;
 public:
 	UIICON(UI* puiParent, int idb);
-	~UIICON(void);
+	virtual ~UIICON(void);
+
+	virtual void Draw(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
 	virtual void DiscardRsrc(void);
 
-	virtual void Draw(const RC& rcUpdate);
 	SIZ Siz(void) const;
 };
 

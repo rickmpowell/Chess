@@ -84,6 +84,7 @@ UIBD::UIBD(UIGA& uiga) : UIP(uiga),
  */
 UIBD::~UIBD(void)
 {
+	DiscardRsrc();
 }
 
 

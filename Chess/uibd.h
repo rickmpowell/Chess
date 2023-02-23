@@ -72,9 +72,7 @@ public:
 
 public:
 	UIBD(UIGA& uiga);
-	~UIBD(void);
-	virtual bool FCreateRsrc(void);
-	virtual void DiscardRsrc(void);
+	virtual ~UIBD(void);
 
 	void InitGame(void);
 	void StartGame(void);
@@ -86,7 +84,12 @@ public:
 	virtual void Layout(void);
 
 	virtual void Draw(const RC& rcUpdate);
+	virtual bool FCreateRsrc(void);
+	virtual void DiscardRsrc(void);
+	virtual ColorF CoText(void) const;
+	virtual ColorF CoBack(void) const;
 	virtual void DrawCursor(UI* pui, const RC& rcUpdate);
+
 	void DrawMargins(const RC& rcUpdate, int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawSquares(int rankFirst, int rankLast, int fileFirst, int fileLast);
 	void DrawHovers(int rankFirst, int rankLast, int fileFirst, int fileLast);
@@ -110,9 +113,6 @@ public:
 	void CancelClickClick(void);
 	RC RcGetDrag(void);
 	RC RcFromSq(SQ sq) const;
-
-	virtual ColorF CoText(void) const; 
-	virtual ColorF CoBack(void) const; 
 
 	void FlipBoard(CPC cpcNew);
 

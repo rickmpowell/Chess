@@ -24,6 +24,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ L
     try {
         papp = new APP(hinst, sw);
         int err = papp->MessagePump();
+        delete papp;
         APP::DiscardRsrcStatic();
         return err;
     }
@@ -130,7 +131,13 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
 
 APP::~APP(void)
 {
-   DiscardRsrc();
+    if (puiga)
+        delete puiga;
+    puiga = nullptr;
+    if (pga)
+        delete pga;
+    pga = nullptr;
+    DiscardRsrc();
 }
 
 
@@ -193,22 +200,25 @@ bool APP::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
 
 void APP::DiscardRsrcStatic(void)
 {
-    UIGA::DiscardRsrcStatic();
     UI::DiscardRsrcStatic();
     UICLOCK::DiscardRsrcStatic();
-    BTNCH::DiscardRsrcStatic();
-    BTNTEXT::DiscardRsrcStatic();
 }
+ 
 
 
+/*  APP::FCreateRsrc
+ *
+ *  Initializes Direct2D for all our drawing
+ */
 bool APP::FCreateRsrc(void)
 {
     if (pdc)
         return false;
 
     D3D_FEATURE_LEVEL afld3[] = {
-        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0,
-        D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_1
+        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, 
+        D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_9_3, D3D_FEATURE_LEVEL_9_2, 
+        D3D_FEATURE_LEVEL_9_1
     };
     ID3D11Device* pdevd3T = nullptr;
     ID3D11DeviceContext* pdcd3T = nullptr;
@@ -395,9 +405,10 @@ void APP::DispatchTimer(TID tid, DWORD msec)
  */
 void APP::OnDestroy(void)
 {
-    DiscardRsrc();
     if (puiga)
         puiga->ShowAll(false);
+    DiscardRsrc();
+    hwnd = NULL;
 }
 
 

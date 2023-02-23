@@ -207,6 +207,12 @@ UIGC::UIGC(UIML& uiml) : UI(&uiml), uiga(uiml.uiga),
 }
 
 
+UIGC::~UIGC(void)
+{
+	DiscardRsrc();
+}
+
+
 bool UIGC::FCreateRsrc(void)
 {
 	if (ptxScore)
@@ -619,6 +625,7 @@ UIML::UIML(UIGA& uiga) : UIPS(uiga),
 
 UIML::~UIML(void)
 {
+	DiscardRsrc();
 }
 
 

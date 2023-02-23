@@ -27,6 +27,7 @@ UIGA::UIGA(APP& app, GA& ga) :	UI(nullptr),
 
 UIGA::~UIGA()
 {
+	DiscardRsrc();
 }
 
 
