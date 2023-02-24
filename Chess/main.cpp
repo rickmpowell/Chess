@@ -1424,23 +1424,23 @@ public:
     {
         if (!::IsClipboardFormatAvailable(CF_TEXT))
             return 0;
-        CLIPB clipb(app);
-        istringstream is;
-        ISTKPGN istkpgn(is);
-        char* sz = (char*)clipb.PGetData(CF_TEXT);
-        if (app.pga->FIsPgnData(sz)) {
-            is.str(sz);
-            PROCPGNGA procpgngaSav(*app.pga, new PROCPGNPASTE(*app.pga));
-            try {
+        try {
+            CLIPB clipb(app);
+            istringstream is;
+            ISTKPGN istkpgn(is);
+            char* sz = (char*)clipb.PGetData(CF_TEXT);
+            if (app.pga->FIsPgnData(sz)) {
+                is.str(sz);
+                PROCPGNGA procpgngaSav(*app.pga, new PROCPGNPASTE(*app.pga));
                 app.pga->Deserialize(istkpgn);
             }
-            catch (exception& ex) {
-                app.Error(ex.what(), MB_OK);
+            else {
+                app.puiga->InitGame(sz, nullptr);
+                app.puiga->Redraw();
             }
         }
-        else {
-            app.puiga->InitGame(sz, nullptr);
-            app.puiga->Redraw();
+        catch (exception& ex) {
+            app.Error(ex.what(), MB_OK);
         }
         return 1;
     }
