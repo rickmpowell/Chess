@@ -1,4 +1,5 @@
-  Do we need to call ReleaseRsrc in all destructors? 
+  We're not reliably detecting 3-move repeat draws in the AI
+  Add support for halfmove clock
   Make it more obvious that the EPD file button is clickable - add an icon?
   Should we have a line on the UIBD that displays information from EPD file?
   Add tooltip on EPD control that displays comment from the EPD file
@@ -99,6 +100,7 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Do we need to call ReleaseRsrc in all destructors? 
 * Convert FEN rendering to be in 8-bit ASCII instead of Unicode
 * Hook up file to EPD board setup control
 * AI: Communicate best continuation back (principle variation)

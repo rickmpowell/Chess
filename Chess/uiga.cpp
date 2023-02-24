@@ -371,7 +371,7 @@ void UIGA::StartGame(SPMV spmv)
 {
 	spmvShow = spmv;
 	ga.StartGame();
-	uibd.StartGame();
+	uibd.StartGame();	
 	for (CPC cpc = cpcWhite; cpc <= cpcBlack; cpc++)
 		ga.mpcpcppl[cpc]->StartGame();
 

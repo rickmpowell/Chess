@@ -67,7 +67,7 @@ public:
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
 	__forceinline XEV(void) { SetNull(); }
 	__forceinline XEV(HABD habd, MVU mvu, TEV tev, EV ev, int depth) { Save(habd, ev, tev, depth, mvu, 0); }
-	__forceinline void SetNull(void) noexcept { *(uint64_t*)this = 0; *((uint64_t*)this + 1) = 0; }
+	__forceinline void SetNull(void) noexcept { memset(this, 0, sizeof(XEV)); }
 	__forceinline EV ev(void) const noexcept { return static_cast<EV>(uevBiased)-evBias; }
 	__forceinline void SetEv(EV ev) noexcept { assert(ev < evInf && ev > -evInf);  uevBiased = static_cast<uint16_t>(ev+evBias); }
 	__forceinline TEV tev(void) const noexcept { return static_cast<TEV>(utev); }
@@ -169,10 +169,13 @@ public:
 			if (axev2 == nullptr)
 				throw 1;
 		}
-		for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
-			axev2[ixev2].xevDeep.SetNull();
-			axev2[ixev2].xevNew.SetNull();
+		else {
+			for (unsigned ixev2 = 0; ixev2 < cxev2Max; ixev2++) {
+				axev2[ixev2].xevDeep.SetNull();
+				axev2[ixev2].xevNew.SetNull();
+			}
 		}
+
 #ifndef NOSTATS
 		cxevProbe = cxevProbeHit = 0;
 		cxevSave = cxevSaveCollision = cxevSaveReplace = 0;
@@ -224,7 +227,9 @@ public:
 	 */
 	__forceinline XEV2& operator[](const BDG& bdg) noexcept
 	{
-		return axev2[bdg.habd & cxev2MaxMask];
+		unsigned long ixev2 = bdg.habd & cxev2MaxMask;
+		assert(ixev2 < cxev2Max);
+		return axev2[ixev2];
 	}
 
 
@@ -291,6 +296,7 @@ public:
 #ifndef NOSTATS
 				cxevProbeHit++;
 #endif
+				xev2.xevDeep.SetAge(age);
 				return &xev2.xevDeep;
 			}
 		}
@@ -302,6 +308,7 @@ public:
 #ifndef NOSTATS
 				cxevProbeHit++;
 #endif
+				xev2.xevNew.SetAge(age);
 				return &xev2.xevNew;
 			}
 		}
