@@ -303,7 +303,7 @@ CLIPB::~CLIPB(void)
 void CLIPB::Open(void)
 {
 	if (!::OpenClipboard(app.hwnd))
-		throw 1;
+		throw exception("couldn't open clipboard");
 	fClipOpen = true;
 }
 
@@ -323,7 +323,7 @@ void* CLIPB::PLock(void)
 	assert(hdata);
 	pdata = ::GlobalLock(hdata);
 	if (!pdata)
-		throw 1;
+		throw exception("Couldn't lock clipboard");
 	return pdata;
 }
 
@@ -347,7 +347,7 @@ void* CLIPB::PAlloc(int cb)
 {
 	hdata = ::GlobalAlloc(GMEM_MOVEABLE, cb);
 	if (!hdata)
-		throw 1;
+		throw exception("couldn't allocate clipboard data");
 	return PLock();
 }
 
@@ -382,7 +382,7 @@ void* CLIPB::PGetData(int cf)
 {
 	hdataGet = ::GetClipboardData(cf);
 	if (!hdataGet)
-		throw 1;
+		throw exception("couldn't get clipboard data");
 	hdata = hdataGet;
 	return PLock();
 }
