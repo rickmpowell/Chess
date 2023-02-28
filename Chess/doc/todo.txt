@@ -1,3 +1,7 @@
+  Only display PV line in log if we didn't fail during the aspiration window
+  Reading a PGN file should needs to display the result of the game after the read is done.
+  Add player picker option for changing time management strategies
+  Start saving all game PGN files - change PGN filenames to have date/time in them
   We're not reliably detecting 3-move repeat draws in the AI
   Add support for halfmove clock
   Make it more obvious that the EPD file button is clickable - add an icon?
@@ -100,6 +104,7 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Add a movegen variant that only counts moves without generating the movelist
 * Do we need to call ReleaseRsrc in all destructors? 
 * Convert FEN rendering to be in 8-bit ASCII instead of Unicode
 * Hook up file to EPD board setup control

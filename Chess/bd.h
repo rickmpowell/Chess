@@ -217,13 +217,34 @@ extern GENHABD genhabd;
  *	the king in check. Detecting checks is actually quite time consuming, so 
  *	we have the option to delay the check detection as long as possible.
  * 
+ *	Noisy moves are captures and promotions; quiet moves are the rest of the
+ *	moves.
+ * 
  */
 
 
 enum GG : int {	
-	ggLegal,
-	ggPseudo
+	ggAll = 0,
+	ggQuiet = 1,
+	ggNoisy = 2,
+
+	ggLegal = 0x10,
+	ggPseudo = 0x00
 };
+
+
+inline GG operator+(GG gg1, GG gg2) noexcept {
+	return static_cast<GG>(static_cast<int>(gg1) | static_cast<int>(gg2));
+}
+inline bool FGgLegal(GG gg) noexcept {
+	return (static_cast<int>(gg) & static_cast<int>(ggLegal)) != 0;
+}
+inline bool FGgPseudo(GG gg) noexcept {
+	return !FGgLegal(gg);
+}
+inline GG GgType(GG gg) noexcept { 
+	return static_cast<GG>(static_cast<int>(gg) & 0x03); 
+}
 
 
 /*
@@ -297,40 +318,33 @@ public:
 public:
 	BD(void);
 
-	BD(const BD& bd) noexcept : 
-		cpcToMove(bd.cpcToMove), 
-		sqEnPassant(bd.sqEnPassant), 
-		csCur(bd.csCur),
-		bbUnoccupied(bd.bbUnoccupied),
-		habd(bd.habd),
-		gph(bd.gph)
-	{
-		memcpy(mppcbb, bd.mppcbb, sizeof(mppcbb));
-		memcpy(mpcpcbb, bd.mpcpcbb, sizeof(mpcpcbb));
-	}
-
 	void SetEmpty(void) noexcept;
 	bool operator==(const BD& bd) const noexcept;
 	bool operator!=(const BD& bd) const noexcept;
 
-	/* making moves */
+	/* 
+	 *	move generation 
+	 */
 
-	void MakeMvSq(MVE& mve) noexcept;
-	void UndoMvSq(MVE mve) noexcept;
-	void MakeMvNullSq(MVE& mve) noexcept;
-	void UndoMvNullSq(MVE mve) noexcept;
+	void GenMoves(VMVE& vmve, GG gg) noexcept;
+	void GenMoves(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
+	void GenPawnPromotions(VMVE& vmve, BB bbDest, int dsq, CPC cpcMove) const noexcept;
+	void GenPawnQuiet(VMVE& vmve, CPC cpcMove) const noexcept;
+	void GenPawnNoisy(VMVE& vmve, CPC cpcMove) const noexcept;
+	void GenCastles(VMVE& vmve, CPC cpcMove) const noexcept;
+	void GenAllBbTo(VMVE& vmve, CPC cpcMove, BB bbTo) const noexcept;
+	void GenPieceBbTo(VMVE& vmve, PC pcMove, BB bbTo, int dsq) const noexcept;
+	void GenPieceBbTo(VMVE& vmve, PC pcMove, BB bbTo, SQ sqFrom) const noexcept;
+	MVE MveFromMv(MV mv) const noexcept { return MVE(mv.sqFrom(), mv.sqTo(), PcFromSq(mv.sqFrom())); }
 
-	/* move generation */
+	/*
+	 *	Pseudo move count, used for AI eval
+	 */
 
-	void GenVmve(VMVE& vmve, GG gg) noexcept;
-	void GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
-	void GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept;
-	void GenVmveBbPawnPromotionMoves(VMVE& vmve, BB bbTo, int dsq, CPC cpcMove) const noexcept;
-	inline void GenVmvePawnMoves(VMVE& vmve, CPC cpcMove) const noexcept;
-	inline void GenVmveCastle(VMVE& vmve, SQ sqFrom, CPC cpcMove) const noexcept;
-	inline void GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept;
-	inline void GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept;
-	inline MVE MveFromMv(MV mv) const noexcept { return MVE(mv.sqFrom(), mv.sqTo(), PcFromSq(mv.sqFrom())); }
+	int CmvPseudo(CPC cpcMove) const noexcept;
+	int CmvPawns(CPC cpcMove) const noexcept;
+	int CmvPieces(CPC cpcMove) const noexcept;
+	int CmvCastles(CPC cpcMove) const noexcept;
 
 	/*
 	 *	checking squares for attack
@@ -364,6 +378,15 @@ public:
 	{
 		return ApcBbAttacked(BB(sqAttacked), cpcBy);
 	}
+
+	/*
+	 *	making moves 
+	 */
+
+	void MakeMvSq(MVE& mve) noexcept;
+	void UndoMvSq(MVE mve) noexcept;
+	void MakeMvNullSq(MVE& mve) noexcept;
+	void UndoMvNullSq(MVE mve) noexcept;
 
 	/*
 	 *	move, square, and piece convenience functions. most of these need to be highly
@@ -402,7 +425,6 @@ public:
 				return PC(cpc, apc);
 		return PC(cpc, apcNull);
 	}
-
 
 	inline APC ApcFromSq(SQ sq) const noexcept
 	{
@@ -491,8 +513,8 @@ public:
 	{
 		BB bb(sq);
 		mppcbb[pc] -= bb;
-		mpcpcbb[(int)pc.cpc()] -= bb;
-		assert(!mpcpcbb[(int)~pc.cpc()].fSet(sq));
+		mpcpcbb[pc.cpc()] -= bb;
+		assert(!mpcpcbb[~pc.cpc()].fSet(sq));
 		bbUnoccupied += bb;
 		genhabd.TogglePiece(habd, sq, pc);
 	}
@@ -638,7 +660,6 @@ public:
 public:
 	BDG(void) noexcept;
 	BDG(const char* szFEN);
-	BDG(const BDG& bdg) noexcept;
 
 	/*
 	 *	Game control

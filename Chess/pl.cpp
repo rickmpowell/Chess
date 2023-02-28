@@ -456,7 +456,7 @@ public:
 
 VMVES::VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept : VMVE(), pplai(pplai), pmveNext(begin())
 {
-	bdg.GenVmve(*this, gg);
+	bdg.GenMoves(*this, gg);
 	Reset(bdg);
 }
 
@@ -468,13 +468,13 @@ void VMVES::Reset(BDG& bdg) noexcept
 }
 
 
-/*	VSMVE::FMakeMveNext
+/*	VSMVE::FEnumMveNext
  *
  *	Finds the next move in the move list, returning false if there is no such
  *	move. The move is returned in pmve. The move is actually made on the board
  *	and illegal moves are checked for
  */
-bool VMVES::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
+bool VMVES::FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
 	while (pmveNext < end()) {
 		pmve = &*pmveNext++;
@@ -546,7 +546,7 @@ void VMVESS::Reset(BDG& bdg) noexcept
 }
 
 
-/*	VMVESS::FMakeMveNext
+/*	VMVESS::FEnumMveNext
  *
  *	Gets the next legal move, sorted by evaluation. Return false if we're done. 
  *	Keeps track of count of legal moves we've enumerated. The move will be made 
@@ -560,7 +560,7 @@ void VMVESS::Reset(BDG& bdg) noexcept
  * 
  *	We lazy evaluate any moves that aren't found in the transposition table. 
  */
-bool VMVESS::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
+bool VMVESS::FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
 	while (pmveNext < end()) {
 
@@ -694,14 +694,14 @@ VMVESQ::VMVESQ(BDG& bdg, PLAI* pplai, GG gg) noexcept : VMVES(bdg, pplai, gg)
 }
 
 
-/*	VMVESQ::FMakeMveNext
+/*	VMVESQ::FEnumMveNext
  *
  *	Finds the next noisy move in the quiescent move list and makes it on the
  *	board.
  */
-bool VMVESQ::FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept
+bool VMVESQ::FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept
 {
-	while (VMVES::FMakeMveNext(bdg, pmve)) {
+	while (VMVES::FEnumMveNext(bdg, pmve)) {
 		if (!bdg.FMvIsQuiescent(*pmve))
 			return true;
 		bdg.UndoMv();
@@ -774,7 +774,7 @@ bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int dep
 	/* do first move (probably a PV move) with full a-b window */
 
 	MVE* pmve;
-	if (!vmvess.FMakeMveNext(bdg, pmve))
+	if (!vmvess.FEnumMveNext(bdg, pmve))
 		return false;
 	pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
 	vmvess.UndoMv(bdg);
@@ -785,9 +785,9 @@ bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int dep
 	   ultra-narrow window. We pray that narrow window quickly fails low;
 	   if we don't, redo the search with the full window */
 
-	while (vmvess.FMakeMveNext(bdg, pmve)) {
+	while (vmvess.FEnumMveNext(bdg, pmve)) {
 		pmve->ev = -EvBdgSearch(bdg, *pmve, -ab.AbNull(), depth + 1, depthLim, ts);
-		if (!(pmve->ev < ab))
+		if (!(pmve->ev < ab) && !ab.fIsNull())
 			pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, depth + 1, depthLim, ts);
 		vmvess.UndoMv(bdg);
 		if (FPrune(pmve, mveBest, ab, depthLim))
@@ -813,7 +813,7 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, int dep
 {
 	stbfMain.AddNode(1);
 
-	/* we're at depth, go to quiescence to get static eval */
+	/* if we're at depth, go to quiescence to get static eval */
 
 	if (depth >= depthLim)
 		return EvBdgQuiescent(bdg, mvePrev, abInit, depth, ts);
@@ -826,11 +826,8 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, int dep
 
 	if (FLookupXt(bdg, mveBest, abInit, depthLim - depth))
 		return mveBest.ev;	
-	/*
-	mveBest = MVE(mvNil, EvBdgStatic(bdg, mvePrev.mv, true));
 	if (FTryFutility(bdg, mveBest, abInit, depth, depthLim, ts))
 		return mveBest.ev;
-	*/
 	if (FTryNullMove(bdg, mveBest, abInit, depth, depthLim, ts))
 		return mveBest.ev;
 
@@ -874,17 +871,15 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int depth, TS t
 
 	/* then recursively evaluate noisy moves */
 		
-	VMVESQ vmvesq(bdg, this, ggPseudo);
+	VMVESQ vmvesq(bdg, this, ggPseudo + ggNoisy);
 	stbfQuiescent.AddGen(1);
-	for (MVE* pmve = nullptr; vmvesq.FMakeMveNext(bdg, pmve); ) {
+	for (MVE* pmve = nullptr; vmvesq.FEnumMveNext(bdg, pmve); ) {
 		pmve->ev = -EvBdgQuiescent(bdg, *pmve, -ab, depth + 1, ts);
 		vmvesq.UndoMv(bdg);
 		if (FPrune(pmve, mveBest, ab, depthLim))
-			goto Done;
+			break;
 	}
-	TestForMates(bdg, vmvesq, mveBest, depth);
 
-Done:
 	return mveBest.ev;
 }
 
@@ -948,16 +943,14 @@ XEV* PLAI::SaveXt(BDG& bdg, MVE mveBest, AB ab, int depth) noexcept
 }
 
 
+/*	PLAI::FTryFutility
+ *
+ *	Futility pruning works by checking a move that can't possibly be made good
+ *	enough to exceed alpha.
+ */
 bool PLAI::FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept
 {
-	if (depthLim - depth >= 8)	// only works on frontier nodes
-		return false;
-	if (mveBest.ev + EV(300 * (depthLim - depth)) > ab)
-		return false;
-	if (mveBest.ev <= evSureWin)
-		return false;
-
-	return true;
+	return false;
 }
 
 
@@ -1368,11 +1361,11 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev) noexcept
 
 	EV evPawnToMove, evPawnDef;
 	EV evKingToMove, evKingDef;
-	static VMVE vmveSelf, vmvePrev;
+	int cmvSelf, cmvPrev;
 	if (fecoMobility) {
-		bdg.GenVmveColor(vmvePrev, bdg.cpcToMove);
-		bdg.GenVmveColor(vmveSelf, ~bdg.cpcToMove);
-		evMobility = vmvePrev.cmve() - vmveSelf.cmve();
+		cmvSelf = bdg.CmvPseudo(~bdg.cpcToMove);
+		cmvPrev = bdg.CmvPseudo(bdg.cpcToMove);
+		evMobility = cmvPrev - cmvSelf;
 	}
 	if (fecoKingSafety) {
 		evKingToMove = EvBdgKingSafety(bdg, bdg.cpcToMove);
@@ -1401,7 +1394,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev) noexcept
 	if (fecoMaterial)
 		LogData(wjoin(L"Material", SzFromEv(evMaterial)));
 	if (fecoMobility)
-		LogData(wjoin(L"Mobility", vmvePrev.cmve(), L"-", vmveSelf.cmve()));
+		LogData(wjoin(L"Mobility", cmvPrev, L"-", cmvSelf));
 	if (fecoKingSafety)
 		LogData(wjoin(L"King Safety", evKingToMove, L"-", evKingDef));
 	if (fecoPawnStructure)
@@ -1559,7 +1552,7 @@ int PLAI::CfileDoubledPawns(BDG& bdg, CPC cpc) const noexcept
 	int cfile = 0;
 	BB bbPawn = bdg.mppcbb[PC(cpc, apcPawn)];
 	BB bbFile = bbFileA;
-	for (int file = 0; file < fileMax; file++, bbFile = BbEastOne(bbFile)) {
+	for (int file = 0; file < fileMax; file++, bbFile = BbEast1(bbFile)) {
 		int csq = (bbPawn & bbFile).csq();
 		if (csq)
 			cfile += csq - 1;
@@ -1579,8 +1572,8 @@ int PLAI::CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept
 	int cfile = 0;
 	BB bbPawn = bdg.mppcbb[PC(cpc, apcPawn)];
 	BB bbFile = bbFileA;
-	for (int file = 0; file < fileMax; file++, bbFile = BbEastOne(bbFile))
-		cfile += (bbPawn & bbFile) && !(bbPawn & (BbEastOne(bbFile) | BbWestOne(bbFile)));
+	for (int file = 0; file < fileMax; file++, bbFile = BbEast1(bbFile))
+		cfile += (bbPawn & bbFile) && !(bbPawn & (BbEast1(bbFile) | BbWest1(bbFile)));
 	return cfile;
 }
 

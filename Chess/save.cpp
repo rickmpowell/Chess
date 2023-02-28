@@ -195,7 +195,7 @@ const wchar_t mpapcchFig[cpcMax][apcMax] =
 wstring BDG::SzDecodeMv(MVE mve, bool fPretty)
 {
 	VMVE vmve;
-	GenVmve(vmve, ggPseudo);
+	GenMoves(vmve, ggPseudo);
 
 	/* if destination square is unique, just include the destination square */
 	SQ sqFrom = mve.sqFrom();

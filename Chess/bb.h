@@ -298,10 +298,10 @@ public:
 
 	/* standard shifts */
 
-	__forceinline BB operator<<(int dsq) const noexcept { return BB(grf << dsq); }
-	__forceinline BB& operator<<=(int dsq) noexcept { grf <<= dsq; return *this; }
-	__forceinline BB operator>>(int dsq) const noexcept { return BB(grf >> dsq); }
-	__forceinline BB& operator>>=(int dsq) noexcept { grf >>= dsq; return *this; }
+	__forceinline BB operator<<(int dsq) const noexcept { assert(dsq>0); return BB(grf << dsq); }
+	__forceinline BB& operator<<=(int dsq) noexcept { assert(dsq>0); grf <<= dsq; return *this; }
+	__forceinline BB operator>>(int dsq) const noexcept { assert(dsq>0); return BB(grf >> dsq); }
+	__forceinline BB& operator>>=(int dsq) noexcept { assert(dsq>0); grf >>= dsq; return *this; }
 
 	/* comparisons */
 
@@ -335,6 +335,7 @@ const BB            bbFileF(0b00100000001000000010000000100000001000000010000000
 const BB            bbFileG(0b0100000001000000010000000100000001000000010000000100000001000000ULL);
 const BB            bbFileH(0b1000000010000000100000001000000010000000100000001000000010000000ULL);
 const BB			bbFileAB(bbFileA | bbFileB);
+const BB			bbFileABC(bbFileA | bbFileB | bbFileC);
 const BB			bbFileGH(bbFileG | bbFileH);
 
 const BB            bbRank1(0b0000000000000000000000000000000000000000000000000000000011111111ULL);
@@ -367,15 +368,29 @@ const BB bbBlackQueenCastleEmpty(0b011100000000000000000000000000000000000000000
  *	bit bitboards. They return the bitboard shifted in the named direction.
  */
 
+const int dsqEast = 1;
+const int dsqWest = -1;
+const int dsqNorth = 8;
+const int dsqSouth = -8;
+const int dsqNorthWest = 7;
+const int dsqNorthEast = 9;
+const int dsqSouthWest = -9;
+const int dsqSouthEast = -7;
 
-__forceinline BB BbEastOne(const BB& bb) noexcept { return (bb - bbFileH) << 1; }
-__forceinline BB BbEastTwo(const BB& bb) noexcept { return (bb - bbFileGH) << 2; }
-__forceinline BB BbWestOne(const BB& bb) noexcept { return (bb - bbFileA) >> 1; }
-__forceinline BB BbWestTwo(const BB& bb) noexcept { return (bb - bbFileAB) >> 2; }
-__forceinline BB BbNorthOne(const BB& bb) noexcept { return bb << 8; }
-__forceinline BB BbNorthTwo(const BB& bb) noexcept { return bb << 16; }
-__forceinline BB BbSouthOne(const BB& bb) noexcept { return bb >> 8; }
-__forceinline BB BbSouthTwo(const BB& bb) noexcept { return bb >> 16; }
+__forceinline BB BbShift(BB bb, int dsq) noexcept { return dsq > 0 ? (bb << dsq) : (bb >> -dsq); }
+__forceinline BB BbEast1(const BB& bb) noexcept { return BbShift(bb - bbFileH, dsqEast); }
+__forceinline BB BbEast2(const BB& bb) noexcept { return BbShift(bb - bbFileGH, 2*dsqEast); }
+__forceinline BB BbWest1(const BB& bb) noexcept { return BbShift(bb - bbFileA, dsqWest); }
+__forceinline BB BbWest2(const BB& bb) noexcept { return BbShift(bb - bbFileAB, 2*dsqWest); }
+__forceinline BB BbWest3(const BB& bb) noexcept { return BbShift(bb - bbFileABC, 3*dsqWest); }
+__forceinline BB BbNorth1(const BB& bb) noexcept { return BbShift(bb, dsqNorth); }
+__forceinline BB BbNorth2(const BB& bb) noexcept { return BbShift(bb, 2*dsqNorth); }
+__forceinline BB BbSouth1(const BB& bb) noexcept { return BbShift(bb, dsqSouth); }
+__forceinline BB BbSouth2(const BB& bb) noexcept { return BbShift(bb, 2*dsqSouth); }
+__forceinline BB BbNorthWest1(const BB& bb) noexcept { return BbShift(bb - bbFileA, dsqNorthWest); }
+__forceinline BB BbNorthEast1(const BB& bb) noexcept { return BbShift(bb - bbFileH, dsqNorthEast); }
+__forceinline BB BbSouthWest1(const BB& bb) noexcept { return BbShift(bb - bbFileA, dsqSouthWest); }
+__forceinline BB BbSouthEast1(const BB& bb) noexcept { return BbShift(bb - bbFileH, dsqSouthEast); }
 
 
 /*

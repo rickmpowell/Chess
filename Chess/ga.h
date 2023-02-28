@@ -101,6 +101,16 @@ public:
 };
 
 
+
+class PROCPGNMOVEGEN : public PROCPGNTEST
+{
+public:
+	PROCPGNMOVEGEN(GA& ga) : PROCPGNTEST(ga) { }
+	virtual ERR ProcessMv(MVE mve);
+	virtual ERR ProcessTag(int tkpgn, const string& szVal);
+};
+
+
 /*
  *
  *	GA class

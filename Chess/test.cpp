@@ -442,11 +442,12 @@ ERR PROCPGNTESTUNDO::ProcessTag(int tkpgn, const string& szValue)
 
 ERR PROCPGNTESTUNDO::ProcessMv(MVE mve)
 {
-	static BDG bdgInit = ga.bdg;
+	static BDG bdgStart, bdgNew;
+	bdgStart = ga.bdg;
 	ga.bdg.MakeMv(mve);
-	static BDG bdgNew = ga.bdg;
+	bdgNew = ga.bdg;
 	ga.bdg.UndoMv();
-	if (bdgInit != ga.bdg)
+	if (bdgStart != ga.bdg)
 		throw EXFAILTEST();
 	ga.bdg.RedoMv();
 	if (bdgNew != ga.bdg)
@@ -542,7 +543,7 @@ uint64_t GA::CmvPerft(int depth)
 	if (depth == 0)
 		return 1;
 	VMVE vmve;
-	bdg.GenVmve(vmve, ggPseudo);
+	bdg.GenMoves(vmve, ggPseudo);
 	uint64_t cmv = 0;
 	for (MVE mve : vmve) {
 		bdg.MakeMv(mve);
@@ -556,7 +557,7 @@ uint64_t GA::CmvPerft(int depth)
 uint64_t GA::CmvPerftBulk(int depth)
 {
 	VMVE vmve;
-	bdg.GenVmve(vmve, ggLegal);
+	bdg.GenMoves(vmve, ggLegal);
 	if (depth <= 1)
 		return vmve.cmve();
 	uint64_t cmv = 0;
@@ -574,7 +575,7 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 		return 1;
 	assert(depthPerft >= 1);
 	VMVE vmve;
-	ga.bdg.GenVmve(vmve, ggLegal);
+	ga.bdg.GenMoves(vmve, ggLegal);
 	if (depthPerft == 1)
 		return vmve.cmve();
 	uint64_t cmv = 0;
@@ -864,6 +865,97 @@ Done:
 }
 
 
+class TESTMOVEGEN : public TEST
+{
+	wstring szSub;
+public:
+	TESTMOVEGEN(UIGA& uiga, TEST* ptestParent, const wstring& szSub) : TEST(uiga, ptestParent), szSub(szSub) { }
+	virtual wstring SzName(void) const { return L"Move Gen"; }
+	virtual wstring SzSubName(void) const { return szSub; }
+
+	virtual void Run(void)
+	{
+		PlayPGNFiles(wstring(L"..\\Chess\\Test\\") + szSub);
+	}
+
+	void PlayPGNFiles(const wstring& szPath)
+	{
+		WIN32_FIND_DATA ffd;
+		wstring szSpec = szPath + L"\\*.pgn";
+		HANDLE hfind = FindFirstFile(szSpec.c_str(), &ffd);
+		if (hfind == INVALID_HANDLE_VALUE)
+			throw EX("No .pgn files found");
+		do {
+			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+				continue;
+			wstring szSpec = szPath + L"\\" + ffd.cFileName;
+			try {
+				LogOpen(ffd.cFileName, L"", lgfNormal);
+				PlayPGNFile(szSpec.c_str());
+				LogClose(ffd.cFileName, L"Passed", lgfNormal);
+			}
+			catch (exception& ex) {
+				LogData(WszWidenSz(ex.what()));
+				LogClose(ffd.cFileName, L"Failed", lgfBold);
+				FindClose(hfind);
+				throw;
+			}
+		} while (FindNextFile(hfind, &ffd) != 0);
+		FindClose(hfind);
+	}
+
+	void PlayPGNFile(const wchar_t szFile[])
+	{
+		ifstream is(szFile, ifstream::in);
+
+		wstring szFileBase(wcsrchr(szFile, L'\\') + 1);
+		PROCPGNGA procpgngaSav(uiga.ga, new PROCPGNMOVEGEN(uiga.ga));
+		ERR err;
+		ISTKPGN istkpgn(is);
+		istkpgn.SetSzStream(szFileBase);
+		int igame = 0;
+		do {
+			igame++;
+			LogTemp(wjoin(L"Game ", igame));
+			err = uiga.ga.DeserializeGame(istkpgn);
+		} while (err == errNone);
+	}
+};
+
+
+ERR PROCPGNMOVEGEN::ProcessTag(int tkpgn, const string& szValue)
+{
+	return PROCPGNTEST::ProcessTag(tkpgn, szValue);
+}
+
+
+ERR PROCPGNMOVEGEN::ProcessMv(MVE mve)
+{
+	ga.bdg.MakeMv(mve);
+	static VMVE vmve;
+	ga.bdg.GenMoves(vmve, ggPseudo+ggAll);
+	int cmveAll = vmve.size();
+	assert(cmveAll == ga.bdg.CmvPseudo(ga.bdg.cpcToMove));
+	static VMVE vmve2;
+	ga.bdg.GenMoves(vmve2, ggPseudo+ggNoisy);
+	int cmveNoisy = vmve2.size();
+	for (MVE& mveT : vmve2) {
+		ga.bdg.MakeMv(mveT);
+		assert(!ga.bdg.FMvIsQuiescent(mveT));
+		ga.bdg.UndoMv();
+	}
+	ga.bdg.GenMoves(vmve2, ggPseudo+ggQuiet);
+	int cmveQuiet = vmve2.size();
+	for (MVE& mveT : vmve2) {
+		ga.bdg.MakeMv(mveT);
+		assert(ga.bdg.FMvIsQuiescent(mveT));
+		ga.bdg.UndoMv();
+	}
+	assert(cmveAll == cmveNoisy+cmveQuiet);
+	return errNone;
+}
+
+
 /*	UIGA::Test
  *
  *	This is the top-level test script.
@@ -876,6 +968,7 @@ void UIGA::Test(void)
 	}
 	TEST testRoot(*this, nullptr);
 	testRoot.Add(new TESTNEWGAME(*this, &testRoot));
+	testRoot.Add(new TESTMOVEGEN(*this, &testRoot, L"Players"));
 	testRoot.Add(new TESTPERFT(*this, &testRoot));
 	testRoot.Add(new TESTUNDO(*this, &testRoot));
 	testRoot.Add(new TESTPGNS(*this, &testRoot, L"Players"));

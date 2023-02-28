@@ -130,14 +130,14 @@ void UIBD::Layout(void)
  */
 void UIBD::InitGame(void)
 {
-	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.GenMoves(vmveDrag, ggLegal);
 	SetMoveHilite(mveNil);
 }
 
 
 void UIBD::StartGame(void)
 {
-	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.GenMoves(vmveDrag, ggLegal);
 	SetMoveHilite(mveNil);
 }
 
@@ -157,7 +157,7 @@ void UIBD::MakeMv(MVE mve, SPMV spmv)
 		AnimateMv(mve, DframeFromSpmv(spmv));
 	uiga.ga.bdg.MakeMv(mve);
 	SetMoveHilite(mve);
-	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.GenMoves(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();
@@ -172,7 +172,7 @@ void UIBD::UndoMv(SPMV spmv)
 	}
 	uiga.ga.bdg.UndoMv();
 	SetMoveHilite(mveNil);
-	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.GenMoves(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGs(gsPlaying);
 	if (spmv != spmvHidden)
 		Redraw();
@@ -187,7 +187,7 @@ void UIBD::RedoMv(SPMV spmv)
 	}
 	uiga.ga.bdg.RedoMv();
 	SetMoveHilite(mveNil);
-	uiga.ga.bdg.GenVmve(vmveDrag, ggLegal);
+	uiga.ga.bdg.GenMoves(vmveDrag, ggLegal);
 	uiga.ga.bdg.SetGameOver(vmveDrag, *uiga.ga.prule);
 	if (spmv != spmvHidden)
 		Redraw();

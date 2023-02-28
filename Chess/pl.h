@@ -91,7 +91,7 @@ public:
 public:
 	inline VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
-	inline bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
+	inline bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
 	bool FOnlyOneMove(MVE& mve) const noexcept;
 };
@@ -112,7 +112,7 @@ class VMVESS : public VMVES
 
 public:
 	VMVESS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
+	bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	void Reset(BDG& bdg) noexcept;
 
 private:
@@ -134,7 +134,7 @@ class VMVESQ : public VMVES
 {
 public:
 	VMVESQ(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FMakeMveNext(BDG& bdg, MVE*& pmve) noexcept;
+	bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 };
 
 
@@ -241,6 +241,10 @@ public:
 	 */
 	inline AB AbNull(void) const noexcept {
 		return AB(evAlpha, evAlpha + 1);
+	}
+
+	inline bool fIsNull(void) const noexcept {
+		return evAlpha + 1 == evBeta;
 	}
 
 	/* define inequality operators of an eval vs. an interval to be less

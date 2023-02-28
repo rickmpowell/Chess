@@ -337,22 +337,22 @@ MPBB::MPBB(void)
 			/* knights */
 
 			BB bb(sq);
-			BB bb1 = BbWestOne(bb) | BbEastOne(bb);
-			BB bb2 = BbWestTwo(bb) | BbEastTwo(bb);
-			mpsqbbKnight[sq] = BbNorthTwo(bb1) | BbSouthTwo(bb1) | BbNorthOne(bb2) | BbSouthOne(bb2);
+			BB bb1 = BbWest1(bb) | BbEast1(bb);
+			BB bb2 = BbWest2(bb) | BbEast2(bb);
+			mpsqbbKnight[sq] = BbNorth2(bb1) | BbSouth2(bb1) | BbNorth1(bb2) | BbSouth1(bb2);
 
 			/* kings */
 
-			bb1 = BbEastOne(bb) | BbWestOne(bb);
-			mpsqbbKing[sq] = bb1 | BbNorthOne(bb1 | bb) | BbSouthOne(bb1 | bb);
+			bb1 = BbEast1(bb) | BbWest1(bb);
+			mpsqbbKing[sq] = bb1 | BbNorth1(bb1 | bb) | BbSouth1(bb1 | bb);
 
 			/* passed pawn alleys */
 
 			if (in_range(rank, 1, rankMax - 2)) {
 				BB bbNorth = mpsqdirbbSlide[sq][dirNorth];
 				BB bbSouth = mpsqdirbbSlide[sq][dirSouth];
-				mpsqbbPassedPawnAlley[sq-8][cpcWhite] = bbNorth | BbEastOne(bbNorth) | BbWestOne(bbNorth);
-				mpsqbbPassedPawnAlley[sq-8][cpcBlack] = bbSouth | BbEastOne(bbSouth) | BbWestOne(bbSouth);
+				mpsqbbPassedPawnAlley[sq-8][cpcWhite] = bbNorth | BbEast1(bbNorth) | BbWest1(bbNorth);
+				mpsqbbPassedPawnAlley[sq-8][cpcBlack] = bbSouth | BbEast1(bbSouth) | BbWest1(bbSouth);
 			}
 		}
 }
@@ -739,29 +739,47 @@ void BD::UndoMvNullSq(MVE mve) noexcept
 }
 
 
-/*	BD::GenVmve
+/*	BD::GenMoves
  *
  *	Generates the legal moves for the current player who has the move.
  *	Optionally doesn't bother to remove moves that would leave the
  *	king in check.
  */
-void BD::GenVmve(VMVE& vmve, GG gg) noexcept
+void BD::GenMoves(VMVE& vmve, GG gg) noexcept
 {
-	GenVmve(vmve, cpcToMove, gg);
+	GenMoves(vmve, cpcToMove, gg);
 }
 
 
-/*	BD::GenVmve
+/*	BD::GenMoves
  *
  *	Generates verified moves for the given board position,
  *	where verified means we make sure all moves do not leave our own 
  *	king in check
  */
-void BD::GenVmve(VMVE& vmve, CPC cpcMove, GG gg) noexcept
+void BD::GenMoves(VMVE& vmve, CPC cpcMove, GG gg) noexcept
 {
 	Validate();
-	GenVmveColor(vmve, cpcMove);
-	if (gg == ggLegal)
+
+	vmve.clear();
+	if (GgType(gg) == ggQuiet) {
+		GenPawnQuiet(vmve, cpcMove);
+		GenAllBbTo(vmve, cpcMove, bbUnoccupied);
+		GenCastles(vmve, cpcMove);
+	}
+	else if (GgType(gg) == ggNoisy) {
+		GenPawnNoisy(vmve, cpcMove);
+		GenAllBbTo(vmve, cpcMove, mpcpcbb[~cpcMove]);
+	}
+	else {
+		assert(GgType(gg) == ggAll);
+		GenPawnQuiet(vmve, cpcMove);
+		GenPawnNoisy(vmve, cpcMove);
+		GenAllBbTo(vmve, cpcMove, ~mpcpcbb[cpcMove]);
+		GenCastles(vmve, cpcMove);
+	}
+
+	if (FGgLegal(gg))
 		RemoveInCheckMoves(vmve, cpcMove);
 }
 
@@ -831,7 +849,7 @@ bool BD::FInCheck(CPC cpc) noexcept
 bool BD::FIsCheckMate(CPC cpc) noexcept
 {
 	VMVE vmve;
-	GenVmve(vmve, cpcToMove, ggLegal);
+	GenMoves(vmve, cpcToMove, ggLegal);
 	return vmve.cmve() == 0;
 }
 
@@ -843,8 +861,8 @@ bool BD::FIsCheckMate(CPC cpc) noexcept
  */
 __forceinline BB BD::BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept
 {
-	bbPawns = cpcBy == cpcWhite ? BbNorthOne(bbPawns) : BbSouthOne(bbPawns);
-	BB bbPawnAttacked = BbEastOne(bbPawns) | BbWestOne(bbPawns);
+	bbPawns = cpcBy == cpcWhite ? BbNorth1(bbPawns) : BbSouth1(bbPawns);
+	BB bbPawnAttacked = BbEast1(bbPawns) | BbWest1(bbPawns);
 	return bbPawnAttacked;
 }
 
@@ -855,9 +873,9 @@ __forceinline BB BD::BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept
  */
 __forceinline BB BD::BbKnightAttacked(BB bbKnights) const noexcept
 {
-	BB bb1 = BbWestOne(bbKnights) | BbEastOne(bbKnights);
-	BB bb2 = BbWestTwo(bbKnights) | BbEastTwo(bbKnights);
-	return BbNorthTwo(bb1) | BbSouthTwo(bb1) | BbNorthOne(bb2) | BbSouthOne(bb2);
+	BB bb1 = BbWest1(bbKnights) | BbEast1(bbKnights);
+	BB bb2 = BbWest2(bbKnights) | BbEast2(bbKnights);
+	return BbNorth2(bb1) | BbSouth2(bb1) | BbNorth1(bb2) | BbSouth1(bb2);
 }
 
 
@@ -981,12 +999,12 @@ APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 }
 
 
-/*	BD::GenVmveBbMoves
+/*	BD::GenPieceBbTo
  *
- *	Generates all moves with destination squares in bbTo and square offset to
+ *	Generates all moves with destination squares in bbDest and square offset to
  *	the soruce square dsq
  */
-__forceinline void BD::GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) const noexcept
+__forceinline void BD::GenPieceBbTo(VMVE& vmve, PC pcMove, BB bbTo, int dsq) const noexcept
 {
 	for (; bbTo; bbTo.ClearLow()) {
 		SQ sqTo = bbTo.sqLow();
@@ -995,28 +1013,28 @@ __forceinline void BD::GenVmveBbMoves(VMVE& vmve, BB bbTo, int dsq, PC pcMove) c
 }
 
 
-/*	BD::GenVmveBbMoves
+/*	BD::GenPieceBbTo
  *
  *	Generates all moves with the source square sqFrom and the destination squares
  *	in bbTo.
  */
-__forceinline void BD::GenVmveBbMoves(VMVE& vmve, SQ sqFrom, BB bbTo, PC pcMove) const noexcept
+__forceinline void BD::GenPieceBbTo(VMVE& vmve, PC pcMove, BB bbTo, SQ sqFrom) const noexcept
 {
 	for (; bbTo; bbTo.ClearLow())
 		vmve.push_back(MVE(sqFrom, bbTo.sqLow(), pcMove));
 }
 
 
-/*	BD::GenVmveBbPawnPromotionMoves
+/*	BD::GenBbPawnPromotions
  *
  *	For pawn moves that result in a promotion, adds all the promotion variants for each
  *	move. dsq holds the distance of the move, which can be +/- 7, 8, or 9, for captures
  *	or straight ahead moves.
  */
-__declspec(noinline) void BD::GenVmveBbPawnPromotionMoves(VMVE& vmve, BB bbTo, int dsq, CPC cpcMove) const noexcept
+__declspec(noinline) void BD::GenPawnPromotions(VMVE& vmve, BB bbDest, int dsq, CPC cpcMove) const noexcept
 {
-	for (BB bbT = bbTo; bbT; bbT.ClearLow()) {
-		SQ sqTo = bbT.sqLow();
+	for ( ; bbDest; bbDest.ClearLow()) {
+		SQ sqTo = bbDest.sqLow();
 		MVE mve(sqTo + dsq, sqTo, PC(cpcMove, apcPawn));
 		mve.SetApcPromote(apcQueen);
 		vmve.push_back(mve);
@@ -1030,48 +1048,42 @@ __declspec(noinline) void BD::GenVmveBbPawnPromotionMoves(VMVE& vmve, BB bbTo, i
 }
 
 
-/*	BD::GenVmvePawnMoves
+/*	BD::GenPawnNoisy
  *
- *	Generates the pawn moves on the board, for the pawns of color cpcMove.
+ *	Generatges all pawn capture and promotion moves
  */
-__forceinline void BD::GenVmvePawnMoves(VMVE& vmve, CPC cpcMove) const noexcept
+__forceinline void BD::GenPawnNoisy(VMVE& vmve, CPC cpcMove) const noexcept
 {
 	BB bbPawns = mppcbb[PC(cpcMove, apcPawn)];
 	if (cpcMove == cpcWhite) {
 		BB bbPromotions = bbPawns & bbRank7;
 		if (bbPromotions) {
-			GenVmveBbPawnPromotionMoves(vmve, (bbPromotions << 8) & bbUnoccupied, -8, cpcWhite);
-			GenVmveBbPawnPromotionMoves(vmve, ((bbPromotions - bbFileA) << 7) & mpcpcbb[cpcBlack], -7, cpcWhite);
-			GenVmveBbPawnPromotionMoves(vmve, ((bbPromotions - bbFileH) << 9) & mpcpcbb[cpcBlack], -9, cpcWhite);
-			bbPawns -= bbRank7;
+			GenPawnPromotions(vmve, BbNorth1(bbPromotions) & bbUnoccupied, -dsqNorth, cpcWhite);
+			GenPawnPromotions(vmve, BbNorthEast1(bbPromotions) & mpcpcbb[cpcBlack], -dsqNorthEast, cpcWhite);
+			GenPawnPromotions(vmve, BbNorthWest1(bbPromotions) & mpcpcbb[cpcBlack], -dsqNorthWest, cpcWhite);
+			bbPawns -= bbPromotions;
 		}
-		BB bbOne = (bbPawns << 8) & bbUnoccupied;
-		GenVmveBbMoves(vmve, bbOne, -8, pcWhitePawn);
-		GenVmveBbMoves(vmve, ((bbOne & bbRank3) << 8) & bbUnoccupied, -16, pcWhitePawn);
-		GenVmveBbMoves(vmve, ((bbPawns - bbFileA) << 7) & mpcpcbb[cpcBlack], -7, pcWhitePawn);
-		GenVmveBbMoves(vmve, ((bbPawns - bbFileH) << 9) & mpcpcbb[cpcBlack], -9, pcWhitePawn);
+		GenPieceBbTo(vmve, pcWhitePawn, BbNorthEast1(bbPawns) & mpcpcbb[cpcBlack], -dsqNorthEast);
+		GenPieceBbTo(vmve, pcWhitePawn, BbNorthWest1(bbPawns) & mpcpcbb[cpcBlack], -dsqNorthWest);
 	}
 	else {
 		BB bbPromotions = bbPawns & bbRank2;
 		if (bbPromotions) {
-			GenVmveBbPawnPromotionMoves(vmve, (bbPromotions >> 8) & bbUnoccupied, 8, cpcBlack);
-			GenVmveBbPawnPromotionMoves(vmve, ((bbPromotions - bbFileA) >> 9) & mpcpcbb[cpcWhite], 9, cpcBlack);
-			GenVmveBbPawnPromotionMoves(vmve, ((bbPromotions - bbFileH) >> 7) & mpcpcbb[cpcWhite], 7, cpcBlack);
-			bbPawns -= bbRank2;
+			GenPawnPromotions(vmve, BbSouth1(bbPromotions) & bbUnoccupied, -dsqSouth, cpcBlack);
+			GenPawnPromotions(vmve, BbSouthEast1(bbPromotions) & mpcpcbb[cpcWhite], -dsqSouthEast, cpcBlack);
+			GenPawnPromotions(vmve, BbSouthWest1(bbPromotions) & mpcpcbb[cpcWhite], -dsqSouthWest, cpcBlack);
+			bbPawns -= bbPromotions;
 		}
-		BB bbOne = (bbPawns >> 8) & bbUnoccupied;
-		GenVmveBbMoves(vmve, bbOne, 8, pcBlackPawn);
-		GenVmveBbMoves(vmve, ((bbOne & bbRank6) >> 8) & bbUnoccupied, 16, pcBlackPawn);
-		GenVmveBbMoves(vmve, ((bbPawns - bbFileA) >> 9) & mpcpcbb[cpcWhite], 9, pcBlackPawn);
-		GenVmveBbMoves(vmve, ((bbPawns - bbFileH) >> 7) & mpcpcbb[cpcWhite], 7, pcBlackPawn);
+		GenPieceBbTo(vmve, pcBlackPawn, BbSouthEast1(bbPawns) & mpcpcbb[cpcWhite], -dsqSouthEast);
+		GenPieceBbTo(vmve, pcBlackPawn, BbSouthWest1(bbPawns) & mpcpcbb[cpcWhite], -dsqSouthWest);
 	}
 
 	if (!sqEnPassant.fIsNil()) {
 		BB bbEnPassant(sqEnPassant), bbFrom;
 		if (cpcMove == cpcWhite)
-			bbFrom = ((bbEnPassant - bbFileA) >> 9) | ((bbEnPassant - bbFileH) >> 7);
+			bbFrom = BbShift(bbEnPassant - bbFileA, dsqSouthWest) | BbShift(bbEnPassant - bbFileH, dsqSouthEast);
 		else
-			bbFrom = ((bbEnPassant - bbFileA) << 7) | ((bbEnPassant - bbFileH) << 9);
+			bbFrom = BbShift(bbEnPassant - bbFileA, dsqNorthWest) | BbShift(bbEnPassant - bbFileH, dsqNorthEast);
 		for (bbFrom &= bbPawns; bbFrom; bbFrom.ClearLow()) {
 			SQ sqFrom = bbFrom.sqLow();
 			vmve.push_back(sqFrom, sqEnPassant, PC(cpcMove, apcPawn));
@@ -1080,25 +1092,40 @@ __forceinline void BD::GenVmvePawnMoves(VMVE& vmve, CPC cpcMove) const noexcept
 }
 
 
-/*	BD::GenVmveColor
+/*	BD::GenPawnQuiet
  *
- *	Generates moves for the given color pieces. Does not check if the king is left in
- *	check, so caller must weed those moves out.
+ *	Generates the pawn non-captures on the board, for the pawns of color cpcMove.
  */
-void BD::GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept
+__forceinline void BD::GenPawnQuiet(VMVE& vmve, CPC cpcMove) const noexcept
+{	
+	BB bbPawns = mppcbb[PC(cpcMove, apcPawn)];
+	if (cpcMove == cpcWhite) {
+		BB bbOne = BbNorth1(bbPawns - bbRank7) & bbUnoccupied;
+		GenPieceBbTo(vmve, pcWhitePawn, bbOne, dsqSouth);
+		GenPieceBbTo(vmve, pcWhitePawn, BbNorth1(bbOne & bbRank3) & bbUnoccupied, 2*dsqSouth);
+	}
+	else {
+		BB bbOne = BbSouth1(bbPawns - bbRank2) & bbUnoccupied;
+		GenPieceBbTo(vmve, pcBlackPawn, bbOne, dsqNorth);
+		GenPieceBbTo(vmve, pcBlackPawn, BbSouth1(bbOne & bbRank6) & bbUnoccupied, 2*dsqNorth);
+	}
+}
+
+
+/*	BD::GenAllBbTo
+ *
+ *	Generates all pieces (except pawns and castles) moves that can move into the bbTo 
+ *	bitmask. Pass in bbUnoccupied to generate quiet moves, or the opponent bitmask for
+ *	captures, or both for all moves.
+ */
+__forceinline void BD::GenAllBbTo(VMVE& vmve, CPC cpcMove, BB bbTo) const noexcept
 {
-	vmve.clear();
-
-	GenVmvePawnMoves(vmve, cpcMove);
-
-	BB bbUs = mpcpcbb[cpcMove];
-
 	/* generate knight moves */
 
 	PC pc = PC(cpcMove, apcKnight);
 	for (BB bb = mppcbb[pc]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		GenVmveBbMoves(vmve, sqFrom, mpbb.BbKnightTo(sqFrom) - bbUs, pc);
+		GenPieceBbTo(vmve, pc, mpbb.BbKnightTo(sqFrom) & bbTo, sqFrom);
 	}
 
 	/* generate bishop moves */
@@ -1106,7 +1133,7 @@ void BD::GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept
 	pc = PC(cpcMove, apcBishop);
 	for (BB bb = mppcbb[pc]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		GenVmveBbMoves(vmve, sqFrom, BbBishop1Attacked(sqFrom) - bbUs, pc);
+		GenPieceBbTo(vmve, pc, BbBishop1Attacked(sqFrom) & bbTo, sqFrom);
 	}
 
 	/* generate rook moves */
@@ -1114,7 +1141,7 @@ void BD::GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept
 	pc = PC(cpcMove, apcRook);
 	for (BB bb = mppcbb[pc]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		GenVmveBbMoves(vmve, sqFrom, BbRook1Attacked(sqFrom) - bbUs, pc);
+		GenPieceBbTo(vmve, pc, BbRook1Attacked(sqFrom) & bbTo, sqFrom);
 	}
 
 	/* generate queen moves */
@@ -1122,7 +1149,7 @@ void BD::GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept
 	pc = PC(cpcMove, apcQueen);
 	for (BB bb = mppcbb[pc]; bb; bb.ClearLow()) {
 		SQ sqFrom = bb.sqLow();
-		GenVmveBbMoves(vmve, sqFrom, BbQueen1Attacked(sqFrom) - bbUs, pc);
+		GenPieceBbTo(vmve, pc, BbQueen1Attacked(sqFrom) & bbTo, sqFrom);
 	}
 
 	/* generate king moves */
@@ -1131,29 +1158,126 @@ void BD::GenVmveColor(VMVE& vmve, CPC cpcMove) const noexcept
 	BB bbKing = mppcbb[pc];
 	assert(bbKing.csq() == 1);
 	SQ sqFrom = bbKing.sqLow();
-	GenVmveBbMoves(vmve, sqFrom, mpbb.BbKingTo(sqFrom) - bbUs, pc);
-	GenVmveCastle(vmve, sqFrom, cpcMove);
+	GenPieceBbTo(vmve, pc, mpbb.BbKingTo(sqFrom) & bbTo, sqFrom);
 }
 
 
-/*	BD::GenVmveCastle
+/*	BD::GenCastles
  *
  *	Generates the legal castle moves for the king at sq. Checks that the king is in
  *	check and intermediate squares are not under attack, checks for intermediate 
  *	squares are empty, but does not check the final king destination for in check.
  */
-void BD::GenVmveCastle(VMVE& vmve, SQ sqKing, CPC cpcMove) const noexcept
+void BD::GenCastles(VMVE& vmve, CPC cpcMove) const noexcept
 {
-	BB bbKing = BB(sqKing);
-	if (FCanCastle(cpcMove, csKing) && !(((bbKing << 1) | (bbKing << 2)) - bbUnoccupied)) {
-		if (ApcBbAttacked(bbKing | (bbKing << 1), ~cpcMove) == apcNull)
-			vmve.push_back(sqKing, sqKing + 2, PC(cpcMove, apcKing));
+	BB bbKing = mppcbb[PC(cpcMove, apcKing)];
+	SQ sqKing = bbKing.sqLow();
+	if (FCanCastle(cpcMove, csKing) && !((BbEast1(bbKing) | BbEast2(bbKing)) - bbUnoccupied)) {
+		if (ApcBbAttacked(bbKing | BbEast1(bbKing), ~cpcMove) == apcNull)
+			vmve.push_back(sqKing, sqKing + 2*dsqEast, PC(cpcMove, apcKing));
 	}
-	if (FCanCastle(cpcMove, csQueen) && !(((bbKing >> 1) | (bbKing >> 2) | (bbKing >> 3)) - bbUnoccupied)) {
-		if (ApcBbAttacked(bbKing | (bbKing >> 1), ~cpcMove) == apcNull) 
-			vmve.push_back(sqKing, sqKing - 2, PC(cpcMove, apcKing));
+	if (FCanCastle(cpcMove, csQueen) && !((BbWest1(bbKing) | BbWest2(bbKing) | BbWest3(bbKing)) - bbUnoccupied)) {
+		if (ApcBbAttacked(bbKing | BbWest1(bbKing), ~cpcMove) == apcNull) 
+			vmve.push_back(sqKing, sqKing + 2*dsqWest, PC(cpcMove, apcKing));
 	}
 }
+
+/*
+ *
+ *	Move counts. Streamlined versions of the movegen that don't actually save the move
+ *
+ */
+
+int BD::CmvPseudo(CPC cpcMove) const noexcept
+{
+	return CmvPawns(cpcMove) + CmvPieces(cpcMove) + CmvCastles(cpcMove);
+}
+
+int BD::CmvPawns(CPC cpcMove) const noexcept
+{
+	int cmv = 0;
+
+	BB bbPawns = mppcbb[PC(cpcMove, apcPawn)];
+	if (cpcMove == cpcWhite) {
+		BB bbPromotions = bbPawns & bbRank7;
+		if (bbPromotions) {
+			cmv += 4 * (BbNorth1(bbPromotions) & bbUnoccupied).csq();
+			cmv += 4 * (BbNorthEast1(bbPromotions) & mpcpcbb[~cpcMove]).csq();
+			cmv += 4 * (BbNorthWest1(bbPromotions) & mpcpcbb[~cpcMove]).csq();
+			bbPawns -= bbPromotions;
+		}
+		cmv += (BbNorthEast1(bbPawns) & mpcpcbb[~cpcMove]).csq();
+		cmv += (BbNorthWest1(bbPawns) & mpcpcbb[~cpcMove]).csq();
+		BB bbOne = BbNorth1(bbPawns) & bbUnoccupied;
+		cmv += bbOne.csq();
+		cmv += (BbNorth1(bbOne & bbRank3) & bbUnoccupied).csq();
+	}
+	else {
+		BB bbPromotions = bbPawns & bbRank2;
+		if (bbPromotions) {
+			cmv += 4 * (BbSouth1(bbPromotions) & bbUnoccupied).csq();
+			cmv += 4 * (BbSouthEast1(bbPromotions) & mpcpcbb[~cpcMove]).csq();
+			cmv += 4 * (BbSouthWest1(bbPromotions) & mpcpcbb[~cpcMove]).csq();;
+			bbPawns -= bbPromotions;
+		}
+		cmv += (BbSouthEast1(bbPawns) & mpcpcbb[~cpcMove]).csq();
+		cmv += (BbSouthWest1(bbPawns) & mpcpcbb[~cpcMove]).csq();
+		BB bbOne = BbSouth1(bbPawns) & bbUnoccupied;
+		cmv += bbOne.csq();
+		cmv += (BbSouth1(bbOne & bbRank6) & bbUnoccupied).csq();
+	}
+
+	if (!sqEnPassant.fIsNil()) {
+		BB bbEnPassant(sqEnPassant), bbFrom;
+		if (cpcMove == cpcWhite)
+			bbFrom = BbShift(bbEnPassant - bbFileA, dsqSouthWest) | BbShift(bbEnPassant - bbFileH, dsqSouthEast);
+		else
+			bbFrom = BbShift(bbEnPassant - bbFileA, dsqNorthWest) | BbShift(bbEnPassant - bbFileH, dsqNorthEast);
+		cmv += (bbFrom & bbPawns).csq();
+	}
+	return cmv;
+}
+
+
+int BD::CmvPieces(CPC cpcMove) const noexcept
+{
+	int cmv = 0;
+	BB bbTo = ~mpcpcbb[cpcMove];
+	
+	for (BB bb = mppcbb[PC(cpcMove, apcKnight)]; bb; bb.ClearLow())
+		cmv += (mpbb.BbKnightTo(bb.sqLow()) & bbTo).csq();
+	for (BB bb = mppcbb[PC(cpcMove, apcBishop)]; bb; bb.ClearLow())
+		cmv += (BbBishop1Attacked(bb.sqLow()) & bbTo).csq();
+	for (BB bb = mppcbb[PC(cpcMove, apcRook)]; bb; bb.ClearLow())
+		cmv += (BbRook1Attacked(bb.sqLow()) & bbTo).csq();
+	for (BB bb = mppcbb[PC(cpcMove, apcQueen)]; bb; bb.ClearLow())
+		cmv += (BbQueen1Attacked(bb.sqLow()) & bbTo).csq();
+
+	BB bbKing = mppcbb[PC(cpcMove, apcKing)];
+	assert(bbKing.csq() == 1);
+	SQ sqFrom = bbKing.sqLow();
+	cmv += (mpbb.BbKingTo(sqFrom) & bbTo).csq();
+	
+	return cmv;
+}
+
+
+int BD::CmvCastles(CPC cpcMove) const noexcept
+{
+	BB bbKing = mppcbb[PC(cpcMove, apcKing)];
+	SQ sqKing = bbKing.sqLow();
+	int cmv = 0;
+	if (FCanCastle(cpcMove, csKing) && !((BbEast1(bbKing) | BbEast2(bbKing)) - bbUnoccupied)) {
+		if (ApcBbAttacked(bbKing | BbEast1(bbKing), ~cpcMove) == apcNull)
+			cmv++;
+	}
+	if (FCanCastle(cpcMove, csQueen) && !((BbWest1(bbKing) | BbWest2(bbKing) | BbWest3(bbKing)) - bbUnoccupied)) {
+		if (ApcBbAttacked(bbKing | BbWest1(bbKing), ~cpcMove) == apcNull)
+			cmv++;
+	}
+	return cmv;
+}
+
 
 
 EV BD::EvFromSq(SQ sq) const noexcept
@@ -1383,12 +1507,6 @@ BDG::BDG(const char* szFEN)
 {
 	InitGame();
 	SetFen(szFEN);
-}
-
-
-BDG::BDG(const BDG& bdg) noexcept : BD(bdg), gs(bdg.gs), vmveGame(bdg.vmveGame), 
-		imvePawnOrTakeLast(bdg.imvePawnOrTakeLast), imveCurLast(bdg.imveCurLast)
-{
 }
 
 
@@ -1761,7 +1879,7 @@ void BDG::SetGs(GS gs) noexcept
  */
 wstring SzFromEv(EV ev)
 {
-	wchar_t sz[20], * pch = sz;
+	wchar_t sz[20] = { 0 }, * pch = sz;
 	if (ev >= 0)
 		*pch++ = L'+';
 	else {
@@ -1819,7 +1937,7 @@ wstring SzFromMv(MV mv)
 {
 	if (mv.fIsNil())
 		return L"--";
-	wchar_t sz[8], *pch = sz;
+	wchar_t sz[8] = { 0 }, * pch = sz;
 	*pch++ = L'a' + mv.sqFrom().file();
 	*pch++ = L'1' + mv.sqFrom().rank();
 	*pch++ = L'a' + mv.sqTo().file();

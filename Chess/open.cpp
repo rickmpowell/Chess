@@ -430,7 +430,7 @@ string to_string(TKMV tkmv)
 ERR BDG::ParseMve(const char*& pch, MVE& mve)
 {
 	VMVE vmve;
-	GenVmve(vmve, ggLegal);
+	GenMoves(vmve, ggLegal);
 
 	const char* pchInit = pch;
 	int rank, file;
@@ -715,7 +715,7 @@ TKMV BDG::TkmvScan(const char*& pch, SQ& sq) const
 NextKeyWord: ;
 	}
 
-	char ch;
+	char ch = chNull;
 	switch (ch = *pch++) {
 	case 'P': return tkmvPawn;
 	case 'B': return tkmvBishop;
@@ -915,7 +915,8 @@ Retry:
 		if (!FIsSymbol(ch, true))
 			goto Retry;
 		{
-			char szSym[256];
+			/* BUG: check for overflow */
+			char szSym[256] = { 0 };
 			char* pchSym = szSym;
 			do {
 				*pchSym++ = ch;

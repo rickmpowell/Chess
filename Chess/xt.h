@@ -128,7 +128,7 @@ class XT
 {
 	XEV2* axev2;
 public:
-	const uint32_t cxev2Max = 1UL << 19;
+	const uint32_t cxev2Max = 1UL << 16;
 	const uint32_t cxev2MaxMask = cxev2Max - 1;
 	const uint32_t cxevMax = cxev2Max * 2;
 	const unsigned ageMax = 2;
