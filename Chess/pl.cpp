@@ -29,7 +29,7 @@ const uint16_t dcYield = 512;
  */
 
 
-PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName), level(3),
+PL::PL(GA& ga, wstring szName) : ga(ga), szName(szName),
 		mveNext(mveNil), spmvNext(spmvAnimate), 
 		pvmvBreak(nullptr), imvBreakLast(-1), cBreakRepeat(0)
 {
@@ -142,8 +142,7 @@ public:
 
 
 PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
-		ttm(IfReleaseElse(ttmSmart, ttmConstDepth)),
-		//ttm(ttmSmart),
+		ttm(IfReleaseElse(ttmSmart, ttmConstDepth)), level(3),
 #ifndef NOSTATS
 		cmveTotalEval(0), 
 #endif
@@ -179,6 +178,10 @@ void PLAI::SetLevel(int level) noexcept
 	this->level = clamp(level, 1, 10);
 }
 
+void PLAI::SetTtm(TTM ttm) noexcept
+{
+	this->ttm = ttm;
+}
 
 void PLAI::StartGame(void)
 {
@@ -658,15 +661,27 @@ void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 	}
 
 	case tscEvCapture:
-	case tscEvOther:
 	{
-		/* the remainder of the moves need to compute an actual board score */
+		/* next score captures */
 		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
 			assert(pmve->tsc() == tscNil);
-			if (tscCur == tscEvCapture && !pmve->fIsCapture())
+			if (!pmve->fIsCapture())
 				continue;
 			bdg.MakeMvSq(*pmve);
-			pmve->SetTsc(tscCur);
+			pmve->SetTsc(tscEvCapture);
+			pmve->ev = -pplai->EvBdgScore(bdg, *pmve);
+			bdg.UndoMvSq(*pmve);
+		}
+		break;
+	}
+
+	case tscEvOther:
+	{
+		/* and score the remainder of the moves */
+		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
+			assert(pmve->tsc() == tscNil);
+			bdg.MakeMvSq(*pmve);
+			pmve->SetTsc(tscEvOther);
 			pmve->ev = -pplai->EvBdgScore(bdg, *pmve);
 			bdg.UndoMvSq(*pmve);
 		}
@@ -1183,6 +1198,8 @@ EV PLAI::EvMaterialTotal(BDG& bdg) const noexcept
  */
 bool PLAI::FBeforeDeadline(int depthLim) noexcept
 {
+	int mpleveldepth[10] = { 1, 2, 3, 4, 5, 8, 10, 15, 20, 100 };
+
 	if (mveBestOverall.fIsNil())
 		return true;
 
@@ -1193,7 +1210,7 @@ bool PLAI::FBeforeDeadline(int depthLim) noexcept
 		return DmsecMoveSoFar() < dmsecDeadline;
 	case ttmConstDepth:
 		/* different levels get different depths */
-		return depthLim <= level + 1;
+		return depthLim <= mpleveldepth[level];
 	}
 
 	return false;
@@ -1315,7 +1332,7 @@ EV PLAI::EvBdgAttackDefend(BDG& bdg, MVE mvePrev) const noexcept
  *
  *	Scores the board in an efficient way, for alpha-beta pre-sorting
  */
-EV PLAI::EvBdgScore(BDG& bdg, MVE mvePrev) noexcept
+__declspec(noinline) EV PLAI::EvBdgScore(BDG& bdg, MVE mvePrev) noexcept
 {
 	EV evMaterial = 0, evTempo = 0;
 
@@ -1731,10 +1748,11 @@ MVE PLHUMAN::MveGetNext(SPMV& spmv) noexcept
 
 AINFOPL::AINFOPL(void) 
 {
-	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobly", 5));
-	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"Max Mobly", 10));
-	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"SQ Mathilda", 3));
-	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"Max Mathilda", 10));
+	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobly", ttmSmart, 5));
+	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"Max Mobly", ttmSmart, 10));
+	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"SQ Mathilda", ttmSmart, 3));
+	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"Max Mathilda", ttmSmart, 10));
+	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobbly Infinite", ttmConstDepth, 10));
 	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Rick Powell"));
 	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Hazel the Dog"));
 	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Allain de Leon"));
@@ -1763,6 +1781,7 @@ PL* AINFOPL::PplFactory(GA& ga, int iinfopl) const
 		return nullptr;
 	}
 	ppl->SetLevel(vinfopl[iinfopl].level);
+	ppl->SetTtm(vinfopl[iinfopl].ttm);
 	return ppl;
 }
 

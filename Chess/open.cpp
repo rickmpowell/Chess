@@ -893,7 +893,7 @@ Retry:
 	case '"':
 		/* strings */
 	{
-		char szString[1024];
+		char szString[1024] = { 0 };
 		char* pch = szString;
 		do {
 			ch = ChNext();

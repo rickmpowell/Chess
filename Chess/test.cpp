@@ -944,9 +944,10 @@ ERR PROCPGNMOVEGEN::ProcessMv(MVE mve)
 		assert(!ga.bdg.FMvIsQuiescent(mveT));
 		ga.bdg.UndoMv();
 	}
-	ga.bdg.GenMoves(vmve2, ggPseudo+ggQuiet);
-	int cmveQuiet = vmve2.size();
-	for (MVE& mveT : vmve2) {
+	static VMVE vmve3;
+	ga.bdg.GenMoves(vmve3, ggPseudo+ggQuiet);
+	int cmveQuiet = vmve3.size();
+	for (MVE& mveT : vmve3) {
 		ga.bdg.MakeMv(mveT);
 		assert(ga.bdg.FMvIsQuiescent(mveT));
 		ga.bdg.UndoMv();

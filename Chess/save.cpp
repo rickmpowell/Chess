@@ -197,76 +197,62 @@ wstring BDG::SzDecodeMv(MVE mve, bool fPretty)
 	VMVE vmve;
 	GenMoves(vmve, ggPseudo);
 
-	/* if destination square is unique, just include the destination square */
-	SQ sqFrom = mve.sqFrom();
-	APC apc = mve.apcMove();
-	SQ sqTo = mve.sqTo();
-	SQ sqCapture = sqTo;
+	SQ sqCapture = mve.sqTo();
 
-	wchar_t sz[16];
+	wchar_t sz[16] = { 0 };
 	wchar_t* pch = sz;
 
-	switch (apc) {
+	/* get ready to handle en passant and castles, and write out the piece
+	   character for non-pawn moves */
+
+	switch (mve.apcMove()) {
 	case apcPawn:
-		if (sqTo == sqEnPassant)
-			sqCapture = SQ(sqTo.rank() ^ 1, sqTo.file());
+		if (mve.sqTo() == sqEnPassant)
+			sqCapture = SQ(mve.sqTo().rank() ^ 1, mve.sqTo().file());
 		break;
 
 	case apcKing:
-		if (sqFrom.file() == fileKing) {
-			if (sqTo.file() == fileKingKnight)
-				goto FinishCastle;
-			if (sqTo.file() == fileQueenBishop) {
-				*pch++ = L'O';
-				*pch++ = chMinus;
-FinishCastle:
-				*pch++ = L'O';
-				*pch++ = chMinus;
-				*pch++ = L'O';
-				goto FinishMove;
-			}
+		if (mve.sqFrom().file() == fileKing) {
+			if (mve.sqTo().file() == fileKingKnight)
+				return wstring(L"O-O");
+			if (mve.sqTo().file() == fileQueenBishop)
+				return wstring(L"O-O-O");
 		}
-		break;
-	case apcKnight:
-	case apcBishop:
-	case apcRook:
-	case apcQueen:
-		break;
+		[[fallthrough]];
 	default:
-		assert(false);
+		if (!fPretty)
+			*pch++ = mpapcch[mve.apcMove()];
+		else
+			*pch++ = mpapcchFig[CpcFromSq(mve.sqFrom())][mve.apcMove()];
 		break;
 	}
 
-	if (apc != apcPawn) {
-		if (!fPretty)
-			*pch++ = mpapcch[apc];
-		else
-			*pch++ = mpapcchFig[CpcFromSq(sqFrom)][apc];
-	}
-
-	/* for ambiguous moves, we need to add various from square qualifiers depending
-	 * on where the ambiguity is */
+	/* for ambiguous moves, we need to add various from-square qualifiers depending
+	   on where the ambiguity is; for pawn captures, we just show the file of the
+	   pawn that is doing the capturing, since that uniequely specifies the pawn */
 
 	if (FMvApcAmbiguous(vmve, mve)) {
 		if (!FMvApcFileAmbiguous(vmve, mve))
-			*pch++ = L'a' + sqFrom.file();
+			*pch++ = L'a' + mve.sqFrom().file();
 		else {
 			if (FMvApcRankAmbiguous(vmve, mve))
-				*pch++ = L'a' + sqFrom.file();
-			*pch++ = L'1' + sqFrom.rank();
+				*pch++ = L'a' + mve.sqFrom().file();
+			*pch++ = L'1' + mve.sqFrom().rank();
 		}
 	}
-	else if (apc == apcPawn && !FIsEmpty(sqCapture))
-		*pch++ = L'a' + sqFrom.file();
+	else if (mve.apcMove() == apcPawn && !FIsEmpty(sqCapture))
+		*pch++ = L'a' + mve.sqFrom().file();
 
-	/* if we fall out, there is no ambiguity with the apc moving to the
-	   destination square */
+	/* and put the destination square */
+
 	if (!FIsEmpty(sqCapture))
-		*pch++ = fPretty ? chMultiply : 'x';
-	*pch++ = L'a' + sqTo.file();
-	*pch++ = L'1' + sqTo.rank();
+		*pch++ = fPretty ? chMultiply : L'x';
+	*pch++ = L'a' + mve.sqTo().file();
+	*pch++ = L'1' + mve.sqTo().rank();
 
-	if (apc == apcPawn && sqTo == sqEnPassant) {
+	/* en passant */
+
+	if (mve.apcMove() == apcPawn && mve.sqTo() == sqEnPassant) {
 		if (fPretty)
 			*pch++ = chNonBreakingSpace;	
 		*pch++ = L'e';
@@ -275,15 +261,15 @@ FinishCastle:
 		*pch++ = L'.';
 	}
 
-	{
-	APC apcPromote = mve.apcPromote();
-	if (apcPromote != apcNull) {
+	/* promotions */
+
+	if (mve.apcPromote() != apcNull) {
 		*pch++ = chEqual;
-		*pch++ = mpapcch[apcPromote];
-	}
+		*pch++ = mpapcch[mve.apcPromote()];
 	}
 
-FinishMove:
+	/* and wrap up the string in a wstring and return it */
+
 	*pch = 0;
 	return wstring(sz);
 }

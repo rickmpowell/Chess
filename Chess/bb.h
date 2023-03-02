@@ -298,10 +298,10 @@ public:
 
 	/* standard shifts */
 
-	__forceinline BB operator<<(int dsq) const noexcept { assert(dsq>0); return BB(grf << dsq); }
-	__forceinline BB& operator<<=(int dsq) noexcept { assert(dsq>0); grf <<= dsq; return *this; }
-	__forceinline BB operator>>(int dsq) const noexcept { assert(dsq>0); return BB(grf >> dsq); }
-	__forceinline BB& operator>>=(int dsq) noexcept { assert(dsq>0); grf >>= dsq; return *this; }
+	__forceinline BB operator<<(int dsq) const noexcept { assert(dsq>=0); return BB(grf << dsq); }
+	__forceinline BB& operator<<=(int dsq) noexcept { assert(dsq>=0); grf <<= dsq; return *this; }
+	__forceinline BB operator>>(int dsq) const noexcept { assert(dsq>=0); return BB(grf >> dsq); }
+	__forceinline BB& operator>>=(int dsq) noexcept { assert(dsq>=0); grf >>= dsq; return *this; }
 
 	/* comparisons */
 
@@ -376,21 +376,36 @@ const int dsqNorthWest = 7;
 const int dsqNorthEast = 9;
 const int dsqSouthWest = -9;
 const int dsqSouthEast = -7;
+static_assert(dsqNorthWest == dsqNorth + dsqWest);
+static_assert(dsqNorthEast == dsqNorth + dsqEast);
+static_assert(dsqSouthWest == dsqSouth + dsqWest);
+static_assert(dsqSouthEast == dsqSouth + dsqEast);
 
 __forceinline BB BbShift(BB bb, int dsq) noexcept { return dsq > 0 ? (bb << dsq) : (bb >> -dsq); }
-__forceinline BB BbEast1(const BB& bb) noexcept { return BbShift(bb - bbFileH, dsqEast); }
-__forceinline BB BbEast2(const BB& bb) noexcept { return BbShift(bb - bbFileGH, 2*dsqEast); }
-__forceinline BB BbWest1(const BB& bb) noexcept { return BbShift(bb - bbFileA, dsqWest); }
-__forceinline BB BbWest2(const BB& bb) noexcept { return BbShift(bb - bbFileAB, 2*dsqWest); }
-__forceinline BB BbWest3(const BB& bb) noexcept { return BbShift(bb - bbFileABC, 3*dsqWest); }
-__forceinline BB BbNorth1(const BB& bb) noexcept { return BbShift(bb, dsqNorth); }
-__forceinline BB BbNorth2(const BB& bb) noexcept { return BbShift(bb, 2*dsqNorth); }
-__forceinline BB BbSouth1(const BB& bb) noexcept { return BbShift(bb, dsqSouth); }
-__forceinline BB BbSouth2(const BB& bb) noexcept { return BbShift(bb, 2*dsqSouth); }
-__forceinline BB BbNorthWest1(const BB& bb) noexcept { return BbShift(bb - bbFileA, dsqNorthWest); }
-__forceinline BB BbNorthEast1(const BB& bb) noexcept { return BbShift(bb - bbFileH, dsqNorthEast); }
-__forceinline BB BbSouthWest1(const BB& bb) noexcept { return BbShift(bb - bbFileA, dsqSouthWest); }
-__forceinline BB BbSouthEast1(const BB& bb) noexcept { return BbShift(bb - bbFileH, dsqSouthEast); }
+__forceinline BB BbEast1(BB bb) noexcept { return BbShift(bb - bbFileH, dsqEast); }
+__forceinline BB BbEast2(BB bb) noexcept { return BbShift(bb - bbFileGH, 2*dsqEast); }
+__forceinline BB BbWest1(BB bb) noexcept { return BbShift(bb - bbFileA, dsqWest); }
+__forceinline BB BbWest2(BB bb) noexcept { return BbShift(bb - bbFileAB, 2*dsqWest); }
+__forceinline BB BbWest3(BB bb) noexcept { return BbShift(bb - bbFileABC, 3*dsqWest); }
+__forceinline BB BbNorth1(BB bb) noexcept { return BbShift(bb, dsqNorth); }
+__forceinline BB BbNorth2(BB bb) noexcept { return BbShift(bb, 2*dsqNorth); }
+__forceinline BB BbSouth1(BB bb) noexcept { return BbShift(bb, dsqSouth); }
+__forceinline BB BbSouth2(BB bb) noexcept { return BbShift(bb, 2*dsqSouth); }
+
+__forceinline BB BbNorthWest1(BB bb) noexcept { return BbShift(bb - bbFileA, dsqNorthWest); }
+__forceinline BB BbNorthEast1(BB bb) noexcept { return BbShift(bb - bbFileH, dsqNorthEast); }
+__forceinline BB BbSouthWest1(BB bb) noexcept { return BbShift(bb - bbFileA, dsqSouthWest); }
+__forceinline BB BbSouthEast1(BB bb) noexcept { return BbShift(bb - bbFileH, dsqSouthEast); }
+
+__forceinline BB BbWest1(BB bb, int dsq) noexcept { return BbShift(bb - bbFileA, dsq + dsqWest); }
+__forceinline BB BbEast1(BB bb, int dsq) noexcept { return BbShift(bb - bbFileH, dsq + dsqEast); }
+__forceinline BB BbVertical(BB bb, int dsq) noexcept { return BbShift(bb, dsq); }
+
+__forceinline BB BbRankBack(CPC cpc) noexcept { return bbRank1 << ((7*8) & (-(int)cpc)); }
+__forceinline BB BbRankPawnsInit(CPC cpc) noexcept { return bbRank2 << ((5*8) & (-(int)cpc)); }
+__forceinline BB BbRankPawnsFirst(CPC cpc) noexcept { return bbRank3 << ((3*8) & (-(int)cpc)); }
+__forceinline BB BbRankPrePromote(CPC cpc) noexcept { return bbRank7 >> ((5*8) & (-(int)cpc)); }
+__forceinline BB BbRankPromote(CPC cpc) noexcept { return bbRank8 >> ((7*8) & (-(int)cpc)); }
 
 
 /*

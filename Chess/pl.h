@@ -12,6 +12,18 @@
 #include "xt.h"
 
 
+ /*
+  *	TTM - time management styles
+  */
+
+enum TTM : int
+{
+	ttmNull = 0,
+	ttmConstDepth,
+	ttmTimePerMove,
+	ttmSmart
+};
+
 
 /*
  *
@@ -31,7 +43,6 @@ class PL
 protected:
 	GA& ga;
 	wstring szName;
-	int level;
 
 	MVE mveNext;
 	SPMV spmvNext;
@@ -50,8 +61,9 @@ public:
 	void ReceiveMv(MVE mve, SPMV spmv);
 
 	virtual bool FHasLevel(void) const noexcept { return false; }
-	virtual int Level(void) const noexcept { return level; }
-	virtual void SetLevel(int level) noexcept { this->level = level; }
+	virtual int Level(void) const noexcept { return -1; }
+	virtual void SetLevel(int level) noexcept { }
+	virtual void SetTtm(TTM ttm) noexcept { }
 	virtual void SetFecoRandom(uint16_t) noexcept { }
 
 	virtual EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
@@ -285,16 +297,6 @@ inline wstring to_wstring(AB ab) noexcept { return (wstring)ab; }
 
 
 /*
- *	TTM - time management styles
- */
-
-enum TTM : int {
-	ttmConstDepth,
-	ttmTimePerMove,
-	ttmSmart
-};
-
-/*
  *	SINT search interrupt types
  */
 
@@ -404,14 +406,15 @@ protected:
 						   to board eval - which is generated from the Zobrist hash */
 	
 	MVE mveBestOverall;	/* during search, root level best move so far */
-	TTM ttm;
 	DWORD dmsecDeadline, dmsecFlag;
 	time_point<high_resolution_clock> tpMoveFirst;
 	
 	XT xt;	
 
 	uint16_t cYield;
+	int level;
 	SINT sint;
+	TTM ttm;
 
 #ifndef NOSTATS
 	/* logging statistics */
@@ -422,16 +425,15 @@ protected:
 	STBF stbfMain;
 	STBF stbfQuiescent;
 
-
 public:
 	PLAI(GA& ga);
-
-	virtual void StartGame(void);
 	virtual bool FHasLevel(void) const noexcept;
 	virtual void SetLevel(int level) noexcept;
+	virtual int Level(void) const noexcept { return level; }
 	virtual void SetFecoRandom(uint16_t fecoRandom) noexcept { this->fecoRandom = fecoRandom; }
-
-	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
+	virtual void SetTtm(TTM ttm) noexcept;
+	
+	virtual void StartGame(void);
 	void PumpMsg(bool fForce) noexcept;
 
 	/* search */
@@ -462,14 +464,15 @@ protected:
 
 	virtual EV EvBdgScore(BDG& bdg, MVE mvePrev) noexcept;
 	virtual EV EvBdgStatic(BDG& bdg, MVE mve) noexcept;
-	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept; 
-	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	virtual void InitWeightTables(void);
+	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept;
+	EV EvBdgPawnStructure(BDG& bdg, CPC cpc) noexcept;
 	void InitWeightTable(const EV mpapcev[apcMax], const EV mpapcsqdev[apcMax][64], EV mpapcsqev[apcMax][64]);
 	EV EvFromPst(const BDG& bdg) const noexcept;
 	inline void ComputeMpcpcev1(const BDG& bdg, EV mpcpcev[], const EV mpapcsqev[apcMax][sqMax]) const noexcept;
 	inline void ComputeMpcpcev2(const BDG& bdg, EV mpcpcev1[], EV mpcpcev2[],
 					  const EV mpapcsqev1[apcMax][sqMax], const EV mpapcsqev2[apcMax][sqMax]) const noexcept;
+	EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	inline EV EvInterpolate(GPH gph, EV ev1, GPH gph1, EV ev2, GPH gph2) const noexcept;
 	EV EvBdgAttackDefend(BDG& bdg, MVE mvePrev) const noexcept;
 	EV EvTempo(const BDG& bdg) const noexcept;
@@ -478,6 +481,7 @@ protected:
 	int CfileIsoPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CsqWeak(BDG& bdg, CPC cpc) const noexcept;
+
 
 	/* logging */
 	
@@ -531,7 +535,7 @@ public:
 
 /*
  *
- *	RGINFOPL
+ *	AINFOPL
  * 
  *	The list of available players we have to play a game.
  * 
@@ -558,7 +562,10 @@ struct INFOPL
 	TPL tpl;
 	wstring szName;
 	int level;
-	INFOPL(IDCLASSPL idclasspl, TPL tpl, const wstring& szName, int level = 0) : idclasspl(idclasspl), tpl(tpl), szName(szName), level(level)
+	TTM ttm;
+
+	INFOPL(IDCLASSPL idclasspl, TPL tpl, const wstring& szName, TTM ttm = ttmNull, int level = 0) : 
+		idclasspl(idclasspl), tpl(tpl), szName(szName), ttm(ttm), level(level)
 	{
 	}
 };

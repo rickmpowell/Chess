@@ -246,6 +246,11 @@ public:
 		usqTo = sqTo;
 		upcMove = pcMove;
 	}
+#pragma warning(suppress:26495)	
+	__forceinline MVE(MV mv) noexcept {
+		*(uint64_t*)this = 0;
+		*(MV*)this = mv;
+	}
 
 	__forceinline operator uint64_t() const noexcept { return *(uint64_t*)this; }
 	__forceinline operator MVU() const noexcept { return *(uint32_t*)this; }
