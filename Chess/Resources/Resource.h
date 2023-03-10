@@ -47,12 +47,12 @@
 #define idsTipPrevEpdLine       42
 
 
-
  /*
  *	Dialog definitions
  */
 
-#define idtNil					-1
+#define idNil                   (-1)
+#define idtNil					idNil
 
 #define iddAbout				1
 
@@ -65,6 +65,9 @@
 #define ideAIBreakMoveSequence	257
 #define ideAIBreakRepeatCount	258
 #define idtAIBreakInst			259
+
+#define iddCreateNewPlayer      4
+
 
 /*
  *	menus, accelerators, and commands
@@ -124,7 +127,8 @@
 #define cmdMakeNullMove         48
 #define cmdToggleValidation     49
 #define cmdCopyFen              50
-#define cmdMax					51
+#define cmdCreateNewPlayer      51
+#define cmdMax					52
 
 /*
  *	icons

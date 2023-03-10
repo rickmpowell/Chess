@@ -112,6 +112,7 @@
     <ClInclude Include="bd.h" />
     <ClInclude Include="co.h" />
     <ClInclude Include="debug.h" />
+    <ClInclude Include="dlg.h" />
     <ClInclude Include="eval_plai.h" />
     <ClInclude Include="eval_plai2.h" />
     <ClInclude Include="framework.h" />
@@ -135,6 +136,7 @@
     <ClCompile Include="app.cpp" />
     <ClCompile Include="bd.cpp" />
     <ClCompile Include="debug.cpp" />
+    <ClCompile Include="dlg.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ga.cpp" />
     <ClCompile Include="uiml.cpp" />

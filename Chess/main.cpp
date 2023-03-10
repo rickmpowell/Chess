@@ -9,7 +9,7 @@
 #include "app.h"
 #include "uiga.h"
 #include "ga.h"
-#include "Resources/Resource.h"
+#include "dlg.h"
 
 
 APP* papp;
@@ -629,26 +629,6 @@ int APP::DepthShow(void) const noexcept
  */
 
 
- /*  AboutDlgProc
-  *
-  *  Message handler for about box.
-  */
-INT_PTR CALLBACK AboutDlgProc(HWND hdlg, UINT wm, WPARAM wParam, LPARAM lParam)
-{
-    switch (wm) {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) != IDOK && LOWORD(wParam) != IDCANCEL)
-            break;
-        ::EndDialog(hdlg, LOWORD(wParam));
-        return (INT_PTR)TRUE;
-    }
-    return (INT_PTR)FALSE;
-}
-
-
 class CMDABOUT : public CMD
 {
 public:
@@ -656,8 +636,8 @@ public:
 
     virtual int Execute(void) 
     {
-        ::DialogBox(app.hinst, MAKEINTRESOURCE(iddAbout), app.hwnd, AboutDlgProc);
-        return 1;
+        DLG dlg(app, iddAbout);
+        return dlg.Run();
     }
 };
 
@@ -888,7 +868,7 @@ public:
  */
 
 
-enum TPERFT {
+enum TPERFT : int {
     tperftNormal = 0,
     tperftBulk = 1,
     tperftDivide = 2
@@ -897,80 +877,47 @@ enum TPERFT {
 wstring to_wstring(TPERFT tperft)
 {
     switch (tperft) {
-    case tperftBulk:
-        return L"Bulk";
-    case tperftDivide:
-        return L"Divide";
-    default:
-        return L"Normal";
+    case tperftBulk: return L"Bulk";
+    case tperftDivide: return L"Divide";
+    default: return L"Normal";
     }
 }
+
 
 struct DDPERFT {
-    TPERFT tperft;
+    int tperft;
     int depth;
 };
+static DDPERFT ddperft = { tperftBulk, 6 };
 
-INT_PTR CALLBACK TestPerftDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam)
+
+class DLGPERFT : public DLG
 {
-    DDPERFT* pddperft;
-    switch (wm) {
-    case WM_INITDIALOG:
+public:
+    DDPERFT ddperft;
+    DCTLINT dctlDepth;
+    DCTLCOMBO dctlTperft;
+
+    DLGPERFT(APP& app, const DDPERFT& ddperft) : DLG(app, iddTestPerft),
+            ddperft(ddperft),
+            dctlDepth(*this, idePerftDepth, &this->ddperft.depth, 2, 30, L"Depth must be an integer between 2 and 30"),
+            dctlTperft(*this, idcPerftType, &this->ddperft.tperft)
     {
-        pddperft = (DDPERFT*)lparam;
-        ::SetWindowLongPtr(hdlg, DWLP_USER, lparam);
-        ::SetDlgItemTextW(hdlg, idePerftDepth, to_wstring(pddperft->depth).c_str());
-        HWND hwndCombo = ::GetDlgItem(hdlg, idcPerftType);
-        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(tperftNormal).c_str());
-        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(tperftBulk).c_str());
-        ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)to_wstring(tperftDivide).c_str());
-        ::SendMessageW(hwndCombo, CB_SETCURSEL, (WPARAM)pddperft->tperft, 0);
-        HWND hwndParent = GetParent(hdlg);
-        RECT rcParent, rcDlg;
-        GetWindowRect(hwndParent, &rcParent);
-        GetWindowRect(hdlg, &rcDlg);
-        SetWindowPos(hdlg, NULL,
-            (rcParent.left + rcParent.right - (rcDlg.right - rcDlg.left)) / 2,
-            (rcParent.top + rcParent.bottom - (rcDlg.bottom - rcDlg.top)) / 2,
-            0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
-        return (INT_PTR)true;
     }
-    case WM_COMMAND:
-        switch (LOWORD(wparam)) {
-        case IDOK:
-            wchar_t sz[256];
-            pddperft = (DDPERFT*)::GetWindowLongPtr(hdlg, DWLP_USER);
-            ::GetDlgItemTextW(hdlg, idePerftDepth, sz, CArray(sz));
-            int depth;
-            try {
-                depth = stoi(sz);
-                if (depth < 2 || depth > 20)
-                    throw 0;
-            } 
-            catch (...) {
-                ::MessageBoxW(hdlg, L"Depth must be an integer between 2 and 20", L"Error", MB_OK);
-                break;
-            }
-            pddperft->tperft = (TPERFT)::SendDlgItemMessage(hdlg, idcPerftType, CB_GETCURSEL, 0, 0);
-            pddperft->depth = depth;
-            [[fallthrough]];
-        case IDCANCEL:
-            ::EndDialog(hdlg, LOWORD(wparam));
-            return (INT_PTR)true;
-        default:
-            break;
-        }
-        break;
+
+    virtual void Init(void)
+    {
+        dctlTperft.Add(to_wstring(tperftNormal));
+        dctlTperft.Add(to_wstring(tperftBulk));
+        dctlTperft.Add(to_wstring(tperftDivide));
+        DLG::Init();
     }
-    return (INT_PTR)false;
-}
+};
 
 
 class CMDPERFTDIVIDE : public CMD
 {
 public:
-
-    static DDPERFT ddperft;
     bool fPrompt;
 
 public:
@@ -979,11 +926,13 @@ public:
     virtual int Execute(void)
     {
         if (fPrompt) {
-            if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddTestPerft), app.hwnd, TestPerftDlgProc, (LPARAM)&ddperft) != IDOK)
-                return 1;
+            DLGPERFT dlgperft(app, ddperft);
+            if (dlgperft.Run()!= IDOK)
+                return 0;
+            ddperft = dlgperft.ddperft;
         }
 
-        LogOpen(L"perft " + to_wstring(ddperft.tperft), to_wstring(ddperft.depth), lgfBold);
+        LogOpen(L"perft " + to_wstring((TPERFT)ddperft.tperft), to_wstring(ddperft.depth), lgfBold);
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
         uint64_t cmv;
         switch (ddperft.tperft) {
@@ -1013,8 +962,6 @@ public:
         return wstring(L"perft ") + to_wstring(ddperft.depth) + L"\tCtrl+P";
     }
 };
-
-DDPERFT CMDPERFTDIVIDE::ddperft = { tperftBulk, 6 };
 
 
 /*  
@@ -1087,47 +1034,86 @@ public:
  */
 
 
-class DDAIBREAK
+class DDAIBREAK : public DD
 {
 public:
-    UIGA* puiga;
-    CPC cpc;
     vector<MV> vmv;
+    int cpc;
     int cRepeat;
 
-    DDAIBREAK() : puiga(nullptr), cpc(cpcWhite), cRepeat(1) {
+    DDAIBREAK() : cpc(cpcWhite), cRepeat(1) { }
+};
+
+
+class DLGAIBREAK : public DLG
+{
+public:
+    DDAIBREAK ddaibreak;
+    DCTLINT dctlRepeat;
+    DCTLCOMBO dctlPlayer;
+
+    DLGAIBREAK(APP& app, const DDAIBREAK& ddaibreak) : DLG(app, iddAIBreak),
+        ddaibreak(ddaibreak),
+        dctlRepeat(*this, ideAIBreakRepeatCount, &this->ddaibreak.cRepeat, 1, 20, L"Repeat count must be between 1 and 20"),
+        dctlPlayer(*this, idcAIBreakPlayer, &this->ddaibreak.cpc)
+    { 
     }
 
-    wstring SzDecodeMoveList(void) {
+    virtual void Init(void)
+    {
+        ::SendDlgItemMessageW(hdlg, idtAIBreakInst, WM_SETFONT,
+                              (WPARAM)::CreateFontW(-12, 0, 0, 0, FW_NORMAL, false, false, false,
+                                                    ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, L"Arial"), 1);
+        ::SetDlgItemTextW(hdlg, ideAIBreakMoveSequence, SzDecodeMoveList(&ddaibreak).c_str());
+        dctlPlayer.Add(app.puiga->ga.PplFromCpc(cpcWhite)->SzName());
+        dctlPlayer.Add(app.puiga->ga.PplFromCpc(cpcBlack)->SzName());
+        DLG::Init();
+    }
+
+    virtual bool FValidate(void)
+    {
+        if (!DLG::FValidate())
+            return false;
+        wchar_t sz[1024];
+        ::GetDlgItemTextW(hdlg, ideAIBreakMoveSequence, sz, CArray(sz));
+        if (!FParseMoveList(sz, ddaibreak.vmv)) {
+            Error(L"Invalid move list.");
+            return false;
+        }
+        return true;
+    }
+
+    wstring SzDecodeMoveList(DDAIBREAK* pddaibreak) 
+    {
         wstring sz;
-        for (MV mv : vmv)
+        for (MV mv : pddaibreak->vmv)
             sz += SzFromMv(mv) + L" ";
         return sz;
     }
 
-    void ParseSq(wstring sz, int& ich, SQ& sq)
-    {
-        wchar_t ch;
-        if (!in_range(ch = tolower(sz[ich++]), L'a', L'h'))
-            throw 1;
-        int file = ch - L'a';
-        if (!in_range(ch = sz[ich++], L'1', L'8'))
-            throw 1;
-        int rank = ch - '1';
-        sq = SQ(rank, file);
+    bool FParseMoveList(wstring sz, vector<MV>& vmv)
+    {    
+        vmv.clear();
+        MV mv;
+        for (int ich = 0; FParseMv(sz, ich, mv); ) {
+            if (mv.fIsNil())
+                return true;
+            vmv.push_back(mv);
+        }
+        return false;
     }
 
-    void ParseMv(wstring sz, int& ich, MV& mv)
+    bool FParseMv(wstring sz, int& ich, MV& mv)
     {
         mv = mvNil;
         /* skip whitespace */
         while (ich < sz.size() && isspace(sz[ich]))
             ich++;
         if (sz[ich] == L'\0')
-            return;
+            return true;
         SQ sqFrom, sqTo;
-        ParseSq(sz, ich, sqFrom);
-        ParseSq(sz, ich, sqTo);
+        if (!FParseSq(sz, ich, sqFrom) || !FParseSq(sz, ich, sqTo))
+            return false;
         mv = MV(sqFrom, sqTo);
         if (sz[ich] == L'=') {
             switch (tolower(sz[++ich])) {
@@ -1136,116 +1122,43 @@ public:
             case 'b': mv.SetApcPromote(apcBishop); break;
             case 'n': mv.SetApcPromote(apcKnight); break;
             default:
-                throw 1;
+                return false;
             }
-            ich++;
         }
+        return true;
     }
 
-    vector<MV> ParseMoveList(wstring sz) 
+    bool FParseSq(wstring sz, int& ich, SQ& sq)
     {
-        vector<MV> vmv;
-        for (int ich = 0;;) {
-            MV mv;
-            ParseMv(sz, ich, mv);
-            if (mv.fIsNil())
-                break;
-            vmv.push_back(mv);
-        }    
-        return vmv;
+        wchar_t ch;
+        if (!in_range(ch = tolower(sz[ich++]), L'a', L'h'))
+            return false;
+        int file = ch - L'a';
+        if (!in_range(ch = sz[ich++], L'1', L'8'))
+            return false;
+        int rank = ch - '1';
+        sq = SQ(rank, file);
+        return true;
     }
 };
 
-INT_PTR CALLBACK AIBreakDlgProc(HWND hdlg, UINT wm, WPARAM wparam, LPARAM lparam)
-{
-    DDAIBREAK* pddaibreak;
-
-    switch (wm) {
-    case WM_INITDIALOG:
-    {
-        pddaibreak = (DDAIBREAK*)lparam;
-        ::SetWindowLongPtr(hdlg, DWLP_USER, lparam);
-        ::SendDlgItemMessageW(hdlg, idtAIBreakInst, WM_SETFONT,
-                              (WPARAM)::CreateFontW(-12, 0, 0, 0, FW_NORMAL, false, false, false,
-                                            ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, L"Arial"), 1);
-        ::SetDlgItemTextW(hdlg, ideAIBreakMoveSequence, pddaibreak->SzDecodeMoveList().c_str());
-        ::SetDlgItemTextW(hdlg, ideAIBreakRepeatCount, to_wstring(pddaibreak->cRepeat).c_str());
-        HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
-        for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
-            PL* ppl = pddaibreak->puiga->ga.PplFromCpc(cpc);
-            ::SendMessageW(hwndCombo, CB_ADDSTRING, 0, (LPARAM)ppl->SzName().c_str());
-        }
-        ::SendMessageW(hwndCombo, CB_SETCURSEL, (WPARAM)pddaibreak->cpc, 0);
-        return (INT_PTR)true;
-    }
-    case WM_COMMAND:
-        switch (LOWORD(wparam)) {
-        case IDOK:
-        {
-            pddaibreak = (DDAIBREAK*)::GetWindowLongPtr(hdlg, DWLP_USER);
-            
-            HWND hwndCombo = ::GetDlgItem(hdlg, idcAIBreakPlayer);
-            CPC cpc = (CPC)::SendMessage(hwndCombo, CB_GETCURSEL, 0, 0);
-            int cRepeat;
-            vector<MV> vmv;
-
-            wchar_t sz[256];
-            ::GetDlgItemTextW(hdlg, ideAIBreakRepeatCount, sz, CArray(sz));
-            try {
-                cRepeat = stoi(sz);
-                if (cRepeat < 1 || cRepeat > 20)
-                    throw 0;
-            }
-            catch (...) {
-                ::MessageBoxW(hdlg, L"Repeat count musts be between 1 and 20", L"Error", MB_OK);
-                break;
-            }
-
-            ::GetDlgItemTextW(hdlg, ideAIBreakMoveSequence, sz, CArray(sz));
-
-            try {
-                vmv = pddaibreak->ParseMoveList(sz);
-            }
-            catch (...) {
-                ::MessageBoxW(hdlg, L"Invalid move list.", L"Error", MB_OK);
-                break;
-            }
-
-            pddaibreak->cpc = cpc;
-            pddaibreak->cRepeat = cRepeat;
-            pddaibreak->vmv = vmv;
-        }
-            [[fallthrough]];
-        case IDCANCEL:
-            ::EndDialog(hdlg, LOWORD(wparam));
-            return (INT_PTR)true;
-        default:
-            break;
-        }
-        break;
-    }
-    return (INT_PTR)false;
-}
-
+static DDAIBREAK ddaibreak;
 
 class CMDAIBREAK : public CMD
 {
-    static DDAIBREAK ddaibreak;
-
 public:
     CMDAIBREAK(APP& app, int icmd) : CMD(app, icmd) { }
 
     virtual int Execute(void)
     {
-        ddaibreak.puiga = app.puiga;
-        if (::DialogBoxParamW(app.hinst, MAKEINTRESOURCE(iddAIBreak), app.hwnd, AIBreakDlgProc, (LPARAM)&ddaibreak) != IDOK)
-            return 1;
-        app.puiga->ga.PplFromCpc(ddaibreak.cpc)->SetAIBreak(ddaibreak.vmv);
+        DLGAIBREAK dlgaibreak(app, ddaibreak);
+        if (dlgaibreak.Run() == IDOK) {
+            ddaibreak = dlgaibreak.ddaibreak;
+            app.puiga->ga.PplFromCpc((CPC)ddaibreak.cpc)->SetAIBreak(ddaibreak.vmv);
+        }
         return 1;
     }
 };
-
-DDAIBREAK CMDAIBREAK::ddaibreak;
 
 
 /*
@@ -1825,6 +1738,24 @@ public:
 };
 
 
+/*
+ *
+ *  CMDCREATENEWPLAYER 
+ * 
+ */
+
+class CMDCREATENEWPLAYER : public CMD
+{
+public:
+    CMDCREATENEWPLAYER(APP& app, int icmd) : CMD(app, icmd) { }
+
+    virtual int Execute(void)
+    {
+        DLG dlg(app, iddCreateNewPlayer);
+        return dlg.Run();
+    }
+};
+
 
 /*
  *
@@ -1915,6 +1846,7 @@ void APP::InitCmdList(void)
     vcmd.Add(new CMDMAKENULLMOVE(*this, cmdMakeNullMove));
     vcmd.Add(new CMDTOGGLEVALIDATION(*this, cmdToggleValidation));
     vcmd.Add(new CMDCOPYFEN(*this, cmdCopyFen));
+    vcmd.Add(new CMDCREATENEWPLAYER(*this, cmdCreateNewPlayer));
 }
 
 

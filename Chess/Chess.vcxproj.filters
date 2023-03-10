@@ -81,6 +81,9 @@
     <ClInclude Include="co.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ga.cpp">
@@ -132,6 +135,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="uipcp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
