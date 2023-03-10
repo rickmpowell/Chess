@@ -99,9 +99,10 @@ public:
 	VMVE::it pmveNext;
 	int cmvLegal;
 	PLAI* pplai;
+	int depth;
 
 public:
-	inline VMVES(BDG& bdg, PLAI* pplai, GG gg) noexcept;
+	inline VMVES(BDG& bdg, PLAI* pplai, int depth, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
@@ -123,30 +124,13 @@ class VMVESS : public VMVES
 	TSC tscCur;	/* the score type we're currently enumerating */
 
 public:
-	VMVESS(BDG& bdg, PLAI* pplai, GG gg) noexcept;
+	VMVESS(BDG& bdg, PLAI* pplai, int depth, GG gg) noexcept;
 	bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	void Reset(BDG& bdg) noexcept;
 
 private:
 	MVE* PmveBestFromTscCur(VMVE::it pmveFirst) noexcept;
 	void PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept;
-};
-
-
-/*
- *
- *	VMVESQ enumeration
- *
- *	Enumerates noisy moves
- *
- */
-
-
-class VMVESQ : public VMVES
-{
-public:
-	VMVESQ(BDG& bdg, PLAI* pplai, GG gg) noexcept;
-	bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 };
 
 
@@ -342,8 +326,8 @@ public:
 	inline void Init(void) noexcept { cmveNode = 0; cmveGen = 0; }
 	STBF operator+(const STBF& stbf) const noexcept { return STBF(cmveNode + stbf.cmveNode, cmveGen + stbf.cmveGen); }
 	inline STBF& operator+=(STBF& stbf) noexcept { cmveNode += stbf.cmveNode; cmveGen += stbf.cmveGen; return *this; }
-	inline void AddNode(int cmve) noexcept { cmveNode += cmve; }
-	inline void AddGen(int cmve) noexcept { cmveGen += cmve; }
+	inline void IncNode(void) noexcept { ++cmveNode; }
+	inline void IncGen(void) noexcept { ++cmveGen; }
 	
 	operator wstring() noexcept { 
 		if (cmveGen == 0)
@@ -384,7 +368,6 @@ class PLAI : public PL
 {
 	friend class VMVES;
 	friend class VMVESS;
-	friend class VMVESQ;
 	friend class LOGMVE;
 	friend class LOGMVES;
 	friend class LOGMVEQ;
@@ -399,7 +382,7 @@ protected:
 #include "eval_plai.h"
 
 	/* coefficients this divided by 100 */
-	uint16_t fecoMaterial, fecoMobility, fecoKingSafety, fecoPawnStructure, fecoTempo, fecoRandom;
+	uint16_t fecoPsqt, fecoMaterial, fecoMobility, fecoKingSafety, fecoPawnStructure, fecoTempo, fecoRandom;
 	const uint16_t fecoScale = 10;
 	mt19937_64 rgen;	/* random number generator */
 	uint64_t habdRand;	/* random number generated at the start of every search used to add randomness
@@ -407,7 +390,7 @@ protected:
 	
 	MVE mveBestOverall;	/* during search, root level best move so far */
 	DWORD dmsecDeadline, dmsecFlag;
-	time_point<high_resolution_clock> tpMoveFirst;
+	time_point<high_resolution_clock> tpMoveStart;
 	
 	XT xt;	
 
@@ -416,14 +399,12 @@ protected:
 	SINT sint;
 	TTM ttm;
 
-#ifndef NOSTATS
 	/* logging statistics */
-	time_point<high_resolution_clock> tpStart;
-	size_t cmveTotalEval;
-#endif
-	STBF stbfTotal;
-	STBF stbfMain;
-	STBF stbfQuiescent;
+
+	STBF stbfMain;	/* stats for main search, but not quiescent */
+	STBF stbfMainAndQ;	/* stats for main + quiescent */
+	STBF stbfMainTotal;	/* cummulative all stats for iterative deepening */
+	STBF stbfMainAndQTotal;	/* cummulative all stats for iterative deepening */
 
 public:
 	PLAI(GA& ga);
@@ -445,12 +426,13 @@ protected:
 	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int depth, TS ts) noexcept; 
 	inline bool FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
 	inline bool FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& depthLim) const noexcept;
-	inline bool FDeepen(MVE mveBest, AB& ab, int& depth) noexcept;
+	inline bool FDeepen(BDG& bdg, MVE mveBest, AB& ab, int& depth) noexcept;
 	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int depth) const noexcept;
-	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int depth) noexcept;
-	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int depth) noexcept;
+	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim) noexcept;
+	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int depth, int depthLim) noexcept;
 	inline bool FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept;
 	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept;
+	inline bool FTestForDraws(BDG& bdg, MVE& mve) noexcept;
 
 	/* time management */
 
@@ -458,11 +440,13 @@ protected:
 	virtual bool FBeforeDeadline(int depthLim) noexcept;
 	SINT SintTimeMan(void) const noexcept;
 	EV EvMaterialTotal(BDG& bdg) const noexcept;
+	EV EvMaterial(BDG& bdg, CPC cpc) const noexcept;
 	DWORD DmsecMoveSoFar(void) const noexcept;
 	
 	/* eval */
 
-	virtual EV EvBdgScore(BDG& bdg, MVE mvePrev) noexcept;
+	virtual EV ScoreMove(BDG& bdg, MVE mvePrev) noexcept;
+	virtual EV ScoreCapture(BDG& bdg, MVE mve)  noexcept;
 	virtual EV EvBdgStatic(BDG& bdg, MVE mve) noexcept;
 	virtual void InitWeightTables(void);
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept;
@@ -482,12 +466,11 @@ protected:
 	int CfilePassedPawns(BDG& bdg, CPC cpc) const noexcept;
 	int CsqWeak(BDG& bdg, CPC cpc) const noexcept;
 
-
 	/* logging */
 	
 	void StartMoveLog(void);
 	void EndMoveLog(void);
-	void LogPv(BDG& bdg);
+	void LogInfo(BDG& bdg, EV ev, int depth);
 	void BuildPvSz(BDG& bdg, wstring& sz);
 
 };
