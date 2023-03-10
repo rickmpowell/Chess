@@ -191,8 +191,8 @@ inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 enum TSC : int {
 	tscNil = 255,
 	tscPrincipalVar = 0,
-	tscXTable = 1,
-	tscEvCapture = 2,
+	tscEvCapture = 1,
+	tscXTable = 2,
 	tscEvOther = 3
 };
 
