@@ -194,7 +194,7 @@ void PLAI::StartGame(void)
 void PLAI::StartMoveLog(void)
 {
 	stbfMainTotal.Init(); stbfMainAndQTotal.Init();
-	LogOpen(TAG(wjoin(to_wstring(ga.bdg.vmveGame.size()/2+1) + L".", SzFromCpc(ga.bdg.cpcToMove)),  
+	LogOpen(TAG(wjoin(to_wstring(ga.bdg.vmveGame.size()/2+1) + L".", ga.bdg.cpcToMove),  
 				ATTR(L"FEN", ga.bdg)),
 			L"(" + szName + L")", lgfBold);
 }
@@ -229,7 +229,7 @@ void PLAI::BuildPvSz(BDG& bdg, wstring& sz)
 	if (pxev == nullptr || pxev->fVisited())
 		return;
 	MVE mve = bdg.MveFromMv(pxev->mv());
-	sz += L" " + SzFromMv(mve);
+	sz += L" " + to_wstring(mve);
 	if (mve.fIsNil())
 		return;
 	pxev->SetFVisited(true);
@@ -320,7 +320,7 @@ public:
 			papp->AddLog(lgtOpen, lgfNormal, depthLog,
 						 TAG(bdg.SzDecodeMvPost(mvePrev), ATTR(L"FEN", bdg)),
 						 wjoin(wstring(1, chType) + to_wstring(depth),
-							   SzFromTsc(mvePrev.tsc()),
+							   to_wstring(mvePrev.tsc()),
 							   SzFromEv(-mvePrev.ev), abInit));
 
 		}
@@ -1417,7 +1417,7 @@ EV PLAI::EvBdgStatic(BDG& bdg, MVE mvePrev) noexcept
 		LogData(wjoin(L"Random", SzFromEv(evRandom / fecoScale)));
 	LogData(wjoin(L"Total", SzFromEv(ev)));
 #else
-	LogData(wjoin(SzFromCpc(bdg.cpcToMove), L"eval:", SzFromEv(ev)));
+	LogData(wjoin(bdg.cpcToMove, L"eval:", SzFromEv(ev)));
 #endif
 
 	return ev;

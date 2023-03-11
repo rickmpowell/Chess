@@ -1894,7 +1894,7 @@ wstring SzFromEv(EV ev)
 }
 
 
-wstring SzFromTsc(TSC tsc)
+wstring to_wstring(TSC tsc)
 {
 	switch (tsc) {
 	case tscEvOther:
@@ -1911,7 +1911,7 @@ wstring SzFromTsc(TSC tsc)
 }
 
 
-wstring SzFromMv(MV mv)
+wstring to_wstring(MV mv)
 {
 	if (mv.fIsNil())
 		return L"--";

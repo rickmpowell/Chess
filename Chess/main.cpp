@@ -900,8 +900,8 @@ public:
 
     DLGPERFT(APP& app, const DDPERFT& ddperft) : DLG(app, iddTestPerft),
             ddperft(ddperft),
-            dctlDepth(*this, idePerftDepth, &this->ddperft.depth, 2, 30, L"Depth must be an integer between 2 and 30"),
-            dctlTperft(*this, idcPerftType, &this->ddperft.tperft)
+            dctlDepth(*this, idePerftDepth, this->ddperft.depth, 2, 30, L"Depth must be an integer between 2 and 30"),
+            dctlTperft(*this, idcPerftType, this->ddperft.tperft)
     {
     }
 
@@ -1034,76 +1034,57 @@ public:
  */
 
 
-class DDAIBREAK : public DD
+/* 
+ *  Dialog box data
+ */
+
+class DDAIBREAK
 {
 public:
     vector<MV> vmv;
     int cpc;
     int cRepeat;
-
     DDAIBREAK() : cpc(cpcWhite), cRepeat(1) { }
 };
+static DDAIBREAK ddaibreak;
 
+/*
+ *  Move list edit control, space separated list of moves
+ */
 
-class DLGAIBREAK : public DLG
+class DCTLMOVELIST : public DCTLTEXT
 {
-public:
-    DDAIBREAK ddaibreak;
-    DCTLINT dctlRepeat;
-    DCTLCOMBO dctlPlayer;
+    vector<MV>& vmvVal;
+    wstring szDummy;
 
-    DLGAIBREAK(APP& app, const DDAIBREAK& ddaibreak) : DLG(app, iddAIBreak),
-        ddaibreak(ddaibreak),
-        dctlRepeat(*this, ideAIBreakRepeatCount, &this->ddaibreak.cRepeat, 1, 20, L"Repeat count must be between 1 and 20"),
-        dctlPlayer(*this, idcAIBreakPlayer, &this->ddaibreak.cpc)
-    { 
+public:
+    DCTLMOVELIST(DLG& dlg, int id, vector<MV>& vmvInit) : DCTLTEXT(dlg, id, szDummy), vmvVal(vmvInit)
+    {
     }
 
-    virtual void Init(void)
+    virtual wstring SzDecode(void)
     {
-        ::SendDlgItemMessageW(hdlg, idtAIBreakInst, WM_SETFONT,
-                              (WPARAM)::CreateFontW(-12, 0, 0, 0, FW_NORMAL, false, false, false,
-                                                    ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, L"Arial"), 1);
-        ::SetDlgItemTextW(hdlg, ideAIBreakMoveSequence, SzDecodeMoveList(&ddaibreak).c_str());
-        dctlPlayer.Add(app.puiga->ga.PplFromCpc(cpcWhite)->SzName());
-        dctlPlayer.Add(app.puiga->ga.PplFromCpc(cpcBlack)->SzName());
-        DLG::Init();
+        wstring sz;
+        for (MV mv : vmvVal)
+            sz += to_wstring(mv) + L" ";
+        return sz;
     }
 
     virtual bool FValidate(void)
     {
-        if (!DLG::FValidate())
-            return false;
-        wchar_t sz[1024];
-        ::GetDlgItemTextW(hdlg, ideAIBreakMoveSequence, sz, CArray(sz));
-        if (!FParseMoveList(sz, ddaibreak.vmv)) {
-            Error(L"Invalid move list.");
-            return false;
-        }
-        return true;
-    }
-
-    wstring SzDecodeMoveList(DDAIBREAK* pddaibreak) 
-    {
-        wstring sz;
-        for (MV mv : pddaibreak->vmv)
-            sz += SzFromMv(mv) + L" ";
-        return sz;
-    }
-
-    bool FParseMoveList(wstring sz, vector<MV>& vmv)
-    {    
-        vmv.clear();
+        wstring sz = SzRaw();
+        vmvVal.clear();
         MV mv;
         for (int ich = 0; FParseMv(sz, ich, mv); ) {
             if (mv.fIsNil())
                 return true;
-            vmv.push_back(mv);
+            vmvVal.push_back(mv);
         }
+        Error(SzError());
         return false;
     }
 
-    bool FParseMv(wstring sz, int& ich, MV& mv)
+    bool FParseMv(const wstring& sz, int& ich, MV& mv)
     {
         mv = mvNil;
         /* skip whitespace */
@@ -1128,7 +1109,7 @@ public:
         return true;
     }
 
-    bool FParseSq(wstring sz, int& ich, SQ& sq)
+    bool FParseSq(const wstring& sz, int& ich, SQ& sq)
     {
         wchar_t ch;
         if (!in_range(ch = tolower(sz[ich++]), L'a', L'h'))
@@ -1140,9 +1121,49 @@ public:
         sq = SQ(rank, file);
         return true;
     }
+
+    virtual wstring SzError(void)
+    {
+        return L"Move list should be from/to squares (e.g., a2a3) separated by spaces";
+    }
 };
 
-static DDAIBREAK ddaibreak;
+/*
+ *  dialog box
+ */
+
+class DLGAIBREAK : public DLG
+{
+public:
+    DDAIBREAK ddaibreak;
+    DCTLINT dctlRepeat;
+    DCTLCOMBO dctlPlayer;
+    DCTLMOVELIST dctlMoveList;
+
+    DLGAIBREAK(APP& app, const DDAIBREAK& ddaibreak) : DLG(app, iddAIBreak),
+        ddaibreak(ddaibreak),
+        dctlRepeat(*this, ideAIBreakRepeatCount, 
+                   this->ddaibreak.cRepeat, 1, 20, L"Repeat count must be an integer between 1 and 20"),
+        dctlPlayer(*this, idcAIBreakPlayer, this->ddaibreak.cpc),
+        dctlMoveList(*this, ideAIBreakMoveSequence, this->ddaibreak.vmv)
+    { 
+    }
+
+    virtual void Init(void)
+    {
+        /* TODO: does this HFONT need to be cleaned up? */
+        dctlMoveList.SendMessage(WM_SETFONT, 
+                                 (WPARAM)::CreateFontW(-12, 0, 0, 0, FW_NORMAL, false, false, false, 
+                                                       ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, L"Arial"), 1);
+        for (CPC cpc = cpcWhite; cpc <= cpcBlack; ++cpc)
+            dctlPlayer.Add(to_wstring(cpc) + L" (" + app.puiga->ga.PplFromCpc(cpc)->SzName() + L")");
+        DLG::Init();
+    }
+};
+
+/*
+ *  The command
+ */
 
 class CMDAIBREAK : public CMD
 {

@@ -231,7 +231,7 @@ __forceinline CPC operator++(CPC& cpc, int)
 	return cpcT;
 }
 
-inline wstring SzFromCpc(CPC cpc)
+inline wstring to_wstring(CPC cpc)
 {
 	switch (cpc) {
 	case cpcWhite:

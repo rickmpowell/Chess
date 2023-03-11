@@ -136,7 +136,7 @@ const MVU mvuNil = MVU();
 const MV mvNil = MV();
 const MVU mvuAll = MVU(sqH8, sqH8, PC(cpcWhite, apcError));
 const MV mvAll = MV(sqH8, sqH8);
-wstring SzFromMv(MV mv);
+wstring to_wstring(MV mv);
 
 
 /*
@@ -209,7 +209,7 @@ __forceinline TSC operator++(TSC& tsc, int)
 	return tscT;
 }
 
-wstring SzFromTsc(TSC tsc);
+wstring to_wstring(TSC tsc);
 
 
 /*
@@ -221,7 +221,7 @@ wstring SzFromTsc(TSC tsc);
  *	(instead of just a simple move list) to minimize the amount of copying needed during 
  *	AI search.
  *
- *	Non-AI customers of this structure can safely ignore everything except the MV
+ *	Non-AI customers of this structure can safely ignore everything except the MVU
  * 
  */
 
@@ -268,7 +268,6 @@ public:
 };
 
 static_assert(sizeof(MVE) == sizeof(uint64_t));
-
 
 const MVE mveNil;
 
