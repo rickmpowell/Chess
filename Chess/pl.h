@@ -18,11 +18,29 @@
 
 enum TTM : int
 {
-	ttmNull = 0,
-	ttmConstDepth,
+	ttmNil = -1,
+	ttmFirst = 0,
+	ttmConstDepth = 0,
 	ttmTimePerMove,
-	ttmSmart
+	ttmSmart,
+	ttmInfinite,
+	ttmMax
 };
+
+wstring to_wstring(TTM ttm);
+
+__forceinline TTM& operator++(TTM& ttm)
+{
+	ttm = static_cast<TTM>(ttm + 1);
+	return ttm;
+}
+
+__forceinline TTM operator++(TTM& ttm, int)
+{
+	TTM ttmT = ttm;
+	ttm = static_cast<TTM>(ttm + 1);
+	return ttmT;
+}
 
 
 /*
@@ -532,23 +550,41 @@ enum TPL	// types of players
 	tplStream
 };
 
-enum IDCLASSPL	// player classes
+enum CLPL : int 	// player classes
 {
-	idclassplAI,
-	idclassplAI2,
-	idclassplHuman
+	clplNil = -1,
+	clplFirst = 0,
+	clplAI = 0,
+	clplAI2,
+	clplHuman,
+	clplMax
 };
+
+wstring to_wstring(CLPL clpl);
+
+__forceinline CLPL& operator++(CLPL& clpl)
+{
+	clpl = static_cast<CLPL>(clpl + 1);
+	return clpl;
+}
+
+__forceinline CLPL operator++(CLPL& clpl, int)
+{
+	CLPL clplT = clpl;
+	clpl = static_cast<CLPL>(clpl + 1);
+	return clplT;
+}
 
 struct INFOPL
 {
-	IDCLASSPL idclasspl;
+	CLPL clpl;
 	TPL tpl;
 	wstring szName;
 	int level;
 	TTM ttm;
 
-	INFOPL(IDCLASSPL idclasspl, TPL tpl, const wstring& szName, TTM ttm = ttmNull, int level = 0) : 
-		idclasspl(idclasspl), tpl(tpl), szName(szName), ttm(ttm), level(level)
+	INFOPL(CLPL clpl, TPL tpl, const wstring& szName, TTM ttm = ttmNil, int level = 0) : 
+		clpl(clpl), tpl(tpl), szName(szName), ttm(ttm), level(level)
 	{
 	}
 };

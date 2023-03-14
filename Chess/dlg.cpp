@@ -39,6 +39,13 @@ void DLG::AddDctl(DCTL* pdctl)
     vpdctl.push_back(pdctl);
 }
 
+void DLG::RemoveDctl(DCTL* pdctl)
+{
+    vector<DCTL*>::iterator it = find(vpdctl.begin(), vpdctl.end(), pdctl);
+    assert(it != vpdctl.end());
+    vpdctl.erase(it);
+}
+
 DCTL* DLG::PdctlFromId(int id)
 {
     for (DCTL*& pdctl : vpdctl)
@@ -175,9 +182,17 @@ bool DLG::FDialogProc(UINT wm, WPARAM wparam, LPARAM lparam)
  *  Base class just hooks the control up to the dialog. Derived classes must
  *  keep a reference to the variable that is connected to this control
  */
-DCTL::DCTL(DLG& dlg, int id) : dlg(dlg), id(id)
+DCTL::DCTL(DLG& dlg, int id) : dlg(dlg), id(id), hfont(NULL)
 {
     dlg.AddDctl(this);
+}
+
+
+DCTL::~DCTL(void)
+{
+    if (hfont)
+        ::DeleteObject(hfont);
+    dlg.RemoveDctl(this);
 }
 
 
@@ -210,6 +225,15 @@ void DCTL::Init(void)
 bool DCTL::FValidate(void)
 {
     return true;
+}
+
+
+void DCTL::SetFont(const wstring& szName, int dyHeight)
+{
+    assert(hfont == NULL);
+    hfont = CreateFontW(dyHeight, 0, 0, 0, FW_NORMAL, false, false, false,
+                        ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, szName.c_str());
+    SendMessage(WM_SETFONT, (WPARAM)hfont, 1);
 }
 
 

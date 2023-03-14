@@ -67,7 +67,10 @@
 #define idtAIBreakInst			259
 
 #define iddCreateNewPlayer      4
-
+#define ideNewPlayerName        256
+#define idcNewPlayerClass       257
+#define idcNewPlayerTime        258
+#define ideNewPlayerDepth       259
 
 /*
  *	menus, accelerators, and commands

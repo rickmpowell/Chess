@@ -108,7 +108,7 @@ void UIPL::Draw(const RC& rcUpdate)
 		ELL ell(PT(rc.left + dxyRadius, rc.top + 6.0f + dxyRadius), dxyRadius);
 
 		AADC aadc(App().pdc, D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
-		FillEll(ell, cpc == cpcBlack ? pbrBlack: pbrWhite);
+		FillEll(ell, cpc == cpcBlack ? pbrBlack : pbrWhite);
 		DrawEll(ell, pbrText);
 
 		/* and the player name */

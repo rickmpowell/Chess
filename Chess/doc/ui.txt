@@ -8,10 +8,22 @@ operating system. It duplicates some of the same functionality that is found in
 the Windows API, but does so without the overhead of a Windows HWND and without
 using WndProcs.
 
+We don't provide much functionality that you don't see elsewhere, and there is
+a considerable amount of functionality provided by HWNDs that we don't have, but
+a lot of that functionality is rarely used, and sometimes simplicity is good.
+Some concepts are slightly different than the corresponding Win32 concept, and
+there are also some higher-level abstractions.
+
+Note that because this is built on Direct2D, all drawing happens into buffers
+and it takes explicit code to render to the physical screen. That means you can
+get smooth-looking redraw even with less-than-optimal updates. Direct2D is also
+very fast, and we haven't gone to a huge effort to optimize the crap out of 
+this.
+
 
 UI CLASS
 
-	The base class of the UI system is the UI class. A UI represents a 
+	The base class of the library is the UI class. A UI represents a 
 	rectangular area on the screen. Any UI element can have child UIs, which 
 	are completely contained within the bounds and owned by the parent UI. 
 	This creates a tree of UI elements.
@@ -57,13 +69,30 @@ UI CLASS
 
 	MOUSE INPUT
 
+		Capture
+
+		Hovering, enter, leave
+
 	KEYBOARD INPUT
+
+		Focus
 
 	TIMERS
 
 	COMMANDS
 
+		User interface actions are triggered by various user-driven events. Choosing
+		menus, clicking buttons, etc. There is a command dispatch system built into
+		the UI that standardizes a large class of user interface actions. While
+		some user interface actions do not translate well into an "execute command"
+		type system, most can.
+		
+
 CONTROLS
+
+	BUTTONS
+
+
 
 PANELS
 

@@ -172,6 +172,8 @@ public:
 private:
 	float DyComputeLgPos(LG& lg);
 	LG* PlgPrev(const LG* plg) const;
+	float DyComputeLineOpen(LG& lg) const;
+	float DyComputeLineClose(LG& lg) const;
 	float DyBlock(LG& lg) const;
 	bool FRcOfLgOpen(const LG& lg, RC& rc, float yTop, float yBot) const;
 	bool FRcOfLgClose(const LG& lg, RC& rc, float yTop, float yBot) const;

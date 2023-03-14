@@ -60,13 +60,17 @@ class DCTL
 {
 	friend class DLG;
 protected:
+	HFONT hfont;
 	DLG& dlg;
 	int id;
 public:
 	DCTL(DLG& dlg, int id);
+	~DCTL(void);
 
 	virtual bool FValidate(void);
 	virtual void Init(void);
+
+	void SetFont(const wstring& szName, int dyHeight);
 
 	virtual void SelectError(void);
 	virtual wstring SzError(void);
@@ -142,7 +146,9 @@ public:
 
 class DCTLTEXT : public DCTL
 {
+protected:
 	wstring& szVal;
+
 public:
 	DCTLTEXT(DLG& dlg, int id, wstring& szInit);
 
@@ -179,6 +185,7 @@ protected:
 public:
 	DLG(APP& app, int idd);
 	void AddDctl(DCTL* pdctl);
+	void RemoveDctl(DCTL* pdctl);
 	DCTL* PdctlFromId(int id);
 
 	int Run(void);

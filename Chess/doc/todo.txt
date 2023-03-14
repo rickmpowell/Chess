@@ -1,7 +1,11 @@
-  Add a player builder with level, name, time management, etc
+  We're throwing an exception on shutdown deleting one Direct2D brushes
+  Is there a way to use templates to automatically generate increment operators on enums?
+  Use popup combo box in player picker
+  Implement a full-featured UI popup combo box, including nested controls
+  In board edit mode, dragging pieces onto the delete icon should remove them from the board
+  Copying and pasting is screwing up the clipboard lock somewhere ... not sure steps yet
   AI: history heuristic for move ordering
-  Add infinite time management option
-  Reading a PGN file should needs to display the result of the game after the read is done.
+  Reading a PGN file needs to display the result of the game after the read is done.
   Start saving all game PGN files - change PGN filenames to have date/time in them
   Add support for halfmove clock
   Make it more obvious that the EPD file button is clickable - add an icon?
@@ -63,7 +67,6 @@
   AI: annotate candidate best moves on board while thinking
   AI: look deeper on a few of the "best" moves
   AI: Do a multithreaded lookup
-  AI: Play through until no checks in quiescence search (?)
   Eval: Add square control factor to evaluation function
   Choosing the player picker while the AI is running crashes
   Can we make things like Undo work while AI is thinking?
@@ -79,11 +82,10 @@
   UIPL: on hover, change background color when we can change the player
   When player picker is up, clicking outside the picker should make it cancel.
   Help: Help box icon looks like shit
-  UIPL: Move level control into the chooser
+  UIPL: Move level control into the player chooser
   Move all localizable strings into resources
   Need to rethink the MakeMv/UndoMv/RedoMv in BD, BDG, UIBD, and GA and where game over state is checked
   Use UCI (universal chess interface) to communicate to UI from AI
-  Add ability to load FEN files
   ML: Scrollbar thumb isn't resizing when move list gets long enough to have a thumb
   ML: If text in move list gets too small, replace icons with letters
   UI: Scale buttons to size of window
@@ -91,7 +93,6 @@
   UI: Test with alternate fonts
   Open: PGN game browser if multiple games in Open...
   UI: Implement labeled icon buttons
-  UI for specifying human player names
   UI: When dragging thumb, if drag off the scrollbar, snap thumb back to original position
   ML: With small windows, need to do something about the move list. Or limit window size?
   ML: Hook up resignation button
@@ -102,6 +103,10 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* UI for specifying human player names
+* Add infinite time management option
+* Add a player builder with level, name, time management, etc
+* Review UI destructors for complete cleanup of allocated child UIs
 * How to deal with 3-repeat draws in transposition table?
 * Implement copy FEN command
 * We're not reliably detecting 3-move repeat draws in the AI

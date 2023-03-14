@@ -34,9 +34,9 @@ bool UI::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 		return false;
 
 	pdc->CreateSolidColorBrush(coStdBack, &pbrBack);
+	pdc->CreateSolidColorBrush(coStdText, &pbrText);
 	pdc->CreateSolidColorBrush(coScrollBack, &pbrScrollBack);
 	pdc->CreateSolidColorBrush(coGridLine, &pbrGridLine);
-	pdc->CreateSolidColorBrush(coStdText, &pbrText);
 	pdc->CreateSolidColorBrush(coHiliteBack, &pbrHilite);
 	pdc->CreateSolidColorBrush(coWhite, &pbrWhite);
 	pdc->CreateSolidColorBrush(coBlack, &pbrBlack);
@@ -69,12 +69,13 @@ bool UI::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC*
 void UI::DiscardRsrcStatic(void)
 {
 	SafeRelease(&pbrBack);
-	SafeRelease(&pbrScrollBack);
-	SafeRelease(&pbrGridLine);
 	SafeRelease(&pbrText);
-	SafeRelease(&pbrHilite);
 	SafeRelease(&pbrWhite);
 	SafeRelease(&pbrBlack);
+	SafeRelease(&pbrHilite);
+	SafeRelease(&pbrScrollBack);
+//	SafeRelease(&pbrGridLine);
+
 	SafeRelease(&ptxList);
 	SafeRelease(&ptxListBold);
 	SafeRelease(&ptxText);
@@ -183,7 +184,7 @@ UI::UI(UI* puiParent, const RC& rcBounds, bool fVisible) : puiParent(puiParent),
 UI::~UI(void) 
 {
 	for (; !vpuiChild.empty(); vpuiChild.pop_back())
-		delete vpuiChild.back();
+		;
 	if (puiParent) {
 		puiParent->RemoveChild(this);
 		puiParent = nullptr;
@@ -1164,10 +1165,10 @@ void UI::DrawAch(const wchar_t* ach, int cch, TX* ptx, const RC& rc, BR* pbr) co
  *	font we eventually end up using. If dyBaseline is 0, align the baseline 
  *	to where the baseline of the original ptxBase is.
  */
-void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, float dyBaseline, BR* pbrText) const
+void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, float dyBaseline, BR* pbr) const
 {
-	if (pbrText == nullptr)
-		pbrText = UI::pbrText;
+	if (pbr == nullptr)
+		pbr = pbrText;
 
 	/* if the text fits, just blast it out */
 
@@ -1184,7 +1185,7 @@ void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, floa
 		dyBaseline = lm.baseline;
 	}
 	if (tm.width <= rcFit.DxWidth() && tm.height <= rcFit.DyHeight()) {
-		DrawSzBaseline(sz, ptxBase, rcFit, dyBaseline, pbrText);
+		DrawSzBaseline(sz, ptxBase, rcFit, dyBaseline, pbr);
 		SafeRelease(&play);
 		return;
 	}
@@ -1213,7 +1214,7 @@ void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, floa
 	play->GetLineMetrics(&lm, 1, &clm);
 	App().pdc->DrawTextLayout(Point2F(rcGlobal.left, rcGlobal.top + dyBaseline - lm.baseline), 
 							  play,
-							  pbrText, 
+							  pbr, 
 							  D2D1_DRAW_TEXT_OPTIONS_NONE);
 
 	/* cleanup and return */
@@ -1223,9 +1224,9 @@ void UI::DrawSzFitBaseline(const wstring& sz, TX* ptxBase, const RC& rcFit, floa
 }
 
 
-void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbrText) const
+void UI::DrawSzFit(const wstring& sz, TX* ptxBase, const RC& rcFit, BR* pbr) const
 {
-	DrawSzFitBaseline(sz, ptxBase, rcFit, 0, pbrText);
+	DrawSzFitBaseline(sz, ptxBase, rcFit, 0, pbr);
 }
 
 

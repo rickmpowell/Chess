@@ -141,7 +141,7 @@ public:
  */
 
 
-PLAI::PLAI(GA& ga) : PL(ga, L"SQ Mobly"), rgen(372716661UL), habdRand(0), 
+PLAI::PLAI(GA& ga) : PL(ga, L"AI"), rgen(372716661UL), habdRand(0), 
 		ttm(IfReleaseElse(ttmSmart, ttmConstDepth)), level(3),
 		cYield(0)
 {
@@ -1174,12 +1174,10 @@ EV PLAI::EvMaterial(BDG& bdg, CPC cpc) const noexcept
  *
  *	Lets us know when we should stop searching for moves. This is where our time management
  *	happens. Returns true if we should keep searching.
- * 
- *	Currently very unsophisticated. Doesn't take clock or timing rules into account.
  */
 bool PLAI::FBeforeDeadline(int depthLim) noexcept
 {
-	int mpleveldepth[10] = { 1, 2, 3, 4, 5, 8, 10, 15, 20, 100 };
+	int mpleveldepth[10] = { 1, 2, 3, 4, 5, 8, 10, 15, 20, 50 };
 
 	if (mveBestOverall.fIsNil())
 		return true;
@@ -1192,6 +1190,8 @@ bool PLAI::FBeforeDeadline(int depthLim) noexcept
 	case ttmConstDepth:
 		/* different levels get different depths */
 		return depthLim <= mpleveldepth[level];
+	case ttmInfinite:
+		return true;
 	}
 
 	return false;
@@ -1225,7 +1225,7 @@ SINT PLAI::SintTimeMan(void) const noexcept
 	/* if we're doing constant depth search, we do no time management; we also must
 	   have a possible best move before we can interrupt */
 
-	if (ttm == ttmConstDepth || mveBestOverall.fIsNil())
+	if (ttm == ttmConstDepth || ttm == ttmInfinite || mveBestOverall.fIsNil())
 		return sintNull;
 	
 	/* the deadline is just a suggestion - we'll actually abort the search if we go
@@ -1685,7 +1685,7 @@ PLAI2::PLAI2(GA& ga) : PLAI(ga)
 	fecoPawnStructure = 0 * fecoScale;	
 	fecoTempo = 1 * fecoScale;
 	fecoRandom = 0 * fecoScale;	
-	SetName(L"SQ Mathilda");
+	SetName(L"AI2");
 	InitWeightTables();
 }
 
@@ -1744,14 +1744,11 @@ MVE PLHUMAN::MveGetNext(SPMV& spmv) noexcept
 
 AINFOPL::AINFOPL(void) 
 {
-	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobly", IfDebugElse(ttmConstDepth, ttmSmart), 5));
-	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"Max Mobly", ttmSmart, 10));
-	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"SQ Mathilda", IfDebugElse(ttmConstDepth, ttmSmart), 3));
-	vinfopl.push_back(INFOPL(idclassplAI2, tplAI, L"Max Mathilda", ttmSmart, 10));
-	vinfopl.push_back(INFOPL(idclassplAI, tplAI, L"SQ Mobbly Infinite", ttmConstDepth, 10));
-	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Rick Powell"));
-	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Hazel the Dog"));
-	vinfopl.push_back(INFOPL(idclassplHuman, tplHuman, L"Allain de Leon"));
+	vinfopl.push_back(INFOPL(clplAI, tplAI, L"AI", IfDebugElse(ttmConstDepth, ttmSmart), 5));
+	vinfopl.push_back(INFOPL(clplAI2, tplAI, L"AI2", IfDebugElse(ttmConstDepth, ttmSmart), 3));
+	vinfopl.push_back(INFOPL(clplAI, tplAI, L"AI (Infinite)", ttmInfinite, 10));
+	vinfopl.push_back(INFOPL(clplHuman, tplHuman, L"Rick Powell"));
+	vinfopl.push_back(INFOPL(clplHuman, tplHuman, L"Hazel"));
 }
 
 /*	AINFOPL::PplFactory
@@ -1762,14 +1759,14 @@ AINFOPL::AINFOPL(void)
 PL* AINFOPL::PplFactory(GA& ga, int iinfopl) const
 {
 	PL* ppl = nullptr;
-	switch (vinfopl[iinfopl].idclasspl) {
-	case idclassplAI:
+	switch (vinfopl[iinfopl].clpl) {
+	case clplAI:
 		ppl = new PLAI(ga);
 		break;
-	case idclassplAI2:
+	case clplAI2:
 		ppl = new PLAI2(ga);
 		break;
-	case idclassplHuman:
+	case clplHuman:
 		ppl = new PLHUMAN(ga, vinfopl[iinfopl].szName);
 		break;
 	default:
@@ -1798,3 +1795,32 @@ int AINFOPL::IdbFromInfopl(const INFOPL& infopl) const
 }
 
 
+wstring to_wstring(TTM ttm)
+{
+	switch (ttm) {
+	case ttmConstDepth:
+		return L"Constant Depth";
+	case ttmTimePerMove:
+		return L"Constant Time";
+	case ttmSmart:
+		return L"Smart";
+	case ttmInfinite:
+		return L"Infinite";
+	default:
+		return L"<nil>";
+	}
+}
+
+wstring to_wstring(CLPL clpl)
+{
+	switch (clpl) {
+	case clplAI:
+		return L"AI";
+	case clplAI2:
+		return L"AI2";
+	case clplHuman:
+		return L"Human";
+	default:
+		return L"<nil>";
+	}
+}

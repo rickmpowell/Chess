@@ -99,7 +99,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
 
     pga = new GA();
     pga->SetPl(cpcBlack, ainfopl.PplFactory(*pga, 0));
-    pga->SetPl(cpcWhite, ainfopl.PplFactory(*pga, 2));
+    pga->SetPl(cpcWhite, ainfopl.PplFactory(*pga, 1));
     pga->InitGame(nullptr, nullptr);
     
     /* create the main window */
@@ -1139,22 +1139,22 @@ public:
     DCTLINT dctlRepeat;
     DCTLCOMBO dctlPlayer;
     DCTLMOVELIST dctlMoveList;
+    DCTL dctlInstructions;
+    HFONT hfontInstructions;
 
     DLGAIBREAK(APP& app, const DDAIBREAK& ddaibreak) : DLG(app, iddAIBreak),
         ddaibreak(ddaibreak),
         dctlRepeat(*this, ideAIBreakRepeatCount, 
                    this->ddaibreak.cRepeat, 1, 20, L"Repeat count must be an integer between 1 and 20"),
         dctlPlayer(*this, idcAIBreakPlayer, this->ddaibreak.cpc),
-        dctlMoveList(*this, ideAIBreakMoveSequence, this->ddaibreak.vmv)
+        dctlMoveList(*this, ideAIBreakMoveSequence, this->ddaibreak.vmv),
+        dctlInstructions(*this, idtAIBreakInst)
     { 
     }
 
     virtual void Init(void)
     {
-        /* TODO: does this HFONT need to be cleaned up? */
-        dctlMoveList.SendMessage(WM_SETFONT, 
-                                 (WPARAM)::CreateFontW(-12, 0, 0, 0, FW_NORMAL, false, false, false, 
-                                                       ANSI_CHARSET, 0, 0, 0, FF_DONTCARE, L"Arial"), 1);
+        dctlInstructions.SetFont(L"Arial", -12);
         for (CPC cpc = cpcWhite; cpc <= cpcBlack; ++cpc)
             dctlPlayer.Add(to_wstring(cpc) + L" (" + app.puiga->ga.PplFromCpc(cpc)->SzName() + L")");
         DLG::Init();
@@ -1765,6 +1765,60 @@ public:
  * 
  */
 
+struct DDNEWPLAYER
+{
+    wstring szName;
+    int depth;
+    int ttm;
+    int clpl;
+};
+
+class DCTLNAME : public DCTLTEXT
+{
+public:
+    DCTLNAME(DLG& dlg, int id, wstring& szInit) : DCTLTEXT(dlg, id, szInit)
+    {
+    }
+
+    virtual bool FValidate(void) 
+    {
+        if (SzRaw().size() <= 0) {
+            Error(L"Must provide a name for the player.");
+            return false;
+        }
+        return DCTLTEXT::FValidate();
+    }
+};
+
+class DLGCREATENEWPLAYER : public DLG
+{
+    DCTLNAME dctlName;
+    DCTLCOMBO dctlClass;
+    DCTLINT dctlDepth;
+    DCTLCOMBO dctlTime;
+    DDNEWPLAYER ddnewplayer;
+
+public:
+    DLGCREATENEWPLAYER(APP& app, const DDNEWPLAYER& ddnewplayer) : DLG(app, iddCreateNewPlayer),
+        ddnewplayer(ddnewplayer),
+        dctlName(*this, ideNewPlayerName, this->ddnewplayer.szName),
+        dctlClass(*this, idcNewPlayerClass, this->ddnewplayer.clpl),
+        dctlTime(*this, idcNewPlayerTime, this->ddnewplayer.ttm),
+        dctlDepth(*this, ideNewPlayerDepth, this->ddnewplayer.depth, 1, 10, L"Depth must be between 1 and 10")
+    {
+    }
+
+    virtual void Init(void)
+    {
+        for (CLPL clpl = clplFirst; clpl < clplMax; ++clpl)
+            dctlClass.Add(to_wstring(clpl));        
+        for (TTM ttm = ttmFirst; ttm < ttmMax; ++ttm)
+            dctlTime.Add(to_wstring(ttm));
+        DLG::Init();
+    }
+};
+
+
 class CMDCREATENEWPLAYER : public CMD
 {
 public:
@@ -1772,8 +1826,18 @@ public:
 
     virtual int Execute(void)
     {
-        DLG dlg(app, iddCreateNewPlayer);
-        return dlg.Run();
+        DDNEWPLAYER ddnewplayer;
+        ddnewplayer.depth = 3;
+        ddnewplayer.ttm = ttmSmart;
+        ddnewplayer.clpl = clplAI;
+        DLGCREATENEWPLAYER dlg(app, ddnewplayer);
+
+        if (dlg.Run() != IDOK)
+            return 0;
+
+        TPL tpl = ddnewplayer.clpl == clplHuman ? tplHuman : tplAI;
+        ainfopl.vinfopl.push_back(INFOPL((CLPL)ddnewplayer.clpl, tpl, ddnewplayer.szName, (TTM)ddnewplayer.ttm, ddnewplayer.depth));
+        return 1;
     }
 };
 

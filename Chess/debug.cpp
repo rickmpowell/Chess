@@ -366,7 +366,9 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
  *	Comptes the position and size of every item that may need to change after the
  *	given item was added to the log tree.
  * 
- *	Returns the height of last itme added, or zero if the item is hidden.
+ *	Returns the height of last item added, or zero if the item is hidden.
+ * 
+ *	This only works if we append the item to the end of the list.
  */
 float UIDB::DyComputeLgPos(LG& lg)
 {
@@ -376,9 +378,9 @@ float UIDB::DyComputeLgPos(LG& lg)
 	lg.dyLineOpen = lg.dyLineClose = 0;
 	lg.dyBlock = 0;
 	if (lg.depth <= DepthShow() && lg.lgt != lgtNil) {
-		dyLast = lg.dyLineOpen = dyLine;
+		dyLast = lg.dyLineOpen = DyComputeLineOpen(lg);;
 		if (lg.lgt == lgtClose && !FCollapsedLg(lg))
-			dyLast = lg.dyLineClose = dyLine;
+			dyLast = lg.dyLineClose = DyComputeLineClose(lg);
 		/* block height must be recomputed for this and all parent blocks - we don't have to relayout
 			sibling items here because we only *append* items to the log, so only the last sibling
 			can ever change. */
@@ -411,6 +413,16 @@ float UIDB::DyComputeLgPos(LG& lg)
 	return dyLast;
 }
 
+
+float UIDB::DyComputeLineOpen(LG& lg) const
+{
+	return dyLine;
+}
+
+float UIDB::DyComputeLineClose(LG& lg) const
+{
+	return dyLine;
+}
 
 float UIDB::DyBlock(LG& lg) const
 {
@@ -456,9 +468,9 @@ void UIDB::FullRelayoutLg(LG& lg, float& yTop)
 	lg.yTop = yTop;
 	lg.dyLineOpen = lg.dyLineClose = 0;
 	if (lg.depth <= DepthShow()) {
-		lg.dyLineOpen = dyLine;
+		lg.dyLineOpen = DyComputeLineOpen(lg);
 		if (lg.lgt == lgtClose && !FCollapsedLg(lg))
-			lg.dyLineClose = dyLine;
+			lg.dyLineClose = DyComputeLineClose(lg);
 	}
 	yTop += lg.dyLineOpen;
 	for (LG* plg : lg.vplgChild)

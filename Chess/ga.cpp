@@ -21,7 +21,7 @@
 
 
 GA::GA() : prule(nullptr), pprocpgn(nullptr), puiga(nullptr),
-		szEvent(L"Casual Game"), szSite(L"Local Machine"), szRound(L"")
+		szEvent(L"Casual Game"), szSite(L"Local Machine")
 {
 	tpStart = system_clock::now();
 	mpcpcppl[cpcWhite] = mpcpcppl[cpcBlack] = nullptr;
