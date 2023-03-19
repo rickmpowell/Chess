@@ -76,13 +76,14 @@ void GA::SetRule(RULE* prule)
 }
 
 
-void GA::InitGame(const char* szFEN, RULE* prule)
+const char* GA::InitGame(const char* szFEN, RULE* prule)
 {
 	SetRule(prule);
 	bdg.InitGame();
-	bdg.SetFen(szFEN);
+	const char* pch = bdg.SetFen(szFEN);
 	bdgInit = bdg;
 	tpStart = system_clock::now();
+	return pch;
 }
 
 

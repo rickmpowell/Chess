@@ -286,11 +286,11 @@ public:
 
 	void ClearLog(void) noexcept;
 	void InitLog(void) noexcept;
-	inline bool FDepthLog(LGT lgt, int& depth) noexcept;
-	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
-	inline int DepthLog(void) const noexcept;
-	inline int DepthShow(void) const noexcept;
-	inline void SetDepthShow(int depth) noexcept;
+	inline bool FDepthLog(LGT lgt, int& lgd) noexcept;
+	void AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) noexcept;
+	inline int LgdCur(void) const noexcept;
+	inline int LgdShow(void) const noexcept;
+	inline void SetLgdShow(int lgd) noexcept;
 
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT wm, WPARAM wparam, LPARAM lparam);
 };
@@ -342,19 +342,19 @@ inline void ClearLog(void)
 	papp->ClearLog();
 }
 
-inline void SetDepthShow(int depth) noexcept
+inline void SetLgdShow(int lgd) noexcept
 {
-	papp->SetDepthShow(depth);
+	papp->SetLgdShow(lgd);
 }
 
-inline int DepthLog(void) noexcept
+inline int LgdCur(void) noexcept
 {
-	return papp->DepthLog();
+	return papp->LgdCur();
 }
 
-inline int DepthShow(void) noexcept
+inline int LgdShow(void) noexcept
 {
-	return papp->DepthShow();
+	return papp->LgdShow();
 }
 
 
@@ -363,9 +363,9 @@ inline int DepthShow(void) noexcept
 
 #define LogHelper(lgt, lgf, tag, szData) \
 	{ \
-		int depthLog; \
-		if (papp->FDepthLog(lgt, depthLog)) \
-			papp->AddLog(lgt, lgf, depthLog, tag, szData); \
+		int lgd; \
+		if (papp->FDepthLog(lgt, lgd)) \
+			papp->AddLog(lgt, lgf, lgd, tag, szData); \
 	}
 	
 #define LogOpen(tag, szData, lgf) LogHelper(lgtOpen, lgf, tag, szData)
@@ -373,9 +373,9 @@ inline int DepthShow(void) noexcept
 #define LogData(szData) LogHelper(lgtData, lgfNormal, L"", szData)
 #define LogTemp(szData) LogHelper(lgtTemp, lgfNormal, L"", szData)
 
-inline void Log(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData)
+inline void Log(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData)
 {
-	papp->AddLog(lgt, lgf, depth, tag, szData);
+	papp->AddLog(lgt, lgf, lgd, tag, szData);
 }
 
 /*

@@ -599,24 +599,24 @@ bool APP::FDepthLog(LGT lgt, int& depth) noexcept
     return puiga->uidb.FDepthLog(lgt, depth);
 }
 
-void APP::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
+void APP::AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) noexcept
 {
-    return puiga->uidb.AddLog(lgt, lgf, depth, tag, szData);
+    return puiga->uidb.AddLog(lgt, lgf, lgd, tag, szData);
 }
 
-int APP::DepthLog(void) const noexcept
+int APP::LgdCur(void) const noexcept
 {
-    return puiga->uidb.DepthLog();
+    return puiga->uidb.LgdCur();
 }
 
-void APP::SetDepthShow(int depth) noexcept
+void APP::SetLgdShow(int lgd) noexcept
 {
-    puiga->uidb.SetDepthShow(depth);
+    puiga->uidb.SetLgdShow(lgd);
 }
 
-int APP::DepthShow(void) const noexcept
+int APP::LgdShow(void) const noexcept
 {
-    return puiga->uidb.DepthShow();
+    return puiga->uidb.LgdShow();
 }
 
 
@@ -886,7 +886,7 @@ wstring to_wstring(TPERFT tperft)
 
 struct DDPERFT {
     int tperft;
-    int depth;
+    int d;
 };
 static DDPERFT ddperft = { tperftBulk, 6 };
 
@@ -900,7 +900,7 @@ public:
 
     DLGPERFT(APP& app, const DDPERFT& ddperft) : DLG(app, iddTestPerft),
             ddperft(ddperft),
-            dctlDepth(*this, idePerftDepth, this->ddperft.depth, 2, 30, L"Depth must be an integer between 2 and 30"),
+            dctlDepth(*this, idePerftDepth, this->ddperft.d, 2, 30, L"Depth must be an integer between 2 and 30"),
             dctlTperft(*this, idcPerftType, this->ddperft.tperft)
     {
     }
@@ -932,18 +932,18 @@ public:
             ddperft = dlgperft.ddperft;
         }
 
-        LogOpen(L"perft " + to_wstring((TPERFT)ddperft.tperft), to_wstring(ddperft.depth), lgfBold);
+        LogOpen(L"perft " + to_wstring((TPERFT)ddperft.tperft), to_wstring(ddperft.d), lgfBold);
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
         uint64_t cmv;
         switch (ddperft.tperft) {
         case tperftDivide:
-            cmv = app.puiga->CmvPerftDivide(ddperft.depth);
+            cmv = app.puiga->CmvPerftDivide(ddperft.d);
             break;
         case tperftBulk:
-            cmv = app.puiga->ga.CmvPerftBulk(ddperft.depth);
+            cmv = app.puiga->ga.CmvPerftBulk(ddperft.d);
             break;
         default:
-            cmv = app.puiga->ga.CmvPerft(ddperft.depth);
+            cmv = app.puiga->ga.CmvPerft(ddperft.d);
             break;
         }
         time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
@@ -959,7 +959,7 @@ public:
 
     virtual wstring SzMenu(void) const
     {
-        return wstring(L"perft ") + to_wstring(ddperft.depth) + L"\tCtrl+P";
+        return wstring(L"perft ") + to_wstring(ddperft.d) + L"\tCtrl+P";
     }
 };
 
@@ -982,26 +982,28 @@ public:
             PL* ppl = app.puiga->ga.PplFromCpc(cpc);
             if (ppl->FHasLevel())
                 ppl->SetLevel(6);
+            ppl->SetTtm(ttmTimePerMove);
             ppl->SetFecoRandom(0);
         }
 
         /* start a new untimed game */
 
-        app.puiga->InitGame(nullptr, nullptr);
+        app.puiga->InitGame("5rk1/1ppb3p/p1pb4/6q1/3P1p1r/2P1R2P/PP1BQ1P1/5RKN w - - bm Rg3; id \"WAC.003\";", nullptr);
         app.puiga->ga.prule->SetGameTime(cpcWhite, 0);
         app.puiga->ga.prule->SetGameTime(cpcBlack, 0);
         app.puiga->uiml.ShowClocks(false);
         app.puiga->Relayout();
+        app.puiga->Redraw();
 
         ClearLog();
         LogOpen(L"AI Speed Test", L"", lgfBold);
-        int depthSav = DepthShow();
-        SetDepthShow(2);
+        int lgdSav = LgdShow();
+        SetLgdShow(2);
 
         app.puiga->StartGame(spmvFast);
         time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
 
-        for (int imv = 0; imv < 10; imv++) {
+        for (int imv = 0; imv < 10 && !app.puiga->ga.bdg.FGsGameOver(); imv++) {
             SPMV spmv = spmvFast;
             MVE mve = app.puiga->ga.PplToMove()->MveGetNext(spmv);
             if (mve.fIsNil())
@@ -1015,7 +1017,7 @@ public:
         microseconds us = duration_cast<microseconds>(dtp);
         float sp = (float)us.count() / 1000.0f;
 
-        SetDepthShow(depthSav);
+        SetLgdShow(lgdSav);
         LogData(L"Time: " + to_wstring((int)round(sp)) + L" ms");
         LogClose(L"AI Speed Test", L"", lgfBold);
 
@@ -1526,8 +1528,8 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.puiga->uidb.DepthShow();
-        app.puiga->uidb.SetDepthShow(depth + 1);
+        int lgd = app.puiga->uidb.LgdShow();
+        app.puiga->uidb.SetLgdShow(lgd + 1);
         app.puiga->uidb.RelayoutLog();
         app.puiga->uidb.Redraw();
         return 1;
@@ -1556,8 +1558,8 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = max(0, app.puiga->uidb.DepthShow() - 1);
-        app.puiga->uidb.SetDepthShow(depth);
+        int lgd = max(0, app.puiga->uidb.LgdShow() - 1);
+        app.puiga->uidb.SetLgdShow(lgd);
         app.puiga->uidb.RelayoutLog();
         app.puiga->uidb.Redraw();
         return 1;
@@ -1577,8 +1579,8 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.puiga->uidb.DepthFile();
-        app.puiga->uidb.SetDepthFile(depth + 1);
+        int lgd = app.puiga->uidb.LgdFile();
+        app.puiga->uidb.SetLgdFile(lgd + 1);
         app.puiga->uidb.Redraw();
         return 1;
     }
@@ -1596,8 +1598,8 @@ public:
 
     virtual int Execute(void)
     {
-        int depth = app.puiga->uidb.DepthFile();
-        app.puiga->uidb.SetDepthFile(depth - 1);
+        int lgd = app.puiga->uidb.LgdFile();
+        app.puiga->uidb.SetLgdFile(lgd - 1);
         app.puiga->uidb.Redraw();
         return 1;
     }
@@ -1768,7 +1770,7 @@ public:
 struct DDNEWPLAYER
 {
     wstring szName;
-    int depth;
+    int d;
     int ttm;
     int clpl;
 };
@@ -1804,7 +1806,7 @@ public:
         dctlName(*this, ideNewPlayerName, this->ddnewplayer.szName),
         dctlClass(*this, idcNewPlayerClass, this->ddnewplayer.clpl),
         dctlTime(*this, idcNewPlayerTime, this->ddnewplayer.ttm),
-        dctlDepth(*this, ideNewPlayerDepth, this->ddnewplayer.depth, 1, 10, L"Depth must be between 1 and 10")
+        dctlDepth(*this, ideNewPlayerDepth, this->ddnewplayer.d, 1, 10, L"Depth must be between 1 and 10")
     {
     }
 
@@ -1827,7 +1829,7 @@ public:
     virtual int Execute(void)
     {
         DDNEWPLAYER ddnewplayer;
-        ddnewplayer.depth = 3;
+        ddnewplayer.d = 3;
         ddnewplayer.ttm = ttmSmart;
         ddnewplayer.clpl = clplAI;
         DLGCREATENEWPLAYER dlg(app, ddnewplayer);
@@ -1836,7 +1838,7 @@ public:
             return 0;
 
         TPL tpl = ddnewplayer.clpl == clplHuman ? tplHuman : tplAI;
-        ainfopl.vinfopl.push_back(INFOPL((CLPL)ddnewplayer.clpl, tpl, ddnewplayer.szName, (TTM)ddnewplayer.ttm, ddnewplayer.depth));
+        ainfopl.vinfopl.push_back(INFOPL((CLPL)ddnewplayer.clpl, tpl, ddnewplayer.szName, (TTM)ddnewplayer.ttm, ddnewplayer.d));
         return 1;
     }
 };

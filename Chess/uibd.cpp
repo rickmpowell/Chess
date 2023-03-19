@@ -88,6 +88,20 @@ UIBD::~UIBD(void)
 }
 
 
+void UIBD::SetEpd(const char* szEpd)
+{
+	mpszvepdp.clear();
+	szEpd = uiga.ga.bdg.SetFen(szEpd);
+	SetEpdProperties(szEpd);
+}
+
+
+void UIBD::SetEpdProperties(const char* szEpd)
+{
+	uiga.ga.bdg.InitEpdProperties(szEpd, mpszvepdp);
+}
+
+
 /*	UIBD::Layout
  *
  *	Layout work for the board screen panel.

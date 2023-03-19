@@ -59,7 +59,7 @@ private:
 		uhabdLow:16,
 		umv:16;			
 	uint32_t
-		udepth : 7,		/* word-aligned */
+		udd : 7,		/* word-aligned */
 		ufVisited : 1,
 		utev : 2,		/* word-aligned */
 		uage : 2,
@@ -72,7 +72,7 @@ public:
 
 #pragma warning(suppress:26495)	// don't warn about uninitialized member variables 
 	__forceinline XEV(void) { SetNull(); }
-	__forceinline XEV(HABD habd, MVU mvu, TEV tev, EV ev, int depth, int depthLim) { Save(habd, ev, tev, depth, depthLim, mvu, 0); }
+	__forceinline XEV(HABD habd, MVU mvu, TEV tev, EV ev, int d, int dLim) { Save(habd, ev, tev, d, dLim, mvu, 0); }
 	__forceinline void SetNull(void) noexcept { memset(this, 0, sizeof(XEV)); }
 
 	/* store ev biased so we can get the sign extended on extraction; mate evals
@@ -80,23 +80,23 @@ public:
 	   extracted at a different depth than they were stored from), while during
 	   search they are always relative to the root */
 	
-	__forceinline EV ev(int depth) const noexcept
+	__forceinline EV ev(int d) const noexcept
 	{
 		EV evT = static_cast<EV>(uevBiased) - evBias;
 		if (FEvIsMate(evT))
-			evT -= depth;
+			evT -= d;
 		else if (FEvIsMate(-evT))
-			evT += depth;
+			evT += d;
 		return evT;
 	}
 	
-	__forceinline void SetEv(EV ev, int depth) noexcept 
+	__forceinline void SetEv(EV ev, int d) noexcept 
 	{ 
 		assert(ev < evInf && ev > -evInf); 
 		if (FEvIsMate(ev))
-			ev += depth;
+			ev += d;
 		else if (FEvIsMate(-ev))
-			ev -= depth;
+			ev -= d;
 		uevBiased = static_cast<uint16_t>(ev + evBias); 
 	}
 	
@@ -105,8 +105,8 @@ public:
 	__forceinline void SetTev(TEV tev) noexcept { utev = static_cast<unsigned>(tev); }
 	
 	/* depth of the search that resulted in this eval */
-	__forceinline int depth(void) const noexcept { return static_cast<int>(udepth); }
-	__forceinline void SetDepth(int depth) noexcept { udepth = (unsigned)depth; }
+	__forceinline int dd(void) const noexcept { return static_cast<int>(udd); }
+	__forceinline void SetDd(int dd) noexcept { udd = (unsigned)dd; }
 	
 	/* hash match; this is not exact, but the high bits are used to index into the table, 
 	   and this test makes sure the low bits match */
@@ -127,12 +127,12 @@ public:
 	__forceinline bool fVisited(void) const noexcept { return ufVisited; }
 	__forceinline void SetFVisited(bool fVisitedNew) noexcept { this->ufVisited = static_cast<unsigned>(fVisitedNew); }
 	
-	void Save(HABD habd, EV ev, TEV tev, int depth, int depthLim, MV mv, unsigned age) noexcept 
+	void Save(HABD habd, EV ev, TEV tev, int d, int dLim, MV mv, unsigned age) noexcept 
 	{
 		SetHabd(habd);
-		SetEv(ev, depth);
+		SetEv(ev, d);
 		SetTev(tev);
-		SetDepth(depthLim - depth);
+		SetDd(dLim - d);
 		SetMv(mv);
 		SetAge(age);
 	}
@@ -169,16 +169,18 @@ __declspec(align(2)) struct XEV2 {
  *
  */
 
-const int shfXev2Max = 17;
-const int shfXev2MaxIndex = 64 - shfXev2Max;
-const uint32_t cxev2Max = 1UL << shfXev2Max;
-const uint32_t cxev2MaxMask = cxev2Max - 1;
-const uint32_t cxevMax = cxev2Max * 2;
-const unsigned ageMax = 2;
 
 class XT
 {
 	XEV2* axev2;
+
+public:
+	int shfXev2Max;
+	int shfXev2MaxIndex;
+	uint32_t cxev2Max;
+	uint32_t cxevMax;
+	const unsigned ageMax = 4;
+
 public:
 	unsigned age;
 #ifndef NOSTATS
@@ -193,7 +195,7 @@ public:
 		cxevProbe(0), cxevProbeHit(0),  
 		cxevSave(0), cxevSaveCollision(0), cxevSaveReplace(0), cxevInUse(0),
 #endif
-		age(0)
+		cxevMax(0x20000L), cxev2Max(0x10000L), shfXev2Max(17), shfXev2MaxIndex(64-17), age(0)
 	{
 	}
 
@@ -205,13 +207,22 @@ public:
 		}
 	}
 
-
+	
 	/*	XT::Init
 	 *
 	 *	Initializes a new transposition table. This must be called before first use.
+	 *	Size of the cache we're allowed to use is in cbCache.
 	 */
-	void Init(void)
+	void Init(uint32_t cbCache)
 	{
+		/* cache needs to be power of 2 number of elements */
+
+		for (cxev2Max = cbCache / sizeof(XEV2); cxev2Max & (cxev2Max - 1); cxev2Max &= cxev2Max - 1)
+			;
+		cxevMax = 2 * cxev2Max;
+		shfXev2Max = bitscan(cxev2Max);
+		shfXev2MaxIndex = 64 - shfXev2Max;
+		
 		if (axev2 == nullptr) {
 			axev2 = new XEV2[cxev2Max];
 			if (axev2 == nullptr)
@@ -240,7 +251,7 @@ public:
 	 */
 	__forceinline unsigned Dage(const XEV& xev) const noexcept
 	{
-		static_assert((ageMax & (ageMax-1)) == 0);
+		assert((ageMax & (ageMax-1)) == 0);
 		return (age - xev.age()) & (ageMax - 1);
 	}
 
@@ -275,13 +286,13 @@ public:
 				axev2[ixev2].xevNew.SetNull();
 			}
 		}
-
-		/* bump age */
-
-		static_assert((ageMax & (ageMax-1)) == 0);
-		age = (age + 1) & (ageMax - 1);
 	}
 
+	void BumpAge(void)
+	{
+		assert((ageMax & (ageMax-1)) == 0);
+		age = (age + 1) & (ageMax - 1);
+	}
 
 	/*	XT::array index
 	 *
@@ -301,7 +312,7 @@ public:
 	 *	Saves the evaluation information in the transposition table. Not guaranteed to 
 	 *	actually save the eval, using our aging heuristics.
 	 */
-	__declspec(noinline) XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int depth, int depthLim) noexcept
+	__declspec(noinline) XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int d, int dLim) noexcept
 	{
 		assert(mve.ev != evInf && mve.ev != -evInf);
 		assert(tev != tevNull);
@@ -311,7 +322,7 @@ public:
 		/* keep track of the deepest search */
 
 		XEV2& xev2 = (*this)[bdg];
-		if (!(tev < xev2.xevDeep.tev()) && depthLim-depth >= xev2.xevDeep.depth()) {
+		if (!(tev < xev2.xevDeep.tev()) && dLim-d >= xev2.xevDeep.dd()) {
 #ifndef NOSTATS
 			if (xev2.xevDeep.tev() == tevNull)
 				cxevInUse++;
@@ -321,7 +332,7 @@ public:
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevDeep.Save(bdg.habd, mve.ev, tev, depth, depthLim, mve, age);
+			xev2.xevDeep.Save(bdg.habd, mve.ev, tev, d, dLim, mve, age);
 			return &xev2.xevDeep;
 		}
 
@@ -335,7 +346,7 @@ public:
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevNew.Save(bdg.habd, mve.ev, tev, depth, depthLim, mve, age);
+			xev2.xevNew.Save(bdg.habd, mve.ev, tev, d, dLim, mve, age);
 			return &xev2.xevNew;
 		}
 
@@ -348,13 +359,13 @@ public:
 	 *	Searches for the board in the transposition table, looking for an evaluation that is
 	 *	at least as deep as depth. Returns nullptr if no such entry exists.
 	 */
-	__declspec(noinline) XEV* Find(const BDG& bdg, int depth, int depthLim) noexcept
+	__declspec(noinline) XEV* Find(const BDG& bdg, int d, int dLim) noexcept
 	{
 #ifndef NOSTATS
 		cxevProbe++;
 #endif
 		XEV2& xev2 = (*this)[bdg];
-		if (xev2.xevDeep.FMatchHabd(bdg.habd) && depthLim-depth <= xev2.xevDeep.depth()) {
+		if (xev2.xevDeep.FMatchHabd(bdg.habd) && dLim-d <= xev2.xevDeep.dd()) {
 #ifndef NOSTATS
 			cxevProbeHit++;
 #endif
@@ -362,7 +373,7 @@ public:
 			return &xev2.xevDeep;
 		}
 
-		if (xev2.xevNew.FMatchHabd(bdg.habd) && depthLim-depth <= xev2.xevNew.depth()) {
+		if (xev2.xevNew.FMatchHabd(bdg.habd) && dLim-d <= xev2.xevNew.dd()) {
 #ifndef NOSTATS
 			cxevProbeHit++;
 #endif

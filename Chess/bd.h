@@ -628,6 +628,7 @@ enum TKMV {
 string to_string(TKMV tkmv);
 
 
+
 /*
  *
  *	VMVEML class
@@ -647,6 +648,31 @@ public:
 	bool FImvIsWhite(int imve) const { return ((imve + FImvFirstIsBlack()) & 1) == 0; }
 	int NmvFromImv(int imve) const { return 1 + (imve + dimveFirst) / 2; }
 };
+
+
+/*
+ *
+ *	EPDP
+ *
+ *	EPD property. For now, all we do is store the string, but eventually]
+ *	we should probably actually parse the operand strings.
+ *
+ */
+
+class EPDP
+{
+public:
+	string sz;
+public:
+	EPDP(void) { }
+	void SetSz(const string& szNew) { sz = szNew; }
+};
+
+inline wstring to_wstring(const EPDP& epdp)
+{
+	wstring wsz(epdp.sz.begin(), epdp.sz.end());
+	return wsz;
+}
 
 
 /*
@@ -679,7 +705,11 @@ public:
 
 	static const char szFENInit[];
 	void InitGame(void);
-	void SetFen(const char* szFEN);	
+	const char* SetFen(const char* szFEN);	
+	void InitEpdProperties(const char*& sz, map<string, vector<EPDP>>& mpszvepdp);
+	string SzEpdOpcode(const char*& sz);
+	void ReadEpdOperands(const char*& sz, vector<EPDP>& vepdp);
+	void ReadEpdOperand(const char*& sz, EPDP& epdp);
 
 	/*
 	 *	making moves 

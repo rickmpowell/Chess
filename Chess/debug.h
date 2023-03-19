@@ -78,17 +78,17 @@ struct LG
 	LGF lgfOpen, lgfClose;
 	TAG tagOpen, tagClose;
 	wstring szDataOpen, szDataClose;
-	int depth;
+	int lgd;
 	float yTop;	// position of the line relative to rcCont
 	float dyLineOpen, dyLineClose;	// height of open line
 	float dyBlock;	// height of entire subblock, including open children
 	LG* plgParent;
 	vector <LG*> vplgChild;
 
-	LG(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) : plgParent(nullptr), 
+	LG(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) : plgParent(nullptr), 
 		lgt(lgt), lgfOpen(lgf), lgfClose(lgfNormal), 
 		tagOpen(tag), tagClose(L""), szDataOpen(szData), szDataClose(L""),
-		depth(depth), 
+		lgd(lgd), 
 		yTop(0), dyLineOpen(10), dyLineClose(0), dyBlock(0)
 	{
 	}
@@ -96,7 +96,7 @@ struct LG
 	LG(void) : plgParent(nullptr), 
 		lgt(lgtNil), lgfOpen(lgfNormal), lgfClose(lgfNormal), 
 		tagOpen(L""), tagClose(L""), szDataOpen(L""), szDataClose(L""),
-		depth(-1), 
+		lgd(-1), 
 		yTop(0), dyLineOpen(0), dyLineClose(0), dyBlock(0)
 	{
 	}
@@ -142,7 +142,7 @@ class UIDB : public UIPS
 	TX* ptxLogItalic;
 	TX* ptxLogBoldItalic;
 	float dyLine;
-	int depthCur, depthShow, depthFile;
+	int lgdCur, lgdShow, lgdFile;
 	ofstream* posLog;
 
 public:
@@ -163,12 +163,12 @@ public:
 
 private:
 	void DrawLg(LG& lg, float yTop, float yBot);
-	void DrawItem(const wstring& sz, int depth, LGF lgf, RC rc);
+	void DrawItem(const wstring& sz, int lgd, LGF lgf, RC rc);
 
 	/*	adding log entries and recomputing layout information */
 
 public:
-	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;	
+	void AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) noexcept;	
 private:
 	float DyComputeLgPos(LG& lg);
 	LG* PlgPrev(const LG* plg) const;
@@ -187,13 +187,13 @@ public:
 	void InitLog(void) noexcept;
 	void ClearLog(void) noexcept;
 	
-	/*	UIDB::DepthLog
+	/*	UIDB::LgdCur
 	 *
 	 *	Returns the depth we're currently logging to.
 	 */
-	__forceinline int DepthLog(void) const noexcept
+	__forceinline int LgdCur(void) const noexcept
 	{
-		return max(depthShow, depthFile);
+		return max(lgdShow, lgdFile);
 	}
 
 	/*	UIDB::FDepthLog
@@ -204,21 +204,21 @@ public:
 	 *
 	 *	Speed of FDepthLog is critical to overall AI speed.
 	 */
-	__forceinline bool FDepthLog(LGT lgt, int& depth) noexcept
+	__forceinline bool FDepthLog(LGT lgt, int& lgd) noexcept
 	{
 		if (lgt == lgtClose)
-			depthCur--;
-		assert(depthCur >= 0);
-		depth = depthCur;
+			lgdCur--;
+		assert(lgdCur >= 0);
+		lgd = lgdCur;
 		if (lgt == lgtOpen)
-			depthCur++;
-		return depth <= DepthLog();
+			lgdCur++;
+		return lgd <= LgdCur();
 	}
 
-	int DepthShow(void) const noexcept;
-	int DepthFile(void) const noexcept;
-	void SetDepthShow(int depth) noexcept;
-	void SetDepthFile(int depth) noexcept;
+	int LgdShow(void) const noexcept;
+	int LgdFile(void) const noexcept;
+	void SetLgdShow(int lgd) noexcept;
+	void SetLgdFile(int lgd) noexcept;
 	void EnableLogFile(bool fSave);
 	bool FLogFileEnabled(void) const noexcept;
 	void RelayoutLog(void);

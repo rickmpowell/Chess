@@ -87,10 +87,10 @@ public:
 	virtual EV EvFromGphApcSq(GPH gph, APC apc, SQ sq) const noexcept;
 	virtual EV EvBaseApc(APC apc) const noexcept;
 
-	bool FDepthLog(LGT lgt, int& depth) noexcept;
-	void AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept;
+	bool FDepthLog(LGT lgt, int& lgd) noexcept;
+	void AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) noexcept;
 	int DepthLog(void) const noexcept;
-	void SetDepthLog(int depthNew) noexcept;
+	void SetDepthLog(int lgdNew) noexcept;
 	void SetAIBreak(const vector<MV>& vmv);
 	void InitBreak(void);
 };
@@ -117,10 +117,10 @@ public:
 	VMVE::it pmveNext;
 	int cmvLegal;
 	PLAI* pplai;
-	int depth;
+	int d;
 
 public:
-	inline VMVES(BDG& bdg, PLAI* pplai, int depth, GG gg) noexcept;
+	inline VMVES(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
 	inline bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
@@ -142,7 +142,7 @@ class VMVESS : public VMVES
 	TSC tscCur;	/* the score type we're currently enumerating */
 
 public:
-	VMVESS(BDG& bdg, PLAI* pplai, int depth, GG gg) noexcept;
+	VMVESS(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept;
 	bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
 	void Reset(BDG& bdg) noexcept;
 
@@ -440,22 +440,22 @@ public:
 public:
 	virtual MVE MveGetNext(SPMV& spmv) noexcept;
 protected:
-	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int depth, int depthLim, TS ts) noexcept;
-	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int depth, TS ts) noexcept; 
-	inline bool FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int depth, int& depthLim, TS ts) noexcept;
-	inline bool FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& depthLim) const noexcept;
-	inline bool FDeepen(BDG& bdg, MVE mveBest, AB& ab, int& depth) noexcept;
-	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int depth) const noexcept;
-	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim) noexcept;
-	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int depth, int depthLim) noexcept;
-	inline bool FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept;
-	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int depth, int depthLim, TS ts) noexcept;
+	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int d, int dLim, TS ts) noexcept;
+	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int d, TS ts) noexcept; 
+	inline bool FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int d, int& dLim, TS ts) noexcept;
+	inline bool FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& dLim) const noexcept;
+	inline bool FDeepen(BDG& bdg, MVE mveBest, AB& ab, int& d) noexcept;
+	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int d) const noexcept;
+	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim) noexcept;
+	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int d, int dLim) noexcept;
+	inline bool FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
+	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
 	inline bool FTestForDraws(BDG& bdg, MVE& mve) noexcept;
 
 	/* time management */
 
 	virtual void InitTimeMan(BDG& bdg) noexcept;
-	virtual bool FBeforeDeadline(int depthLim) noexcept;
+	virtual bool FBeforeDeadline(int dLim) noexcept;
 	SINT SintTimeMan(void) const noexcept;
 	EV EvMaterialTotal(BDG& bdg) const noexcept;
 	EV EvMaterial(BDG& bdg, CPC cpc) const noexcept;
@@ -488,7 +488,7 @@ protected:
 	
 	void StartMoveLog(void);
 	void EndMoveLog(void);
-	void LogInfo(BDG& bdg, EV ev, int depth);
+	void LogInfo(BDG& bdg, EV ev, int d);
 	void BuildPvSz(BDG& bdg, wstring& sz);
 
 };

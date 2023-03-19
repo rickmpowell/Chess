@@ -1,3 +1,8 @@
+  Don't allow games to start playing in board setup mode
+  Parse the various types in EPD file properties
+  Handle move clock opcodes in EPD files
+  Add hover button for displaying EPD properties on the UIBD
+  Use scalable text size in EPD file button
   We're throwing an exception on shutdown deleting one Direct2D brushes
   Is there a way to use templates to automatically generate increment operators on enums?
   Use popup combo box in player picker
@@ -7,18 +12,14 @@
   AI: history heuristic for move ordering
   Reading a PGN file needs to display the result of the game after the read is done.
   Start saving all game PGN files - change PGN filenames to have date/time in them
-  Add support for halfmove clock
+  Add support for halfmove clock from PGN/EPD
   Make it more obvious that the EPD file button is clickable - add an icon?
-  Should we have a line on the UIBD that displays information from EPD file?
-  Add tooltip on EPD control that displays comment from the EPD file
   Find a font that doesn't look too thin when scaled down to small sizes
-  Hook up file open dialog to EPD board setup control
   In board setup mode, disable annotations and legal move highlights
   Implement ability to make null moves from the UI
   Find out why we're not finding right move for first position in arsan21.epd
   Need to close log file on ... something
   Light up floppy disk icon when logging is saving to file
-  Full EPD line parsing
   When expanding/collapsing log, try to keep window scrolled to the same location
   Do "glowing edges" for last move highlight on UIBD
   Color icons for icon buttons, hover variants
@@ -103,6 +104,10 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Size transposition table based on a parameter
+* Full EPD line parsing
+* Hook up file open dialog to EPD board setup control
+* Add tooltip on EPD control that displays comment from the EPD file
 * UI for specifying human player names
 * Add infinite time management option
 * Add a player builder with level, name, time management, etc

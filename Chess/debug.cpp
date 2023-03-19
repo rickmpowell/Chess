@@ -64,10 +64,10 @@ void UIBBDB::Layout(void)
 
 
 UIBBDBLOG::UIBBDBLOG(UIDB* puiParent) : UIBB(puiParent), uidb(*puiParent),
-		spindepth(this, puiParent->depthShow, cmdLogDepthUp, cmdLogDepthDown), 
+		spindepth(this, puiParent->lgdShow, cmdLogDepthUp, cmdLogDepthDown), 
 		staticFile(this, L"Log file:"), 
 		btnLogOnOff(this, cmdLogFileToggle, idbFloppyDisk), 
-		spindepthFile(this, puiParent->depthFile, cmdLogFileDepthUp, cmdLogFileDepthDown)
+		spindepthFile(this, puiParent->lgdFile, cmdLogFileDepthUp, cmdLogFileDepthDown)
 {
 	staticFile.SetTextSize(16.0f);
 }
@@ -96,7 +96,7 @@ void UIBBDBLOG::Layout(void)
 
 UIDB::UIDB(UIGA& uiga) : UIPS(uiga), uibbdb(this), uibbdblog(this), 
 		ptxLog(nullptr), ptxLogBold(nullptr), ptxLogItalic(nullptr), ptxLogBoldItalic(nullptr), dyLine(12.0f),
-		plgCur(&lgRoot), depthCur(0), depthFile(2), depthShow(2), posLog(nullptr)
+		plgCur(&lgRoot), lgdCur(0), lgdFile(2), lgdShow(2), posLog(nullptr)
 {
 }
 
@@ -214,7 +214,7 @@ bool FRangesOverlap(float fl1First, float fl1Lim, float fl2First, float fl2Lim)
  */
 void UIDB::DrawLg(LG& lg, float yTop, float yBot)
 {
-	if (lg.depth > DepthShow() || lg.dyLineOpen == 0)
+	if (lg.lgd > LgdShow() || lg.dyLineOpen == 0)
 		return;
 	float yLgTop = RcContent().top + 4.0f + lg.yTop;
 	if (!FRangesOverlap(yLgTop, yLgTop + lg.dyBlock, yTop, yBot))
@@ -227,20 +227,20 @@ void UIDB::DrawLg(LG& lg, float yTop, float yBot)
 	if (!FLgAnyChildVisible(lg)) {
 		if (FRcOfLgOpen(lg, rc, yTop, yBot)) {
 			if (lg.lgt == lgtClose && FCollapsedLg(lg))
-				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
+				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.szDataClose), lg.lgd, lg.lgfClose, rc);
 			else
-				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.depth, lg.lgfOpen, rc);
+				DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.lgd, lg.lgfOpen, rc);
 		}
 		if (lg.lgt == lgtClose && !FCollapsedLg(lg) && FRcOfLgClose(lg, rc, yTop, yBot))
-			DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.depth, lg.lgfClose, rc);
+			DrawItem(wjoin(lg.tagClose.sz, lg.szDataOpen, lg.szDataClose), lg.lgd, lg.lgfClose, rc);
 	}
 	else {
 		if (FRcOfLgOpen(lg, rc, yTop, yBot))
-			DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.depth, lg.lgfOpen, rc);
+			DrawItem(wjoin(lg.tagOpen.sz, lg.szDataOpen, lg.tagOpen[L"TEMP"]), lg.lgd, lg.lgfOpen, rc);
 		for (LG* plgChild : lg.vplgChild)
 			DrawLg(*plgChild, yTop, yBot);
 		if (lg.lgt == lgtClose && FRcOfLgClose(lg, rc, yTop, yBot))
-			DrawItem(wjoin(lg.tagClose.sz, lg.szDataClose), lg.depth, lg.lgfClose, rc);
+			DrawItem(wjoin(lg.tagClose.sz, lg.szDataClose), lg.lgd, lg.lgfClose, rc);
 	}
 }
 
@@ -276,7 +276,7 @@ bool UIDB::FRcOfLgClose(const LG& lg, RC& rc, float yTop, float yBot) const
 }
 
 
-void UIDB::DrawItem(const wstring& sz, int depth, LGF lgf, RC rc)
+void UIDB::DrawItem(const wstring& sz, int lgd, LGF lgf, RC rc)
 {
 	TX* ptx;
 	switch (lgf) {
@@ -293,7 +293,7 @@ void UIDB::DrawItem(const wstring& sz, int depth, LGF lgf, RC rc)
 		ptx = ptxLog; 
 		break;
 	}
-	rc.left += 12.0f * depth;
+	rc.left += 12.0f * lgd;
 	DrawSz(sz, ptx, rc, pbrText);
 }
 
@@ -313,9 +313,9 @@ float UIDB::DyLine(void) const
  *	Log entries correspond to the features of an XML document, and logs should easily be
  *	transformed into XML.
  */
-void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& szData) noexcept
+void UIDB::AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) noexcept
 {
-	assert(depth <= DepthLog());
+	assert(lgd <= DepthLog());
 
 	LG* plgUpdate = plgCur;
 
@@ -332,7 +332,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 		plgCur = plgCur->plgParent;
 		break;
 	default:
-		plgUpdate = new LG(lgt, lgf, depth, tag, szData);
+		plgUpdate = new LG(lgt, lgf, lgd, tag, szData);
 		plgCur->AddChild(plgUpdate);
 		if (lgt == lgtOpen)
 			plgCur = plgUpdate;
@@ -342,7 +342,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 	/* relayout and redraw - we go to some effort to do minimum redraw here */
 
 	float dyLast = DyComputeLgPos(*plgUpdate);
-	if (depth <= DepthShow()) {
+	if (lgd <= LgdShow()) {
 		float yBot = plgUpdate->yTop + plgUpdate->dyBlock;
 		UpdateContHeight(yBot);
 		RC rc = RC(0, yBot - dyLast, RcView().DxWidth(), yBot).Offset(0, RcContent().top + 4.0f);;
@@ -352,8 +352,8 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int depth, const TAG& tag, const wstring& sz
 
 	/* logging to file */
 
-	if (posLog && depth <= DepthFile()) {
-		*posLog << string(4 * depth, ' ');
+	if (posLog && lgd <= LgdFile()) {
+		*posLog << string(4 * lgd, ' ');
 		if (!tag.sz.empty())
 			*posLog << SzFlattenWsz(tag.sz) << ' ';
 		*posLog << SzFlattenWsz(szData) << endl;
@@ -377,7 +377,7 @@ float UIDB::DyComputeLgPos(LG& lg)
 	float dyLast = 0;
 	lg.dyLineOpen = lg.dyLineClose = 0;
 	lg.dyBlock = 0;
-	if (lg.depth <= DepthShow() && lg.lgt != lgtNil) {
+	if (lg.lgd <= LgdShow() && lg.lgt != lgtNil) {
 		dyLast = lg.dyLineOpen = DyComputeLineOpen(lg);;
 		if (lg.lgt == lgtClose && !FCollapsedLg(lg))
 			dyLast = lg.dyLineClose = DyComputeLineClose(lg);
@@ -467,7 +467,7 @@ void UIDB::FullRelayoutLg(LG& lg, float& yTop)
 {
 	lg.yTop = yTop;
 	lg.dyLineOpen = lg.dyLineClose = 0;
-	if (lg.depth <= DepthShow()) {
+	if (lg.lgd <= LgdShow()) {
 		lg.dyLineOpen = DyComputeLineOpen(lg);
 		if (lg.lgt == lgtClose && !FCollapsedLg(lg))
 			lg.dyLineClose = DyComputeLineClose(lg);
@@ -482,7 +482,7 @@ void UIDB::FullRelayoutLg(LG& lg, float& yTop)
 
 bool UIDB::FLgAnyChildVisible(const LG& lg) const
 {
-	return !lg.vplgChild.empty() && lg.depth+1 <= DepthShow();
+	return !lg.vplgChild.empty() && lg.lgd+1 <= LgdShow();
 }
 
 
@@ -508,20 +508,20 @@ void UIDB::ClearLog(void) noexcept
 }
 
 
-/*	UIDB::SetDepthShow
+/*	UIDB::SetLgdShow
  *
  *	User-set depth of the log that we show/save. If this value is not set, then
  *	the default log depth is used.
  */
-void UIDB::SetDepthShow(int depth) noexcept
+void UIDB::SetLgdShow(int lgd) noexcept
 {
-	depthShow = max(0, depth);
+	lgdShow = max(0, lgd);
 }
 
 
-void UIDB::SetDepthFile(int depth) noexcept
+void UIDB::SetLgdFile(int lgd) noexcept
 {
-	depthFile = max(0, depth);
+	lgdFile = max(0, lgd);
 }
 
 
@@ -532,15 +532,15 @@ void UIDB::InitLog(void) noexcept
 }
 
 
-int UIDB::DepthShow(void) const noexcept
+int UIDB::LgdShow(void) const noexcept
 {
-	return depthShow;
+	return lgdShow;
 }
 
 
-int UIDB::DepthFile(void) const noexcept
+int UIDB::LgdFile(void) const noexcept
 {
-	return depthFile;
+	return lgdFile;
 }
 
 

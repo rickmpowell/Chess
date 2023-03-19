@@ -131,7 +131,7 @@ public:
 	 *	Game control 
 	 */
 
-	void InitGame(const char* szFEN, RULE* prule);
+	void InitGame(const char* szEpd, RULE* prule);
 	void InitGame(void);
 	void StartGame(SPMV spmv);
 	void EndGame(SPMV spmv);
@@ -150,6 +150,6 @@ public:
 
 	void Test(void);
 	void PerftTest(void);
-	void RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t mpdepthcmv[], int depthMax, bool fDivide);
-	uint64_t CmvPerftDivide(int depth);
+	void RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t mpdepthcmv[], int dMax, bool fDivide);
+	uint64_t CmvPerftDivide(int d);
 };

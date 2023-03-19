@@ -1501,11 +1501,10 @@ void BDG::InitGame(void)
 const char BDG::szFENInit[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
-void BDG::SetFen(const char* szFEN)
+const char* BDG::SetFen(const char* sz)
 {
-	if (szFEN == nullptr)
-		szFEN = szFENInit;
-	const char* sz = szFEN;
+	if (sz == nullptr)
+		sz = szFENInit;
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
 	InitFENCastle(sz);
@@ -1513,13 +1512,21 @@ void BDG::SetFen(const char* szFEN)
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
 	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
+	return sz;
 }
 
 
 void BDG::InitFENHalfmoveClock(const char*& sz)
 {
 	SkipToNonSpace(sz);
-	SkipToSpace(sz);
+	if (*sz == '-')
+		sz++;
+	else if (isdigit(*sz)) {
+		int imv = *sz - '0';
+		for (sz++; isdigit(*sz); sz++)
+			imv = 10 * imv + *sz - '0';
+		/* TODO: what should I do with this? */
+	}
 }
 
 
@@ -1532,7 +1539,69 @@ void BDG::InitFENFullmoveCounter(const char*& sz)
 		int nmv = *sz - '0';
 		for (sz++; isdigit(*sz); sz++)
 			nmv = 10*nmv + *sz - '0';
+		/* TODO: is this right? */
 		vmveGame.SetDimveFirst((nmv-1)*2 + (cpcToMove == cpcBlack));
+	}
+ }
+
+void BDG::InitEpdProperties(const char*& sz, map<string, vector<EPDP>>& mpszvepdp)
+{
+	for (;;) {
+		string oc = SzEpdOpcode(sz);
+		if (oc.size() == 0)
+			break;
+		vector<EPDP> vepdp;
+		ReadEpdOperands(sz, vepdp);
+		if (vepdp.size() == 0)
+			break;
+		mpszvepdp[oc] = vepdp;
+	}
+}
+
+
+string BDG::SzEpdOpcode(const char*& sz)
+{
+	string szOpcode;
+	SkipToNonSpace(sz);
+	for (; isalnum(*sz) || *sz == '_'; sz++)
+		szOpcode += *sz;
+	return szOpcode;
+}
+
+
+void BDG::ReadEpdOperands(const char*& sz, vector<EPDP>& vepdp)
+{
+	SkipToNonSpace(sz);
+	EPDP epdp;
+	while (*sz != ';') {
+		if (!*sz)
+			return;
+		ReadEpdOperand(sz, epdp);
+		vepdp.push_back(epdp);
+	}
+	sz++;
+}
+
+
+void BDG::ReadEpdOperand(const char*& sz, EPDP& epdp)
+{
+	SkipToNonSpace(sz);
+	/* TODO: parse these as different types : string, move, unsigned, integer, float */
+	if (*sz == '"') {
+		string szVal;
+		for (sz++; *sz != '"'; sz++) {
+			if (!*sz)	// TODO: error reporting?
+				return;
+			szVal += *sz;
+		}
+		epdp.SetSz(szVal);
+		sz++;
+	}
+	else {
+		string szVal;
+		while (*sz && !isspace(*sz) && *sz != ';')
+			szVal += *sz++;
+		epdp.SetSz(szVal);
 	}
 }
 
@@ -1878,7 +1947,7 @@ wstring SzFromEv(EV ev)
 	}
 	else if (FEvIsMate(ev)) {
 		*pch++ = L'#';
-		pch = PchDecodeInt((DepthFromEvMate(ev) + 1) / 2, pch);
+		pch = PchDecodeInt((DFromEvMate(ev) + 1) / 2, pch);
 	}
 	else if (ev > evInf)
 		*pch++ = L'*';

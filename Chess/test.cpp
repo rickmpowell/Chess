@@ -538,9 +538,9 @@ ERR PROCPGNTEST::ProcessMv(MVE mve)
  *	The standard perft test, which makes all legal moves to a given depth
  *	from the board position.
  */
-uint64_t GA::CmvPerft(int depth)
+uint64_t GA::CmvPerft(int d)
 {
-	if (depth == 0)
+	if (d == 0)
 		return 1;
 	VMVE vmve;
 	bdg.GenMoves(vmve, ggPseudo);
@@ -548,35 +548,35 @@ uint64_t GA::CmvPerft(int depth)
 	for (MVE mve : vmve) {
 		bdg.MakeMv(mve);
 		if (!bdg.FInCheck(~bdg.cpcToMove))
-			cmv += CmvPerft(depth - 1);
+			cmv += CmvPerft(d - 1);
 		bdg.UndoMv();
 	}
 	return cmv;
 }
 
-uint64_t GA::CmvPerftBulk(int depth)
+uint64_t GA::CmvPerftBulk(int d)
 {
 	VMVE vmve;
 	bdg.GenMoves(vmve, ggLegal);
-	if (depth <= 1)
+	if (d <= 1)
 		return vmve.cmve();
 	uint64_t cmv = 0;
 	for (MVE mve : vmve) {
 		bdg.MakeMv(mve);
-		cmv += CmvPerftBulk(depth - 1);
+		cmv += CmvPerftBulk(d - 1);
 		bdg.UndoMv();
 	}
 	return cmv;
 }
 
-uint64_t UIGA::CmvPerftDivide(int depthPerft)
+uint64_t UIGA::CmvPerftDivide(int dPerft)
 {
-	if (depthPerft == 0)
+	if (dPerft == 0)
 		return 1;
-	assert(depthPerft >= 1);
+	assert(dPerft >= 1);
 	VMVE vmve;
 	ga.bdg.GenMoves(vmve, ggLegal);
-	if (depthPerft == 1)
+	if (dPerft == 1)
 		return vmve.cmve();
 	uint64_t cmv = 0;
 #ifndef NDEBUG
@@ -585,7 +585,7 @@ uint64_t UIGA::CmvPerftDivide(int depthPerft)
 	for (MVE mve : vmve) {
 		ga.bdg.MakeMv(mve);
 		LogOpen(TAG(ga.bdg.SzDecodeMvPost(mve), ATTR(L"FEN", (wstring)ga.bdg)), L"", lgfNormal);
-		uint64_t cmvMove = ga.CmvPerft(depthPerft - 1);
+		uint64_t cmvMove = ga.CmvPerft(dPerft - 1);
 		cmv += cmvMove;
 		ga.bdg.UndoMv();
 		LogClose(ga.bdg.SzDecodeMvPost(mve), to_wstring(cmvMove), lgfNormal);
@@ -804,18 +804,18 @@ void UIGA::PerftTest(void)
  *	Cycles through each depth from 1 to depthLast, verifying move counts in mpdepthcmv. 
  *	The tag is just used for debug output.
  */
-void UIGA::RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t mpdepthcmv[], int depthLast, bool fDivide)
+void UIGA::RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t mpdcmv[], int dLast, bool fDivide)
 {
 	LogOpen(tag, L"", lgfBold);
 	InitGame(szFEN, nullptr);
 	uibd.Redraw();
 
 	bool fPassed = false;
-	int depthFirst = fDivide ? 2 : 1;
+	int dFirst = fDivide ? 2 : 1;
 
-	for (int depth = depthFirst; depth <= depthLast; depth++) {
+	for (int d = dFirst; d <= dLast; d++) {
 
-		uint64_t cmvExp = mpdepthcmv[depth];
+		uint64_t cmvExp = mpdcmv[d];
 		if (cmvExp == 0)
 			continue;
 #ifndef NDEBUG
@@ -827,13 +827,13 @@ void UIGA::RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t 
 		/* what we expect to happen */
 
 		PumpMsg();
-		LogOpen(L"Depth", to_wstring(depth), lgfNormal);
+		LogOpen(L"Depth", to_wstring(d), lgfNormal);
 		LogData(L"Expected: " + to_wstring(cmvExp));
 
 		/* time the perft */
 
 		time_point<high_resolution_clock> tpStart = high_resolution_clock::now();
-		uint64_t cmvAct = fDivide ? CmvPerftDivide(depth) : ga.CmvPerft(depth);
+		uint64_t cmvAct = fDivide ? CmvPerftDivide(d) : ga.CmvPerft(d);
 		time_point<high_resolution_clock> tpEnd = high_resolution_clock::now();
 
 		/* display the results */

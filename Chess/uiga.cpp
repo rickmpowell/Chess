@@ -338,16 +338,17 @@ void UIGA::TickTimer(TID tid, DWORD msecCur)
 
 /*	UIGA::InitGame
  *
- *	Initializes a game with the given FEN starting positoin and rules. szFEN 
+ *	Initializes a game with the given EPD starting positoin and rules. szEpd 
  *	and prule may be null for default values.
  *
  *	Game is not started. Call StartGame to get the game moving.
  */
-void UIGA::InitGame(const char* szFEN, RULE* prule)
+void UIGA::InitGame(const char* szEpd, RULE* prule)
 {
-	ga.InitGame(szFEN, prule);
+	szEpd = ga.InitGame(szEpd, prule);
 	InitClocks();
 	uibd.InitGame();
+	uibd.SetEpdProperties(szEpd);
 	uiml.InitGame();
 	SetFocus(&uiml);
 }

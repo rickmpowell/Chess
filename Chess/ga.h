@@ -165,7 +165,7 @@ public:
 	 *	Game control
 	 */
 
-	void InitGame(const char* szFEN, RULE* prule);
+	const char* InitGame(const char* szFEN, RULE* prule);
 	void InitGame(void);
 	void SetRule(RULE* prule);
 	void StartGame(void);
@@ -204,8 +204,8 @@ public:
 	void SerializeMoveList(ostream& os);
 	void WriteSzLine80(ostream& os, string& szLine, const string& szAdd);
 	wstring SzPgnDate(time_point<system_clock> tp) const;
-	uint64_t CmvPerft(int depth);
-	uint64_t CmvPerftBulk(int depth);
+	uint64_t CmvPerft(int d);
+	uint64_t CmvPerftBulk(int d);
 };
 
 

@@ -395,21 +395,14 @@ void UICASTLESTATE::Erase(const RC& rcUpdate, bool fParentDrawn)
  */
 
 
-UISETFEN::UISETFEN(UI* pui, int cmd, const string& szFen) : BTN(pui, cmd), szFen(szFen)
+UISETFEN::UISETFEN(UI* pui, int cmd, const string& szEpdInit) : BTN(pui, cmd), szEpd(szEpdInit)
 {
 }
 
 
-void UISETFEN::SetSzFen(const string& sz)
+void UISETFEN::SetEpd(const string& sz)
 {
-	szFen = sz;
-	Redraw();
-}
-
-
-void UISETFEN::SetSzEpd(const string& sz)
-{
-	szFen = sz;
+	szEpd = sz;
 	Redraw();
 }
 
@@ -431,7 +424,7 @@ void UISETFEN::Draw(const RC& rcUpdate)
 {
 	/* create a little dummy board with the FEN string */
 
-	BDG bdg(szFen.c_str());
+	BDG bdg(szEpd.c_str());
 	DrawBdg(*this, bdg, RcInterior());
 }
 
@@ -472,14 +465,33 @@ void UISETFEN::DrawBdg(UI& ui, BDG& bdg, const RC& rcBox)
 
 SIZ UISETFEN::SizOfTip(UITIP& uitip) const
 {
-	return SIZ(240, 240);
+	return SIZ(240, 305);
 }
 
 void UISETFEN::DrawTip(UITIP& uitip)
 {
-	BDG bdg(szFen.c_str());
+	BDG bdg;
+	const char* sz = bdg.SetFen(szEpd.c_str());
+	map<string, vector<EPDP>> mpszvepdp;
+	bdg.InitEpdProperties(sz, mpszvepdp);
 	RC rcBox = uitip.RcInterior().Inflate(-5, -5);
+	rcBox.Offset(0, 45.0);
+	rcBox.bottom = rcBox.top + rcBox.DxWidth();
 	DrawBdg(uitip, bdg, rcBox);
+	
+	rcBox = uitip.RcInterior();
+	rcBox.bottom = rcBox.top + 45.0f;
+	rcBox.Inflate(-5, -5);
+	if (mpszvepdp.find("c0") != mpszvepdp.end())
+		uitip.DrawSz(to_wstring(mpszvepdp["c0"][0]), ptxText, rcBox);
+	else if (mpszvepdp.find("id") != mpszvepdp.end())
+		uitip.DrawSz(to_wstring(mpszvepdp["id"][0]), ptxText, rcBox);
+
+	rcBox = uitip.RcInterior();
+	rcBox.top = rcBox.bottom - 27.0f;
+	rcBox.Inflate(-5, -5);
+	if (mpszvepdp.find("bm") != mpszvepdp.end())
+		uitip.DrawSz(L"Best Move: "+to_wstring(mpszvepdp["bm"][0]), ptxText, rcBox);
 }
 
 
@@ -535,6 +547,9 @@ void BTNFILE::SetFile(const wstring& szNew)
  *
  *	UIEPD control container
  *
+ *	Displays a mini board of one EPD line from the file and left/right buttons for 
+ *	cycling through the rest of the entries.
+ * 
  */
 
 
@@ -545,6 +560,20 @@ UIEPD::UIEPD(UIPCP& uipcp, const wstring& szFile) : UI(&uipcp), uipcp(uipcp),
 	btnfile(this, cmdOpenEpdFile, szFile)
 {
 	SetLine(1);
+}
+
+
+void UIEPD::SetFile(const wstring& szFileNew)
+{
+	szFile = szFileNew;
+	SetLine(1);
+	btnfile.SetFile(szFile);
+}
+
+
+void UIEPD::GetFile(wchar_t sz[], int cch)
+{
+	lstrcpyW(sz, szFile.c_str());
 }
 
 
@@ -560,11 +589,11 @@ void UIEPD::SetLine(int ili)
 	}
 	string szLine = SzFindLine(is, iliCur);
 	if (szLine.empty()) {
-		uisetfen.SetSzFen(BDG::szFENInit);
+		uisetfen.SetEpd(BDG::szFENInit);
 		return;
 	}
 
-	uisetfen.SetSzEpd(szLine);
+	uisetfen.SetEpd(szLine);
 	iliCur = ili;
 }
 
@@ -750,13 +779,13 @@ void UIPCP::DispatchCmd(int cmd)
 		for (UISETFEN* puisetfen : vpuisetfen)
 			if (puisetfen->cmd == cmd) {
 				uiga.ga.bdg.InitGame();
-				uiga.ga.bdg.SetFen(puisetfen->szFen.c_str());
+				uiga.uibd.SetEpd(puisetfen->szEpd.c_str());
 				break;
 			}
 		break;
 	case cmdSetEpdFen:
 		uiga.ga.bdg.InitGame();
-		uiga.ga.bdg.SetFen(uiepd.uisetfen.szFen.c_str());
+		uiga.uibd.SetEpd(uiepd.uisetfen.szEpd.c_str());
 		break;
 	case cmdSetSquare:
 		uibd.Ga().bdg.SetSq(sqDrop, PC(cpcShow, apcDrop));
@@ -779,12 +808,33 @@ void UIPCP::DispatchCmd(int cmd)
 	case cmdPrevEpdLine:
 		uiepd.SetLine(uiepd.iliCur-1);
 		break;
+	case cmdOpenEpdFile:
+		OpenEpdFile();
+		break;
 	default:
 		break;
 	}
 	uiga.Redraw();
 }
 
+
+void UIPCP::OpenEpdFile(void)
+{
+	wchar_t szFileName[1024];
+	uiepd.GetFile(szFileName, CArray(szFileName));
+	OPENFILENAMEW ofn = { 0 };
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = App().hwnd;
+	ofn.lpstrFilter = L"EPD Files\0*.epd\0\0";
+	ofn.lpstrFile = szFileName;
+	ofn.nMaxFile = CArray(szFileName);
+	ofn.lpstrTitle = L"Open EPD File";
+	ofn.Flags = OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
+	ofn.lpstrDefExt = L"epd";
+	if (!::GetOpenFileNameW(&ofn))
+		return;
+	uiepd.SetFile(szFileName);
+}
 
 void UIPCP::HiliteSq(SQ sq)
 {

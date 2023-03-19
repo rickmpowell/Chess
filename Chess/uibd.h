@@ -11,8 +11,6 @@
 #include "bd.h"
 
 
-
-
 /*
  *
  *	UIBD class
@@ -70,9 +68,20 @@ public:
 
 	ANO* panoDrag;		// during right mouse drag, we drag out this annotation; points into vano
 
+	map<string, vector<EPDP>> mpszvepdp;	/* EPD properties */
+
+
 public:
 	UIBD(UIGA& uiga);
 	virtual ~UIBD(void);
+
+	/* EPD lines have a FEN string along with EPD properties; EPD properties are saved
+	   in the UIBD because they are not necessary to actual game play, from the end of */
+
+	void SetEpd(const char* sz);
+	void SetEpdProperties(const char* szEpd);
+
+	/* Game control */
 
 	void InitGame(void);
 	void StartGame(void);
@@ -81,7 +90,11 @@ public:
 	void RedoMv(SPMV spmv);
 	void SetMoveHilite(MVE mve);
 
+	/*	layout */
+
 	virtual void Layout(void);
+
+	/* drawing */
 
 	virtual void Draw(const RC& rcUpdate);
 	virtual bool FCreateRsrc(void);
@@ -115,6 +128,8 @@ public:
 	RC RcFromSq(SQ sq) const;
 
 	void FlipBoard(CPC cpcNew);
+
+	/* mouse ui */
 
 	HTBD HtbdHitTest(const PT& pt, SQ* psq) const;
 	virtual void StartLeftDrag(const PT& pt);
@@ -326,11 +341,10 @@ public:
 class UISETFEN : public BTN
 {
 public:
-	string szFen;
+	string szEpd;
 public:
 	UISETFEN(UI* pui, int cmd, const string& szFen);
-	void SetSzFen(const string& sz);
-	void SetSzEpd(const string& sz);
+	void SetEpd(const string& sz);
 
 	virtual void Draw(const RC& rcUpdate);
 	void DrawBdg(UI& ui, BDG& bdg, const RC& rcBox);
@@ -386,6 +400,8 @@ class UIEPD : public UI
 public:
 	UIEPD(UIPCP& uipcp, const wstring& szFile);
 	void SetLine(int ili);
+	void SetFile(const wstring& szFileNew);
+	void GetFile(wchar_t szFile[], int cch);
 
 	string SzFindLine(ifstream& ifs, int ili);
 
@@ -445,4 +461,5 @@ public:
 	BMP* PbmpPieces(void);
 	void HiliteSq(SQ sq);
 
+	void OpenEpdFile(void);
 };

@@ -154,12 +154,12 @@ wstring to_wstring(MV mv);
 
 typedef int16_t EV;
 
-const int depthMax = 127;						/* maximum search depth */
+const int dMax = 127;							/* maximum search depth */
 const EV evPawn = 100;							/* evals are in centi-pawns */
-const EV evInf = 160 * evPawn + depthMax;		/* largest possible evaluation */
+const EV evInf = 160 * evPawn + dMax;			/* largest possible evaluation */
 const EV evSureWin = 40 * evPawn;				/* we have sure win when up this amount of material */
 const EV evMate = evInf - 1;					/* checkmates are given evals of evalMate minus moves to mate */
-const EV evMateMin = evMate - depthMax;
+const EV evMateMin = evMate - dMax;
 const EV evTempo = evPawn/3;					/* evaluation of a single move advantage */
 const EV evDraw = 0;							/* evaluation of a draw */
 const EV evTimedOut = evInf + 1;
@@ -168,10 +168,10 @@ const EV evMax = evCanceled + 1;
 const EV evBias = evInf;						/* used to bias evaluations for saving as an unsigned */
 static_assert(evMax <= 16384);					/* there is code that asssumes EV stores in 15 bits */
 
-inline EV EvMate(int depth) { return evMate - depth; }
+inline EV EvMate(int d) { return evMate - d; }
 inline bool FEvIsMate(EV ev) { return ev >= evMateMin; }
 inline bool FEvIsInterrupt(EV ev) { return abs(ev) > evInf; }	/* timeout or cancel */
-inline int DepthFromEvMate(EV ev) { return evMate - ev; }
+inline int DFromEvMate(EV ev) { return evMate - ev; }
 wstring SzFromEv(EV ev);
 inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 
