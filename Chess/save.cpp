@@ -125,7 +125,7 @@ void GA::SerializeMoveList(ostream& os)
 	if (bdg.vmveGame.size() > 0) {
 		/* first move needs some special handling to put leading "..." on move lists
 		   when black was the first to move */
-		WriteSzLine80(os, szLine, bdg.vmveGame.FImvFirstIsBlack()  ? "1... " : "1. ");
+		WriteSzLine80(os, szLine, bdg.vmveGame.FImvFirstIsBlack() ? "1... " : "1. ");
 		SerializeMove(os, szLine, bdgSav, bdg.vmveGame[0]);
 		for (int imve = 1; imve < bdg.vmveGame.size(); imve++) {
 			MVE mve = bdg.vmveGame[imve];
@@ -142,10 +142,11 @@ void GA::SerializeMoveList(ostream& os)
 	wstring sz;
 	if (FResultSz(bdgSav.gs, sz))
 		WriteSzLine80(os, szLine, SzFlattenWsz(sz));
+	
+	/* flush whatever is left out to the stream */
 
-	assert(szLine.size() > 0);
-	os << szLine;
-	os << endl;
+	if (szLine.size() > 0)
+		os << szLine << endl;
 }
 
 void GA::SerializeMove(ostream& os, string& szLine, BDG& bdg, MVE mve)

@@ -123,7 +123,7 @@ public:
 	__forceinline APC apcCapture(void) const noexcept { return (APC)uapcCapt; }
 	__forceinline bool fIsCapture(void) const noexcept { return apcCapture() != apcNull; }
 	__forceinline bool fIsCastle(void) const noexcept { return apcMove() == apcKing && abs(sqFrom().file() - sqTo().file()) > 1; }
-	/* beware! - comparison operators only work on the MV part of the MVE */
+	/* beware! - comparison operators only test the MV part of the MVE */
 	__forceinline bool operator==(const MVU& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
 	__forceinline bool operator!=(const MVU& mv) const noexcept { return *(uint16_t*)this != (uint16_t)mv; }
 	__forceinline bool operator==(const MV& mv) const noexcept { return *(uint16_t*)this == (uint16_t)mv; }
@@ -191,9 +191,12 @@ inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 enum TSC : int {
 	tscNil = 255,
 	tscPrincipalVar = 0,
-	tscEvCapture = 1,
-	tscXTable = 2,
-	tscEvOther = 3
+	tscGoodCapture = 1,
+	tscKiller = 2,
+	tscXTable = 3,
+	tscHistory = 4,
+	tscEvOther = 5,
+	tscBadCapture = 6
 };
 
 __forceinline TSC& operator++(TSC& tsc)
@@ -236,7 +239,7 @@ public:
 	__forceinline MVE(void) noexcept { *(uint64_t*)this = (uint32_t)mvuNil; }
 #pragma warning(suppress:26495)	
 	__forceinline MVE(MVU mvu) noexcept { *(uint64_t*)this = (uint32_t)mvu; }
-	__forceinline MVE(MVU mvu, EV ev) noexcept : MVU(mvu), ev(ev), utsc(0) { }
+	__forceinline MVE(MVU mvu, EV ev, TSC tsc=tscNil) noexcept : MVU(mvu), ev(ev), utsc(tsc) { }
 #pragma warning(suppress:26495)	 
 	__forceinline MVE(uint64_t mve) noexcept { *(uint64_t*)this = mve; }
 #pragma warning(suppress:26495)	

@@ -1,15 +1,12 @@
+  AI: implement futility move pruning
   Don't allow games to start playing in board setup mode
   Parse the various types in EPD file properties
   Handle move clock opcodes in EPD files
   Add hover button for displaying EPD properties on the UIBD
   Use scalable text size in EPD file button
-  We're throwing an exception on shutdown deleting one Direct2D brushes
-  Is there a way to use templates to automatically generate increment operators on enums?
   Use popup combo box in player picker
   Implement a full-featured UI popup combo box, including nested controls
   In board edit mode, dragging pieces onto the delete icon should remove them from the board
-  Copying and pasting is screwing up the clipboard lock somewhere ... not sure steps yet
-  AI: history heuristic for move ordering
   Reading a PGN file needs to display the result of the game after the read is done.
   Start saving all game PGN files - change PGN filenames to have date/time in them
   Add support for halfmove clock from PGN/EPD
@@ -51,7 +48,7 @@
   Lock out most UI when AI is thinking
   AI: refutation tables
   Can we incrementally keep whether someone is in check in the BD and make them noisy moves?
-  UIDB: Turn it into a tabbed panel with piece value table, log, or animated move list
+  UIDB: Turn it into a tabbed panel with piece value table, log, or animated evaluated move list
   Test: option to stop or continue on errors 
   Test: Add option to draw or not draw moves during test run
   Test: Don't display resign/draw controls during test playback
@@ -68,7 +65,6 @@
   AI: annotate candidate best moves on board while thinking
   AI: look deeper on a few of the "best" moves
   AI: Do a multithreaded lookup
-  Eval: Add square control factor to evaluation function
   Choosing the player picker while the AI is running crashes
   Can we make things like Undo work while AI is thinking?
   Move gen: Use magic bitboards for move generation
@@ -104,6 +100,11 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Copying then immediately pasting gives clipboard lock error
+* Copying a new game as PGN before any moves are made asserts
+* AI: killer moves heurstic for move ordering
+* AI: history heuristic for move ordering
+* We're throwing an exception on shutdown deleting one Direct2D brushes
 * Size transposition table based on a parameter
 * Full EPD line parsing
 * Hook up file open dialog to EPD board setup control

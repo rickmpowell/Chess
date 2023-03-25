@@ -100,12 +100,8 @@ public:
  *
  *	VMVES class
  *
- *	A move list class that has smart enumeration used in alpha-beta search.
- *	Variants for the various types of enumerations we have to do, including
- *	regular pre-sorted evals and unsorted quiescent enumerations.
- *
- *	Note that we do not use polymorphism in these classes. We only use them
- *	in a known context.
+ *	A move list class that has smart enumeration with delayed scoring,
+ *	to be used during alpha-beta search.
  *
  */
 
@@ -118,33 +114,14 @@ public:
 	int cmvLegal;
 	PLAI* pplai;
 	int d;
+	TSC tscCur;	/* the score type we're currently enumerating */
 
 public:
 	inline VMVES(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept;
 	inline void Reset(BDG& bdg) noexcept;
-	inline bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
+	inline bool FEnumMvNext(BDG& bdg, MVE*& pmve) noexcept;
 	inline void UndoMv(BDG& bdg) noexcept;
 	bool FOnlyOneMove(MVE& mve) const noexcept;
-};
-
-
-/*
- *
- *	VMVESS
- *
- *	Sorted move enumerator, used for optimizing alpha-beta search orer.
- *
- */
-
-
-class VMVESS : public VMVES
-{
-	TSC tscCur;	/* the score type we're currently enumerating */
-
-public:
-	VMVESS(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept;
-	bool FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept;
-	void Reset(BDG& bdg) noexcept;
 
 private:
 	MVE* PmveBestFromTscCur(VMVE::it pmveFirst) noexcept;
@@ -156,9 +133,12 @@ private:
  *
  *	AB class
  * 
- *	Alpha-beta window used
+ *	Alpha-beta window. Rather than keep alpha/beta values separately, we combine
+ *	them in this "window" class.
  * 
  */
+
+
 class AB
 {
 public:
@@ -166,7 +146,7 @@ public:
 	EV evBeta;
 
 	inline AB(EV evAlpha, EV evBeta) noexcept : evAlpha(evAlpha), evBeta(evBeta) { assert(FValid()); }
-	bool FValid(void) const noexcept { return evAlpha < evBeta; }
+	inline bool FValid(void) const noexcept { return evAlpha < evBeta; }
 
 	
 	/*	AB unary - operator
@@ -217,25 +197,14 @@ public:
 	}
 
 
-	/*	AB::NarrowAlpha
+	/*	AB::RaiseAlpha
 	 *
 	 *	Sets the new bottom range of the alpha-beta window, but only shrinks if the
 	 *	new alpha is actually bigger than old alpha.
 	 */
-	inline void NarrowAlpha(EV ev) noexcept {
+	inline void RaiseAlpha(EV ev) noexcept {
 		assert(ev < evBeta);
 		evAlpha = max(evAlpha, ev);
-	}
-
-
-	/*	AB::NarrowBeta
-	 *
-	 *	Sets the top range of the alpha-beta window, but only shrinks if the new 
-	 *	beta is actually below the old beta
-	 */
-	inline void NarrowBeta(EV ev) noexcept {
-		assert(ev > evAlpha);
-		evBeta = min(evBeta, ev);
 	}
 
 
@@ -257,6 +226,7 @@ public:
 		return AB(evAlpha, evAlpha + 1);
 	}
 
+
 	inline bool fIsNull(void) const noexcept {
 		return evAlpha + 1 == evBeta;
 	}
@@ -265,29 +235,9 @@ public:
 	   than if it's below the bottom value, and greater than if it's above
 	   the top value */
 
-	inline bool operator>(EV ev) const noexcept {
-		assert(FValid());
-		return ev <= evAlpha;
-	}
-	inline bool operator<(EV ev) const noexcept {
-		assert(FValid());
-		return ev >= evBeta;
-	}
-
-	inline bool FIncludes(EV ev) const noexcept {
-		assert(FValid());
-		return ev > evAlpha && ev < evBeta;
-	}
-
-	friend inline bool operator<(EV ev, const AB& ab) {
-		assert(ab.FValid());
-		return ev <= ab.evAlpha;
-	}
-
-	friend inline bool operator>(EV ev, const AB& ab) {
-		assert(ab.FValid());
-		return ev >= ab.evBeta;
-	}
+	inline bool FEvIsBelow(EV ev) const noexcept { return ev <= evAlpha; }
+	inline bool FEvIsAbove(EV ev) const noexcept { return ev >= evBeta; }
+	inline bool FIncludes(EV ev) const noexcept { return ev > evAlpha && ev < evBeta; }
 
 	operator wstring() const noexcept { 
 		assert(FValid());
@@ -313,14 +263,28 @@ enum SINT : int {
  *	TS search options, can be or'ed together
  */
 
-enum TS : int {
+enum TS : unsigned {
 	tsAll = 0,
-	tsNoNullMove = 0x0001
+	
+	tsNoPruneNullMove = 0x0001,
+	tsNoPruneFutility = 0x0002,
+	tsNoPruneNullPV = 0x0004,
+	
+	tsNoOrderPV = 0x0010,
+	tsNoOrderCapt = 0x0020,
+	tsNoOrderKillers = 0x0040,
+	tsNoOrderHistory = 0x0080,
+	tsNoOrderXT = 0x0100,
+
+	tsNoIterDeepending = 0x2000,
+	tsNoAspiration = 0x4000,
+	
+	tsNoTransTable = 0x8000
 };
 
 inline TS operator+(TS ts1, TS ts2) noexcept { return static_cast<TS>(ts1 | ts2); }
 inline TS operator-(TS ts1, TS ts2) noexcept { return static_cast<TS>(ts1 & ~ts2); }
-inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<int>(ts1) & static_cast<int>(ts2)) != 0; }
+inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<unsigned>(ts1) & static_cast<unsigned>(ts2)) != 0; }
 
 
 /*
@@ -385,7 +349,6 @@ public:
 class PLAI : public PL
 {
 	friend class VMVES;
-	friend class VMVESS;
 	friend class LOGMVE;
 	friend class LOGMVES;
 	friend class LOGMVEQ;
@@ -410,7 +373,10 @@ protected:
 	DWORD dmsecDeadline, dmsecFlag;
 	time_point<high_resolution_clock> tpMoveStart;
 	
-	XT xt;	
+	XT xt;
+	static const int cmvKillers = 2;
+	MV amvKillers[256][cmvKillers];
+	int mppcsqcHistory[pcMax][sqMax];
 
 	uint16_t cYield;
 	int level;
@@ -442,12 +408,16 @@ public:
 protected:
 	EV EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB ab, int d, int dLim, TS ts) noexcept;
 	EV EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB ab, int d, TS ts) noexcept; 
-	inline bool FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int d, int& dLim, TS ts) noexcept;
-	inline bool FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& dLim) const noexcept;
+	inline bool FSearchMveBest(BDG& bdg, VMVES& vmves, MVE& mveBest, AB ab, int d, int& dLim, TS ts) noexcept;
+	inline bool FPrune(BDG& bdg, MVE& mve, MVE& mveBest, AB& ab, int d, int& dLim) noexcept;
 	inline bool FDeepen(BDG& bdg, MVE mveBest, AB& ab, int& d) noexcept;
 	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int d) const noexcept;
 	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim) noexcept;
 	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int d, int dLim) noexcept;
+	inline void SaveKiller(BDG& bdg, MVE mve) noexcept;
+	inline void InitHistory(void) noexcept;
+	inline void BumpHistory(BDG& bdg, MVE mve, int d, int dLim) noexcept;
+	inline void AgeHistory(void) noexcept;
 	inline bool FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
 	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
 	inline bool FTestForDraws(BDG& bdg, MVE& mve) noexcept;
@@ -461,10 +431,15 @@ protected:
 	EV EvMaterial(BDG& bdg, CPC cpc) const noexcept;
 	DWORD DmsecMoveSoFar(void) const noexcept;
 	
-	/* eval */
+	/* scoring for move ordering */
 
-	virtual EV ScoreMove(BDG& bdg, MVE mvePrev) noexcept;
-	virtual EV ScoreCapture(BDG& bdg, MVE mve)  noexcept;
+	EV ScoreMove(BDG& bdg, MVE mvePrev) noexcept;
+	EV ScoreCapture(BDG& bdg, MVE mve)  noexcept;
+	bool FScoreKiller(BDG& bdg, MVE& mve) noexcept;
+	bool FScoreHistory(BDG& bdg, MVE& mve) noexcept;
+
+	/* static evaluation */
+
 	virtual EV EvBdgStatic(BDG& bdg, MVE mve) noexcept;
 	virtual void InitWeightTables(void);
 	EV EvBdgKingSafety(BDG& bdg, CPC cpc) noexcept;

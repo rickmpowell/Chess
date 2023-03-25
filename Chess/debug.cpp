@@ -315,7 +315,7 @@ float UIDB::DyLine(void) const
  */
 void UIDB::AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szData) noexcept
 {
-	assert(lgd <= DepthLog());
+	assert(lgd <= LgdCur());
 
 	LG* plgUpdate = plgCur;
 

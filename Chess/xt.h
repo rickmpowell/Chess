@@ -154,6 +154,27 @@ public:
 __declspec(align(2)) struct XEV2 {
 	XEV xevDeep;
 	XEV xevNew;
+
+	/*	XEV2::new
+	 *
+	 *	We use a custom allocator for the transposition table to page align
+	 *	the data structure.
+	 */
+	void* operator new[](size_t cb)
+	{
+		void* p = VirtualAlloc(NULL, cb, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+		if (!p) {
+			bad_alloc ex;
+			throw ex;
+		}
+		return p;
+	}
+
+	void operator delete[](void* p)
+	{
+		if (p)
+			VirtualFree(p, 0, MEM_RELEASE);
+	}
 };
 #pragma pack(pop)
 
@@ -179,7 +200,7 @@ public:
 	int shfXev2MaxIndex;
 	uint32_t cxev2Max;
 	uint32_t cxevMax;
-	const unsigned ageMax = 4;
+	const unsigned ageMax = 2;
 
 public:
 	unsigned age;
@@ -190,7 +211,7 @@ public:
 #endif
 
 public:
-	XT(void) : axev2(nullptr), 
+	XT(void) : axev2(nullptr),
 #ifndef NOSTATS
 		cxevProbe(0), cxevProbeHit(0),  
 		cxevSave(0), cxevSaveCollision(0), cxevSaveReplace(0), cxevInUse(0),
@@ -201,10 +222,8 @@ public:
 
 	~XT(void)
 	{
-		if (axev2 != nullptr) {
+		if (axev2)
 			delete[] axev2;
-			axev2 = nullptr;
-		}
 	}
 
 	
@@ -215,12 +234,9 @@ public:
 	 */
 	void Init(uint32_t cbCache)
 	{
-		/* cache needs to be power of 2 number of elements */
-
-		for (cxev2Max = cbCache / sizeof(XEV2); cxev2Max & (cxev2Max - 1); cxev2Max &= cxev2Max - 1)
-			;
+		shfXev2Max = bitscanRev(cbCache / sizeof(XEV2));
+		cxev2Max = 1 << shfXev2Max;
 		cxevMax = 2 * cxev2Max;
-		shfXev2Max = bitscan(cxev2Max);
 		shfXev2MaxIndex = 64 - shfXev2Max;
 		
 		if (axev2 == nullptr) {
@@ -313,41 +329,44 @@ public:
 	 *	actually save the eval, using our aging heuristics.
 	 */
 	__declspec(noinline) XEV* Save(const BDG& bdg, const MVE& mve, TEV tev, int d, int dLim) noexcept
-	{
+	{	
 		assert(mve.ev != evInf && mve.ev != -evInf);
 		assert(tev != tevNull);
 #ifndef NOSTATS
 		cxevSave++;
 #endif
+
 		/* keep track of the deepest search */
 
 		XEV2& xev2 = (*this)[bdg];
-		if (!(tev < xev2.xevDeep.tev()) && dLim-d >= xev2.xevDeep.dd()) {
+		XEV& xevDeep = xev2.xevDeep;
+		if (!(tev < xevDeep.tev()) && dLim-d >= xevDeep.dd()) {
 #ifndef NOSTATS
-			if (xev2.xevDeep.tev() == tevNull)
+			if (xevDeep.tev() == tevNull)
 				cxevInUse++;
 			else {
 				cxevSaveReplace++;
-				if (!xev2.xevDeep.FMatchHabd(bdg.habd))
+				if (!xevDeep.FMatchHabd(bdg.habd))
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevDeep.Save(bdg.habd, mve.ev, tev, d, dLim, mve, age);
-			return &xev2.xevDeep;
+			xevDeep.Save(bdg.habd, mve.ev, tev, d, dLim, mve, age);
+			return &xevDeep;
 		}
 
-		if (!(tev < xev2.xevNew.tev())) {
+		XEV& xevNew = xev2.xevNew;
+		if (!(tev < xevNew.tev())) {
 #ifndef NOSTATS
-			if (xev2.xevNew.tev() == tevNull)
+			if (xevNew.tev() == tevNull)
 				cxevInUse++;
 			else {
 				cxevSaveReplace++;
-				if (!xev2.xevNew.FMatchHabd(bdg.habd))
+				if (!xevNew.FMatchHabd(bdg.habd))
 					cxevSaveCollision++;
 			}
 #endif
-			xev2.xevNew.Save(bdg.habd, mve.ev, tev, d, dLim, mve, age);
-			return &xev2.xevNew;
+			xevNew.Save(bdg.habd, mve.ev, tev, d, dLim, mve, age);
+			return &xevNew;
 		}
 
 		return nullptr;
@@ -365,20 +384,22 @@ public:
 		cxevProbe++;
 #endif
 		XEV2& xev2 = (*this)[bdg];
-		if (xev2.xevDeep.FMatchHabd(bdg.habd) && dLim-d <= xev2.xevDeep.dd()) {
+		XEV& xevDeep = xev2.xevDeep;
+		if (xevDeep.FMatchHabd(bdg.habd) && dLim-d <= xevDeep.dd()) {
 #ifndef NOSTATS
 			cxevProbeHit++;
 #endif
-			xev2.xevDeep.SetAge(age);
-			return &xev2.xevDeep;
+			xevDeep.SetAge(age);
+			return &xevDeep;
 		}
 
-		if (xev2.xevNew.FMatchHabd(bdg.habd) && dLim-d <= xev2.xevNew.dd()) {
+		XEV& xevNew = xev2.xevNew;
+		if (xevNew.FMatchHabd(bdg.habd) && dLim-d <= xevNew.dd()) {
 #ifndef NOSTATS
 			cxevProbeHit++;
 #endif
-			xev2.xevNew.SetAge(age);
-			return &xev2.xevNew;
+			xevNew.SetAge(age);
+			return &xevNew;
 		}
 		return nullptr;
 	}

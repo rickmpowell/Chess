@@ -175,14 +175,24 @@ void PLAI::SetLevel(int level) noexcept
 	this->level = clamp(level, 1, 10);
 }
 
+
 void PLAI::SetTtm(TTM ttm) noexcept
 {
 	this->ttm = ttm;
 }
 
+
 void PLAI::StartGame(void)
 {
 	xt.Init(128 * 0x100000UL);
+
+	/* initialize killers */
+
+	for (int imvGame = 0; imvGame < 256; imvGame++)
+		for (int imv = 0; imv < cmvKillers; imv++)
+			amvKillers[imvGame][imv] = mvNil;
+
+	InitHistory();
 }
 
 
@@ -296,17 +306,17 @@ class LOGMVE : public LOGSEARCH, public AIBREAK
 	int lgdSav;
 	int imvExpandSav;
 	const MVE& mveBest;
-	const AB& abInit;
+	AB abInit;
 
 	static int imvExpand;
 	static MV amv[20];
 
 public:
 	inline LOGMVE(PLAI& pl, BDG& bdg,
-				  const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int d, 
+				  const MVE& mvePrev, const MVE& mveBest, const AB& ab, int d, 
 				  wchar_t chType = L' ') noexcept :
 		LOGSEARCH(pl, bdg), AIBREAK(pl, mvePrev, d),
-		mvePrev(mvePrev), mveBest(mveBest), abInit(abInit), lgdSav(0), imvExpandSav(0)
+		mvePrev(mvePrev), mveBest(mveBest), abInit(-ab), lgdSav(0), imvExpandSav(0)
 	{
 		lgdSav = LgdShow();
 		imvExpandSav = imvExpand;
@@ -321,14 +331,13 @@ public:
 						 TAG(bdg.SzDecodeMvPost(mvePrev), ATTR(L"FEN", bdg)),
 						 wjoin(wstring(1, chType) + to_wstring(d),
 							   to_wstring(mvePrev.tsc()),
-							   SzFromEv(-mvePrev.ev), abInit));
-
+							   SzFromEv(mvePrev.ev), abInit));
 		}
 	}
 
 	inline ~LOGMVE() noexcept
 	{
-		LogClose(bdg.SzDecodeMvPost(mvePrev), wjoin(SzFromEv(mveBest.ev), SzEvt()), LgfEvt());
+		LogClose(bdg.SzDecodeMvPost(mvePrev), wjoin(SzFromEv(-mveBest.ev), SzEvt()), LgfEvt());
 		SetLgdShow(lgdSav);
 		imvExpand = imvExpandSav;
 	}
@@ -347,9 +356,9 @@ public:
 
 	inline wstring SzEvt(void) const noexcept
 	{
-		if (mveBest.ev < abInit)
+		if (abInit.FEvIsBelow(-mveBest.ev))
 			return L"Low";
-		else if (mveBest.ev > abInit)
+		else if (abInit.FEvIsAbove(-mveBest.ev))
 			return L"Cut";
 		else
 			return L"PV";
@@ -357,46 +366,14 @@ public:
 
 	inline LGF LgfEvt(void) const noexcept
 	{
-		if (mveBest.ev < abInit)
+		if (abInit.FEvIsBelow(-mveBest.ev))
 			return lgfNormal;
-		else if (mveBest.ev > abInit)
+		else if (abInit.FEvIsAbove(-mveBest.ev))
 			return lgfItalic;
-		else
+		else // PV
 			return lgfBold;
 	}
 };
-
-class LOGMVES : public LOGMVE
-{
-public:
-	inline LOGMVES(PLAI& pl, BDG& bdg,
-				   const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int d) noexcept :
-		LOGMVE(pl, bdg, mvePrev, mveBest, abInit, d, L' ')
-	{
-	}
-};
-
-
-class LOGMVEQ : public LOGMVE
-{
-public:
-	inline LOGMVEQ(PLAI& pl, BDG& bdg,
-				   const MVE& mvePrev, const MVE& mveBest, const AB& abInit, int d) noexcept :
-		LOGMVE(pl, bdg, mvePrev, mveBest, abInit, d, L'Q')
-	{
-	}
-};
-
-
-class LOGMVESTATIC : public LOGMVE
-{
-public:
-	inline LOGMVESTATIC(PLAI& pl, BDG& bdg, const MVE& mve, const AB& abInit) noexcept :
-		LOGMVE(pl, bdg, mve, mve, abInit, 0, L'S')
-	{
-	}
-};
-
 
 
 /* a little debugging aid to trigger a change in log depth after a 
@@ -452,7 +429,7 @@ public:
  */
 
 
-VMVES::VMVES(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept : VMVE(), pplai(pplai), d(d), pmveNext(begin())
+VMVES::VMVES(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept : VMVE(), pplai(pplai), d(d), pmveNext(begin()), tscCur(tscPrincipalVar)
 {
 	bdg.GenMoves(*this, gg);
 	Reset(bdg);
@@ -463,26 +440,39 @@ void VMVES::Reset(BDG& bdg) noexcept
 {
 	pmveNext = begin();
 	cmvLegal = 0;
+	tscCur = tscPrincipalVar;
+	PrepTscCur(bdg, begin());
 }
 
 
-/*	VSMVE::FEnumMveNext
+/*	VSMVE::FEnumMvNext
  *
  *	Finds the next move in the move list, returning false if there is no such
  *	move. The move is returned in pmve. The move is actually made on the board
  *	and illegal moves are checked for
  */
-bool VMVES::FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept
+bool VMVES::FEnumMvNext(BDG& bdg, MVE*& pmve) noexcept
 {
 	while (pmveNext < end()) {
-		pmve = &*pmveNext++;
+
+		/* swap the best move into the next mve to return */
+
+		MVE* pmveBest;
+		for (; (pmveBest = PmveBestFromTscCur(pmveNext)) == nullptr;
+			 tscCur++, PrepTscCur(bdg, pmveNext))
+			;
+		pmve = &*pmveNext;
+		swap(*pmveNext, *pmveBest);
+		pmveNext++;
+
+		/* make sure move is legal */
+
 		bdg.MakeMv(*pmve);
 		if (!bdg.FInCheck(~bdg.cpcToMove)) {
 			cmvLegal++;
 			return true;
 		}
 		bdg.UndoMv();
-		/* TODO: should we remove the in-check move from the list? */
 	}
 	return false;
 }
@@ -522,82 +512,12 @@ bool VMVES::FOnlyOneMove(MVE& mve) const noexcept
 }
 
 
-/*
- *
- *	VMVESS class
- *
- *	Alpha-beta sorted movelist enumerator. These moves are pre-evaluated in order
- *	to improve alpha-beta pruning behavior. This is our most used enumerator.
- * 
- */
-
-
-VMVESS::VMVESS(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept : VMVES(bdg, pplai, d, gg), tscCur(tscPrincipalVar)
-{
-	Reset(bdg);
-}
-
-
-/*	VMVESS::Reset
- *
- *	Resets the iteration of the sorted move list, preparing us for a full 
- *	enumeration of the list.
- */
-void VMVESS::Reset(BDG& bdg) noexcept
-{
-	VMVES::Reset(bdg);
-	tscCur = tscPrincipalVar;
-	PrepTscCur(bdg, begin());
-}
-
-
-/*	VMVESS::FEnumMveNext
- *
- *	Gets the next legal move, sorted by evaluation. Return false if we're done. 
- *	Keeps track of count of legal moves we've enumerated. The move will be made 
- *	on the board when it is returned.
- * 
- *	We do not actually pre-sort the array, but do a quick scan to find the best
- *	move and swap it into position as we go. This is a good optimization if
- *	we get an early prune because we avoid a full O(n*log(n)) sort and only pay
- *	for the O(n) scan. The worst case this degenerates into O(n^2), but n is 
- *	relatively small, so maybe not a big deal.
- * 
- *	We lazy evaluate any moves that aren't found in the transposition table. 
- */
-bool VMVESS::FEnumMveNext(BDG& bdg, MVE*& pmve) noexcept
-{
-	while (pmveNext < end()) {
-
-		/* swap the best move into the next mve to return */
-
-		MVE* pmveBest;
-		for ( ; (pmveBest = PmveBestFromTscCur(pmveNext)) == nullptr; 
-				tscCur++, PrepTscCur(bdg, pmveNext))
-			;
-		pmve = &*pmveNext;
-		swap(*pmveNext, *pmveBest);
-		pmveNext++;
-
-		/* make sure move is legal */
-
-		bdg.MakeMv(*pmve);
-		if (!bdg.FInCheck(~bdg.cpcToMove)) {
-			cmvLegal++;
-			return true;
-		}
-		bdg.UndoMv();
-	}
-	return false;
-}
-
-
-/*	VMVESS::PmveBestFromTscCur
+/*	VMVES::PmveBestFromTscCur
  *
  *	Finds the best move from the movelist that matches the current score type
  *	that we're enumerating. Returns nullptr if no matches.
  */
-MVE* VMVESS::PmveBestFromTscCur(VMVE::it pmveFirst) noexcept
+MVE* VMVES::PmveBestFromTscCur(VMVE::it pmveFirst) noexcept
 {
 	MVE* pmveBest = nullptr; 
 	for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
@@ -609,7 +529,7 @@ MVE* VMVESS::PmveBestFromTscCur(VMVE::it pmveFirst) noexcept
 }
 
 
-/*	VMVESS::PrepTscCur
+/*	VMVES::PrepTscCur
  *
  *	Prepares the enumeration for the next score type. We try to lazy evaluate as 
  *	many moves as possible so we don't waste time evaluating positions that might
@@ -619,7 +539,7 @@ MVE* VMVESS::PmveBestFromTscCur(VMVE::it pmveFirst) noexcept
  *	move in the transposition table that was fully evaluated, (3) captures, and
  *	and (4) everything else.
  */
-void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
+void VMVES::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 {
 	switch (tscCur) {
 	case tscPrincipalVar:
@@ -646,24 +566,42 @@ void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 		break;
 	}
 
-	case tscEvCapture:
+	case tscGoodCapture:
 	{
 		/* we can score captures quickly without making the move, so do them early */
 		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
 			assert(pmve->tsc() == tscNil);
-			if (!pmve->fIsCapture())
+			bdg.FillUndoMvSq(*pmve);
+			if (!pmve->fIsCapture() && !pmve->apcPromote())
 				continue;
-			pmve->SetTsc(tscEvCapture);
 			pmve->ev = pplai->ScoreCapture(bdg, *pmve);
+			/* TODO: detect bad captures to be checked after regular moves and mark them tscBadCapture */
+			pmve->SetTsc(tscGoodCapture);
 		}
 		break;
 	}
+
+	case tscKiller:
+		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
+			if (pmve->tsc() != tscNil)
+				continue;
+			if (pplai->FScoreKiller(bdg, *pmve))
+				pmve->SetTsc(tscKiller);
+			else if (pplai->FScoreHistory(bdg, *pmve))
+				pmve->SetTsc(tscHistory);
+		}
+		break;
+
+	case tscHistory:
+		/* scored in tscKiller */
+		break;
 
 	case tscXTable:
 	{
 		/* get the eval of any move that has an entry in the tranposition table */
 		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
-			assert(pmve->tsc() == tscNil);	// should all be marked nil by tscPrincipalVar pass
+			if (pmve->tsc() != tscNil)
+				continue;
 			bdg.MakeMvSq(*pmve);
 			XEV* pxev = pplai->xt.Find(bdg, d, d);
 			if (pxev && pxev->tev() == tevEqual) {
@@ -675,23 +613,20 @@ void VMVESS::PrepTscCur(BDG& bdg, VMVE::it pmveFirst) noexcept
 		break;
 	}
 
-	default:
-		assert(false);
-		[[fallthrough]];
+	case tscBadCapture:
+		/* these were already scored by tscGoodCapture */
+		break;
+
 	case tscEvOther:
-	{
-		/* and score the remainder of the moves */
 		for (VMVE::it pmve = pmveFirst; pmve < end(); pmve++) {
-			assert(pmve->tsc() == tscNil);
-			if (tscCur == tscEvCapture && !pmve->fIsCapture())
+			if (pmve->tsc() != tscNil)
 				continue;
 			bdg.MakeMvSq(*pmve);
-			pmve->SetTsc(tscCur);
+			pmve->SetTsc(tscEvOther);
 			pmve->ev = -pplai->ScoreMove(bdg, *pmve);
 			bdg.UndoMvSq(*pmve);
 		}
 		break;
-	}
 	}
 }
 
@@ -718,9 +653,10 @@ MVE PLAI::MveGetNext(SPMV& spmv) noexcept
 	InitBreak();
 	xt.Clear();		
 	xt.BumpAge();
+	AgeHistory();
 
 	mveBestOverall = MVE(mvuNil, -evInf);
-	VMVESS vmvess(bdg, this, 0, ggLegal);
+	VMVES vmves(bdg, this, 0, ggLegal);
 
 	InitWeightTables();
 	InitTimeMan(bdg);
@@ -739,12 +675,12 @@ MVE PLAI::MveGetNext(SPMV& spmv) noexcept
 		stbfMain.IncGen(); stbfMainAndQ.IncGen();
 
 		/* do search for each move at current depth/aspiration window */
-		vmvess.Reset(bdg);
-		FSearchMveBest(bdg, vmvess, mveBest, ab, 0, dLim, tsAll);
+		vmves.Reset(bdg);
+		FSearchMveBest(bdg, vmves, mveBest, ab, 0, dLim, tsAll);
 		SaveXt(bdg, mveBest, ab, 0, dLim);
 		
 		stbfMainTotal += stbfMain; stbfMainAndQTotal += stbfMainAndQ;
-	} while (!vmvess.FOnlyOneMove(mveBestOverall) && 
+	} while (!vmves.FOnlyOneMove(mveBestOverall) && 
 			 FDeepen(bdg, mveBest, ab, dLim) && 
 			 FBeforeDeadline(dLim));
 
@@ -760,28 +696,28 @@ MVE PLAI::MveGetNext(SPMV& spmv) noexcept
  *
  *	Handles the principal value search optimization.
  */
-bool PLAI::FSearchMveBest(BDG& bdg, VMVESS& vmvess, MVE& mveBest, AB ab, int d, int& dLim, TS ts) noexcept
+bool PLAI::FSearchMveBest(BDG& bdg, VMVES& vmves, MVE& mveBest, AB ab, int d, int& dLim, TS ts) noexcept
 {
 	/* do first move (probably a PV move) with full a-b window */
 
 	MVE* pmve;
-	if (!vmvess.FEnumMveNext(bdg, pmve))
+	if (!vmves.FEnumMvNext(bdg, pmve))
 		return false;
 	pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, d + 1, dLim, ts);
-	vmvess.UndoMv(bdg);
-	if (FPrune(pmve, mveBest, ab, dLim))
+	vmves.UndoMv(bdg);
+	if (FPrune(bdg, *pmve, mveBest, ab, d, dLim))
 		return true;
 
 	/* subsequent moves get the PV pre-search optimization which uses an
 	   ultra-narrow window. We pray that narrow window quickly fails low;
 	   if we don't, redo the search with the full window */
 
-	while (vmvess.FEnumMveNext(bdg, pmve)) {
+	while (vmves.FEnumMvNext(bdg, pmve)) {
 		pmve->ev = -EvBdgSearch(bdg, *pmve, -ab.AbNull(), d + 1, dLim, ts);
-		if (!(pmve->ev < ab) && !ab.fIsNull())
+		if (!ab.FEvIsBelow(pmve->ev) && !ab.fIsNull())
 			pmve->ev = -EvBdgSearch(bdg, *pmve, -ab, d + 1, dLim, ts);
-		vmvess.UndoMv(bdg);
-		if (FPrune(pmve, mveBest, ab, dLim))
+		vmves.UndoMv(bdg);
+		if (FPrune(bdg, *pmve, mveBest, ab, d, dLim))
 			return true;
 	}
 	return false;
@@ -811,7 +747,7 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int d, int dLim, T
 	
 	stbfMainAndQ.IncNode();
 	MVE mveBest;
-	LOGMVES logmve(*this, bdg, mvePrev, mveBest, abInit, d);
+	LOGMVE logmve(*this, bdg, mvePrev, mveBest, abInit, d, ' ');
 
 	if (FTestForDraws(bdg, mveBest))
 		return mveBest.ev;
@@ -829,10 +765,10 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int d, int dLim, T
 	/* if none of those optimizations work, generate moves and do a full search */
 
 	mveBest.ev = -evInf;
-	VMVESS vmvess(bdg, this, d, ggPseudo);
+	VMVES vmves(bdg, this, d, ggPseudo);
 	stbfMain.IncGen(); stbfMainAndQ.IncGen();
-	if (!FSearchMveBest(bdg, vmvess, mveBest, abInit, d, dLim, ts))
-		TestForMates(bdg, vmvess, mveBest, d);
+	if (!FSearchMveBest(bdg, vmves, mveBest, abInit, d, dLim, ts))
+		TestForMates(bdg, vmves, mveBest, d);
 	SaveXt(bdg, mveBest, abInit, d, dLim);
 	return mveBest.ev;
 }
@@ -850,7 +786,7 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int d, TS ts) n
 
 	int dLim = dMax;
 	MVE mveBest;
-	LOGMVEQ logmve(*this, bdg, mvePrev, mveBest, abInit, d);
+	LOGMVE logmve(*this, bdg, mvePrev, mveBest, abInit, d, 'Q');
 
 	if (FLookupXt(bdg, mveBest, abInit, d, d))
 		return mveBest.ev;
@@ -859,19 +795,19 @@ EV PLAI::EvBdgQuiescent(BDG& bdg, const MVE& mvePrev, AB abInit, int d, TS ts) n
 	   and check if we're already in a pruning situation */
 
 	AB ab = abInit;
-	mveBest = MVE(mvuNil, EvBdgStatic(bdg, mvePrev));
-	{ LOGMVESTATIC logmvestatic(*this, bdg, mveBest, ab); }
-	if (FPrune(&mveBest, mveBest, ab, dLim))
+	mveBest = MVE(mvuNil, EvBdgStatic(bdg, mvePrev), tscEvOther);
+	{ LOGMVE logmve(*this, bdg, mveBest, mveBest, abInit, d, 'S'); }
+	if (FPrune(bdg, mveBest, mveBest, ab, d, dLim))
 		return mveBest.ev;
 
 	/* then recursively evaluate noisy moves */
 		
-	VMVESS vmvess(bdg, this, d, ggPseudo + ggNoisy);
+	VMVES vmves(bdg, this, d, ggPseudo + ggNoisy);
 	stbfMainAndQ.IncGen();
-	for (MVE* pmve = nullptr; vmvess.FEnumMveNext(bdg, pmve); ) {
+	for (MVE* pmve = nullptr; vmves.FEnumMvNext(bdg, pmve); ) {
 		pmve->ev = -EvBdgQuiescent(bdg, *pmve, -ab, d + 1, ts);
-		vmvess.UndoMv(bdg);
-		if (FPrune(pmve, mveBest, ab, dLim))
+		vmves.UndoMv(bdg);
+		if (FPrune(bdg, *pmve, mveBest, ab, d, dLim))
 			break;
 	}
 
@@ -902,12 +838,12 @@ bool PLAI::FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim) noexcept
 		mveBest.ev = pxev->ev(d);
 		break;
 	case tevHigher:
-		if (!(pxev->ev(d) > ab))
+		if (!ab.FEvIsAbove(pxev->ev(d)))
 			return false;
 		mveBest.ev = ab.evBeta;
 		break;
 	case tevLower:
-		if (!(pxev->ev(d) < ab))
+		if (!ab.FEvIsBelow(pxev->ev(d)))
 			return false;
 		mveBest.ev = ab.evAlpha;
 		break;
@@ -930,11 +866,67 @@ XEV* PLAI::SaveXt(BDG& bdg, MVE mveBest, AB ab, int d, int dLim) noexcept
 	if (FEvIsInterrupt(mveBest.ev))
 		return nullptr;
 
-	if (mveBest.ev < ab)
+	if (ab.FEvIsBelow(mveBest.ev))
 		return xt.Save(bdg, mveBest, tevLower, d, dLim);
-	if (mveBest.ev > ab)
+	if (ab.FEvIsAbove(mveBest.ev))
 		return xt.Save(bdg, mveBest, tevHigher, d, dLim);
 	return xt.Save(bdg, mveBest, tevEqual, d, dLim);
+}
+
+
+/*	PLAI::SaveKiller
+ *
+ *	Remember killer moves (non-captures that caused a beta cut-off), indexed by 
+ *	the move number of the game. Killer moves are used for improving move ordering 
+ *	by making a pretty good guess what moves are cut moves.
+ */
+void PLAI::SaveKiller(BDG& bdg, MVE mve) noexcept
+{
+	if (mve.fIsCapture() || mve.apcPromote())
+		return;
+	int imveLim = bdg.imveCurLast + 1;
+	if (imveLim >= 256 || amvKillers[imveLim][0] == mve)
+		return;
+	for (int imv = cmvKillers-1; imv >= 1; imv--)
+		amvKillers[imveLim][imv] = amvKillers[imveLim][imv-1];
+	amvKillers[imveLim][0] = mve;
+}
+
+
+/*	PLAI::BumpHistory
+ *
+ *	Bumps the move history count, which is non-captures that cause beta cut-offs, indexed
+ *	by the source/destination squares of the move
+ */
+void PLAI::BumpHistory(BDG& bdg, MVE mve, int d, int dLim) noexcept
+{
+	if (mve.fIsCapture() || mve.apcPromote())
+		return;
+	mppcsqcHistory[bdg.PcFromSq(mve.sqFrom())][mve.sqTo()] += (dLim - d) * (dLim - d);
+}
+
+
+/*	PLAI::InitHistory
+ *
+ *	Zero out the history to start a game
+ */
+void PLAI::InitHistory(void) noexcept
+{
+	for (PC pc = 0; pc < pcMax; pc++)
+		for (SQ sqTo = 0; sqTo < sqMax; sqTo++)
+			mppcsqcHistory[pc][sqTo] = 0;
+}
+
+
+/*	PLAI::AgeHistory
+ *
+ *	Redece old history's impact with each move
+ */
+void PLAI::AgeHistory(void) noexcept
+{
+	for (PC pc = 0; pc < pcMax; pc++)
+		for (SQ sqTo = 0; sqTo < sqMax; sqTo++)
+			mppcsqcHistory[pc][sqTo] /= 8;
 }
 
 
@@ -970,15 +962,15 @@ bool PLAI::FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) n
 	int R = 2;
 	if (d + 1 >= dLim - R ||		// don't bother if search is going this deep anyway
 		bdg.gph >= gphMidMax ||				// lame zugzwang estimate
-		(ts & tsNoNullMove) ||
+		(ts & tsNoPruneNullMove) ||
 		bdg.FInCheck(bdg.cpcToMove))
 		return false;
 
 	mveBest.SetMvu(mvuNil);
 	bdg.MakeMvNull();
-	mveBest.ev = -EvBdgSearch(bdg, mveBest, (-ab).AbNull(), d + 1, dLim - R, ts + tsNoNullMove);
+	mveBest.ev = -EvBdgSearch(bdg, mveBest, (-ab).AbNull(), d + 1, dLim - R, ts + tsNoPruneNullMove);
 	bdg.UndoMv();
-	return mveBest.ev > ab;
+	return ab.FEvIsAbove(mveBest.ev);
 }
 
 
@@ -991,17 +983,18 @@ bool PLAI::FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) n
  *	Also returns true if the search should be interrupted for some reason. pmve->ev will 
  *	be modified with the reason for the interruption.
  */
-bool PLAI::FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& dLim) const noexcept
+bool PLAI::FPrune(BDG& bdg, MVE &mve, MVE& mveBest, AB& ab, int d, int& dLim) noexcept
 {
 	/* keep track of best move */
 
-	if (pmve->ev > mveBest.ev)
-		mveBest = *pmve;
+	if (mve.ev > mveBest.ev)
+		mveBest = mve;
 	
 	/* above beta, prune */
 
-	if (pmve->ev > ab) {
-		mveBest = *pmve;
+	if (ab.FEvIsAbove(mve.ev)) {
+		mveBest = mve;
+		SaveKiller(bdg, mveBest);
 		return true;
 	}
 
@@ -1009,10 +1002,11 @@ bool PLAI::FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& dLim) const noexcept
 	   the best move's eval; if we're mating the other guy, we can adjust the search
 	   depth since from now on, we're only looking for quicker mates */
 	
-	if (!(pmve->ev < ab)) {	
-		ab.NarrowAlpha(pmve->ev);
-		if (FEvIsMate(pmve->ev))	
-			dLim = DFromEvMate(pmve->ev);
+	if (!ab.FEvIsBelow(mve.ev)) {	
+		ab.RaiseAlpha(mve.ev);
+		if (FEvIsMate(mve.ev))	
+			dLim = DFromEvMate(mve.ev);
+		BumpHistory(bdg, mve, d, dLim);
 	}
 
 	/* If Esc is hit (set by message pump), or if we're taking too damn long to do
@@ -1020,7 +1014,7 @@ bool PLAI::FPrune(MVE* pmve, MVE& mveBest, AB& ab, int& dLim) const noexcept
 	   abort the search */
 
 	if (sint != sintNull) {
-		pmve->ev = mveBest.ev = (sint == sintCanceled) ? evCanceled : evTimedOut;
+		mve.ev = mveBest.ev = (sint == sintCanceled) ? evCanceled : evTimedOut;
 		mveBest.SetMvu(mvuNil);
 		return true;
 	}
@@ -1085,9 +1079,9 @@ bool PLAI::FDeepen(BDG& bdg, MVE mveBest, AB& ab, int& d) noexcept
 	/* If the search failed with a narrow a-b window, widen the window up some and
 	   try again */
 
-	if (mveBest.ev < ab)
+	if (ab.FEvIsBelow(mveBest.ev))
 		ab.AdjMissLow();
-	else if (mveBest.ev > ab)
+	else if (ab.FEvIsAbove(mveBest.ev))
 		ab.AdjMissHigh();
 	else {
 		/* yay, we found a move - go deeper in the next pass, but use a tight
@@ -1324,14 +1318,19 @@ EV PLAI::EvBdgAttackDefend(BDG& bdg, MVE mvePrev) const noexcept
 
 /*	PLAI::ScoreCapture
  *
- *	Scores capture moves on the board. The move has NOT been made on te board
+ *	Scores capture moves on the board. The move has NOT been made on the board
  *	yet. This is only superficially scaled to approximately the same range as
  *	an EV evaluation, and should only be used to compare against other scores
  *	returned by EvCaptureScore. Do no compare it to EvBdgStatic, or ScoreMove.
  */
 EV PLAI::ScoreCapture(BDG& bdg, MVE mve) noexcept
 {
-	return (apcMax - bdg.ApcFromSq(mve.sqFrom())) + 100*bdg.ApcFromSq(mve.sqTo());
+	static const EV mpapcev[apcMax] = { 0, 100, 275, 300, 500, 900, 1000 };
+	/* TODO: we could be considerably smarter here */
+	if (!mve.apcPromote())
+		return mpapcev[bdg.ApcFromSq(mve.sqTo())] - mpapcev[bdg.ApcFromSq(mve.sqFrom())];
+	else
+		return mpapcev[mve.apcPromote()] - evPawn;
 }
 
 
@@ -1355,6 +1354,36 @@ EV PLAI::ScoreMove(BDG& bdg, MVE mvePrev) noexcept
 			 fecoScale/2) / fecoScale;
 
 	return ev;
+}
+
+
+/*	PLAI::FScoreKiller
+ *
+ *	Scores killer moves, which are moves we saved when they caused a beta
+ *	cut-off. Returns true if he move is a killer, and the evaluation is stored
+ *	in the mve. While we go to some effort to scale these evaluations to 
+ *	approximate a normal EV, it is not directly comparable, and should only
+ *	be compared to other killer move scores.
+ */
+bool PLAI::FScoreKiller(BDG& bdg, MVE& mve) noexcept
+{
+	int imveLim = bdg.imveCurLast + 1;
+	for (int imv = 0; imv < cmvKillers; imv++) {
+		if (amvKillers[imveLim][imv] == mve) {
+			mve.ev = evPawn - 10 * imv;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+bool PLAI::FScoreHistory(BDG& bdg, MVE& mve) noexcept
+{
+	if (mppcsqcHistory[bdg.PcFromSq(mve.sqFrom())][mve.sqTo()] == 0)
+		return false;
+	mve.ev = mppcsqcHistory[bdg.PcFromSq(mve.sqFrom())][mve.sqTo()];
+	return true;
 }
 
 
@@ -1761,9 +1790,11 @@ AINFOPL::AINFOPL(void)
 	vinfopl.push_back(INFOPL(clplAI, tplAI, L"AI", IfDebugElse(ttmConstDepth, ttmSmart), 5));
 	vinfopl.push_back(INFOPL(clplAI2, tplAI, L"AI2", IfDebugElse(ttmConstDepth, ttmSmart), 3));
 	vinfopl.push_back(INFOPL(clplAI, tplAI, L"AI (Infinite)", ttmInfinite, 10));
+	vinfopl.push_back(INFOPL(clplAI, tplAI, L"AI (Depth)", ttmConstDepth, 5));
 	vinfopl.push_back(INFOPL(clplHuman, tplHuman, L"Rick Powell"));
 	vinfopl.push_back(INFOPL(clplHuman, tplHuman, L"Hazel"));
 }
+
 
 /*	AINFOPL::PplFactory
  *

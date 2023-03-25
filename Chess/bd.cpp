@@ -638,6 +638,22 @@ Done:
 }
 
 
+/*	BD::FillUndoMvSq
+ *
+ *	Fills the undo information in the MVE, which normally isn't filled until
+ *	we actually make a move.
+ */
+void BD::FillUndoMvSq(MVE& mve) noexcept
+{
+	mve.SetCsEp(csCur, sqEnPassant);
+	SQ sqTake = mve.sqTo();
+	if (mve.pcMove().apc() == apcPawn && sqTake == sqEnPassant)
+		sqTake = SQ(mve.sqTo().rank() ^ 1, sqEnPassant.file());
+	if (!FIsEmpty(sqTake))
+		mve.SetCapture(ApcFromSq(sqTake));
+}
+
+
 /*	BD::UndoMvSq
  *
  *	Undo the move made on the board
@@ -1968,13 +1984,20 @@ wstring to_wstring(TSC tsc)
 	switch (tsc) {
 	case tscEvOther:
 		return L"EV";
-	case tscEvCapture:
-		return L"CAP";
+	case tscGoodCapture:
+		return L"GCAP";
+	case tscKiller:
+		return L"KILL";
+	case tscHistory:
+		return L"HIST";
 	case tscXTable:
 		return L"XT";
 	case tscPrincipalVar:
 		return L"PV";
+	case tscBadCapture:
+		return L"BCAP";
 	default:
+		assert(false);
 		return L"";
 	}
 }
@@ -2011,9 +2034,6 @@ wstring to_wstring(MV mv)
 RULE::RULE(void) : cmvRepeatDraw(3)
 {
 	vtmi.push_back(TMI(1, -1, msecMin * 30, msecSec * 3));	/* 30min and 3sec is TCEC early time control */
-//	vtmi.push_back(TMI(1, 40, msecMin * 100, 0));
-//	vtmi.push_back(TMI(41, 60, msecMin * 50, 0));
-//	vtmi.push_back(TMI(61, -1, msecMin * 15, msecSec * 30));
 }
 
 

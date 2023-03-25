@@ -399,6 +399,7 @@ public:
 	void UndoMvSq(MVE mve) noexcept;
 	void MakeMvNullSq(MVE& mve) noexcept;
 	void UndoMvNullSq(MVE mve) noexcept;
+	void FillUndoMvSq(MVE& mve) noexcept;
 
 	/*
 	 *	move, square, and piece convenience functions. most of these need to be highly

@@ -312,7 +312,8 @@ void CLIPB::Close(void)
 {
 	if (!fClipOpen)
 		return;
-	::CloseClipboard();
+	if (!::CloseClipboard())
+		throw exception("couldn't close clipboard");
 	fClipOpen = false;
 }
 
@@ -322,8 +323,9 @@ void* CLIPB::PLock(void)
 	assert(!pdata);
 	assert(hdata);
 	pdata = ::GlobalLock(hdata);
+	unsigned err = ::GetLastError();
 	if (!pdata)
-		throw exception("Couldn't lock clipboard");
+		throw exception("Couldn't lock clipboard data");
 	return pdata;
 }
 
@@ -339,7 +341,8 @@ void CLIPB::Unlock(void)
 
 void CLIPB::Empty(void)
 {
-	::EmptyClipboard();
+	if (!::EmptyClipboard())
+		throw exception("couldn't empty clipboard");
 }
 
 
@@ -359,8 +362,9 @@ void CLIPB::SetData(int cf, void* pv, int cb)
 	memcpy(pdata, pv, cb);
 	Unlock();
 	assert(hdata);
-	::SetClipboardData(cf, hdata);
-	Free();
+	if (!::SetClipboardData(cf, hdata))
+		throw exception("couldn't set clipboard data");
+	hdata = nullptr; // system owns the handle after SetClipboardData
 }
 
 
