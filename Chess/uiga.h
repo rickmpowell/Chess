@@ -10,7 +10,6 @@
 #include "ui.h"
 #include "app.h"
 #include "uipa.h"
-#include "uci.h"
 #include "uibd.h"
 #include "uiti.h"
 #include "uiml.h"
@@ -131,7 +130,9 @@ public:
 	 *	Game control 
 	 */
 
-	void InitGame(const char* szEpd, RULE* prule);
+	void InitGameEpd(const char* szEpd, RULE* prule);
+	void InitGameFen(const char*& szFen, RULE* prule);
+	void InitGameStart(RULE* prule);
 	void InitGame(void);
 	void StartGame(SPMV spmv);
 	void EndGame(SPMV spmv);

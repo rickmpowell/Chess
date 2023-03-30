@@ -1488,8 +1488,10 @@ void BD::ValidateBB(PC pcVal, SQ sq) const noexcept
  *	
  *	Constructor for the game board.
  */
-BDG::BDG(void) noexcept : gs(gsPlaying), imveCurLast(-1), imvePawnOrTakeLast(-1)
+BDG::BDG(void) noexcept 
 {
+	InitGame();
+	SetFenStart();
 }
 
 
@@ -1503,7 +1505,6 @@ BDG::BDG(const char* szFEN)
 	SetFen(szFEN);
 }
 
-
 void BDG::InitGame(void)
 {
 	vmveGame.clear();
@@ -1513,14 +1514,17 @@ void BDG::InitGame(void)
 	SetGs(gsNotStarted);
 }
 
-
 const char BDG::szFENInit[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 
-const char* BDG::SetFen(const char* sz)
+void BDG::SetFenStart(void)
 {
-	if (sz == nullptr)
-		sz = szFENInit;
+	const char* sz = szFENInit;
+	SetFen(sz);
+}
+
+void BDG::SetFen(const char*& sz)
+{
 	InitFENPieces(sz);
 	InitFENSideToMove(sz);
 	InitFENCastle(sz);
@@ -1528,7 +1532,6 @@ const char* BDG::SetFen(const char* sz)
 	InitFENHalfmoveClock(sz);
 	InitFENFullmoveCounter(sz);
 	vmveGame.SetDimveFirst(cpcToMove == cpcBlack);
-	return sz;
 }
 
 

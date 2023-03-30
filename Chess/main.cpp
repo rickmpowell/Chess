@@ -19,19 +19,28 @@ APP* papp;
  *
  *  The main entry point for Windows applications. 
  */
-int APIENTRY wWinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE hinstPrev, _In_ LPWSTR szCmdLine, _In_ int sw)
+int APIENTRY wWinMain(_In_ HINSTANCE hinst, 
+                      _In_opt_ HINSTANCE hinstPrev, 
+                      _In_ LPWSTR szCmdLine, 
+                      _In_ int sw)
 {
     try {
         papp = new APP(hinst, sw);
-        int err = papp->MessagePump();
-        delete papp;
+        int err;
+        if (!::GetStdHandle(STD_INPUT_HANDLE)) 
+            err = papp->MessagePump();
+        else {
+            UCI uci(papp->puiga);
+            err = uci.ConsolePump();
+        }
         APP::DiscardRsrcStatic();
+        delete papp;
         return err;
     }
     catch (int err) {
         ::MessageBoxW(nullptr,
-            L"Could not initialize application", L"Fatal Error",
-            MB_OK);
+                      L"Could not initialize application", L"Fatal Error",
+                      MB_OK);
         return err;
     }
 
@@ -100,7 +109,7 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
     pga = new GA();
     pga->SetPl(cpcBlack, ainfopl.PplFactory(*pga, 0));
     pga->SetPl(cpcWhite, ainfopl.PplFactory(*pga, 1));
-    pga->InitGame(nullptr, nullptr);
+    pga->InitGameStart(nullptr);
     
     /* create the main window */
 
@@ -116,10 +125,10 @@ APP::APP(HINSTANCE hinst, int sw) : hinst(hinst), hwnd(nullptr), haccel(nullptr)
  
     FCreateRsrc();
     APP::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
-
+ 
     puiga = new UIGA(*this, *pga);
     pga->SetUiga(puiga);
-    puiga->InitGame(nullptr, nullptr);
+    puiga->InitGameStart(nullptr);
     puiga->uipvt.Show(false);
     puiga->uipcp.Show(false);
     puiga->uidt.Show(false);
@@ -194,6 +203,10 @@ bool APP::FCreateRsrcStatic(DC* pdc, FACTD2* pfactd2, FACTDWR* pfactdwr, FACTWIC
     bool fChange = false;
     fChange |= UI::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
     fChange |= UICLOCK::FCreateRsrcStatic(pdc, pfactd2, pfactdwr, pfactwic);
+    if (pbmppc == nullptr) {
+        pbmppc = new BMPPC;
+        fChange = true;
+    }
     return fChange;
 }
 
@@ -202,6 +215,10 @@ void APP::DiscardRsrcStatic(void)
 {
     UI::DiscardRsrcStatic();
     UICLOCK::DiscardRsrcStatic();
+    if (pbmppc) {
+        delete pbmppc;
+        pbmppc = nullptr;
+    }
 }
  
 
@@ -658,7 +675,7 @@ public:
 
     virtual int Execute(void)
     {
-        app.puiga->InitGame(nullptr, nullptr);
+        app.puiga->InitGameStart(nullptr);
         app.puiga->Relayout();
         app.puiga->Redraw();
         return 1;
@@ -988,7 +1005,7 @@ public:
 
         /* start a new untimed game */
 
-        app.puiga->InitGame("5rk1/1ppb3p/p1pb4/6q1/3P1p1r/2P1R2P/PP1BQ1P1/5RKN w - - bm Rg3; id \"WAC.003\";", nullptr);
+        app.puiga->InitGameEpd("5rk1/1ppb3p/p1pb4/6q1/3P1p1r/2P1R2P/PP1BQ1P1/5RKN w - - bm Rg3; id \"WAC.003\";", nullptr);
         app.puiga->ga.prule->SetGameTime(cpcWhite, 0);
         app.puiga->ga.prule->SetGameTime(cpcBlack, 0);
         app.puiga->uiml.ShowClocks(false);
@@ -1150,7 +1167,8 @@ public:
                    this->ddaibreak.cRepeat, 1, 20, L"Repeat count must be an integer between 1 and 20"),
         dctlPlayer(*this, idcAIBreakPlayer, this->ddaibreak.cpc),
         dctlMoveList(*this, ideAIBreakMoveSequence, this->ddaibreak.vmv),
-        dctlInstructions(*this, idtAIBreakInst)
+        dctlInstructions(*this, idtAIBreakInst),
+        hfontInstructions(NULL)
     { 
     }
 
@@ -1274,8 +1292,15 @@ public:
         ofn.Flags = OFN_HIDEREADONLY | OFN_PATHMUSTEXIST;
         ofn.lpstrDefExt = L"pgn";
 
-        if (::GetOpenFileName(&ofn))
-            app.puiga->ga.OpenPGNFile(szFileName);
+        if (!::GetOpenFileName(&ofn))
+            return 1;
+
+        app.puiga->ga.OpenPGNFile(szFileName);
+        app.puiga->uiml.UpdateContSize();
+        app.puiga->uiml.SetSel(app.puiga->ga.bdg.vmveGame.size() - 1, spmvHidden);
+        app.puiga->uiml.FMakeVis(app.puiga->ga.bdg.imveCurLast);
+        app.puiga->Redraw();
+
         return 1;
     }
 };
@@ -1371,7 +1396,7 @@ public:
                 app.pga->Deserialize(istkpgn);
             }
             else {
-                app.puiga->InitGame(sz, nullptr);
+                app.puiga->InitGameEpd(sz, nullptr);
                 app.puiga->Redraw();
             }
         }
@@ -1773,6 +1798,7 @@ struct DDNEWPLAYER
     int d;
     int ttm;
     int clpl;
+    DDNEWPLAYER() : d(0), ttm(ttmNil), clpl(clplHuman) { }
 };
 
 class DCTLNAME : public DCTLTEXT

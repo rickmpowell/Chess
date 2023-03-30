@@ -334,7 +334,7 @@ public:
 
 	virtual void Run(void)
 	{
-		uiga.InitGame(nullptr, nullptr);
+		uiga.InitGameStart(nullptr);
 		ValidateFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 };
@@ -807,7 +807,7 @@ void UIGA::PerftTest(void)
 void UIGA::RunPerftTest(const wchar_t tag[], const char szFEN[], const uint64_t mpdcmv[], int dLast, bool fDivide)
 {
 	LogOpen(tag, L"", lgfBold);
-	InitGame(szFEN, nullptr);
+	InitGameEpd(szFEN, nullptr);
 	uibd.Redraw();
 
 	bool fPassed = false;

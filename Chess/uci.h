@@ -17,7 +17,17 @@
 #include "uiga.h"
 
 
-class UIGA;
+struct GO
+{
+	int cmveSearch;
+	int dSearch;
+	int mpcpcdtm[cpcMax];
+	int mpcpcdtmInc[cpcMax];
+	int dtmSearch;
+	TTM ttm;
+};
+
+
 class CMDU;
 
 
@@ -36,17 +46,29 @@ class UCI
 {
 public:
 	UIGA* puiga;
-	bool fInherited;
+	bool fInherited, fStdinPipe;
 	HANDLE hfileStdin, hfileStdout;
 	map<string, CMDU*> mpszpcmdu;
 public:
 	UCI(UIGA* puiga);
 	~UCI(void);
 
-	void ConsolePump(void);
-	bool FParseAndDispatch(string sz);
+	int ConsolePump(void);
+	bool FParseAndDispatch(const char* sz);
 	void WriteSz(const string& sz);
+	int FStdinAvailable(void);
 	string SzReadLine(void);
+
+	void SetPosition(const char*& sz);
+	void SetPosition(void);
+	void MakeMove(const string& sz);
+	MV MvParse(const string& sz);
+	SQ SqParse(const char*& sz);
+	APC ApcParse(const char*& sz);
+	string SzDecodeMv(MVE mve);
+	string SzDecodeSq(SQ sq);
+
+	void Go(const GO& go);
 };
 
 

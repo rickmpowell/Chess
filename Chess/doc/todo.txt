@@ -1,3 +1,8 @@
+  Move UIBD::DrawPc and pbmpPieces into their own static class
+  UITI is dumb - maybe turn it into a top-of-window header?
+  Try the Intel compiler again
+  Consider removing exceptions - is codegen better?
+  We're not detecting end of game situations right sometimes in the AI loop
   AI: implement futility move pruning
   Don't allow games to start playing in board setup mode
   Parse the various types in EPD file properties
@@ -46,7 +51,6 @@
   Exiting board edit mode needs to check for valid board states and prepare for starting a game
   Flip Game phase values (GPH) so end game is 0 and higher values mean closer to opening. 
   Lock out most UI when AI is thinking
-  AI: refutation tables
   Can we incrementally keep whether someone is in check in the BD and make them noisy moves?
   UIDB: Turn it into a tabbed panel with piece value table, log, or animated evaluated move list
   Test: option to stop or continue on errors 

@@ -706,7 +706,8 @@ public:
 
 	static const char szFENInit[];
 	void InitGame(void);
-	const char* SetFen(const char* szFEN);	
+	void SetFen(const char*& szFEN);
+	void SetFenStart(void);
 	void InitEpdProperties(const char*& sz, map<string, vector<EPDP>>& mpszvepdp);
 	string SzEpdOpcode(const char*& sz);
 	void ReadEpdOperands(const char*& sz, vector<EPDP>& vepdp);

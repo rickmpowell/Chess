@@ -13,6 +13,51 @@
 
 /*
  *
+ *	BMPPC
+ * 
+ *	Bitmap piece drawing code
+ *
+ */
+
+
+BMPPC* pbmppc;
+
+
+BMPPC::BMPPC(void) : pbmpPieces(nullptr)
+{
+}
+
+
+BMPPC::~BMPPC(void)
+{
+	SafeRelease(&pbmpPieces);
+}
+
+
+void BMPPC::Draw(UI& ui, const RC& rc, PC pc, float opacity)
+{
+	if (pbmpPieces == nullptr)
+		pbmpPieces = ui.PbmpFromPngRes(idbPieces);
+	if (pc.apc()  == apcNull)
+		return;
+
+	/* the piece png has the 12 different chess pieces oriented like:
+	 *   WK WQ WN WR WB WP
+	 *   BK BQ BN BR BB BP
+	 */
+	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0 , -1};
+	static const int mpcpcyBitmap[] = { 0, 1 };
+	SIZ siz = pbmpPieces->GetSize();
+	float dxPiece = siz.width / 6.0f;
+	float dyPiece = siz.height / 2.0f;
+	float xPiece = mpapcxBitmap[pc.apc()] * dxPiece;
+	float yPiece = mpcpcyBitmap[pc.cpc()] * dyPiece;
+	ui.DrawBmp(rc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
+}
+
+
+/*
+ *
  *	UIBD class
  *
  *	Screen panel that displays the board and handles the mouse and keyaboard
@@ -48,7 +93,6 @@ bool UIBD::FCreateRsrc(void)
 
 	App().pdc->CreateSolidColorBrush(coAnnotation, &pbrAnnotation);
 	ptxLabel = PtxCreate(dxySquare/4.0f, false, false);
-	pbmpPieces = PbmpFromPngRes(idbPieces);
 	pgeomCross = PgeomCreate(aptCross, CArray(aptCross));
 
 	return true;
@@ -58,7 +102,6 @@ void UIBD::DiscardRsrc(void)
 {
 	SafeRelease(&pbrAnnotation);
 	SafeRelease(&ptxLabel);
-	SafeRelease(&pbmpPieces);
 	SafeRelease(&pgeomCross);
 }
 
@@ -68,7 +111,7 @@ void UIBD::DiscardRsrc(void)
  *	Constructor for the board screen panel.
  */
 UIBD::UIBD(UIGA& uiga) : UIP(uiga), 
-		pbmpPieces(nullptr), pgeomCross(nullptr), ptxLabel(nullptr), pbrAnnotation(nullptr), pgeomArrowHead(nullptr),
+		pgeomCross(nullptr), ptxLabel(nullptr), pbrAnnotation(nullptr), pgeomArrowHead(nullptr),
 		btnRotateBoard(this, cmdRotateBoard, L'\x2b6f'),
 		cpcPointOfView(cpcWhite), 
 		rcSquares(0, 0, 640.0f, 640.0f), 
@@ -88,11 +131,11 @@ UIBD::~UIBD(void)
 }
 
 
-void UIBD::SetEpd(const char* szEpd)
+void UIBD::SetEpd(const char* sz)
 {
 	mpszvepdp.clear();
-	szEpd = uiga.ga.bdg.SetFen(szEpd);
-	SetEpdProperties(szEpd);
+	uiga.ga.bdg.SetFen(sz);
+	SetEpdProperties(sz);
 }
 
 
@@ -475,7 +518,7 @@ void UIBD::DrawPieceSq(SQ sq)
 	if (sq.fIsNil())
 		return;
 	float opacity = sqDragInit == sq ? 0.2f : 1.0f;
-	DrawPc(*this, RcFromSq(sq), opacity, uiga.ga.bdg.PcFromSq(sq));
+	pbmppc->Draw(*this, RcFromSq(sq), uiga.ga.bdg.PcFromSq(sq), opacity);
 }
 
 
@@ -490,29 +533,6 @@ RC UIBD::RcGetDrag(void)
 	float dxInit = ptDragInit.x - rcInit.left;
 	float dyInit = ptDragInit.y - rcInit.top;
 	return rc.Offset(ptDragCur.x - dxInit, ptDragCur.y - dyInit);
-}
-
-
-/*	UIBD::DrawPc
- *
- *	Draws the chess piece on the UI element pui at rc.
- */
-void UIBD::DrawPc(UI& ui, const RC& rcPc, float opacity, PC pc)
-{
-	if (pc.apc()  == apcNull)
-		return;
-
-	/* the piece png has the 12 different chess pieces oriented like:
-	 *   WK WQ WN WR WB WP
-	 *   BK BQ BN BR BB BP
-	 */
-	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0 };
-	SIZ siz = pbmpPieces->GetSize();
-	float dxPiece = siz.width / 6.0f;
-	float dyPiece = siz.height / 2.0f;
-	float xPiece = mpapcxBitmap[pc.apc()] * dxPiece;
-	float yPiece = (int)pc.cpc() * dyPiece;
-	ui.DrawBmp(rcPc, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), opacity);
 }
 
 
@@ -999,6 +1019,7 @@ void UIBD::DrawCursor(UI* pui, const RC& rcUpdate)
 {
 	if (sqDragInit.fIsNil())
 		return;
-	PC pc = uiga.ga.bdg.PcFromSq(sqDragInit);
-	DrawPc(*pui, pui->RcLocalFromUiLocal(this, rcDragPc), 1.0f, pc);
+	pbmppc->Draw(*pui, 
+				 pui->RcLocalFromUiLocal(this, rcDragPc), 
+				 uiga.ga.bdg.PcFromSq(sqDragInit));
 }

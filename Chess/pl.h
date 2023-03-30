@@ -21,6 +21,7 @@ enum TTM : int
 	ttmNil = -1,
 	ttmFirst = 0,
 	ttmConstDepth = 0,
+	ttmConstNodes,
 	ttmTimePerMove,
 	ttmSmart,
 	ttmInfinite,

@@ -336,23 +336,42 @@ void UIGA::TickTimer(TID tid, DWORD msecCur)
 }
 
 
-/*	UIGA::InitGame
+/*	UIGA::InitGameEpd
  *
  *	Initializes a game with the given EPD starting positoin and rules. szEpd 
  *	and prule may be null for default values.
  *
  *	Game is not started. Call StartGame to get the game moving.
  */
-void UIGA::InitGame(const char* szEpd, RULE* prule)
+void UIGA::InitGameEpd(const char* sz, RULE* prule)
 {
-	szEpd = ga.InitGame(szEpd, prule);
+	ga.InitGameFen(sz, prule);
 	InitClocks();
 	uibd.InitGame();
-	uibd.SetEpdProperties(szEpd);
+	uibd.SetEpdProperties(sz);
 	uiml.InitGame();
 	SetFocus(&uiml);
 }
 
+
+void UIGA::InitGameFen(const char*& sz, RULE* prule)
+{
+	ga.InitGameFen(sz, prule);
+	InitClocks();
+	uibd.InitGame();
+	uiml.InitGame();
+	SetFocus(&uiml);
+}
+
+
+void UIGA::InitGameStart(RULE* prule)
+{
+	ga.InitGameStart(prule);
+	InitClocks();
+	uibd.InitGame();
+	uiml.InitGame();
+	SetFocus(&uiml);
+}
 
 void UIGA::InitGame(void)
 {

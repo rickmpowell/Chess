@@ -36,6 +36,7 @@ class IGA
 public:
 	IGA(GA& ga) : ga(ga) { }
 	~IGA() { }
+	virtual void PumpMsg(void);
 };
 
 class UIGA;
@@ -165,7 +166,8 @@ public:
 	 *	Game control
 	 */
 
-	const char* InitGame(const char* szFEN, RULE* prule);
+	void InitGameFen(const char*& sz, RULE* prule);
+	void InitGameStart(RULE* prule);
 	void InitGame(void);
 	void SetRule(RULE* prule);
 	void StartGame(void);

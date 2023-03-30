@@ -76,16 +76,24 @@ void GA::SetRule(RULE* prule)
 }
 
 
-const char* GA::InitGame(const char* szFEN, RULE* prule)
+void GA::InitGameFen(const char*& sz, RULE* prule)
+{
+	assert(sz);
+	SetRule(prule);
+	bdg.InitGame();
+	bdg.SetFen(sz);
+	bdgInit = bdg;
+	tpStart = system_clock::now();
+}
+
+void GA::InitGameStart(RULE* prule)
 {
 	SetRule(prule);
 	bdg.InitGame();
-	const char* pch = bdg.SetFen(szFEN);
+	bdg.SetFenStart();
 	bdgInit = bdg;
 	tpStart = system_clock::now();
-	return pch;
 }
-
 
 void GA::InitGame(void)
 {

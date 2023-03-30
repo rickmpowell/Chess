@@ -184,7 +184,7 @@ void PLAI::SetTtm(TTM ttm) noexcept
 
 void PLAI::StartGame(void)
 {
-	xt.Init(128 * 0x100000UL);
+	xt.Init(2 * 0x100000UL);
 
 	/* initialize killers */
 

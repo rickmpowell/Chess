@@ -22,50 +22,150 @@
  */
 
 
-/*	UCI::ConsolePump
+/*	UCI::SetPosition
+ *	
+ *	Sets the board to the starting position
  */
-void UCI::ConsolePump(void)
+void UCI::SetPosition(void)
 {
-	while (true) {
-		string szLine = SzReadLine();
-		if (FParseAndDispatch(szLine))
-			break;
-		puiga->PumpMsg();
-	}
+	puiga->InitGame();
 }
 
-string SzNextWord(const string& sz, int& ichFirst)
-{
-	int ichLast;
-	string szWord;
-	for (; ; ichFirst++) {
-		if (sz[ichFirst] == 0)
-			return "";
-		if (!isspace(sz[ichFirst]))
-			break;
-	}
 
-	for (ichLast = ichFirst; sz[ichLast + 1] && !isspace(sz[ichLast + 1]); ichLast++)
-		;
-	szWord = sz.substr(ichFirst, ichLast - ichFirst + 1);
-	ichFirst = ichLast + 1;
+/*	UCI::SetPosition
+ *
+ *	Sets the board to the given FEN starting position
+ */
+void UCI::SetPosition(const char*& sz)
+{
+	puiga->InitGameFen(sz, nullptr);
+}
+
+
+void UCI::MakeMove(const string& szMove)
+{
+	MV mv = MvParse(szMove);
+	puiga->MakeMv(puiga->ga.bdg.MveFromMv(mv), spmvHidden);
+}
+
+
+MV UCI::MvParse(const string& szMove)
+{
+	const char* sz = szMove.c_str();
+	if (sz == "0000")
+		return mvNil;
+	SQ sqFrom = SqParse(sz);
+	SQ sqTo = SqParse(sz);
+	APC apcPromote = ApcParse(sz);
+	MV mv(sqFrom, sqTo);
+	mv.SetApcPromote(apcPromote);
+	return mv;
+}
+
+SQ UCI::SqParse(const char*& sz)
+{
+	while (isspace(*sz))
+		sz++;
+	if (!in_range(*sz, 'a', 'h'))
+		return sqNil;
+	int file = *sz++ - 'a';
+	if (!in_range(*sz, '1', '8'))
+		return sqNil;
+	int rank = *sz++ - '1';
+	return SQ(rank, file);
+}
+
+
+APC UCI::ApcParse(const char*& sz)
+{
+	APC apc = apcNull;
+	switch (*sz++) {
+	case 'n': apc = apcKnight; break;
+	case 'b': apc = apcBishop; break;
+	case 'r': apc = apcRook; break;
+	case 'q': apc = apcQueen; break;
+	default: sz--; break;
+	}
+	return apc;
+}
+
+
+void UCI::Go(const GO& go)
+{
+	SPMV spmv;
+	MVE mve = puiga->ga.PplToMove()->MveGetNext(spmv);
+	WriteSz(string("bestmove ") + SzDecodeMv(mve));
+}
+
+
+string UCI::SzDecodeMv(MVE mve)
+{
+	if (mve.fIsNil())
+		return "0000";
+	string sz = SzDecodeSq(mve.sqFrom()) + SzDecodeSq(mve.sqTo());
+	if (mve.apcPromote() != apcNull)
+		sz += " pnbrqk "[mve.apcPromote()];
+	return sz;
+}
+
+string UCI::SzDecodeSq(SQ sq)
+{
+	char sz[3] = { 0 };
+	sz[0] = (char)('a' + sq.file());
+	sz[1] = (char)('1' + sq.rank());
+	return sz;
+}
+
+
+/*	UCI::ConsolePump
+ *
+ *	The console in/out pump that runs the UCI/WinBoard interface, which is simply 
+ *	a stdin/stdout console.
+ */
+int UCI::ConsolePump(void)
+{
+	while (true) {
+		if (FStdinAvailable()) {
+			string szLine = SzReadLine();
+			if (FParseAndDispatch(szLine.c_str()))
+				break;
+		}
+		puiga->PumpMsg();
+	}
+	return 0;
+}
+
+
+string SzNextWord(const char*& sz)
+{
+	string szWord;
+	while (isspace(*sz))
+		sz++;
+	if (!*sz)
+		return "";
+	while (*sz && !isspace(*sz))
+		szWord += *sz++;
 	return szWord;
 }
 
 
-bool UCI::FParseAndDispatch(string sz)
+int WNextInt(const char*& sz)
+{
+	return atoi(SzNextWord(sz).c_str());
+}
+
+bool UCI::FParseAndDispatch(const char* sz)
 {
 	/* find keyword */
 
-	int ich = 0;
 	string szKey;
 	do {
-		szKey = SzNextWord(sz, ich);
+		szKey = SzNextWord(sz);
 		if (szKey.empty())
 			return false;	// unknown command, just ignore
 	} while (mpszpcmdu.find(szKey) == mpszpcmdu.end());
 	CMDU* pcmdu = mpszpcmdu[szKey];
-	return pcmdu->Execute(sz.substr(ich)) == 0;
+	return pcmdu->Execute(sz) == 0;
 }
 
 
@@ -75,6 +175,22 @@ void UCI::WriteSz(const string& sz)
 	string nsz = sz + "\n";
 	::WriteFile(hfileStdout, nsz.c_str(), (DWORD)nsz.length(), &cb, NULL);
 	Log(lgtData, lgfNormal, 0, TAG(WszWidenSz(sz)), L"");
+}
+
+
+int UCI::FStdinAvailable(void)
+{
+	DWORD cb;
+	if (fStdinPipe) {
+		if (!::PeekNamedPipe(hfileStdin, NULL, 0, NULL, &cb, NULL))
+			cb = 1;
+	}
+	else {
+		::GetNumberOfConsoleInputEvents(hfileStdin, &cb);
+		if (cb <= 1)
+			cb = 0;
+	}
+	return cb;
 }
 
 
@@ -129,8 +245,8 @@ public:
 
 	int Execute(string szArg)
 	{
-		int ich = 0;
-		szArg = SzNextWord(szArg, ich);
+		const char* sz = szArg.c_str();
+		szArg = SzNextWord(sz);
 		if (szArg == "on") {
 			;
 		}
@@ -182,7 +298,7 @@ public:
 
 	virtual int Execute(string szArg)
 	{
-		uci.puiga->InitGame(nullptr, nullptr);
+		uci.puiga->InitGameStart(nullptr);
 		uci.puiga->StartGame(spmvAnimate);
 		return 1;
 	}
@@ -195,13 +311,17 @@ public:
 
 	virtual int Execute(string szArg)
 	{
-		int ich = 0;
-		string szCmd = SzNextWord(szArg, ich);
-
-		if (szCmd == "startpos") {
+		const char* sz = szArg.c_str();
+		string szCmd = SzNextWord(sz);
+		if (szCmd == "startpos")
+			uci.SetPosition();
+		else if (szCmd == "fen")
+			uci.SetPosition(sz);
+		if (SzNextWord(sz) == "moves") {
+			for (string szMove = SzNextWord(sz); !szMove.empty(); szMove = SzNextWord(sz))
+				uci.MakeMove(szMove);
 		}
-		else if (szCmd == "fen") {
-		}
+		uci.puiga->Redraw();
 		return 1;
 	}
 };
@@ -213,6 +333,56 @@ public:
 
 	virtual int Execute(string szArg)
 	{
+		GO go;
+		go.ttm = ttmSmart;
+		go.mpcpcdtm[cpcWhite] = 5 * 60 * 1000;
+		go.mpcpcdtm[cpcBlack] = 5 * 60 * 1000;
+		go.mpcpcdtmInc[cpcWhite] = 1000;
+		go.mpcpcdtmInc[cpcBlack] = 1000;
+
+		const char* sz = szArg.c_str();
+		for (string szCmd = SzNextWord(sz); !szCmd.empty(); szCmd = SzNextWord(sz)) {
+			if (szCmd == "searchmoves") {
+			}
+			else if (szCmd == "ponder") {
+			}
+			else if (szCmd == "wtime") {
+				go.ttm = ttmSmart;
+				go.mpcpcdtm[cpcWhite] = WNextInt(sz);
+			}
+			else if (szCmd == "btime") {
+				go.ttm = ttmSmart;
+				go.mpcpcdtm[cpcBlack] = WNextInt(sz);
+			}
+			else if (szCmd == "winc") {
+				go.mpcpcdtmInc[cpcWhite] = WNextInt(sz);
+			}
+			else if (szCmd == "binc") {
+				go.mpcpcdtmInc[cpcBlack] = WNextInt(sz);
+			}
+			else if (szCmd == "movestogo") {
+			}
+			else if (szCmd == "depth") {
+				go.ttm = ttmConstDepth;
+				go.dSearch = WNextInt(sz);
+			}
+			else if (szCmd == "nodes") {
+				go.ttm = ttmConstNodes;
+				go.cmveSearch = WNextInt(sz);
+			}
+			else if (szCmd == "mate") {
+			}
+			else if (szCmd == "movetime") {
+				go.ttm = ttmTimePerMove;
+				go.dtmSearch = WNextInt(sz);
+			}
+			else if (szCmd == "infinite") {
+				go.ttm = ttmInfinite;
+			}
+		}
+
+		uci.Go(go);
+		
 		return 1;
 	}
 };
@@ -253,9 +423,17 @@ public:
 
 UCI::UCI(UIGA* puiga) : puiga(puiga), hfileStdin(NULL), hfileStdout(NULL)
 {
+	/* set up stdin/out */
+
 	fInherited = !::AllocConsole();
 	hfileStdin = ::GetStdHandle(STD_INPUT_HANDLE);
 	hfileStdout = ::GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD cb;
+	fStdinPipe = !::GetConsoleMode(hfileStdin, &cb);
+	if (!fStdinPipe) {
+		::SetConsoleMode(hfileStdin, cb & ~(ENABLE_MOUSE_INPUT|ENABLE_WINDOW_INPUT));
+		::FlushConsoleInputBuffer(hfileStdin);
+	}
 
 	/* uci command dispatch */
 

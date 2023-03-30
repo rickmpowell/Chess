@@ -222,14 +222,7 @@ UIDRAGAPC::UIDRAGAPC(UIPCP& uipcp, APC apc) : UIDRAGPCP(uipcp), apc(apc)
  */
 void UIDRAGAPC::DrawInterior(UI* pui, const RC& rcDraw)
 {
-	static const int mpapcxBitmap[] = { -1, 5, 3, 2, 4, 1, 0, -1, -1 };
-	BMP* pbmpPieces = uipcp.PbmpPieces();
-	SIZ siz = pbmpPieces->GetSize();
-	float dxPiece = siz.width / 6;
-	float dyPiece = siz.height / 2;
-	float xPiece = mpapcxBitmap[apc] * dxPiece;
-	float yPiece = (int)uipcp.cpcShow * dyPiece;
-	pui->DrawBmp(rcDraw, pbmpPieces, RC(xPiece, yPiece, xPiece + dxPiece, yPiece + dyPiece), 1.0f);
+	pbmppc->Draw(*pui, rcDraw, PC(uipcp.cpcShow, apc));
 }
 
 
@@ -440,22 +433,15 @@ void UISETFEN::DrawBdg(UI& ui, BDG& bdg, const RC& rcBox)
 				ui.FillRc(rc, pbrText);
 			if (!bdg.FIsEmpty(sq)) {
 				CPC cpc = bdg.CpcFromSq(sq);
-				if (rc.DxWidth() < 10) {
+				if (rc.DxWidth() < 20) {
 					ELL ell(rc.PtCenter(), rc.DxWidth() / 2.0f - 0.6f);
 					ui.FillEll(ell, pbrBlack);
-					ell.radiusX -= 0.5f;
-					ell.radiusY -= 0.5f;
-					ui.FillEll(ell, cpc == cpcWhite ? pbrWhite : pbrBlack);
-				}
-				else if (rc.DxWidth() < 20) {
-					ELL ell(rc.PtCenter(), rc.DxWidth() / 2.0f - 2.0f);
-					ui.FillEll(ell, pbrBlack);
-					ell.radiusX -= 1;
-					ell.radiusY -= 1;
+					ell.radiusX -= rc.DxWidth()/15.0f;
+					ell.radiusY -= rc.DxWidth()/15.0f;
 					ui.FillEll(ell, cpc == cpcWhite ? pbrWhite : pbrBlack);
 				}
 				else {
-					Ga().puiga->uibd.DrawPc(ui, rc, 1.0f, bdg.PcFromSq(sq));
+					pbmppc->Draw(ui, rc, bdg.PcFromSq(sq));
 				}
 			}
 		}
@@ -471,7 +457,8 @@ SIZ UISETFEN::SizOfTip(UITIP& uitip) const
 void UISETFEN::DrawTip(UITIP& uitip)
 {
 	BDG bdg;
-	const char* sz = bdg.SetFen(szEpd.c_str());
+	const char* sz = szEpd.c_str();
+	bdg.SetFen(sz);
 	map<string, vector<EPDP>> mpszvepdp;
 	bdg.InitEpdProperties(sz, mpszvepdp);
 	RC rcBox = uitip.RcInterior().Inflate(-5, -5);
@@ -873,8 +860,3 @@ wstring UIPCP::SzTipFromCmd(int cmd) const
 	return App().SzLoad(ids);
 }
 
-
-BMP* UIPCP::PbmpPieces(void)
-{
-	return uibd.pbmpPieces;
-}

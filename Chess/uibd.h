@@ -13,6 +13,29 @@
 
 /*
  *
+ *	BMPPC
+ * 
+ *	Just a little helper class to draw the chess pieces on a UI. Should only
+ *	be created once by the app and put in a global so various drawing code
+ *	can get access to it.
+ * 
+ */
+
+
+class BMPPC
+{
+	BMP* pbmpPieces;
+public:
+	BMPPC(void);
+	~BMPPC(void);
+	void Draw(UI& ui, const RC& rc, PC pc, float opacity=1.0f);
+};
+
+extern BMPPC* pbmppc;
+
+
+/*
+ *
  *	UIBD class
  *
  *	Class that keeps and displays the game board on the screen inside
@@ -41,7 +64,6 @@ class UIBD : public UIP
 	friend class UIPCP;
 public:
 	BRS* pbrAnnotation;
-	BMP* pbmpPieces;
 	GEOM* pgeomCross;
 	GEOM* pgeomArrowHead;
 	TX* ptxLabel;
@@ -458,7 +480,6 @@ public:
 	virtual ColorF CoBack(void) const { return coBoardBWLight; }
 
 	RC RcFromApc(APC apc) const;
-	BMP* PbmpPieces(void);
 	void HiliteSq(SQ sq);
 
 	void OpenEpdFile(void);
