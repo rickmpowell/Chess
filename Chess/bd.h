@@ -316,7 +316,9 @@ public:
 	GPH gph;	/* game phase */
 
 public:
-	BD(void);
+	BD(void) noexcept;
+	BD(const BD& bd) noexcept;
+	BD& operator=(const BD& bd) noexcept;
 
 	void SetEmpty(void) noexcept;
 	bool operator==(const BD& bd) const noexcept;
@@ -328,9 +330,15 @@ public:
 
 	void GenMoves(VMVE& vmve, GG gg) noexcept;
 	void GenMoves(VMVE& vmve, CPC cpcMove, GG gg) noexcept;
+	void GenMovesQuietWhite(VMVE& vmve) noexcept;
+	void GenMovesQuietBlack(VMVE& vmve) noexcept;
+	void GenMovesNoisyWhite(VMVE& vmve) noexcept;
+	void GenMovesNoisyBlack(VMVE& vmve) noexcept;
+	void GenMovesAllWhite(VMVE& vmve) noexcept;
+	void GenMovesAllBlack(VMVE& vmve) noexcept;
 	void GenPawnPromotions(VMVE& vmve, BB bbPawns, BB bbTo, int dsq, CPC cpcMove) const noexcept;
 	void GenPawnQuiet(VMVE& vmve, CPC cpcMove) const noexcept;
-	void GenPawnNoisy(VMVE& vmve, CPC cpcMove) const noexcept;
+	void GenPawnNoisy(VMVE& vmve, CPC cpcMove, SQ sqEP) const noexcept;
 	void GenCastles(VMVE& vmve, CPC cpcMove) const noexcept;
 	void GenNonPawn(VMVE& vmve, CPC cpcMove, BB bbTo) const noexcept;
 	BB GenPiece(VMVE& vmve, PC pcMove, BB bbPieceFrom, BB bbTo, int dsq) const noexcept;
@@ -368,8 +376,8 @@ public:
 	bool FIsCheckMate(CPC cpc) noexcept;
 	APC ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept;
 
-	inline BB BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
-	inline BB BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept;
+	inline BB BbFwdSlideAttacks(SQ sqFrom, DIR dir) const noexcept;
+	inline BB BbRevSlideAttacks(SQ sqFrom, DIR dir) const noexcept;
 	inline BB BbPawnAttacked(BB bbPawns, CPC cpcBy) const noexcept;
 	inline BB BbKingAttacked(BB bbKing) const noexcept;
 	inline BB BbKnightAttacked(BB bbKnights) const noexcept;

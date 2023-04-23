@@ -374,19 +374,18 @@ MPBB::MPBB(void)
 static const GPH mpapcgph[apcMax] = { gphNone, gphNone, gphMinor, gphMinor,
 										   gphRook, gphQueen, gphNone };
 
-BD::BD(void)
+BD::BD(void) noexcept
 {
 	SetEmpty();
 	Validate();
 }
 
-
 void BD::SetEmpty(void) noexcept
 {
 	for (PC pc = 0; pc < pcMax; ++pc)
 		mppcbb[pc] = bbNone;
-	mpcpcbb[cpcWhite] = bbNone;
-	mpcpcbb[cpcBlack] = bbNone;
+	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
+		mpcpcbb[cpc] = bbNone;
 	bbUnoccupied = bbAll;
 
 	csCur = 0;
@@ -397,6 +396,30 @@ void BD::SetEmpty(void) noexcept
 	gph = gphMax;
 }
 
+BD::BD(const BD& bd) noexcept :
+	csCur(bd.csCur), bbUnoccupied(bd.bbUnoccupied), cpcToMove(bd.cpcToMove), sqEnPassant(bd.sqEnPassant), habd(bd.habd), gph(bd.gph)
+{
+	for (PC pc = 0; pc < pcMax; ++pc)
+		mppcbb[pc] = bd.mppcbb[pc];
+	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
+		mpcpcbb[cpc] = bd.mpcpcbb[cpc];
+	Validate();
+}
+
+BD& BD::operator=(const BD& bd) noexcept
+{
+	csCur = bd.csCur;
+	bbUnoccupied = bd.bbUnoccupied;
+	cpcToMove = bd.cpcToMove;
+	sqEnPassant = bd.sqEnPassant;
+	habd = bd.habd;
+	gph = bd.gph;
+	for (PC pc = 0; pc < pcMax; ++pc)
+		mppcbb[pc] = bd.mppcbb[pc];
+	for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc)
+		mpcpcbb[cpc] = bd.mpcpcbb[cpc];
+	return *this;
+}
 
 /*	BD::operator==
  *
@@ -777,30 +800,75 @@ void BD::GenMoves(VMVE& vmve, CPC cpcMove, GG gg) noexcept
 {
 	Validate();
 
+	/* done in this weird way to get the compiler to inline and eliminate constants */
+
 	vmve.clear();
 	if (GgType(gg) == ggQuiet) {
-		GenPawnQuiet(vmve, cpcMove);
-		GenNonPawn(vmve, cpcMove, bbUnoccupied);
-		GenCastles(vmve, cpcMove);
+		if (cpcMove == cpcWhite)
+			GenMovesQuietWhite(vmve);
+		else
+			GenMovesQuietBlack(vmve);
 	}
 	else if (GgType(gg) == ggNoisy) {
-		GenPawnNoisy(vmve, cpcMove);
-		GenNonPawn(vmve, cpcMove, mpcpcbb[~cpcMove]);
+		if (cpcMove == cpcWhite)
+			GenMovesNoisyWhite(vmve);
+		else
+			GenMovesNoisyBlack(vmve);
 	}
 	else {
 		assert(GgType(gg) == ggAll);
-		GenPawnQuiet(vmve, cpcMove);
-		GenPawnNoisy(vmve, cpcMove);
-		GenNonPawn(vmve, cpcMove, ~mpcpcbb[cpcMove]);
+		if (cpcMove == cpcWhite)
+			GenMovesAllWhite(vmve);
+		else
+			GenMovesAllBlack(vmve);
 		GenCastles(vmve, cpcMove);
-		int cmv = CmvPseudo(cpcMove);
-		assert(vmve.size() == cmv);
+		assert(vmve.size() == CmvPseudo(cpcMove));
 	}
 
 	if (FGgLegal(gg))
 		RemoveInCheckMoves(vmve, cpcMove);
 }
 
+
+void BD::GenMovesQuietWhite(VMVE& vmve) noexcept
+{
+	GenPawnQuiet(vmve, cpcWhite);
+	GenNonPawn(vmve, cpcWhite, bbUnoccupied);
+	GenCastles(vmve, cpcWhite);
+}
+
+void BD::GenMovesQuietBlack(VMVE& vmve) noexcept
+{
+	GenPawnQuiet(vmve, cpcBlack);
+	GenNonPawn(vmve, cpcBlack, bbUnoccupied);
+	GenCastles(vmve, cpcBlack);
+}
+
+void BD::GenMovesNoisyWhite(VMVE& vmve) noexcept
+{
+	GenPawnNoisy(vmve, cpcWhite, sqEnPassant.fIsNil() ? sqNil : sqEnPassant);
+	GenNonPawn(vmve, cpcWhite, mpcpcbb[cpcBlack]);
+}
+
+void BD::GenMovesNoisyBlack(VMVE& vmve) noexcept
+{
+	GenPawnNoisy(vmve, cpcBlack, sqEnPassant.fIsNil() ? sqNil : sqEnPassant);
+	GenNonPawn(vmve, cpcBlack, mpcpcbb[cpcWhite]);
+}
+
+void BD::GenMovesAllWhite(VMVE& vmve) noexcept
+{
+	GenPawnQuiet(vmve, cpcWhite);
+	GenPawnNoisy(vmve, cpcWhite, sqEnPassant.fIsNil() ? sqNil : sqEnPassant);
+	GenNonPawn(vmve, cpcWhite, ~mpcpcbb[cpcWhite]);
+}
+
+void BD::GenMovesAllBlack(VMVE& vmve) noexcept
+{
+	GenPawnQuiet(vmve, cpcBlack);
+	GenPawnNoisy(vmve, cpcBlack, sqEnPassant.fIsNil() ? sqNil : sqEnPassant);
+	GenNonPawn(vmve, cpcBlack, ~mpcpcbb[cpcBlack]);
+}
 
 /*	BD::RemoveInCheckMoves
  *
@@ -907,7 +975,7 @@ __forceinline BB BD::BbKnightAttacked(BB bbKnights) const noexcept
  *	ray that has a piece on it (either self of opponent color). So it includes
  *	not only squares that can be moved to, but also pieces that are defended.
  */
-__forceinline BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept
+__forceinline BB BD::BbFwdSlideAttacks(SQ sqFrom, DIR dir) const noexcept
 {
 	assert(dir == dirEast || dir == dirNorthWest || dir == dirNorth || dir == dirNorthEast);
 	BB bbAttacks = mpbb.BbSlideTo(sqFrom, dir);
@@ -920,8 +988,11 @@ __forceinline BB BD::BbFwdSlideAttacks(DIR dir, SQ sqFrom) const noexcept
  *
  *	Returns bitboard of squares a sliding piece attacks in the direction given.
  *	Only works for reverse moves (south, southwest, southeast, and west).
+ * 
+ *	Like BbFwdSlideAttacks, includes squares that can be moved to plus pieces
+ *	that are defended by the piece.
  */
-__forceinline BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept
+__forceinline BB BD::BbRevSlideAttacks(SQ sqFrom, DIR dir) const noexcept
 {
 	assert(dir == dirWest || dir == dirSouthWest || dir == dirSouth || dir == dirSouthEast);
 	BB bbAttacks = mpbb.BbSlideTo(sqFrom, dir);
@@ -932,10 +1003,10 @@ __forceinline BB BD::BbRevSlideAttacks(DIR dir, SQ sqFrom) const noexcept
 
 __forceinline BB BD::BbBishop1Attacked(SQ sq) const noexcept
 {
-	return BbFwdSlideAttacks(dirNorthEast, sq) |
-		BbFwdSlideAttacks(dirNorthWest, sq) |
-		BbRevSlideAttacks(dirSouthEast, sq) |
-		BbRevSlideAttacks(dirSouthWest, sq);
+	return BbFwdSlideAttacks(sq, dirNorthEast) |
+		BbFwdSlideAttacks(sq, dirNorthWest) |
+		BbRevSlideAttacks(sq, dirSouthEast) |
+		BbRevSlideAttacks(sq, dirSouthWest);
 }
 
 
@@ -950,10 +1021,10 @@ __forceinline BB BD::BbBishopAttacked(BB bbBishops) const noexcept
 
 __forceinline BB BD::BbRook1Attacked(SQ sq) const noexcept
 {
-	return BbFwdSlideAttacks(dirNorth, sq) |
-		BbFwdSlideAttacks(dirEast, sq) |
-		BbRevSlideAttacks(dirSouth, sq) |
-		BbRevSlideAttacks(dirWest, sq);
+	return BbFwdSlideAttacks(sq, dirNorth) |
+		BbFwdSlideAttacks(sq, dirEast) |
+		BbRevSlideAttacks(sq, dirSouth) |
+		BbRevSlideAttacks(sq, dirWest);
 }
 
 
@@ -968,14 +1039,7 @@ __forceinline BB BD::BbRookAttacked(BB bbRooks) const noexcept
 
 __forceinline BB BD::BbQueen1Attacked(SQ sq) const noexcept
 {
-	return BbFwdSlideAttacks(dirNorth, sq) |
-		BbFwdSlideAttacks(dirEast, sq) |
-		BbRevSlideAttacks(dirSouth, sq) |
-		BbRevSlideAttacks(dirWest, sq) |
-		BbFwdSlideAttacks(dirNorthEast, sq) |
-		BbFwdSlideAttacks(dirNorthWest, sq) |
-		BbRevSlideAttacks(dirSouthEast, sq) |
-		BbRevSlideAttacks(dirSouthWest, sq);
+	return BbBishop1Attacked(sq) | BbRook1Attacked(sq);
 }
 
 
@@ -1019,8 +1083,8 @@ APC BD::ApcBbAttacked(BB bbAttacked, CPC cpcBy) const noexcept
 
 /*	BD::GenPiece
  *
- *	Generates all moves fromn bbPiece to legal destinations in bbTo, with
- *	offset dsq. Returns the bitboard of squares we moved to.
+ *	Generates all moves fromn bbPieceFrom to legal destinations restricted to those
+ *	in bbTo, with offset dsq. Returns the bitboard of squares we moved to.
  */
 __forceinline BB BD::GenPiece(VMVE& vmve, PC pcMove, BB bbPieceFrom, BB bbTo, int dsq) const noexcept
 {
@@ -1035,8 +1099,8 @@ __forceinline BB BD::GenPiece(VMVE& vmve, PC pcMove, BB bbPieceFrom, BB bbTo, in
 
 /*	BD::GenPiece
  *
- *	Generates all moves with the source square in bbPiece and the possible legal
- *	destination squares in bbTo.
+ *	Generates all moves for piece of type pcMove, with the source square in sqFrom,
+ *	and the possible legal destination squares in bbPieceTo, restricted to bbTo.
  */
 __forceinline void BD::GenPiece(VMVE& vmve, PC pcMove, SQ sqFrom, BB bbPieceTo, BB bbTo) const noexcept
 {
@@ -1075,7 +1139,7 @@ __declspec(noinline) void BD::GenPawnPromotions(VMVE& vmve, BB bbPawns, BB bbTo,
  *
  *	Generatges all pawn capture and promotion moves
  */
-__forceinline void BD::GenPawnNoisy(VMVE& vmve, CPC cpcMove) const noexcept
+__forceinline void BD::GenPawnNoisy(VMVE& vmve, CPC cpcMove, SQ sqEP) const noexcept
 {
 	BB bbPawns = mppcbb[PC(cpcMove, apcPawn)];
 	int dsqFore = cpcMove == cpcWhite ? dsqNorth : dsqSouth;
@@ -1091,11 +1155,11 @@ __forceinline void BD::GenPawnNoisy(VMVE& vmve, CPC cpcMove) const noexcept
 	GenPiece(vmve, PC(cpcMove, apcPawn), bbPawns - bbFileH, bbEnemy, dsqFore+dsqEast);
 	GenPiece(vmve, PC(cpcMove, apcPawn), bbPawns - bbFileA, bbEnemy, dsqFore+dsqWest);
 
-	if (!sqEnPassant.fIsNil()) {
-		BB bbEnPassant(sqEnPassant);
+	if (!sqEP.fIsNil()) {
+		BB bbEnPassant(sqEP);
 		BB bbFrom = BbWest1(bbEnPassant, -dsqFore) | BbEast1(bbEnPassant, -dsqFore);
 		for (bbFrom &= bbPawns; bbFrom; bbFrom.ClearLow())
-			vmve.push_back(bbFrom.sqLow(), sqEnPassant, PC(cpcMove, apcPawn));
+			vmve.push_back(bbFrom.sqLow(), sqEP, PC(cpcMove, apcPawn));
 	}
 }
 
@@ -1889,7 +1953,7 @@ bool BDG::FDraw3Repeat(int cbdDraw) const noexcept
 		return false;
 	if (imveCurLast - imvePawnOrTakeLast < (cbdDraw-1) * 2 * 2)
 		return false;
-	BD bd = *this;
+	BD bd(*this);
 	int cbdSame = 1;
 	assert(imveCurLast - 1 >= 0);
 	bd.UndoMvSq(vmveGame[imveCurLast]);
