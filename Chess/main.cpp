@@ -998,8 +998,8 @@ public:
         for (CPC cpc = cpcWhite; cpc < cpcMax; ++cpc) {
             PL* ppl = app.puiga->ga.PplFromCpc(cpc);
             if (ppl->FHasLevel())
-                ppl->SetLevel(6);
-            ppl->SetTtm(ttmTimePerMove);
+                ppl->SetLevel(10);
+            ppl->SetTtm(ttmConstDepth);
             ppl->SetFecoRandom(0);
         }
 
