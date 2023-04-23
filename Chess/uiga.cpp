@@ -18,6 +18,7 @@ UIGA::UIGA(APP& app, GA& ga) :	UI(nullptr),
 								uiti(*this), uibd(*this), uiml(*this), uipvt(*this, cpcWhite), uidb(*this), uipcp(*this), uidt(*this),
 								uitip(this),
 								puiDrag(nullptr), puiFocus(nullptr), puiHover(nullptr),
+								ptxDesktop(nullptr),
 								spmvShow(spmvAnimate), fInPlay(false), msecLast(0L), tidClock(0), fInTest(false), fInterruptPumpMsg(false)
 {
 	mpcpcdmsecClock[cpcWhite] = mpcpcdmsecClock[cpcBlack] = 0;
@@ -545,7 +546,12 @@ void UIGA::Play(MVE mve, SPMV spmv)
 
 	do {
 		SPMV spmv = spmvAnimate;
+		/* TEMPORARY - until we're threaded, we need to restore the board if user accidentally clicked 
+		   undo or clicked on the move list while the AI is thinking; the AI generates a move for the
+		   board that we were in at the start */
+		int imveSav = ga.bdg.imveCurLast;
 		mve = ga.PplToMove()->MveGetNext(spmv);
+		MoveToImv(imveSav, spmvFast);
 		if (mve.fIsNil())
 			break;
 		MakeMv(mve, spmv);
