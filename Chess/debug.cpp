@@ -353,7 +353,7 @@ void UIDB::AddLog(LGT lgt, LGF lgf, int lgd, const TAG& tag, const wstring& szDa
 	/* logging to file */
 
 	if (posLog && lgd <= LgdFile()) {
-		*posLog << string(4 * lgd, ' ');
+		*posLog << string(4 * (size_t)lgd, ' ');
 		if (!tag.sz.empty())
 			*posLog << SzFlattenWsz(tag.sz) << ' ';
 		*posLog << SzFlattenWsz(szData) << endl;
