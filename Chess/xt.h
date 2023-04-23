@@ -310,6 +310,7 @@ public:
 		age = (age + 1) & (ageMax - 1);
 	}
 
+
 	/*	XT::array index
 	 *
 	 *	Returns a reference to the hash table entry that may or may not be used by the
@@ -402,6 +403,12 @@ public:
 			return &xevNew;
 		}
 		return nullptr;
+	}
+
+	__forceinline void Prefetch(const BDG& bdg)
+	{
+		XEV2* pxev2 = &(*this)[bdg];
+		_mm_prefetch((char*)pxev2, _MM_HINT_T0);
 	}
  };
 
