@@ -1,4 +1,5 @@
-  Move UIBD::DrawPc and pbmpPieces into their own static class
+  Send one last info command before bestmove is sent in UCI
+  Version number releases/builds
   UITI is dumb - maybe turn it into a top-of-window header?
   Try the Intel compiler again
   Consider removing exceptions - is codegen better?
@@ -104,6 +105,9 @@
   RULE: Official tournament game has slightly different rules for some draw situations
   RULE: Have an official game mode that does not allow undo as a rule
   UIBD: Implement queued move-ahead 
+* Add static null move pruning
+* Add razoring pruning
+* Move UIBD::DrawPc and pbmpPieces into their own static class
 * Copying then immediately pasting gives clipboard lock error
 * Copying a new game as PGN before any moves are made asserts
 * AI: killer moves heurstic for move ordering
