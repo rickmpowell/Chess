@@ -60,6 +60,9 @@ public:
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	__forceinline MV(void) noexcept { *(uint16_t*)this = 0; }
 #pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
+	__forceinline MV(const MV& mv) noexcept { *(uint16_t*)this = *(uint16_t*)&mv; }
+	__forceinline MV& operator=(const MV& mv) noexcept { *(uint16_t*)this = *(uint16_t*)&mv; return *this; }
+#pragma warning(suppress:26495)	// don't warn about optimized bulk initialized member variables 
 	__forceinline MV(uint16_t u) noexcept { *(uint16_t*)this = u; }
 	__forceinline MV(SQ sqFrom, SQ sqTo) noexcept { *(uint16_t*)this = 0;	usqFrom = sqFrom; usqTo = sqTo; }
 	__forceinline operator uint16_t() const noexcept { return *(uint16_t*)this; }
@@ -191,10 +194,10 @@ inline wstring to_wstring(EV ev) { return SzFromEv(ev); }
 enum TSC : int {
 	tscNil = 255,
 	tscPrincipalVar = 0,
-	tscGoodCapture = 1,
+	tscGoodCapture = 1, 
 	tscKiller = 2,
-	tscXTable = 3,
-	tscHistory = 4,
+	tscHistory = 3,
+	tscXTable = 4,
 	tscEvOther = 5,
 	tscBadCapture = 6
 };
