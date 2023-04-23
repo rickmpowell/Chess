@@ -270,15 +270,17 @@ enum TS : unsigned {
 	tsNoPruneNullMove = 0x0001,
 	tsNoPruneFutility = 0x0002,
 	tsNoPruneNullPV = 0x0004,
-	
-	tsNoOrderPV = 0x0010,
-	tsNoOrderCapt = 0x0020,
-	tsNoOrderKillers = 0x0040,
-	tsNoOrderHistory = 0x0080,
-	tsNoOrderXT = 0x0100,
+	tsNoPruneRazoring = 0x0008,
+	tsTryFutility = 0x0010,
 
-	tsNoIterDeepending = 0x2000,
-	tsNoAspiration = 0x4000,
+	tsNoOrderPV = 0x0020,
+	tsNoOrderCapt = 0x0040,
+	tsNoOrderKillers = 0x0080,
+	tsNoOrderHistory = 0x0100,
+	tsNoOrderXT = 0x0200,
+
+	tsNoIterDeepending = 0x0400,
+	tsNoAspiration = 0x0800,
 	
 	tsNoTransTable = 0x8000
 };
@@ -286,7 +288,6 @@ enum TS : unsigned {
 inline TS operator+(TS ts1, TS ts2) noexcept { return static_cast<TS>(ts1 | ts2); }
 inline TS operator-(TS ts1, TS ts2) noexcept { return static_cast<TS>(ts1 & ~ts2); }
 inline bool operator&(TS ts1, TS ts2) noexcept { return (static_cast<unsigned>(ts1) & static_cast<unsigned>(ts2)) != 0; }
-
 
 /*
  *
@@ -390,6 +391,7 @@ protected:
 	STBF stbfMainAndQ;	/* stats for main + quiescent */
 	STBF stbfMainTotal;	/* cummulative all stats for iterative deepening */
 	STBF stbfMainAndQTotal;	/* cummulative all stats for iterative deepening */
+	int dSel;	/* seldepth for the search */
 
 public:
 	PLAI(GA& ga);
@@ -412,15 +414,18 @@ protected:
 	inline bool FSearchMveBest(BDG& bdg, VMVES& vmves, MVE& mveBest, AB ab, int d, int& dLim, TS ts) noexcept;
 	inline bool FPrune(BDG& bdg, MVE& mve, MVE& mveBest, AB& ab, int d, int& dLim) noexcept;
 	inline bool FDeepen(BDG& bdg, MVE mveBest, AB& ab, int& d) noexcept;
-	inline void TestForMates(BDG& bdg, VMVES& vmves, MVE& mveBest, int d) const noexcept;
 	inline bool FLookupXt(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim) noexcept;
 	inline XEV* SaveXt(BDG& bdg, MVE mveBest, AB ab, int d, int dLim) noexcept;
 	inline void SaveKiller(BDG& bdg, MVE mve) noexcept;
 	inline void InitHistory(void) noexcept;
-	inline void BumpHistory(BDG& bdg, MVE mve, int d, int dLim) noexcept;
+	inline void AddHistory(BDG& bdg, MVE mve, int d, int dLim) noexcept;
+	inline void SubtractHistory(BDG& bdg, MVE mve) noexcept;
 	inline void AgeHistory(void) noexcept;
-	inline bool FTryFutility(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
+	inline bool FTryStaticNullMove(BDG& bdg, MVE& mveBest, EV evStatic, AB ab, int d, int dLim, TS ts) noexcept;
 	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
+	inline bool FTryRazoring(BDG& bdg, MVE& mveBest, EV evStatic, AB ab, int d, int dLim, TS ts) noexcept;
+	inline bool FTryFutility(BDG& bdg, MVE& mveBest, EV evStatic, AB ab, int d, int dLim, TS ts) noexcept;
+	inline bool FMvIsFutile(BDG& bdg, MVE mve, TS ts) const noexcept;
 	inline bool FTestForDraws(BDG& bdg, MVE& mve) noexcept;
 
 	/* time management */
@@ -464,7 +469,8 @@ protected:
 	
 	void StartMoveLog(void);
 	void EndMoveLog(void);
-	void LogInfo(BDG& bdg, EV ev, int d);
+	void LogInfo(BDG& bdg, EV ev, int d, int dSel);
+	void LogBestMove(BDG& bdg, MVE mveBest, int d, int dSel);
 	void BuildPvSz(BDG& bdg, wstring& sz);
 
 };
