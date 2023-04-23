@@ -316,7 +316,7 @@ public:
 	__forceinline int csq(void) const noexcept { return (int)__popcnt64(grf); }
 	__forceinline SQ sqLow(void) const noexcept { assert(grf); DWORD sq; _BitScanForward64(&sq, grf); return (uint8_t)sq; }
 	__forceinline SQ sqHigh(void) const noexcept { assert(grf); DWORD sq; _BitScanReverse64(&sq, grf); return (uint8_t)sq; }
-	__forceinline void ClearLow(void) noexcept { grf &= grf - 1; }
+	__forceinline void ClearLow(void) noexcept { /*grf &= grf - 1;*/ grf = _blsr_u64(grf); }
 	__forceinline bool fSet(SQ sq) const noexcept { return (grf & sq.fgrf()) != 0; }
 };
 
