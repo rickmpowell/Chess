@@ -112,6 +112,7 @@ class VMVES : public VMVE
 {
 public:
 	VMVE::it pmveNext;
+	GG gg;
 	int cmvLegal;
 	PLAI* pplai;
 	int d;
@@ -271,8 +272,7 @@ enum TS : unsigned {
 	tsNoPruneFutility = 0x0002,
 	tsNoPruneNullPV = 0x0004,
 	tsNoPruneRazoring = 0x0008,
-	tsTryFutility = 0x0010,
-
+	tsUNUSED1 = 0x0010,
 	tsNoOrderPV = 0x0020,
 	tsNoOrderCapt = 0x0040,
 	tsNoOrderKillers = 0x0080,
@@ -425,7 +425,6 @@ protected:
 	inline bool FTryNullMove(BDG& bdg, MVE& mveBest, AB ab, int d, int dLim, TS ts) noexcept;
 	inline bool FTryRazoring(BDG& bdg, MVE& mveBest, EV evStatic, AB ab, int d, int dLim, TS ts) noexcept;
 	inline bool FTryFutility(BDG& bdg, MVE& mveBest, EV evStatic, AB ab, int d, int dLim, TS ts) noexcept;
-	inline bool FMvIsFutile(BDG& bdg, MVE mve, TS ts) const noexcept;
 	inline bool FTestForDraws(BDG& bdg, MVE& mve) noexcept;
 
 	/* time management */

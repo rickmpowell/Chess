@@ -227,7 +227,7 @@ enum GG : int {
 	ggAll = 0,
 	ggQuiet = 1,
 	ggNoisy = 2,
-
+	ggNoisyAndChecks = 3,
 	ggLegal = 0x10,
 	ggPseudo = 0x00
 };

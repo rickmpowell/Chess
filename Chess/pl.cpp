@@ -16,7 +16,7 @@
 #ifndef NDEBUG
 const uint16_t dcYield = 8;
 #else
-const uint16_t dcYield = 4096;
+const uint16_t dcYield = 2048;
 #endif
 
 
@@ -443,9 +443,9 @@ public:
  */
 
 
-VMVES::VMVES(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept : VMVE(), pplai(pplai), d(d), pmveNext(begin()), tscCur(tscPrincipalVar)
+VMVES::VMVES(BDG& bdg, PLAI* pplai, int d, GG gg) noexcept : VMVE(), pplai(pplai), gg(gg), d(d), pmveNext(begin()), tscCur(tscPrincipalVar)
 {
-	bdg.GenMoves(*this, gg);
+	bdg.GenMoves(*this, gg == ggNoisyAndChecks ? ggAll : gg);
 	Reset(bdg);
 }
 
@@ -485,7 +485,10 @@ bool VMVES::FEnumMvNext(BDG& bdg, MVE*& pmve) noexcept
 		pplai->xt.Prefetch(bdg);
 		if (!bdg.FInCheck(~bdg.cpcToMove)) {
 			cmvLegal++;
-			return true;
+			if (GgType(gg) != ggNoisyAndChecks)
+				return true;
+			if (pmve->apcCapture() || pmve->apcPromote() || bdg.FInCheck(bdg.cpcToMove))
+				return true;
 		}
 		bdg.UndoMv();
 	}
@@ -744,10 +747,6 @@ bool PLAI::FSearchMveBest(BDG& bdg, VMVES& vmves, MVE& mveBest, AB ab, int d, in
 	   if we don't, redo the search with the full window */
 
 	while (vmves.FEnumMvNext(bdg, pmve)) {
-		if (FMvIsFutile(bdg, *pmve, ts)) {
-			vmves.UndoMv(bdg);
-			continue;
-		}
 		pmve->ev = -EvBdgSearch(bdg, *pmve, -ab.AbNull(), d + 1, dLim, 
 								ts+tsNoPruneNullMove+tsNoPruneFutility+tsNoPruneRazoring);
  		if (!ab.FEvIsBelow(pmve->ev) && !ab.fIsNull())
@@ -797,7 +796,7 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int d, int dLim, T
 	if (FLookupXt(bdg, mveBest, abInit, d, dLim))
 		return mveBest.ev;
 	bool fInCheck = bdg.FInCheck(bdg.cpcToMove);
-	ts = ts - tsTryFutility;
+	GG gg = ggAll + ggPseudo;
 	if (fInCheck)
 		dLim++;
 	else {
@@ -809,13 +808,13 @@ EV PLAI::EvBdgSearch(BDG& bdg, const MVE& mvePrev, AB abInit, int d, int dLim, T
 		if (FTryRazoring(bdg, mveBest, evStatic, abInit, d, dLim, ts))
 			return mveBest.ev;
 		if (FTryFutility(bdg, mveBest, evStatic, abInit, d, dLim, ts))
-			ts = ts + tsTryFutility;
+			gg = ggNoisyAndChecks + ggPseudo;
 	}
 
 	/* if none of those optimizations work, generate moves and do a full search */
 
 	mveBest.ev = -evInf;
-	VMVES vmves(bdg, this, d, ggPseudo);
+	VMVES vmves(bdg, this, d, gg);
 	if (!FSearchMveBest(bdg, vmves, mveBest, abInit, d, dLim, ts) && vmves.cmvLegal == 0)
 		mveBest = MVE(mvuNil, fInCheck ? -EvMate(d) : evDraw);
 	SaveXt(bdg, mveBest, abInit, d, dLim);
@@ -1005,30 +1004,16 @@ void PLAI::AgeHistory(void) noexcept
  */
 bool PLAI::FTryFutility(BDG& bdg, MVE& mveBest, EV evStatic, AB ab, int d, int dLim, TS ts) noexcept
 {
-#ifdef LATER
-	const int ddFutility = 9;
+	const int ddFutility = 4;
 	if (dLim - d >= ddFutility)
 		return false;
 
 	static const EV mpdddevFutility[ddFutility] = { 
 		0, 
-		100, 150, 200, 250, 
-		300, 350, 425, 500  
+		200, 300, 500  
 	};
 	EV devMargin = mpdddevFutility[dLim - d];
 	return evStatic + devMargin <= ab.evAlpha;
-#endif
-	return false;
-}
-
-
-bool PLAI::FMvIsFutile(BDG& bdg, MVE mve, TS ts) const noexcept
-{
-	if (!(ts & tsTryFutility))
-		return false;
-	return !bdg.FInCheck(bdg.cpcToMove) && 
-			!mve.fIsCapture() && 
-			mve.apcPromote() != apcNull;
 }
 
 
